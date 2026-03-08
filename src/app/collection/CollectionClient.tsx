@@ -1,0 +1,365 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { CardProps, Card } from '@/components/Card';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X } from '@phosphor-icons/react';
+
+type ExtendedCard = CardProps & { shards?: number; userCardId?: string; isShiny?: boolean };
+
+type SortOption = 'RARITY' | 'NAME' | 'HP' | 'ATK' | 'DEF' | 'COUNT';
+
+const RARITY_ORDER: Record<string, number> = {
+  'Legendary': 5,
+  'Epic': 4,
+  'Rare': 3,
+  'Uncommon': 2,
+  'Common': 1
+};
+
+const RARITY_COLORS: Record<string, string> = {
+  'Legendary': '#ffd700',
+  'Epic': '#a855f7',
+  'Rare': '#3b82f6',
+  'Uncommon': '#22c55e',
+  'Common': '#94a3b8'
+};
+
+const RARITY_ABBR: Record<string, string> = {
+  'Legendary': 'L',
+  'Epic': 'E',
+  'Rare': 'R',
+  'Uncommon': 'U',
+  'Common': 'C'
+};
+
+export default function CollectionClient({ initialCards }: { initialCards: ExtendedCard[] }) {
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('RARITY');
+  const [sortDesc, setSortDesc] = useState(true);
+  const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('LIST');
+  const [selectedCard, setSelectedCard] = useState<ExtendedCard | null>(null);
+  const itemsPerPage = 20;
+
+  // Global Collection Stats calculations
+  const totalUnique = initialCards.length;
+  const totalPulls = initialCards.reduce((acc, card) => acc + (1 + (card.shards || 0)), 0);
+
+  const rarityCounts = useMemo(() => {
+    const counts = { Legendary: 0, Epic: 0, Rare: 0, Uncommon: 0, Common: 0 };
+    initialCards.forEach(c => {
+      const r = c.rarity as keyof typeof counts;
+      if (counts[r] !== undefined) {
+        counts[r] += 1;
+      }
+    });
+    return counts;
+  }, [initialCards]);
+
+  const sortedAndFiltered = useMemo(() => {
+    let result = [...initialCards];
+
+    // Filter
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(s) || 
+        c.githubUsername.toLowerCase().includes(s)
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'RARITY':
+          comparison = (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0);
+          break;
+        case 'NAME':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'ATK':
+          comparison = a.atk - b.atk;
+          break;
+        case 'DEF':
+          comparison = a.def - b.def;
+          break;
+        case 'HP':
+          comparison = a.hp - b.hp;
+          break;
+        case 'COUNT':
+          comparison = (a.shards || 0) - (b.shards || 0);
+          break;
+      }
+      // if same on primary sort, fallback to ID/name
+      if (comparison === 0) {
+        comparison = a.githubUsername.localeCompare(b.githubUsername);
+        return sortDesc ? -comparison : comparison; // Always consistent fallback
+      }
+      
+      return sortDesc ? -comparison : comparison;
+    });
+
+    return result;
+  }, [initialCards, search, sortBy, sortDesc]);
+
+  const totalPages = Math.ceil(sortedAndFiltered.length / itemsPerPage) || 1;
+  const paginatedData = sortedAndFiltered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  const handleSort = (option: SortOption) => {
+    if (sortBy === option) {
+      setSortDesc(!sortDesc);
+    } else {
+      setSortBy(option);
+      setSortDesc(true);
+    }
+    setPage(1);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* 1. Stats Dashboard Header */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-6 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-4">
+          <h1 className="text-2xl font-black text-white px-2">Collection Stats</h1>
+          <div className="text-sm text-slate-400 font-medium px-2">
+            Unique Cards: <span className="text-white font-bold text-base">{totalUnique}</span>{' '}
+            <span className="text-slate-600 mx-2">|</span>{' '}
+            Total Pulls: <span className="text-white font-bold text-base">{totalPulls}</span>
+          </div>
+        </div>
+
+        {/* Rarity Breakdown Boxes */}
+        <div className="flex flex-wrap gap-3">
+          {(Object.entries(raritiesConfig) as [string, { label: string, color: string }][]).map(([key, info]) => {
+            const count = rarityCounts[info.label as keyof typeof rarityCounts] || 0;
+            const percentage = totalUnique > 0 ? ((count / totalUnique) * 100).toFixed(1) : '0.0';
+            
+            return (
+              <div 
+                key={key} 
+                className="flex-1 min-w-[120px] bg-slate-950/50 border border-slate-800 rounded-lg p-3 relative overflow-hidden group"
+              >
+                <div 
+                  className="absolute top-0 left-0 w-1 h-full" 
+                  style={{ backgroundColor: info.color }} 
+                />
+                <div className="flex justify-between items-start mb-2 pl-2">
+                  <span className="font-bold text-sm tracking-widest" style={{ color: info.color }}>{key}</span>
+                  <span className="text-xs font-mono text-slate-400">{count}</span>
+                </div>
+                <div className="pl-2">
+                  <div className="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                     <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${percentage}%`, backgroundColor: info.color }} />
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1 text-right">{percentage}%</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. Toolbar & Sorting */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-slate-800 rounded-lg p-1 mr-2 md:mr-4">
+              <button 
+                onClick={() => setViewMode('LIST')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'LIST' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                title="List View"
+              >
+                <ListDashes size={18} weight="bold" />
+              </button>
+              <button 
+                onClick={() => setViewMode('GRID')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'GRID' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                title="Grid View"
+              >
+                <SquaresFour size={18} weight="bold" />
+              </button>
+            </div>
+            <span className="text-sm text-slate-400 mr-2">Sort By:</span>
+            {(['RARITY', 'NAME', 'HP', 'ATK', 'DEF', 'COUNT'] as SortOption[]).map(opt => (
+              <button
+                key={opt}
+                onClick={() => handleSort(opt)}
+                className={`text-xs font-bold px-3 py-1.5 rounded transition-colors ${
+                  sortBy === opt 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                {opt} {sortBy === opt ? (sortDesc ? '↓' : '↑') : ''}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex items-center gap-4 w-full md:w-auto">
+             <div className="flex items-center gap-2 text-sm text-slate-400">
+               <span>Page</span>
+               <div className="bg-black/50 border border-slate-700 rounded px-3 py-1 text-white font-mono">
+                 {page}
+               </div>
+               <span>of {totalPages}</span>
+               
+               <div className="flex gap-1 ml-2">
+                 <button 
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white transition-colors"
+                 >
+                   <CaretLeft weight="bold" />
+                 </button>
+                 <button 
+                  disabled={page === totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white transition-colors"
+                 >
+                   <CaretRight weight="bold" />
+                 </button>
+               </div>
+             </div>
+          </div>
+        </div>
+
+        <div className="relative w-full">
+           <input 
+             type="text" 
+             placeholder="Search by title..." 
+             value={search}
+             onChange={e => { setSearch(e.target.value); setPage(1); }}
+             className="w-full bg-black/60 border border-slate-800 rounded-lg px-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+           />
+        </div>
+      </div>
+
+      {/* 3. Table or Grid View */}
+      {viewMode === 'LIST' ? (
+        <div className="bg-black border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-900/80 border-b border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">Title (Username)</th>
+                  <th className="px-6 py-4 text-right">HP</th>
+                  <th className="px-6 py-4 text-right">ATK</th>
+                  <th className="px-6 py-4 text-right">DEF</th>
+                  <th className="px-6 py-4 text-right">CNT</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {paginatedData.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                      No records found in the database.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedData.map(card => {
+                    const qty = 1 + (card.shards || 0);
+                    const rarityColor = RARITY_COLORS[card.rarity] || '#fff';
+                    const abbr = RARITY_ABBR[card.rarity] || 'UNK';
+                    
+                    return (
+                      <tr 
+                        key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
+                        onClick={() => setSelectedCard(card)} 
+                        className="hover:bg-slate-900/50 transition-colors group cursor-pointer"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span 
+                            className="font-black text-sm tracking-widest drop-shadow-md"
+                            style={{ color: rarityColor }}
+                          >
+                            {abbr}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
+                          <Star weight="fill" className="opacity-20 group-hover:opacity-100 transition-opacity" style={{ color: rarityColor }} size={16} />
+                          <span className="font-medium text-slate-200">{card.name}</span>
+                          <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-emerald-400/90 text-sm">
+                          {card.hp}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-red-400/90 text-sm">
+                          {card.atk}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-blue-400/90 text-sm">
+                          {card.def}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                            x{qty}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {paginatedData.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-500 bg-black border border-slate-800 rounded-xl">
+              No records found in the database.
+            </div>
+          ) : (
+            paginatedData.map(card => (
+              <div 
+                key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
+                onClick={() => setSelectedCard(card)} 
+                className="cursor-pointer flex justify-center w-full"
+              >
+                 <Card {...card} quantity={1 + (card.shards || 0)} disableLink={true} />
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 4. Large Card Modal */}
+      {selectedCard && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setSelectedCard(null)}>
+          <div className="relative flex flex-col items-center gap-6" onClick={e => e.stopPropagation()}>
+             <button 
+               onClick={() => setSelectedCard(null)}
+               className="absolute -top-12 md:-top-16 right-0 md:-right-16 text-slate-400 hover:text-white transition-colors bg-black/50 p-2 rounded-full border border-slate-700 z-10"
+             >
+               <X size={24} />
+             </button>
+             
+             <div className="scale-[0.8] sm:scale-100 md:scale-125 transform transition-transform mt-8 md:mt-12 mb-4 md:mb-8 pointer-events-none">
+               <Card {...selectedCard} quantity={1 + (selectedCard.shards || 0)} disableLink={true} />
+             </div>
+             
+             <a 
+               href={`https://github.com/${selectedCard.githubUsername}`}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all hover:scale-105"
+             >
+               <GithubLogo size={24} weight="fill" />
+               Access Dev's Profile
+             </a>
+          </div>
+        </div>
+      )}
+      
+    </div>
+  );
+}
+
+const raritiesConfig = {
+  'L': { label: 'Legendary', color: '#ffd700' },
+  'E': { label: 'Epic', color: '#a855f7' },
+  'R': { label: 'Rare', color: '#3b82f6' },
+  'U': { label: 'Uncommon', color: '#22c55e' },
+  'C': { label: 'Common', color: '#94a3b8' }
+};

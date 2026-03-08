@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  username      String?   @unique
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  currency      Int       @default(1000)
+  lastDailyClaimAt DateTime?
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  cards         UserCard[]
+  missions      UserMission[]
+  battlesAsAttacker BattleHistory[] @relation("Attacker")
+  battlesAsDefender BattleHistory[] @relation("Defender")
+}
+
+model Account {
+  id                 String  @id @default(uuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Card {
+  id             String   @id @default(uuid())
+  githubUsername String   @unique
+  avatarUrl      String?
+  name           String
+  flavorText     String
+  atk            Int
+  def            Int
+  hp             Int
+  rarity         String
+  primaryLanguage String?
+  createdAt      DateTime @default(now())
+
+  owners         UserCard[]
+}
+
+model UserCard {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  card      Card     @relation(fields: [cardId], references: [id])
+  cardId    String
+  quantity  Int      @default(1)
+  shards    Int      @default(0)
+  isShiny   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Mission {
+  id          String   @id @default(uuid())
+  description String
+  reward      Int
+  type        String
+  targetValue String?
+  createdAt   DateTime @default(now())
+
+  userMissions UserMission[]
+}
+
+model UserMission {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  mission   Mission  @relation(fields: [missionId], references: [id])
+  missionId String
+  progress  Int      @default(0)
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BattleHistory {
+  id           String   @id @default(uuid())
+  attacker     User     @relation("Attacker", fields: [attackerId], references: [id])
+  attackerId   String
+  defender     User?    @relation("Defender", fields: [defenderId], references: [id])
+  defenderId   String?
+  winnerId     String
+  log          String
+  createdAt    DateTime @default(now())
+}
