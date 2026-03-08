@@ -1,4 +1,5 @@
 import { Trophy, Medal, Star } from '@phosphor-icons/react/dist/ssr';
+import { prisma } from '@/lib/prisma';
 
 export default async function LeaderboardPage() {
   const users = await prisma.user.findMany({
