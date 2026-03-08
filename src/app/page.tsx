@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/LoginForm';
 export default async function Home() {
   const user = await getCurrentUser();
   if (user) {
-    redirect('/dashboard');
+    redirect('/store');
   }
 
   return (
@@ -15,7 +15,7 @@ export default async function Home() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] -z-10" />
 
       <h1 className="text-7xl md:text-9xl font-black mb-6 bg-clip-text text-transparent bg-gradient-to-br from-blue-400 via-indigo-400 to-purple-500 tracking-tighter drop-shadow-xl z-10">
-        GitGatcha
+        GitGacha
       </h1>
       
       <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mb-12 font-light leading-relaxed z-10">

@@ -15,7 +15,7 @@ export function Navbar({ username, currency }: { username: string, currency: num
       <header className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-800">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between relative">
         <Link href="/" className="font-bold text-2xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-          GitGatcha
+          GitGacha
         </Link>
 
         {username && (

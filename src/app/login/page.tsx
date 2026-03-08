@@ -23,7 +23,7 @@ export default function LoginPage() {
           body: JSON.stringify({ email, password })
         });
         if (res.ok) {
-          await signIn('credentials', { email, password, callbackUrl: '/dashboard' });
+          await signIn('credentials', { email, password, callbackUrl: '/store' });
         } else {
           const data = await res.json();
           alert(data.error || 'Registration failed');
@@ -32,7 +32,7 @@ export default function LoginPage() {
         alert('An error occurred');
       }
     } else {
-      await signIn('credentials', { email, password, callbackUrl: '/dashboard' });
+      await signIn('credentials', { email, password, callbackUrl: '/store' });
     }
     setLoading(false);
   };
@@ -47,7 +47,7 @@ export default function LoginPage() {
         <div className="space-y-4 mb-8">
           <button
             type="button"
-            onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
+            onClick={() => signIn('github', { callbackUrl: '/store' })}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-xl font-bold transition-colors"
           >
             <GithubLogo size={20} weight="fill" />
@@ -56,7 +56,7 @@ export default function LoginPage() {
           
           <button
             type="button"
-            onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+            onClick={() => signIn('google', { callbackUrl: '/store' })}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition-colors"
           >
             {/* Google Icon SVG */}
@@ -105,7 +105,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          {isRegistering ? 'Already have an account? ' : 'New to GitGatcha? '}
+          {isRegistering ? 'Already have an account? ' : 'New to GitGacha? '}
           <button 
             type="button" 
             onClick={() => setIsRegistering(!isRegistering)}

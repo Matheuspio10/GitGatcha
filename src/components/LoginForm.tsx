@@ -21,7 +21,7 @@ export function LoginForm() {
       });
       if (res.ok) {
         router.refresh(); // To update the layout with session
-        router.push('/dashboard');
+        router.push('/store');
       } else {
         alert('Failed to login');
       }
