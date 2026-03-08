@@ -8,7 +8,7 @@ import { NextAuthProvider } from "@/components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "GitGatcha - Dev Card Game",
+  title: "GitGacha - Dev Card Game",
   description: "Collect developers, build your deck, rule the repository.",
 };
 
