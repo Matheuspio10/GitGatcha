@@ -50,10 +50,11 @@ export async function fetchGitHubUserStats(username: string) {
 
     // Calculate normalized 0-100 attributes
     // Calculate normalized attributes without arbitrary caps
-    // Calculate balanced attributes using logarithmic scaling
-    const atk = Math.floor(25 * Math.log10(totalStars + totalForks + 1)) + 10;
-    const def = Math.floor(20 * Math.log10(user.public_repos + 1)) + 10;
-    const hp = Math.floor(40 * Math.log10(user.followers + 1)) + Math.floor(accountAgeYears * 5) + 50;
+    // Calculate balanced linear attributes
+    const atk = Math.floor((totalStars * 2 + totalForks) / 5) + 10;
+    const def = Math.floor((user.public_repos * 1.5) + (user.public_gists * 2)) + 5;
+    // HP is now boosted by 120% of ATK to prevent glass cannons
+    const hp = Math.floor(accountAgeYears * 10) + Math.floor(user.public_repos / 2) + 100 + Math.floor(atk * 1.2);
 
     // Rarity determination
     let rarity = 'Common';
