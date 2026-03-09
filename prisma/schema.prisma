@@ -27,6 +27,8 @@ model User {
   sessions      Session[]
   cards         UserCard[]
   missions      UserMission[]
+  friendships   Friendship[]    @relation("UserFriendships")
+  friendRequests Friendship[]   @relation("FriendRequests")
   battlesAsChallenger Battle[] @relation("Challenger")
   battlesAsDefender   Battle[] @relation("Defender")
 }
@@ -149,4 +151,18 @@ model BattleRound {
   winnerId        String?
 
   battle          Battle  @relation(fields: [battleId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendRequests", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
 }
