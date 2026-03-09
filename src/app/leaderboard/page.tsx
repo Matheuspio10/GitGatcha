@@ -2,77 +2,103 @@ import { Trophy, Medal, Sword, Shield, Star } from '@phosphor-icons/react/dist/s
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 
+async function getBattleStats(userId: string) {
+  try {
+    const totalBattles = await prisma.battle.count({
+      where: {
+        status: 'COMPLETED',
+        OR: [{ challengerId: userId }, { defenderId: userId }],
+      },
+    });
+    const totalWins = await prisma.battle.count({
+      where: {
+        status: 'COMPLETED',
+        winnerId: userId,
+      },
+    });
+    const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
+    return { totalBattles, totalWins, winRate };
+  } catch {
+    return { totalBattles: 0, totalWins: 0, winRate: 0 };
+  }
+}
+
 export default async function LeaderboardPage() {
   const currentUser = await getCurrentUser();
 
-  // Global leaderboard: ranked by rating
-  const users = await prisma.user.findMany({
-    orderBy: { rating: 'desc' },
-    take: 50,
-    include: {
-      _count: {
-        select: { cards: true }
-      },
-    }
-  });
+  // Try rating-based, fall back to xp-based if rating column doesn't exist yet
+  let users;
+  let hasRating = true;
+  try {
+    users = await prisma.user.findMany({
+      orderBy: { rating: 'desc' },
+      take: 50,
+      include: {
+        _count: { select: { cards: true } },
+      }
+    });
+  } catch {
+    hasRating = false;
+    users = await prisma.user.findMany({
+      orderBy: { xp: 'desc' },
+      take: 50,
+      include: {
+        _count: { select: { cards: true } },
+      }
+    });
+  }
 
   // Calculate win stats for each user
   const usersWithStats = await Promise.all(
     users.map(async (u) => {
-      const totalBattles = await prisma.battle.count({
-        where: {
-          status: 'COMPLETED',
-          OR: [{ challengerId: u.id }, { defenderId: u.id }],
-        },
-      });
-      const totalWins = await prisma.battle.count({
-        where: {
-          status: 'COMPLETED',
-          winnerId: u.id,
-        },
-      });
-      const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
-      return { ...u, totalBattles, totalWins, winRate };
+      const stats = await getBattleStats(u.id);
+      return {
+        ...u,
+        rating: (u as Record<string, unknown>).rating as number ?? 1000,
+        ...stats,
+      };
     })
   );
 
-  // Friends leaderboard: people the current user has battled
+  // Friends leaderboard
   let friendsLeaderboard: typeof usersWithStats = [];
   if (currentUser) {
-    const friendBattles = await prisma.battle.findMany({
-      where: {
-        status: 'COMPLETED',
-        isRandom: false,
-        OR: [{ challengerId: currentUser.id }, { defenderId: currentUser.id }],
-      },
-      select: { challengerId: true, defenderId: true },
-    });
-
-    const friendIds = new Set<string>();
-    friendBattles.forEach(b => {
-      if (b.challengerId !== currentUser.id) friendIds.add(b.challengerId);
-      if (b.defenderId && b.defenderId !== currentUser.id) friendIds.add(b.defenderId);
-    });
-
-    if (friendIds.size > 0) {
-      const friends = await prisma.user.findMany({
-        where: { id: { in: Array.from(friendIds) } },
-        orderBy: { rating: 'desc' },
-        include: { _count: { select: { cards: true } } },
+    try {
+      const friendBattles = await prisma.battle.findMany({
+        where: {
+          status: 'COMPLETED',
+          isRandom: false,
+          OR: [{ challengerId: currentUser.id }, { defenderId: currentUser.id }],
+        },
+        select: { challengerId: true, defenderId: true },
       });
 
-      friendsLeaderboard = await Promise.all(
-        friends.map(async (u) => {
-          const totalBattles = await prisma.battle.count({
-            where: { status: 'COMPLETED', OR: [{ challengerId: u.id }, { defenderId: u.id }] },
-          });
-          const totalWins = await prisma.battle.count({
-            where: { status: 'COMPLETED', winnerId: u.id },
-          });
-          const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
-          return { ...u, totalBattles, totalWins, winRate };
-        })
-      );
+      const friendIds = new Set<string>();
+      friendBattles.forEach(b => {
+        if (b.challengerId !== currentUser.id) friendIds.add(b.challengerId);
+        if (b.defenderId && b.defenderId !== currentUser.id) friendIds.add(b.defenderId);
+      });
+
+      if (friendIds.size > 0) {
+        const friends = await prisma.user.findMany({
+          where: { id: { in: Array.from(friendIds) } },
+          orderBy: hasRating ? { rating: 'desc' } : { xp: 'desc' },
+          include: { _count: { select: { cards: true } } },
+        });
+
+        friendsLeaderboard = await Promise.all(
+          friends.map(async (u) => {
+            const stats = await getBattleStats(u.id);
+            return {
+              ...u,
+              rating: (u as Record<string, unknown>).rating as number ?? 1000,
+              ...stats,
+            };
+          })
+        );
+      }
+    } catch {
+      // Battle table doesn't exist yet, skip friends leaderboard
     }
   }
 
