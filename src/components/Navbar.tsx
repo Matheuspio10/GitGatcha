@@ -37,12 +37,12 @@ export function Navbar({ username, currency }: { username: string, currency: num
               <span className="font-bold text-sm">{currency}</span>
               <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+            <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
                 {username.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-white line-clamp-1 max-w-[100px]">{username}</span>
-            </div>
+              <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
+            </Link>
             <button 
               onClick={() => signOut({ callbackUrl: '/' })}
               className="text-xs text-slate-400 hover:text-white transition-colors ml-2"

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardProps } from '@/components/Card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, Shield, Heart, Lightning, Trophy, Clock, Users, GameController, ArrowClockwise } from '@phosphor-icons/react';
+import { useSearchParams } from 'next/navigation';
 
 type Attribute = 'ATK' | 'DEF' | 'HP';
 type RoundResult = {
@@ -58,14 +59,17 @@ const TABS = ['Quick Battle', 'Challenge', 'History'] as const;
 type Tab = typeof TABS[number];
 
 export default function BattleClient({ userCards, userId }: { userCards: CardProps[]; userId: string }) {
-  const [tab, setTab] = useState<Tab>('Quick Battle');
+  const searchParams = useSearchParams();
+  const challengeParam = searchParams.get('challenge');
+
+  const [tab, setTab] = useState<Tab>(challengeParam ? 'Challenge' : 'Quick Battle');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [battleResult, setBattleResult] = useState<BattleResult | null>(null);
   const [currentRevealRound, setCurrentRevealRound] = useState(0);
   const [loading, setLoading] = useState(false);
 
   // Challenge state
-  const [challengeUsername, setChallengeUsername] = useState('');
+  const [challengeUsername, setChallengeUsername] = useState(challengeParam || '');
   const [challengeAttribute, setChallengeAttribute] = useState<Attribute>('ATK');
   const [challenges, setChallenges] = useState<{ incoming: Challenge[]; outgoing: Challenge[] }>({ incoming: [], outgoing: [] });
   const [respondingTo, setRespondingTo] = useState<Challenge | null>(null);

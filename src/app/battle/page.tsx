@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import BattleClient from './BattleClient';
 
 export default async function BattlePage() {
@@ -28,5 +29,9 @@ export default async function BattlePage() {
     primaryLanguage: uc.card.primaryLanguage || 'Unknown',
   }));
 
-  return <BattleClient userCards={cardsList} userId={user.id} />;
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white font-bold">Loading Arena...</div>}>
+      <BattleClient userCards={cardsList} userId={user.id} />
+    </Suspense>
+  );
 }
