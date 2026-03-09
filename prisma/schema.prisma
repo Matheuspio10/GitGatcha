@@ -19,6 +19,7 @@ model User {
   lastDailyClaimAt DateTime?
   xp            Int       @default(0)
   level         Int       @default(1)
+  rating        Int       @default(1000)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -26,8 +27,8 @@ model User {
   sessions      Session[]
   cards         UserCard[]
   missions      UserMission[]
-  battlesAsAttacker BattleHistory[] @relation("Attacker")
-  battlesAsDefender BattleHistory[] @relation("Defender")
+  battlesAsChallenger Battle[] @relation("Challenger")
+  battlesAsDefender   Battle[] @relation("Defender")
 }
 
 model Account {
@@ -79,6 +80,8 @@ model Card {
   createdAt      DateTime @default(now())
 
   owners         UserCard[]
+  battlesAsChallenger Battle[] @relation("ChallengerCard")
+  battlesAsDefender   Battle[] @relation("DefenderCard")
 }
 
 model UserCard {
@@ -115,13 +118,35 @@ model UserMission {
   createdAt DateTime @default(now())
 }
 
-model BattleHistory {
-  id           String   @id @default(uuid())
-  attacker     User     @relation("Attacker", fields: [attackerId], references: [id])
-  attackerId   String
-  defender     User?    @relation("Defender", fields: [defenderId], references: [id])
-  defenderId   String?
-  winnerId     String
-  log          String
-  createdAt    DateTime @default(now())
+model Battle {
+  id               String        @id @default(uuid())
+  challengerId     String
+  defenderId       String?
+  challengerCardId String
+  defenderCardId   String?
+  status           String        @default("PENDING")
+  winnerId         String?
+  rewardBits       Int           @default(0)
+  isRandom         Boolean       @default(false)
+  expiresAt        DateTime?
+  createdAt        DateTime      @default(now())
+  completedAt      DateTime?
+
+  challenger       User          @relation("Challenger", fields: [challengerId], references: [id])
+  defender         User?         @relation("Defender", fields: [defenderId], references: [id])
+  challengerCard   Card          @relation("ChallengerCard", fields: [challengerCardId], references: [id])
+  defenderCard     Card?         @relation("DefenderCard", fields: [defenderCardId], references: [id])
+  rounds           BattleRound[]
+}
+
+model BattleRound {
+  id              String  @id @default(uuid())
+  battleId        String
+  roundNum        Int
+  attribute       String
+  challengerValue Int
+  defenderValue   Int
+  winnerId        String?
+
+  battle          Battle  @relation(fields: [battleId], references: [id], onDelete: Cascade)
 }
