@@ -1,4 +1,5 @@
 import { Trophy, Medal, Sword, Shield, Star } from '@phosphor-icons/react/dist/ssr';
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 
@@ -139,14 +140,16 @@ export default async function LeaderboardPage() {
                    i === 2 ? <Medal className="text-amber-600" size={24} weight="fill" /> :
                    <span className="text-slate-500 font-mono font-bold ml-1">{i + 1}</span>}
                 </td>
-                <td className="px-5 py-4 font-bold text-white flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold">
-                    {(u.username || 'A').charAt(0).toUpperCase()}
-                  </div>
-                  <span>{u.username || 'Anonymous'}</span>
-                  {currentUser?.id === u.id && (
-                    <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
-                  )}
+                <td className="px-5 py-4 font-bold text-white">
+                  <Link href={`/profile/${u.username}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-500 transition-colors">
+                      {(u.username || 'A').charAt(0).toUpperCase()}
+                    </div>
+                    <span>{u.username || 'Anonymous'}</span>
+                    {currentUser?.id === u.id && (
+                      <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
+                    )}
+                  </Link>
                 </td>
                 <td className="px-5 py-4">
                   <span className="text-yellow-400 font-bold font-mono">{u.rating}</span>
@@ -200,7 +203,11 @@ export default async function LeaderboardPage() {
                 {friendsLeaderboard.map((u, i) => (
                   <tr key={u.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-5 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
-                    <td className="px-5 py-3 font-bold text-white">{u.username || 'Anonymous'}</td>
+                    <td className="px-5 py-3 font-bold text-white">
+                      <Link href={`/profile/${u.username}`} className="hover:text-indigo-400 transition-colors">
+                        {u.username || 'Anonymous'}
+                      </Link>
+                    </td>
                     <td className="px-5 py-3 text-yellow-400 font-bold font-mono">{u.rating}</td>
                     <td className="px-5 py-3 hidden md:table-cell">
                       <span className="text-sm font-bold text-slate-300">{u.winRate}%</span>
