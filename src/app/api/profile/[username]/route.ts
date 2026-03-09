@@ -7,20 +7,21 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const username = resolvedParams.username;
     
-    if (!username) {
+    if (!resolvedParams.username) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
+
+    const username = decodeURIComponent(resolvedParams.username);
 
     const uncapitalizedUsername = username.toLowerCase(); // Handle case sensitivity depending on how we store it, assume DB might be case-insensitive for unique constraints, but we can do a precise check
     // Fetch user details
     const userProfile = await prisma.user.findFirst({
       where: { 
-        username: {
-            equals: username,
-            mode: 'insensitive'
-        }
+        OR: [
+          { username: { equals: username, mode: 'insensitive' } },
+          { name: { equals: username, mode: 'insensitive' } }
+        ]
       },
       include: {
         cards: {
@@ -71,7 +72,7 @@ export async function GET(
     return NextResponse.json({ 
         user: {
             id: userProfile.id,
-            username: userProfile.username,
+            username: userProfile.username || userProfile.name || 'Unknown',
             level: userProfile.level,
             xp: userProfile.xp,
             rating: userProfile.rating,

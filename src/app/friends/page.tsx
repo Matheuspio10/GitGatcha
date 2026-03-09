@@ -90,7 +90,7 @@ export default function FriendsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-200">
-      <Navbar username={session?.user?.name || ''} currency={0} />
+      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
 
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
