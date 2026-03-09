@@ -28,5 +28,5 @@ export default async function BattlePage() {
     primaryLanguage: uc.card.primaryLanguage || 'Unknown',
   }));
 
-  return <BattleClient userCards={cardsList} />;
+  return <BattleClient userCards={cardsList} userId={user.id} />;
 }
