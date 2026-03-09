@@ -43,7 +43,7 @@ export async function GET(
         friendships: {
             where: { status: 'ACCEPTED' }
         },
-        friends: {
+        friendRequests: {
             where: { status: 'ACCEPTED' }
         }
       } as any,
@@ -60,7 +60,7 @@ export async function GET(
     );
     const battlesWon = completedBattles.filter(b => b.winnerId === userProfile.id).length;
     const battlesLost = completedBattles.length - battlesWon;
-    const friendsCount = userProfile.friendships.length + userProfile.friends.length;
+    const friendsCount = userProfile.friendships.length + userProfile.friendRequests.length;
 
     // Get top cards (highest stats or rarity, we'll simplify and list some cards)
     const topCards = userProfile.cards
