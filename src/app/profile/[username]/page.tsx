@@ -122,19 +122,16 @@ export default function ProfilePage() {
   const isOwnProfile = (session?.user as any)?.username === profileUsername || session?.user?.name === profileUsername;
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+    <div className="flex flex-col items-center justify-center flex-1 py-32">
+      <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-indigo-500"></div>
     </div>
   );
 
   if (error || !profile) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-300">User Not Found</h2>
-          <p className="text-slate-500 mt-2">{error}</p>
-        </div>
+    <div className="flex-1 flex flex-col items-center justify-center py-32">
+      <div className="text-center bg-slate-900/50 p-12 rounded-3xl border border-slate-800 backdrop-blur-md">
+        <h2 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-red-500">User Not Found</h2>
+        <p className="text-slate-400 font-medium text-lg">{error}</p>
       </div>
     </div>
   );
@@ -145,119 +142,159 @@ export default function ProfilePage() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-200">
-      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
-
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
+    <div className="font-sans text-slate-200">
+        <div className="max-w-4xl mx-auto space-y-8">
           
-          {/* Header Profile Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-900/40 to-purple-900/40 opacity-50"></div>
+          {/* Premium Header Profile Card */}
+          <div className="relative rounded-[2rem] p-px overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-blue-500/20 z-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             
-            <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6 z-10">
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-5xl font-black text-white shadow-[0_0_30px_rgba(99,102,241,0.3)] ring-4 ring-slate-900">
-                {profile.user.username.charAt(0).toUpperCase()}
-              </div>
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 sm:p-10 relative z-10 overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 blur-[100px] rounded-full"></div>
+              
+              <div className="relative flex flex-col md:flex-row items-center md:items-start gap-8 z-10">
+                {/* Avatar */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500 group-hover:scale-105"></div>
+                  <div className="relative w-36 h-36 rounded-full bg-slate-950 flex items-center justify-center text-6xl font-black text-white ring-4 ring-slate-900 border-2 border-indigo-500/50">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-400">
+                      {profile.user.username.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </div>
 
-              <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-4xl font-black tracking-tight text-white mb-2">{profile.user.username}</h1>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-sm font-medium">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                    Lvl {profile.user.level} Developer
-                  </span>
-                  <span className="flex items-center gap-1 text-yellow-500">
-                    <Trophy size={16} weight="fill" />
-                    {profile.user.rating} Elo
-                  </span>
-                  <span className="text-slate-400">
-                    Joined {new Date(profile.user.createdAt).toLocaleDateString()}
-                  </span>
+                {/* Profile Info */}
+                <div className="flex-1 text-center md:text-left mt-2">
+                  <h1 className="text-5xl font-black tracking-tighter text-white mb-4 drop-shadow-sm">{profile.user.username}</h1>
+                  
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-semibold">
+                    <span className="px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                      Level {profile.user.level} Developer
+                    </span>
+                    <span className="flex items-center gap-1.5 text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full border border-yellow-400/20">
+                      <Trophy size={18} weight="fill" className="drop-shadow-sm" />
+                      {profile.user.rating} Elo
+                    </span>
+                    <span className="text-slate-400 px-2 flex items-center gap-1.5">
+                      <Clock size={16} />
+                      Joined {new Date(profile.user.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 mt-4 md:mt-2 w-full md:w-auto">
+                  {isOwnProfile ? (
+                    <button className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all border border-slate-600 hover:border-slate-500 hover:shadow-lg">
+                      Edit Profile
+                    </button>
+                  ) : session?.user ? (
+                    <>
+                      {friendStatus === 'NONE' && (
+                        <button 
+                          onClick={handleAddFriend}
+                          className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] hover:-translate-y-0.5"
+                        >
+                          <Plus size={20} weight="bold" /> Add Friend
+                        </button>
+                      )}
+                      {friendStatus === 'PENDING' && (
+                        <button 
+                          disabled
+                          className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-slate-800 text-slate-400 font-bold border border-slate-700 cursor-not-allowed opacity-80"
+                        >
+                          <Clock size={20} weight="bold" /> Request Sent
+                        </button>
+                      )}
+                      {friendStatus === 'FRIENDS' && (
+                        <button 
+                          onClick={handleRemoveFriend}
+                          className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-red-900/30 hover:bg-red-500 text-red-400 hover:text-white font-bold border border-red-900/50 hover:border-red-500 transition-all"
+                        >
+                          <UserMinus size={20} weight="bold" /> Remove Friend
+                        </button>
+                      )}
+                    </>
+                  ) : null}
                 </div>
               </div>
-
-              {!isOwnProfile && session?.user && (
-                <div className="flex flex-col gap-3 mt-4 sm:mt-0 w-full sm:w-auto">
-                  {friendStatus === 'NONE' && (
-                    <button 
-                      onClick={handleAddFriend}
-                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all"
-                    >
-                      <Plus size={20} weight="bold" /> Add Friend
-                    </button>
-                  )}
-                  {friendStatus === 'PENDING' && (
-                    <button 
-                      disabled
-                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold border border-slate-700 cursor-not-allowed"
-                    >
-                      <Clock size={20} weight="bold" /> Request Sent
-                    </button>
-                  )}
-                  {friendStatus === 'FRIENDS' && (
-                    <button 
-                      onClick={handleRemoveFriend}
-                      className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold border border-red-900/50 transition-all"
-                    >
-                      <UserMinus size={20} weight="bold" /> Remove Friend
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-              <Sword size={32} className="text-rose-500 mb-2" />
-              <div className="text-3xl font-black text-white">{profile.stats.totalBattles}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Total Battles</div>
+          {/* Premium Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            <div className="group bg-slate-900/80 backdrop-blur-sm border border-slate-800 hover:border-rose-500/50 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(244,63,94,0.3)]">
+              <div className="w-12 h-12 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Sword size={24} className="text-rose-500" weight="duotone" />
+              </div>
+              <div className="text-4xl font-black text-white tracking-tight">{profile.stats.totalBattles}</div>
+              <div className="text-slate-400 text-sm font-semibold mt-1 uppercase tracking-wider">Total Battles</div>
             </div>
             
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-b from-green-500/5 to-transparent"></div>
-              <div className="text-3xl font-black text-green-400 relative z-10">{winRate}%</div>
-              <div className="text-slate-400 text-sm font-medium mt-1 relative z-10">Win Rate</div>
-              <div className="text-xs text-slate-500 mt-1 relative z-10">{profile.stats.battlesWon}W - {profile.stats.battlesLost}L</div>
+            <div className="group bg-slate-900/80 backdrop-blur-sm border border-slate-800 hover:border-emerald-500/50 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] relative overflow-hidden">
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+              <div className="text-4xl font-black text-emerald-400 tracking-tight">{winRate}%</div>
+              <div className="text-slate-400 text-sm font-semibold mt-1 uppercase tracking-wider">Win Rate</div>
+              <div className="text-xs font-bold text-slate-500 bg-slate-800 px-3 py-1 rounded-full mt-3">
+                <span className="text-emerald-500">{profile.stats.battlesWon}W</span> - <span className="text-rose-500">{profile.stats.battlesLost}L</span>
+              </div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-              <div className="text-3xl font-black text-indigo-400">{profile.stats.totalCards}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Cards Owned</div>
+            <div className="group bg-slate-900/80 backdrop-blur-sm border border-slate-800 hover:border-indigo-500/50 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(99,102,241,0.3)]">
+              <div className="text-4xl font-black text-indigo-400 tracking-tight">{profile.stats.totalCards}</div>
+              <div className="text-slate-400 text-sm font-semibold mt-1 uppercase tracking-wider">Cards Owned</div>
             </div>
 
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-              <Users size={32} className="text-blue-400 mb-2" />
-              <div className="text-3xl font-black text-white">{profile.stats.friendsCount}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Friends</div>
+            <div className="group bg-slate-900/80 backdrop-blur-sm border border-slate-800 hover:border-blue-500/50 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(59,130,246,0.3)]">
+              <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Users size={24} className="text-blue-400" weight="duotone" />
+              </div>
+              <div className="text-4xl font-black text-white tracking-tight">{profile.stats.friendsCount}</div>
+              <div className="text-slate-400 text-sm font-semibold mt-1 uppercase tracking-wider">Friends</div>
             </div>
           </div>
 
           {/* Top Cards Showcase */}
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8">
-            <h2 className="text-2xl font-black text-white mb-6">Top Developers Showcase</h2>
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl">
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 mb-8 flex items-center gap-3">
+              Top Developers
+              <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 font-bold rounded-full uppercase tracking-widest border border-slate-700">Display Showcase</span>
+            </h2>
+            
             {profile.topCards.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
                 {profile.topCards.map((card, i) => (
-                  <div key={i} className={`relative p-3 rounded-xl border flex flex-col items-center text-center \${card.isShiny ? 'bg-gradient-to-b from-yellow-900/40 to-amber-900/10 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-slate-800/50 border-slate-700'}`}>
-                    <img src={card.avatarUrl || `https://github.com/\${card.githubUsername}.png`} alt={card.name} className="w-16 h-16 rounded-full mb-3" />
-                    <div className="font-bold text-xs line-clamp-1 mb-1">{card.name}</div>
-                    <div className="flex gap-2 text-[10px] font-bold text-slate-400">
-                      <span>\u2694\uFE0F {card.atk}</span>
-                      <span>\uD83D\uDEE1\uFE0F {card.def}</span>
+                  <div key={i} className={`relative pt-6 pb-4 px-3 rounded-2xl border flex flex-col items-center text-center transition-all hover:-translate-y-2 \${card.isShiny ? 'bg-gradient-to-b from-amber-900/40 to-yellow-900/10 border-yellow-500/50 shadow-[0_10px_25px_-5px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_35px_-5px_rgba(234,179,8,0.5)]' : 'bg-slate-800/40 border-slate-700 hover:border-indigo-500/50 hover:shadow-[0_10px_25px_-5px_rgba(99,102,241,0.2)]'}`}>
+                    {card.isShiny && (
+                      <div className="absolute top-0 right-0 m-2">
+                        <span className="flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                        </span>
+                      </div>
+                    )}
+                    <img src={card.avatarUrl || `https://github.com/\${card.githubUsername}.png`} alt={card.name} className={`w-20 h-20 rounded-full mb-4 shadow-lg \${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
+                    <div className="font-black text-sm line-clamp-1 mb-2 text-white">{card.name}</div>
+                    <div className="flex gap-3 text-xs font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5">
+                      <span className="text-rose-400 flex items-center gap-1">\u2694\uFE0F {card.atk}</span>
+                      <span className="text-emerald-400 flex items-center gap-1">\uD83D\uDEE1\uFE0F {card.def}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-500 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-                This user hasn't collected any cards yet.
+              <div className="text-center py-16 text-slate-500 bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-700/50 flex flex-col items-center">
+                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-2xl text-slate-500">
+                  \uD83D\uDE14
+                </div>
+                <p className="font-bold text-lg">No collection yet.</p>
+                <p className="text-sm mt-1">This user hasn't collected any developers.</p>
               </div>
             )}
           </div>
 
         </div>
-      </main>
     </div>
   );
 }
