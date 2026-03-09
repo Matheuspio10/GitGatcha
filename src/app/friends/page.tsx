@@ -83,16 +83,13 @@ export default function FriendsPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center flex-1 py-32">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-200">
-      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
-
-      <main className="flex-1 container mx-auto px-4 py-8">
+    <div className="font-sans text-slate-200">
         <div className="max-w-4xl mx-auto">
           
           <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
@@ -233,7 +230,6 @@ export default function FriendsPage() {
 
           </div>
         </div>
-      </main>
     </div>
   );
 }
