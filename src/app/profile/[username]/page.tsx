@@ -276,9 +276,9 @@ export default function ProfilePage() {
                     )}
                     <img src={card.avatarUrl || `https://github.com/\${card.githubUsername}.png`} alt={card.name} className={`w-20 h-20 rounded-full mb-4 shadow-lg \${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
                     <div className="font-black text-sm line-clamp-1 mb-2 text-white">{card.name}</div>
-                    <div className="flex gap-3 text-xs font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5">
-                      <span className="text-rose-400 flex items-center gap-1">\u2694\uFE0F {card.atk}</span>
-                      <span className="text-emerald-400 flex items-center gap-1">\uD83D\uDEE1\uFE0F {card.def}</span>
+                    <div className="flex gap-2 text-[10px] font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5 flex-wrap justify-center">
+                      <span className="text-rose-400 flex items-center gap-1">⚔️ {card.atk}</span>
+                      <span className="text-emerald-400 flex items-center gap-1">🛡️ {card.def}</span>
                     </div>
                   </div>
                 ))}
