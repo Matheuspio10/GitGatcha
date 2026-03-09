@@ -28,7 +28,7 @@ interface ProfileData {
 export default function ProfilePage() {
   const { data: session } = useSession();
   const params = useParams();
-  const profileUsername = params.username as string;
+  const profileUsername = decodeURIComponent(params.username as string);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,7 @@ export default function ProfilePage() {
     }
   };
 
-  const isOwnProfile = session?.user?.name === profileUsername;
+  const isOwnProfile = (session?.user as any)?.username === profileUsername || session?.user?.name === profileUsername;
 
   if (loading) return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center">
@@ -129,7 +129,7 @@ export default function ProfilePage() {
 
   if (error || !profile) return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
-      <Navbar username={session?.user?.name || ''} currency={0} />
+      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-300">User Not Found</h2>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-200">
-      <Navbar username={session?.user?.name || ''} currency={0} />
+      <Navbar username={(session?.user as any)?.username || session?.user?.name || ''} currency={0} />
 
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
