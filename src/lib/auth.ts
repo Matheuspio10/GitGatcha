@@ -50,8 +50,22 @@ export const authOptions: NextAuthOptions = {
         // Let's pass username to the session
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub! },
-          select: { username: true, currency: true }
+          select: { username: true, currency: true, name: true }
         });
+
+        // Auto-populate username in DB if it's null (OAuth users)
+        if (dbUser && !dbUser.username) {
+          const fallbackUsername = dbUser.name || session.user.name || session.user.email?.split('@')[0] || 'user';
+          try {
+            await prisma.user.update({
+              where: { id: token.sub! },
+              data: { username: fallbackUsername }
+            });
+            dbUser.username = fallbackUsername;
+          } catch {
+            // Username might conflict (unique constraint), skip
+          }
+        }
         
         session.user.username = dbUser?.username || session.user.name || session.user.email?.split('@')[0];
         session.user.currency = dbUser?.currency || 0;

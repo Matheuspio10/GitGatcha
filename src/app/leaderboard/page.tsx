@@ -143,9 +143,9 @@ export default async function LeaderboardPage() {
                 <td className="px-5 py-4 font-bold text-white">
                   <Link href={`/profile/${u.username}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
                     <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-500 transition-colors">
-                      {(u.username || 'A').charAt(0).toUpperCase()}
+                      {(u.username || u.name || 'A').charAt(0).toUpperCase()}
                     </div>
-                    <span>{u.username || 'Anonymous'}</span>
+                    <span>{u.username || u.name || 'Anonymous'}</span>
                     {currentUser?.id === u.id && (
                       <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
                     )}
@@ -204,8 +204,8 @@ export default async function LeaderboardPage() {
                   <tr key={u.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-5 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
                     <td className="px-5 py-3 font-bold text-white">
-                      <Link href={`/profile/${u.username}`} className="hover:text-indigo-400 transition-colors">
-                        {u.username || 'Anonymous'}
+                      <Link href={`/profile/${u.username || u.name}`} className="hover:text-indigo-400 transition-colors">
+                        {u.username || u.name || 'Anonymous'}
                       </Link>
                     </td>
                     <td className="px-5 py-3 text-yellow-400 font-bold font-mono">{u.rating}</td>
