@@ -32,6 +32,11 @@ export default async function LeaderboardPage() {
   let hasRating = true;
   try {
     users = await prisma.user.findMany({
+      where: {
+        cards: {
+          some: {}
+        }
+      },
       orderBy: { rating: 'desc' },
       take: 50,
       include: {
@@ -41,6 +46,11 @@ export default async function LeaderboardPage() {
   } catch {
     hasRating = false;
     users = await prisma.user.findMany({
+      where: {
+        cards: {
+          some: {}
+        }
+      },
       orderBy: { xp: 'desc' },
       take: 50,
       include: {
@@ -82,7 +92,10 @@ export default async function LeaderboardPage() {
 
       if (friendIds.size > 0) {
         const friends = await prisma.user.findMany({
-          where: { id: { in: Array.from(friendIds) } },
+          where: { 
+             id: { in: Array.from(friendIds) },
+             cards: { some: {} }
+          },
           orderBy: hasRating ? { rating: 'desc' } : { xp: 'desc' },
           include: { _count: { select: { cards: true } } },
         });
@@ -132,7 +145,11 @@ export default async function LeaderboardPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
-            {usersWithStats.map((u, i) => (
+            {usersWithStats.map((u, i) => {
+               const displayUsername = u.username || u.name || 'Anonymous';
+               const linkUsername = u.username ? u.username : (u.name ? u.name : 'Anonymous');
+               
+               return (
               <tr key={u.id} className={`hover:bg-white/5 transition-colors ${currentUser?.id === u.id ? 'bg-indigo-500/5' : ''}`}>
                 <td className="px-5 py-4">
                   {i === 0 ? <Trophy className="text-yellow-400" size={24} weight="fill" /> :
@@ -141,11 +158,11 @@ export default async function LeaderboardPage() {
                    <span className="text-slate-500 font-mono font-bold ml-1">{i + 1}</span>}
                 </td>
                 <td className="px-5 py-4 font-bold text-white">
-                  <Link href={`/profile/${u.username}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
+                  <Link href={`/profile/${encodeURIComponent(linkUsername)}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
                     <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-500 transition-colors">
-                      {(u.username || u.name || 'A').charAt(0).toUpperCase()}
+                      {displayUsername.charAt(0).toUpperCase()}
                     </div>
-                    <span>{u.username || u.name || 'Anonymous'}</span>
+                    <span>{displayUsername}</span>
                     {currentUser?.id === u.id && (
                       <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
                     )}
@@ -172,7 +189,7 @@ export default async function LeaderboardPage() {
                 </td>
                 <td className="px-5 py-4 text-slate-300 hidden lg:table-cell">{u._count.cards}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
         {usersWithStats.length === 0 && (
@@ -200,11 +217,13 @@ export default async function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {friendsLeaderboard.map((u, i) => (
+                {friendsLeaderboard.map((u, i) => {
+                   const uLinkUser = u.username ? u.username : (u.name ? u.name : 'Anonymous');
+                   return (
                   <tr key={u.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-5 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
                     <td className="px-5 py-3 font-bold text-white">
-                      <Link href={`/profile/${u.username || u.name}`} className="hover:text-indigo-400 transition-colors">
+                      <Link href={`/profile/${encodeURIComponent(uLinkUser)}`} className="hover:text-indigo-400 transition-colors">
                         {u.username || u.name || 'Anonymous'}
                       </Link>
                     </td>
@@ -213,7 +232,7 @@ export default async function LeaderboardPage() {
                       <span className="text-sm font-bold text-slate-300">{u.winRate}%</span>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
