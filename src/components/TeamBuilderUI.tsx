@@ -456,10 +456,36 @@ function SynergyPanel({ slots, prevSynergyCount }: { slots: (TeamBuilderCard | n
   );
 }
 
-// ─── Type Chart Panel ─────────────────────────────────────────────────────────
+// ─── Type Chart Panel (Pokémon-style matrix) ─────────────────────────────────
+
+const ALL_TYPES = ['Python', 'JavaScript', 'Ruby', 'PHP', 'TypeScript', 'Rust', 'C', 'C++', 'Go', 'CSS'];
+
+function getMatchupMultiplier(attacker: string, defender: string): number {
+  // CSS loses to every type
+  if (attacker === 'CSS') {
+    return defender === 'CSS' ? 1 : 0.75;
+  }
+  // Check advantage
+  if (TYPE_ADVANTAGES[attacker]?.includes(defender)) return 1.5;
+  // Check disadvantage (defender has advantage over attacker)
+  if (TYPE_ADVANTAGES[defender]?.includes(attacker)) return 0.75;
+  return 1;
+}
+
+const LANG_BG_HEX: Record<string, string> = {
+  Python:     '#3572A5',
+  JavaScript: '#f1e05a',
+  Ruby:       '#CC342D',
+  PHP:        '#4F5D95',
+  TypeScript: '#3178C6',
+  Rust:       '#DEA584',
+  C:          '#555555',
+  'C++':      '#6866fb',
+  Go:         '#00ADD8',
+  CSS:        '#563d7c',
+};
 
 function TypeChartPanel({ onClose }: { onClose: () => void }) {
-  const entries = Object.entries(TYPE_ADVANTAGES);
   return (
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.97 }}
@@ -467,7 +493,7 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
       exit={{ opacity: 0, y: -10, scale: 0.97 }}
       className="bg-slate-900 border border-slate-700 rounded-2xl p-4 shadow-2xl"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-bold text-white flex items-center gap-2">
           <ChartBar size={16} className="text-purple-400" /> Type Advantage Chart
         </p>
@@ -475,22 +501,117 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
           <X size={16} />
         </button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        {entries.map(([attacker, defenders]) => (
-          <div key={attacker} className="flex items-center gap-2 text-xs bg-slate-800/60 rounded-lg px-2.5 py-1.5">
-            <span className={clsx('font-bold min-w-[80px]', LANG_COLOR[attacker] || 'text-slate-300')}>{attacker}</span>
-            <span className="text-slate-600">→</span>
-            <span className="text-emerald-400 font-semibold">beats {defenders.join(', ')}</span>
-            <span className="ml-auto text-slate-500 font-black">×1.5</span>
-          </div>
-        ))}
-        <div className="flex items-center gap-2 text-xs bg-red-900/20 rounded-lg px-2.5 py-1.5 border border-red-500/20">
-          <span className={clsx('font-bold min-w-[80px]', LANG_COLOR['CSS'] || 'text-blue-500')}>CSS</span>
-          <span className="text-slate-600">→</span>
-          <span className="text-red-400 font-semibold">chaotic wildcard (×0.75 vs all)</span>
+
+      <div className="overflow-x-auto pb-2">
+        <table className="border-collapse" style={{ minWidth: 460 }}>
+          <thead>
+            <tr>
+              {/* Corner cell */}
+              <th className="sticky left-0 z-10 bg-slate-900 p-0">
+                <div className="w-[72px] h-[72px] flex items-end justify-start p-1">
+                  <span className="text-[8px] text-slate-500 uppercase leading-tight">Atk ↓ / Def →</span>
+                </div>
+              </th>
+              {ALL_TYPES.map(t => (
+                <th key={t} className="p-0 relative" style={{ width: 36, height: 72 }}>
+                  <div
+                    className="absolute bottom-0 left-1/2 origin-bottom-left"
+                    style={{
+                      transform: 'rotate(-50deg) translateX(-50%)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span
+                      className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
+                      style={{
+                        backgroundColor: LANG_BG_HEX[t] || '#475569',
+                        color: t === 'JavaScript' ? '#1a1a1a' : '#fff',
+                      }}
+                    >
+                      {t}
+                    </span>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ALL_TYPES.map(attacker => (
+              <tr key={attacker} className="group">
+                {/* Row label */}
+                <td className="sticky left-0 z-10 bg-slate-900 pr-1.5">
+                  <span
+                    className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+                    style={{
+                      backgroundColor: LANG_BG_HEX[attacker] || '#475569',
+                      color: attacker === 'JavaScript' ? '#1a1a1a' : '#fff',
+                    }}
+                  >
+                    {attacker}
+                  </span>
+                </td>
+                {ALL_TYPES.map(defender => {
+                  const mult = getMatchupMultiplier(attacker, defender);
+                  const isSelf = attacker === defender;
+                  let bgClass = '';
+                  let textClass = '';
+                  let label = '';
+
+                  if (isSelf) {
+                    bgClass = 'bg-slate-800/40';
+                  } else if (mult === 1.5) {
+                    bgClass = 'bg-green-600/70';
+                    textClass = 'text-white font-black';
+                    label = '1.5×';
+                  } else if (mult === 0.75) {
+                    bgClass = 'bg-red-600/70';
+                    textClass = 'text-white font-black';
+                    label = '0.75×';
+                  } else {
+                    bgClass = 'bg-slate-800/20';
+                  }
+
+                  return (
+                    <td
+                      key={defender}
+                      className={clsx(
+                        'border border-slate-700/40 text-center transition-all duration-100',
+                        'hover:brightness-125 hover:border-slate-500',
+                        bgClass,
+                      )}
+                      style={{ width: 36, height: 36, padding: 0 }}
+                      title={`${attacker} → ${defender}: ×${mult}`}
+                    >
+                      {label && (
+                        <span className={clsx('text-[9px]', textClass)}>
+                          {label}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-green-600/70 border border-green-500/40" />
+          <span>1.5× (super effective)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-red-600/70 border border-red-500/40" />
+          <span>0.75× (not very effective)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-3.5 h-3.5 rounded bg-slate-800/40 border border-slate-700/40" />
+          <span>1× (neutral)</span>
         </div>
       </div>
-      <p className="text-[10px] text-slate-500 mt-3">Type disadvantage deals ×0.75 damage.</p>
+      <p className="text-[9px] text-slate-500 mt-1.5">CSS deals 0.75× against all types (chaotic wildcard).</p>
     </motion.div>
   );
 }
@@ -1166,19 +1287,17 @@ export default function TeamBuilderUI({
       <SynergyPanel slots={slots} prevSynergyCount={prevSynergyCount} />
 
       {/* ─── Type Chart Toggle ─── */}
-      <div className="relative">
+      <div>
         <button
           onClick={() => setShowTypeChart(v => !v)}
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-600"
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-600 mb-2"
         >
           <Info size={13} />
           {showTypeChart ? 'Hide' : 'Show'} Type Advantage Chart
         </button>
         <AnimatePresence>
           {showTypeChart && (
-            <div className="absolute top-full left-0 mt-2 z-30 w-full sm:w-auto min-w-[320px]">
-              <TypeChartPanel onClose={() => setShowTypeChart(false)} />
-            </div>
+            <TypeChartPanel onClose={() => setShowTypeChart(false)} />
           )}
         </AnimatePresence>
       </div>
