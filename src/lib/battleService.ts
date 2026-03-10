@@ -73,7 +73,8 @@ export async function resolveRandomBattle(
     maxHp: c.hp,
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
-    type: getCardType(c)
+    type: getCardType(c),
+    avatarUrl: c.avatarUrl,
   }));
 
   const challengerAvgRank = getAverageRarityRank(cTeam);
@@ -98,7 +99,8 @@ export async function resolveRandomBattle(
     maxHp: c.hp,
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
-    type: getCardType(c)
+    type: getCardType(c),
+    avatarUrl: c.avatarUrl,
   }));
 
   const defenderAvgRank = getAverageRarityRank(dTeam);
@@ -192,7 +194,8 @@ export async function resolveFriendBattle(
     maxHp: c.hp,
     rarity: c.rarity,
     primaryLanguage: c.primaryLanguage,
-    type: getCardType(c)
+    type: getCardType(c),
+    avatarUrl: c.avatarUrl,
   }));
   const challengerAvgRank = getAverageRarityRank(cTeam);
 
@@ -205,7 +208,8 @@ export async function resolveFriendBattle(
     maxHp: c.hp,
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
-    type: getCardType(c)
+    type: getCardType(c),
+    avatarUrl: c.avatarUrl,
   }));
   const defenderAvgRank = getAverageRarityRank(dTeam);
 

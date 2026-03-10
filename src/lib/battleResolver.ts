@@ -11,6 +11,7 @@ export interface BattleCard {
   rarity: Rarity;
   primaryLanguage: string | null;
   type: CardType;
+  avatarUrl?: string | null;
 }
 
 export interface BattleLogEvent {

@@ -41,7 +41,8 @@ export async function POST(req: Request) {
       def: c!.def,
       hp: c!.hp,
       rarity: c!.rarity,
-      primaryLanguage: c!.primaryLanguage
+      primaryLanguage: c!.primaryLanguage,
+      avatarUrl: c!.avatarUrl,
     }));
 
     const result = await resolveRandomBattle(userId, cTeamCards);
