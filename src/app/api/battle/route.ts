@@ -11,24 +11,40 @@ export async function POST(req: Request) {
     const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { cardId } = await req.json();
+    const { cardIds } = await req.json();
 
-    // Verify ownership
-    const userCard = await prisma.userCard.findFirst({
-      where: { userId, cardId },
+    if (!Array.isArray(cardIds) || cardIds.length !== 3) {
+        return NextResponse.json({ error: 'You must select exactly 3 cards for your team' }, { status: 400 });
+    }
+
+    // Verify ownership of all cards
+    const userCards = await prisma.userCard.findMany({
+      where: { 
+          userId, 
+          cardId: { in: cardIds } 
+      },
       include: { card: true }
     });
 
-    if (!userCard) return NextResponse.json({ error: 'Card not found in your collection' }, { status: 404 });
+    if (userCards.length !== new Set(cardIds).size) {
+        return NextResponse.json({ error: 'One or more cards not found in your collection' }, { status: 404 });
+    }
 
-    const result = await resolveRandomBattle(userId, {
-      id: userCard.card.id,
-      name: userCard.card.name,
-      atk: userCard.card.atk,
-      def: userCard.card.def,
-      hp: userCard.card.hp,
-      rarity: userCard.card.rarity,
-    });
+    // Map to preserve the chosen order
+    const cTeamCardsRaw = cardIds.map(id => userCards.find(uc => uc.cardId === id)?.card);
+    if (cTeamCardsRaw.some(c => !c)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
+
+    const cTeamCards = cTeamCardsRaw.map(c => ({
+      id: c!.id,
+      name: c!.name,
+      atk: c!.atk,
+      def: c!.def,
+      hp: c!.hp,
+      rarity: c!.rarity,
+      primaryLanguage: c!.primaryLanguage
+    }));
+
+    const result = await resolveRandomBattle(userId, cTeamCards);
 
     // Advance missions if won
     if (result.winnerSide === 'CHALLENGER') {
@@ -38,10 +54,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       battleId: result.battle.id,
-      defenderCard: result.defenderCard,
+      defenderTeam: result.defenderTeam,
       winnerSide: result.winnerSide,
       rewards: result.rewards,
-      rounds: result.rounds,
+      log: result.log,
     });
 
   } catch (error) {

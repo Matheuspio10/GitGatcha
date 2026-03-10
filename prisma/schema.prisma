@@ -124,8 +124,11 @@ model Battle {
   id               String        @id @default(uuid())
   challengerId     String
   defenderId       String?
-  challengerCardId String
+  challengerCardId String?
   defenderCardId   String?
+  challengerTeam   Json?
+  defenderTeam     Json?
+  log              Json?
   status           String        @default("PENDING")
   winnerId         String?
   rewardBits       Int           @default(0)
@@ -136,7 +139,7 @@ model Battle {
 
   challenger       User          @relation("Challenger", fields: [challengerId], references: [id])
   defender         User?         @relation("Defender", fields: [defenderId], references: [id])
-  challengerCard   Card          @relation("ChallengerCard", fields: [challengerCardId], references: [id])
+  challengerCard   Card?         @relation("ChallengerCard", fields: [challengerCardId], references: [id])
   defenderCard     Card?         @relation("DefenderCard", fields: [defenderCardId], references: [id])
   rounds           BattleRound[]
 }
