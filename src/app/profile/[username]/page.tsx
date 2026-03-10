@@ -3,8 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Trophy, Users, Sword, Plus, UserMinus, Clock } from '@phosphor-icons/react';
 import { Navbar } from '@/components/Navbar';
+
+interface FriendInfo {
+  id: string;
+  username: string;
+  level: number;
+}
 
 interface ProfileData {
   user: {
@@ -23,6 +30,7 @@ interface ProfileData {
     friendsCount: number;
   };
   topCards: any[];
+  friends: FriendInfo[];
 }
 
 export default function ProfilePage() {
@@ -265,7 +273,7 @@ export default function ProfilePage() {
             {profile.topCards.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
                 {profile.topCards.map((card, i) => (
-                  <div key={i} className={`relative pt-6 pb-4 px-3 rounded-2xl border flex flex-col items-center text-center transition-all hover:-translate-y-2 \${card.isShiny ? 'bg-gradient-to-b from-amber-900/40 to-yellow-900/10 border-yellow-500/50 shadow-[0_10px_25px_-5px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_35px_-5px_rgba(234,179,8,0.5)]' : 'bg-slate-800/40 border-slate-700 hover:border-indigo-500/50 hover:shadow-[0_10px_25px_-5px_rgba(99,102,241,0.2)]'}`}>
+                  <div key={i} className={`relative pt-6 pb-4 px-3 rounded-2xl border flex flex-col items-center text-center transition-all hover:-translate-y-2 ${card.isShiny ? 'bg-gradient-to-b from-amber-900/40 to-yellow-900/10 border-yellow-500/50 shadow-[0_10px_25px_-5px_rgba(234,179,8,0.3)] hover:shadow-[0_15px_35px_-5px_rgba(234,179,8,0.5)]' : 'bg-slate-800/40 border-slate-700 hover:border-indigo-500/50 hover:shadow-[0_10px_25px_-5px_rgba(99,102,241,0.2)]'}`}>
                     {card.isShiny && (
                       <div className="absolute top-0 right-0 m-2">
                         <span className="flex h-3 w-3">
@@ -274,7 +282,7 @@ export default function ProfilePage() {
                         </span>
                       </div>
                     )}
-                    <img src={card.avatarUrl || `https://github.com/\${card.githubUsername}.png`} alt={card.name} className={`w-20 h-20 rounded-full mb-4 shadow-lg \${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
+                    <img src={card.avatarUrl || `https://github.com/${card.githubUsername}.png`} alt={card.name} className={`w-20 h-20 rounded-full mb-4 shadow-lg ${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
                     <div className="font-black text-sm line-clamp-1 mb-2 text-white">{card.name}</div>
                     <div className="flex gap-2 text-[10px] font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5 flex-wrap justify-center">
                       <span className="text-rose-400 flex items-center gap-1">⚔️ {card.atk}</span>
@@ -286,10 +294,49 @@ export default function ProfilePage() {
             ) : (
               <div className="text-center py-16 text-slate-500 bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-700/50 flex flex-col items-center">
                 <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-2xl text-slate-500">
-                  \uD83D\uDE14
+                  😔
                 </div>
                 <p className="font-bold text-lg">No collection yet.</p>
                 <p className="text-sm mt-1">This user hasn't collected any developers.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Friends List */}
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl">
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-8 flex items-center gap-3">
+              <Users size={28} weight="duotone" className="text-blue-400" />
+              Friends
+              <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 font-bold rounded-full uppercase tracking-widest border border-slate-700">
+                {profile.friends.length}
+              </span>
+            </h2>
+
+            {profile.friends.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {profile.friends.map((friend) => (
+                  <Link
+                    key={friend.id}
+                    href={`/profile/${friend.username}`}
+                    className="group flex flex-col items-center text-center p-5 rounded-2xl border border-slate-700 bg-slate-800/30 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.3)]"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl mb-3 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all">
+                      {friend.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="font-bold text-sm text-white group-hover:text-indigo-300 transition-colors line-clamp-1">
+                      {friend.username}
+                    </div>
+                    <div className="text-xs text-slate-500 font-medium mt-1">
+                      Level {friend.level}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500 bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-700/50 flex flex-col items-center">
+                <Users size={40} className="mb-3 opacity-40" />
+                <p className="font-bold text-lg">No friends yet.</p>
+                <p className="text-sm mt-1">This user hasn't added any friends.</p>
               </div>
             )}
           </div>
