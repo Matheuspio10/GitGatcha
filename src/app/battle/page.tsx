@@ -27,6 +27,7 @@ export default async function BattlePage() {
     hp: uc.card.hp,
     rarity: uc.card.rarity,
     primaryLanguage: uc.card.primaryLanguage || 'Unknown',
+    pack: (uc.card as any).pack || 'Unknown',
   }));
 
   return (
