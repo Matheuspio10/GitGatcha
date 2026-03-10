@@ -3,12 +3,58 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Coin, X } from '@phosphor-icons/react';
+import { NotificationBell } from './NotificationBell';
 
-export function Navbar({ username, currency }: { username: string, currency: number }) {
+export function Navbar({ username, currency: initialCurrency }: { username: string, currency: number }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
+  const [currency, setCurrency] = useState(initialCurrency);
   const pathname = usePathname();
+
+  // Live BITS sync: poll every 10s when tab is visible
+  useEffect(() => {
+    if (!username) return;
+
+    let interval: NodeJS.Timeout | null = null;
+
+    const fetchCurrency = async () => {
+      try {
+        const res = await fetch('/api/user/currency');
+        if (res.ok) {
+          const data = await res.json();
+          setCurrency(data.currency);
+        }
+      } catch {
+        // silent
+      }
+    };
+
+    const startPolling = () => {
+      fetchCurrency(); // fetch immediately on visibility
+      interval = setInterval(fetchCurrency, 10000);
+    };
+
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [username]);
 
   return (
     <>
@@ -28,7 +74,7 @@ export function Navbar({ username, currency }: { username: string, currency: num
         )}
 
         {username ? (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowBitsModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors"
@@ -37,6 +83,7 @@ export function Navbar({ username, currency }: { username: string, currency: num
               <span className="font-bold text-sm">{currency}</span>
               <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
             </button>
+            <NotificationBell />
             <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
                 {username.charAt(0).toUpperCase()}

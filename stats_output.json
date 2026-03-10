@@ -1,0 +1,58 @@
+﻿[
+  {
+    "username": "CaioMizerkowski",
+    "name": "CaioMizerkowski",
+    "atk": 12,
+    "def": 63,
+    "hp": 230,
+    "rarity": "Common",
+    "primaryLanguage": "Jupyter Notebook",
+    "totalStars": 5,
+    "totalForks": 1,
+    "followers": 13,
+    "repos": 39,
+    "accountAgeYears": "9.76"
+  },
+  {
+    "username": "kalliub",
+    "name": "Kalliu Yuri Silva Brasil",
+    "atk": 10,
+    "def": 17,
+    "hp": 196,
+    "rarity": "Common",
+    "primaryLanguage": "TypeScript",
+    "totalStars": 1,
+    "totalForks": 1,
+    "followers": 6,
+    "repos": 8,
+    "accountAgeYears": "8.01"
+  },
+  {
+    "username": "PINTO0309",
+    "name": "Katsuya Hyodo",
+    "atk": 252,
+    "def": 629,
+    "hp": 693,
+    "rarity": "Rare",
+    "primaryLanguage": "Python",
+    "totalStars": 530,
+    "totalForks": 150,
+    "followers": 1844,
+    "repos": 416,
+    "accountAgeYears": "8.36"
+  },
+  {
+    "username": "RainhaVisenya",
+    "name": "Geovanna Nista",
+    "atk": 10,
+    "def": 21,
+    "hp": 189,
+    "rarity": "Common",
+    "primaryLanguage": "JavaScript",
+    "totalStars": 0,
+    "totalForks": 0,
+    "followers": 6,
+    "repos": 11,
+    "accountAgeYears": "7.28"
+  }
+]

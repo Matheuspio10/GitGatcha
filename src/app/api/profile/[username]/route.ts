@@ -42,10 +42,16 @@ export async function GET(
           }
         },
         friendships: {
-            where: { status: 'ACCEPTED' }
+            where: { status: 'ACCEPTED' },
+            include: {
+              friend: { select: { id: true, username: true, level: true } },
+            }
         },
         friendRequests: {
-            where: { status: 'ACCEPTED' }
+            where: { status: 'ACCEPTED' },
+            include: {
+              user: { select: { id: true, username: true, level: true } },
+            }
         }
       } as any,
     }) as any;
@@ -61,7 +67,21 @@ export async function GET(
     );
     const battlesWon = completedBattles.filter(b => b.winnerId === userProfile.id).length;
     const battlesLost = completedBattles.length - battlesWon;
-    const friendsCount = userProfile.friendships.length + userProfile.friendRequests.length;
+
+    // Build normalized friends list from both directions
+    const friendsList = [
+      ...userProfile.friendships.map((f: any) => ({
+        id: f.friend.id,
+        username: f.friend.username,
+        level: f.friend.level,
+      })),
+      ...userProfile.friendRequests.map((f: any) => ({
+        id: f.user.id,
+        username: f.user.username,
+        level: f.user.level,
+      })),
+    ];
+    const friendsCount = friendsList.length;
 
     // Get top cards (highest stats or rarity, we'll simplify and list some cards)
     const topCards = userProfile.cards
@@ -86,6 +106,7 @@ export async function GET(
             friendsCount,
         },
         topCards,
+        friends: friendsList,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
