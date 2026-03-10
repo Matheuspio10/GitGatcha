@@ -30,7 +30,7 @@ export async function GET() {
       },
       include: {
         challenger: { select: { id: true, username: true } },
-        challengerCard: { select: { id: true, name: true, rarity: true } },
+        challengerCard: true, // optional now
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -48,7 +48,7 @@ export async function GET() {
         id: bc.id,
         type: 'battle_challenge' as const,
         from: bc.challenger.username || 'Unknown',
-        message: `${bc.challenger.username} challenged you with ${bc.challengerCard.name}`,
+        message: `${bc.challenger.username} challenged you to a 3v3 battle!`,
         actionUrl: '/battle',
         createdAt: bc.createdAt,
       })),
