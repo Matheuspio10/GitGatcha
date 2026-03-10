@@ -513,23 +513,34 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
                 </div>
               </th>
               {ALL_TYPES.map(t => (
-                <th key={t} className="p-0 relative" style={{ width: 36, height: 72 }}>
+                <th key={t} className="p-0" style={{ width: 44, height: 86, position: 'relative' }}>
+                  {/* Outer wrapper: centers horizontally at column midpoint */}
                   <div
-                    className="absolute bottom-0 left-1/2 origin-bottom-left"
                     style={{
-                      transform: 'rotate(-50deg) translateX(-50%)',
-                      whiteSpace: 'nowrap',
+                      position: 'absolute',
+                      bottom: 4,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
                     }}
                   >
-                    <span
-                      className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
+                    {/* Inner wrapper: rotates from its own bottom-center */}
+                    <div
                       style={{
-                        backgroundColor: LANG_BG_HEX[t] || '#475569',
-                        color: t === 'JavaScript' ? '#1a1a1a' : '#fff',
+                        transform: 'rotate(-45deg)',
+                        transformOrigin: 'center bottom',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      {t}
-                    </span>
+                      <span
+                        className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
+                        style={{
+                          backgroundColor: LANG_BG_HEX[t] || '#475569',
+                          color: t === 'JavaScript' ? '#1a1a1a' : '#fff',
+                        }}
+                      >
+                        {t}
+                      </span>
+                    </div>
                   </div>
                 </th>
               ))}
