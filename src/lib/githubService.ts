@@ -48,13 +48,10 @@ export async function fetchGitHubUserStats(username: string) {
     const accountAgeMs = new Date().getTime() - new Date(user.created_at).getTime();
     const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
 
-    // Calculate normalized 0-100 attributes
-    // Calculate normalized attributes without arbitrary caps
-    // Calculate balanced linear attributes
-    const atk = Math.floor((totalStars * 2 + totalForks) / 5) + 10;
-    const def = Math.floor((user.public_repos * 1.5) + (user.public_gists * 2)) + 5;
-    // HP is now boosted by 120% of ATK to prevent glass cannons
-    const hp = Math.floor(accountAgeYears * 10) + Math.floor(user.public_repos / 2) + 100 + Math.floor(atk * 1.2);
+    // Rebalanced stat formulas (sqrt compression for balanced battles)
+    const atk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
+    const def = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
+    const hp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(atk * 3);
 
     // Rarity determination
     let rarity = 'Common';
