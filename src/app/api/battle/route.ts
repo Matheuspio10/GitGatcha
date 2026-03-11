@@ -18,16 +18,29 @@ export async function POST(req: Request) {
     }
 
     // Verify ownership of all cards
+    const uniqueCardIds = Array.from(new Set(cardIds));
     const userCards = await prisma.userCard.findMany({
       where: { 
           userId, 
-          cardId: { in: cardIds } 
+          cardId: { in: uniqueCardIds } 
       },
       include: { card: true }
     });
 
-    if (userCards.length !== new Set(cardIds).size) {
-        return NextResponse.json({ error: 'One or more cards not found in your collection' }, { status: 404 });
+    const requiredCounts: Record<string, number> = {};
+    for (const id of cardIds as string[]) {
+        requiredCounts[id] = (requiredCounts[id] || 0) + 1;
+    }
+
+    const ownedCounts: Record<string, number> = {};
+    for (const uc of userCards) {
+        ownedCounts[uc.cardId] = (ownedCounts[uc.cardId] || 0) + 1;
+    }
+
+    for (const [id, count] of Object.entries(requiredCounts)) {
+        if (!ownedCounts[id] || ownedCounts[id] < count) {
+            return NextResponse.json({ error: 'One or more cards not found in your collection' }, { status: 404 });
+        }
     }
 
     // Map to preserve the chosen order
