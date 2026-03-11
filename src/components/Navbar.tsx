@@ -65,8 +65,9 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
         </Link>
 
         {username && (
-          <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-lg font-bold text-slate-400">
+          <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6 lg:gap-8 text-base lg:text-lg font-bold text-slate-400">
             <Link href="/store" className={`transition-all ${pathname === '/store' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Gacha</Link>
+            <Link href="/inventory" className={`transition-all ${pathname === '/inventory' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Inventory</Link>
             <Link href="/collection" className={`transition-all ${pathname === '/collection' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Collection</Link>
             <Link href="/battle" className={`transition-all ${pathname === '/battle' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Battle</Link>
             <Link href="/leaderboard" className={`transition-all ${pathname === '/leaderboard' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Rankings</Link>

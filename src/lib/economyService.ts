@@ -74,9 +74,12 @@ export async function advanceMissionProgress(userId: string, type: string, targe
         where: { id: userId },
         data: { currency: { increment: um.mission.reward } }
       });
+      await grantXP(userId, XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE);
     }
   }
 }
+
+import { grantXP, XP_AMOUNTS } from './xpService';
 
 export async function grantCurrency(userId: string, amount: number) {
   return prisma.user.update({
@@ -111,6 +114,8 @@ export async function claimDailyReward(userId: string) {
     }
   }
 
+  const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK);
+
   const updated = await prisma.user.update({
     where: { id: userId },
     data: {
@@ -123,6 +128,7 @@ export async function claimDailyReward(userId: string) {
     success: true,
     amount: DAILY_REWARD_AMOUNT,
     newCurrency: updated.currency,
+    xpResult,
     nextClaimAt: new Date(now.getTime() + DAILY_COOLDOWN_MS).toISOString(),
   };
 }
