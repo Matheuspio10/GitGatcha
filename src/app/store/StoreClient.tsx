@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardProps } from '@/components/Card';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code, 
   Trophy, 
@@ -77,15 +76,15 @@ export default function StoreClient({
   initialMissions: any[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [packState, setPackState] = useState<'IDLE' | 'SHAKING' | 'EXPLODED'>('IDLE');
-  const [cards, setCards] = useState<CardProps[]>([]);
   const [currency, setCurrency] = useState(userCurrency);
   const [packs, setPacks] = useState<PackInfo[]>([]);
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
-  const [selectedPack, setSelectedPack] = useState<PackInfo | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('language');
   const [dailyCooldown, setDailyCooldown] = useState<number>(-1);
   const [claimingDaily, setClaimingDaily] = useState(false);
+  
+  // Notification state
+  const [purchaseNotification, setPurchaseNotification] = useState<{ packName: string } | null>(null);
   const router = useRouter();
 
   // Fetch packs catalog
@@ -147,210 +146,75 @@ export default function StoreClient({
     }
   };
 
-  const handleOpenBooster = async (pack: PackInfo) => {
+  const handlePurchasePack = async (pack: PackInfo) => {
     if (currency < pack.cost) {
       alert("Not enough Bits!");
       return;
     }
     
-    setSelectedPack(pack);
     setLoading(true);
-    setCards([]);
-    
-    const apiCall = fetch('/api/store/booster', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packId: pack.id }),
-    }).then(res => res.json());
-    
-    setPackState('SHAKING');
-    
     try {
-      await new Promise(r => setTimeout(r, 2000));
-      
-      const data = await apiCall;
+      const res = await fetch('/api/store/booster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packId: pack.id }),
+      });
+      const data = await res.json();
       
       if (data.success) {
-        setPackState('EXPLODED');
-        await new Promise(r => setTimeout(r, 400));
-        
         setCurrency(data.newCurrency);
-        setCards(data.cards);
+        setPurchaseNotification({ packName: data.packName });
+        
+        // Auto hide notification
+        setTimeout(() => {
+          setPurchaseNotification(null);
+        }, 5000);
+        
         router.refresh();
       } else {
-        alert(data.error || 'Failed to open');
-        setPackState('IDLE');
-        setSelectedPack(null);
+        alert(data.error || 'Failed to purchase');
       }
     } catch(e) {
       console.error(e);
       alert('Network error');
-      setPackState('IDLE');
-      setSelectedPack(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const resetStore = () => {
-    setCards([]);
-    setPackState('IDLE');
-    setSelectedPack(null);
-  };
-
-  const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (packState !== 'IDLE' || !selectedPack) return;
-    if (info.offset.x > 140) {
-      handleOpenBooster(selectedPack);
-    }
-  }, [packState, selectedPack, currency]);
-
   const filteredPacks = packs.filter(p => p.category === activeCategory);
 
-  // ── PACK OPENING VIEW ──
-  if (selectedPack && (packState !== 'IDLE' || cards.length > 0)) {
-    return (
-      <div className="flex flex-col items-center min-h-[70vh] gap-12 pt-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-            {selectedPack.name}
-          </h1>
-          <p className="text-lg text-slate-400">{selectedPack.description}</p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 font-bold">
-            Your Balance: {currency} Bits
-          </div>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {packState !== 'EXPLODED' && (
-            <motion.div 
-              key="pack"
-              initial={{ scale: 0.8, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 1.5, opacity: 0, filter: 'blur(20px)' }}
-              transition={{ duration: 0.4 }}
-              className="relative mt-12"
-            >
-              <motion.div
-                animate={packState === 'SHAKING' ? { 
-                  x: [-5, 5, -5, 5, 0],
-                  rotate: [-2, 2, -2, 2, 0] 
-                } : {}}
-                transition={packState === 'SHAKING' ? { 
-                  repeat: Infinity, 
-                  repeatType: 'mirror', 
-                  duration: 0.3 
-                } : {}}
-                className="relative w-64 h-96 rounded-2xl border-4 shadow-[0_0_50px_rgba(99,102,241,0.5)] flex flex-col items-center justify-center overflow-hidden"
-                style={{
-                  background: selectedPack.visualTheme.gradient,
-                  borderColor: selectedPack.visualTheme.border + '80',
-                }}
-              >
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30 mix-blend-overlay pointer-events-none" />
-                <div className="absolute top-0 w-full h-8 border-b-2 pointer-events-none" style={{ backgroundColor: selectedPack.visualTheme.border + '33', borderColor: selectedPack.visualTheme.border + '4D' }} />
-                <div className="absolute bottom-0 w-full h-8 border-t-2 pointer-events-none" style={{ backgroundColor: selectedPack.visualTheme.border + '33', borderColor: selectedPack.visualTheme.border + '4D' }} />
-                
-                {/* Tear Strip */}
-                <div className="absolute top-10 left-0 w-full px-2 z-20">
-                  <div className="absolute top-1/2 left-4 right-4 border-t-[3px] border-dashed border-white/50 -translate-y-1/2 pointer-events-none" />
-                  
-                  {packState === 'IDLE' && (
-                    <motion.div
-                      drag="x"
-                      dragConstraints={{ left: 0, right: 200 }}
-                      dragElastic={0.1}
-                      onDragEnd={handleDragEnd}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="relative w-12 h-12 rounded-full shadow-lg border-2 border-white/50 flex items-center justify-center cursor-grab active:cursor-grabbing"
-                      style={{ background: selectedPack.visualTheme.gradient }}
-                    >
-                      <div className="flex -space-x-2">
-                         <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                         </svg>
-                         <svg className="w-5 h-5 text-white opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                         </svg>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-                
-                {packState === 'SHAKING' && (
-                  <div className="absolute inset-0 bg-white/10 animate-pulse mix-blend-overlay" />
-                )}
-
-                <div className="relative z-10 text-center pointer-events-none mt-12 px-4">
-                  <div className="text-3xl font-black tracking-tighter drop-shadow-lg mb-2" style={{ color: selectedPack.visualTheme.textColor }}>
-                    {selectedPack.name}
-                  </div>
-                  <div className="text-sm font-bold uppercase tracking-[0.3em] opacity-70" style={{ color: selectedPack.visualTheme.textColor }}>
-                    {selectedPack.cardCount} Cards
-                  </div>
-                </div>
-
-                {packState === 'IDLE' && (
-                  <div className="absolute bottom-12 px-6 py-2 rounded-full bg-black/50 border text-white font-bold text-sm shadow-xl pointer-events-none flex flex-col items-center"
-                    style={{ borderColor: selectedPack.visualTheme.border + '80' }}
-                  >
-                    <span>{selectedPack.cost} Bits</span>
-                    <span className="text-white/60 text-xs mt-0.5">Tear to Open</span>
-                  </div>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-
-          {packState === 'EXPLODED' && cards.length > 0 && (
-            <motion.div 
-              key="cards"
-              className="w-full max-w-7xl mx-auto space-y-12 z-10"
-            >
-              <div className="flex flex-wrap justify-center gap-6 perspective-1000 mt-8">
-                <AnimatePresence>
-                  {cards.map((c, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.2, y: 100, rotateY: 180 }}
-                      animate={{ opacity: 1, scale: 1, y: 0, rotateY: 0 }}
-                      transition={{ 
-                        duration: 0.8, 
-                        delay: i * 0.3,
-                        type: "spring",
-                        bounce: 0.4
-                      }}
-                    >
-                      <Card {...c} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-              
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                transition={{ delay: 2.5 }}
-                className="text-center pt-12"
-              >
-                <button
-                  onClick={resetStore}
-                  className="px-8 py-4 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 font-bold tracking-wider text-slate-300 transition-colors"
-                >
-                  Done
-                </button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
-  // ── STORE CATALOG VIEW ──
   return (
-    <div className="flex flex-col min-h-screen gap-8 pt-8 px-4 max-w-7xl mx-auto">
+    <div className="flex flex-col min-h-screen gap-8 pt-8 px-4 max-w-7xl mx-auto pb-24 relative">
+      
+      {/* Purchase Notification Toast */}
+      <AnimatePresence>
+        {purchaseNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-green-500/30 rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col md:flex-row items-center gap-6"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                <CheckCircle weight="fill" size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-white">Purchase Successful</h4>
+                <p className="text-sm text-slate-400">{purchaseNotification.packName} added to your inventory.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push('/inventory')}
+              className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors whitespace-nowrap"
+            >
+              Go to Inventory →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-5xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500">
@@ -424,8 +288,7 @@ export default function StoreClient({
             className="group cursor-pointer relative mx-auto w-full max-w-[280px]"
             onClick={() => {
               if (loading) return;
-              setSelectedPack(pack);
-              handleOpenBooster(pack);
+              handlePurchasePack(pack);
             }}
           >
             {/* The Pack Shape */}

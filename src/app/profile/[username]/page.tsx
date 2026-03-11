@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy, Users, Sword, Plus, UserMinus, Clock } from '@phosphor-icons/react';
 import { Navbar } from '@/components/Navbar';
+import { getXPProgress } from '@/lib/xpService';
 
 interface FriendInfo {
   id: string;
@@ -28,6 +29,8 @@ interface ProfileData {
     battlesLost: number;
     totalBattles: number;
     friendsCount: number;
+    totalXP: number;
+    level: number;
   };
   topCards: any[];
   friends: FriendInfo[];
@@ -149,6 +152,8 @@ export default function ProfilePage() {
     ? Math.round((profile.stats.battlesWon / profile.stats.totalBattles) * 100) 
     : 0;
 
+  const xpData = getXPProgress(profile.stats.totalXP);
+
   return (
     <div className="font-sans text-slate-200">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -178,16 +183,40 @@ export default function ProfilePage() {
                   
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-semibold">
                     <span className="px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                      Level {profile.user.level} Developer
+                      Level {xpData.currentLevel} Developer
                     </span>
                     <span className="flex items-center gap-1.5 text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full border border-yellow-400/20">
                       <Trophy size={18} weight="fill" className="drop-shadow-sm" />
                       {profile.user.rating} Elo
                     </span>
-                    <span className="text-slate-400 px-2 flex items-center gap-1.5">
-                      <Clock size={16} />
-                      Joined {new Date(profile.user.createdAt).toLocaleDateString()}
+                    <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-full border border-emerald-400/20">
+                      <Sword size={18} weight="fill" />
+                      {winRate}% Win Rate
                     </span>
+                  </div>
+
+                  {/* XP Progress Bar */}
+                  <div className="mt-8 w-full max-w-md">
+                    <div className="flex justify-between items-end mb-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">XP Progress</span>
+                      <span className="text-sm font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                        {Math.floor(xpData.progressPercent)}%
+                      </span>
+                    </div>
+                    
+                    <div className="relative h-4 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${Math.max(5, xpData.progressPercent)}%` }} // Minimum width for visibility
+                      >
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-2 text-xs font-medium text-slate-500">
+                      <span>{Math.floor(xpData.totalXP).toLocaleString()} XP Total</span>
+                      <span>{Math.floor(xpData.xpIntoLevel).toLocaleString()} / {Math.floor(xpData.xpNeededForNext).toLocaleString()} to Lvl {xpData.currentLevel + 1}</span>
+                    </div>
                   </div>
                 </div>
 

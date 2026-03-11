@@ -1,16 +1,24 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth';
+import { prisma } from './prisma';
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, username: true, email: true, currency: true, level: true, xp: true },
+  });
+
+  if (!dbUser) return null;
+
   return {
-    id: session.user.id,
-    username: session.user.username as string,
-    email: session.user.email,
-    currency: session.user.currency as number,
-    level: 1, // simplified for now since we aren't joining full DB user here to save MS
-    xp: 0
+    id: dbUser.id,
+    username: (dbUser.username || session.user.name) as string,
+    email: dbUser.email,
+    currency: dbUser.currency,
+    level: dbUser.level,
+    xp: dbUser.xp,
   };
 }

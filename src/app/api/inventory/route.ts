@@ -1,0 +1,56 @@
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { getPackById, getSerializablePacks } from '@/lib/packDefinitions';
+import { InventoryItem } from '@/lib/xpService';
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { inventory: true },
+    });
+
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const inventory: InventoryItem[] = Array.isArray(user.inventory)
+      ? (user.inventory as unknown as InventoryItem[])
+      : [];
+
+    // Group packs by packId with count
+    const packCounts: Record<string, { count: number; packId: string; packName: string; items: InventoryItem[] }> = {};
+    for (const item of inventory) {
+      if (!packCounts[item.packId]) {
+        packCounts[item.packId] = { count: 0, packId: item.packId, packName: item.packName, items: [] };
+      }
+      packCounts[item.packId].count++;
+      packCounts[item.packId].items.push(item);
+    }
+
+    // Enrich with pack visual data
+    const allPacks = getSerializablePacks();
+    const enrichedInventory = Object.values(packCounts).map(group => {
+      const packDef = allPacks.find(p => p.id === group.packId);
+      return {
+        packId: group.packId,
+        packName: group.packName,
+        count: group.count,
+        visualTheme: packDef?.visualTheme || null,
+        cardCount: packDef?.cardCount || 5,
+        guaranteedMinRarity: packDef?.guaranteedMinRarity || null,
+        category: packDef?.category || 'unknown',
+        description: packDef?.description || '',
+      };
+    });
+
+    return NextResponse.json({ inventory: enrichedInventory });
+  } catch (error) {
+    console.error('Inventory error:', error);
+    return NextResponse.json({ error: 'Failed to fetch inventory' }, { status: 500 });
+  }
+}

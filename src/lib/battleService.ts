@@ -17,6 +17,8 @@ function getAverageRarityRank(team: BattleCard[]): number {
   return sum / team.length;
 }
 
+import { grantXP, XP_AMOUNTS } from './xpService';
+
 export function calculateRewards(
   didWin: boolean,
   isRandom: boolean,
@@ -28,7 +30,7 @@ export function calculateRewards(
 
   if (didWin) {
     bits = isRandom ? 50 : 75;
-    xp = 20;
+    xp = isRandom ? XP_AMOUNTS.WIN_BATTLE_RANDOM : XP_AMOUNTS.WIN_BATTLE_FRIEND;
 
     // Upset bonus: winner team has lower avg rarity than loser team
     if (winnerAvgRank < loserAvgRank) {
@@ -37,7 +39,7 @@ export function calculateRewards(
     }
   } else {
     bits = isRandom ? 10 : 15;
-    xp = 5;
+    xp = XP_AMOUNTS.LOSE_BATTLE;
   }
 
   return { bits, xp };
@@ -137,7 +139,6 @@ export async function resolveRandomBattle(
     where: { id: challengerId },
     data: {
       currency: { increment: rewards.bits },
-      xp: { increment: rewards.xp },
       rating: {
           // Increase/decrease rating against a "reference" 1000 rating sys
           set: Math.max(0, calculateNewRatings(
@@ -147,6 +148,8 @@ export async function resolveRandomBattle(
       }
     },
   });
+
+  const xpResult = await grantXP(challengerId, rewards.xp);
   
   const userTemp = await prisma.user.findUnique({where: {id: challengerId}});
   if (userTemp) {
@@ -164,6 +167,7 @@ export async function resolveRandomBattle(
     defenderTeam: dTeam,
     winnerSide: battleResult.winner,
     rewards,
+    xpResult,
     log: battleResult.log
   };
 }
@@ -254,18 +258,21 @@ export async function resolveFriendBattle(
     where: { id: battle.challengerId },
     data: {
       currency: { increment: challengerRewards.bits },
-      xp: { increment: challengerRewards.xp },
     },
   });
+  const challengerXpResult = await grantXP(battle.challengerId, challengerRewards.xp);
 
   if (battle.defenderId) {
     await prisma.user.update({
       where: { id: battle.defenderId },
       data: {
         currency: { increment: defenderRewards.bits },
-        xp: { increment: defenderRewards.xp },
       },
     });
+    
+    // We do not eagerly await defender XP to not block the challenger response,
+    // in a real app this would be queued or handled correctly, but we'll await it here.
+    await grantXP(battle.defenderId, defenderRewards.xp);
 
     // Update ratings for both players
     if (winnerId && battle.challenger && battle.defender) {
@@ -285,6 +292,7 @@ export async function resolveFriendBattle(
     winnerSide: battleResult.winner,
     challengerRewards,
     defenderRewards,
+    xpResult: challengerXpResult,
     log: battleResult.log,
   };
 }
