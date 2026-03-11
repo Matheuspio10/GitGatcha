@@ -29,8 +29,6 @@ interface ProfileData {
     battlesLost: number;
     totalBattles: number;
     friendsCount: number;
-    totalXP: number;
-    level: number;
   };
   topCards: any[];
   friends: FriendInfo[];
@@ -152,7 +150,7 @@ export default function ProfilePage() {
     ? Math.round((profile.stats.battlesWon / profile.stats.totalBattles) * 100) 
     : 0;
 
-  const xpData = getXPProgress(profile.stats.totalXP);
+  const xpData = getXPProgress(profile.user.xp);
 
   return (
     <div className="font-sans text-slate-200">
