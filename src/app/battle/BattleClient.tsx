@@ -240,6 +240,12 @@ function BattleReplay({
           >
             ⏭ Next
           </button>
+          <button
+            onClick={() => { setPlaying(false); setCurrentTurn(log.length - 1); }}
+            className="px-5 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold text-white transition-colors flex items-center gap-1.5"
+          >
+            <ArrowRight size={16} weight="bold" /> Skip to End
+          </button>
         </div>
       )}
 
