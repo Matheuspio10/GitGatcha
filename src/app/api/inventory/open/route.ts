@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     });
 
     // Open the booster pack
-    const cards = await openBoosterPack(userId, packId);
+    const { newCards, packDropFragments } = await openBoosterPack(userId, packId);
 
     // Grant XP for opening a booster
     const xpResult = await grantXP(userId, XP_AMOUNTS.OPEN_BOOSTER);
@@ -46,13 +46,14 @@ export async function POST(req: Request) {
     // Process missions async
     Promise.all([
       advanceMissionProgress(userId, 'OPEN_BOOSTER'),
-      ...cards.map(c => advanceMissionProgress(userId, 'COLLECT_RARITY', c.rarity)),
-      ...cards.map(c => advanceMissionProgress(userId, 'COLLECT_LANGUAGE', c.primaryLanguage || 'Unknown')),
+      ...newCards.map(c => advanceMissionProgress(userId, 'COLLECT_RARITY', c.rarity)),
+      ...newCards.map(c => advanceMissionProgress(userId, 'COLLECT_LANGUAGE', c.primaryLanguage || 'Unknown')),
     ]).catch(console.error);
 
     return NextResponse.json({
       success: true,
-      cards,
+      cards: newCards,
+      packDropFragments,
       xpGained: XP_AMOUNTS.OPEN_BOOSTER,
       xpResult,
     });
