@@ -50,6 +50,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
   const [packState, setPackState] = useState<'IDLE' | 'SHAKING' | 'EXPLODED'>('IDLE');
   const [selectedPack, setSelectedPack] = useState<InventoryPack | null>(null);
   const [cards, setCards] = useState<CardProps[]>([]);
+  const [packDropFragments, setPackDropFragments] = useState<{language: string, amount: number} | null>(null);
   
   const router = useRouter();
 
@@ -82,6 +83,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
     setSelectedPack(pack);
     setOpening(true);
     setCards([]);
+    setPackDropFragments(null);
     
     setPackState('SHAKING');
     
@@ -99,6 +101,34 @@ export default function InventoryClient({ userId }: { userId: string }) {
         setPackState('EXPLODED');
         await new Promise(r => setTimeout(r, 400));
         setCards(data.cards);
+        if (data.packDropFragments) {
+          setPackDropFragments(data.packDropFragments);
+        }
+
+        // Check for wishlist progress
+        fetch('/api/forge/wallet').then(res => res.json()).then(wallet => {
+          const fragments = wallet.fragments || {};
+          const wishlist = wallet.wishlist || [];
+          
+          const earnedLangs = new Set<string>();
+          if (data.packDropFragments) earnedLangs.add(data.packDropFragments.language);
+          data.cards.forEach((c: any) => {
+            if (c.isDuplicate && c.language && c.language !== 'Unknown') earnedLangs.add(c.language);
+          });
+
+          earnedLangs.forEach(lang => {
+            const wItem = wishlist.find((w: any) => w.primaryLanguage === lang);
+            if (wItem) {
+              const current = fragments[lang] || 0;
+              import('react-hot-toast').then(mod => {
+                mod.toast(`🌟 ${lang} fragment earned — ${Math.min(current, wItem.fragmentsRequired)} of ${wItem.fragmentsRequired} toward ${wItem.name}!`, { 
+                  duration: 6000,
+                  style: { background: '#1e1b4b', color: '#fff', border: '1px solid #4f46e5' }
+                });
+              });
+            }
+          });
+        }).catch(console.error);
 
         // Update local inventory count
         setPacks(prev => {
@@ -211,9 +241,23 @@ export default function InventoryClient({ userId }: { userId: string }) {
               key="cards"
               className="w-full max-w-7xl mx-auto space-y-12 z-10"
             >
+              {packDropFragments && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1 }}
+                  className="mt-8 text-center"
+                >
+                  <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 rounded-xl border border-yellow-300 shadow-[0_0_30px_rgba(245,158,11,0.5)]">
+                    <Sparkle size={24} weight="fill" className="text-white animate-pulse" />
+                    <span className="font-black text-white text-xl drop-shadow-md">Bonus: +{packDropFragments.amount} {packDropFragments.language} Fragments!</span>
+                  </div>
+                </motion.div>
+              )}
+
               <div className="flex flex-wrap justify-center gap-6 perspective-1000 mt-8">
                 <AnimatePresence>
-                  {cards.map((c, i) => (
+                  {cards.map((c: any, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, scale: 0.2, y: 100, rotateY: 180 }}
@@ -224,8 +268,14 @@ export default function InventoryClient({ userId }: { userId: string }) {
                         type: "spring",
                         bounce: 0.4
                       }}
+                      className="relative"
                     >
                       <Card {...c} />
+                      {c.isDuplicate && (
+                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs font-black px-3 py-1.5 rotate-12 z-20 shadow-xl border-2 border-white rounded-lg pointer-events-none">
+                          DUPLICATE +{c.fragmentsEarned}
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </AnimatePresence>

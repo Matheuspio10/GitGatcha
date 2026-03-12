@@ -17,6 +17,7 @@ export interface PackDefinition {
   guaranteedMinRarity: 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | null;
   allCommon?: boolean;       // Junk Drawer
   noPreview?: boolean;       // Mystery Box
+  themeLanguage?: string;    // Fragment drop language
   buildQuery: () => string;  // Returns GitHub Search API query string
 }
 

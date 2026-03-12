@@ -34,6 +34,14 @@ function ensureMinimumRarity(rarities: string[], minRarity: string): string[] {
   return rarities;
 }
 
+const FRAGMENTS_PER_RARITY: Record<string, number> = {
+  'Common': 5,
+  'Uncommon': 10,
+  'Rare': 20,
+  'Epic': 40,
+  'Legendary': 80
+};
+
 export async function openBoosterPack(userId: string, packId?: string) {
   const pack = packId ? getPackById(packId) : null;
   const cardsToPull = pack?.cardCount ?? 5;
@@ -41,15 +49,11 @@ export async function openBoosterPack(userId: string, packId?: string) {
   let pickedRarities: string[] = [];
 
   if (pack?.allCommon) {
-    // Junk Drawer: all Common
     pickedRarities = Array(cardsToPull).fill('Common');
   } else {
-    // Roll rarities
     for (let i = 0; i < cardsToPull; i++) {
       pickedRarities.push(rollRarity());
     }
-
-    // Ensure guaranteed minimum rarity
     if (pack?.guaranteedMinRarity) {
       pickedRarities = ensureMinimumRarity(pickedRarities, pack.guaranteedMinRarity);
     }
@@ -58,31 +62,30 @@ export async function openBoosterPack(userId: string, packId?: string) {
   let newCards = [];
 
   if (pack) {
-    // Use pack-specific query to get users
     const query = pack.buildQuery();
     const devs = await searchUsersForPack(query, cardsToPull);
 
-    // If we got enough users, use them; otherwise fill with rarity-based fallback
     for (let i = 0; i < cardsToPull; i++) {
       let dev = devs[i];
 
       if (!dev) {
-        // Fallback: get by rarity
         const fallbacks = await getRandomDevelopersByRarity(pickedRarities[i], 1);
         dev = fallbacks[0];
       }
 
       if (dev) {
-        // Override rarity based on our roll (except for pack-specific packs
-        // where the user pool IS the filter, so we keep their calculated rarity
-        // unless we need to enforce minimum)
         const card = await upsertCard(dev);
-        const userCard = await addCardToUser(userId, card.id);
-        newCards.push({ ...dev, isShiny: userCard.isShiny, userCardId: userCard.id });
+        const userCardResult = await addCardToUser(userId, card);
+        newCards.push({ 
+          ...dev, 
+          isShiny: userCardResult.isShiny, 
+          userCardId: userCardResult.id,
+          isDuplicate: userCardResult.isDuplicate,
+          fragmentsEarned: userCardResult.fragmentsEarned
+        });
       }
     }
   } else {
-    // Generic booster (legacy path): use rarity-based queries
     const rarityCounts = pickedRarities.reduce((acc, curr) => {
       acc[curr] = (acc[curr] || 0) + 1;
       return acc;
@@ -92,13 +95,66 @@ export async function openBoosterPack(userId: string, packId?: string) {
       const devs = await getRandomDevelopersByRarity(rarity, count);
       for (const dev of devs) {
         const card = await upsertCard(dev);
-        await addCardToUser(userId, card.id);
-        newCards.push(dev);
+        const userCardResult = await addCardToUser(userId, card);
+        newCards.push({ 
+          ...dev, 
+          isShiny: userCardResult.isShiny, 
+          userCardId: userCardResult.id,
+          isDuplicate: userCardResult.isDuplicate,
+          fragmentsEarned: userCardResult.fragmentsEarned
+        });
       }
     }
   }
 
-  return newCards;
+  // Handle 15% Pack Drop for Fragments
+  let packDropFragments = null;
+  if (Math.random() < 0.15 && newCards.length > 0) {
+    // Determine language mapping
+    let dropLang = pack?.themeLanguage;
+    if (!dropLang) {
+      // Find most common language in this pack context
+      const langCounts: Record<string, number> = {};
+      for (const c of newCards) {
+        if (c.primaryLanguage && c.primaryLanguage !== 'Unknown') {
+          langCounts[c.primaryLanguage] = (langCounts[c.primaryLanguage] || 0) + 1;
+        }
+      }
+      const sortedLangs = Object.entries(langCounts).sort((a, b) => b[1] - a[1]);
+      if (sortedLangs.length > 0) {
+        dropLang = sortedLangs[0][0];
+      }
+    }
+
+    if (dropLang && dropLang !== 'Unknown') {
+      const dropAmount = 20; // Example standard pack drop amount
+      packDropFragments = {
+        language: dropLang,
+        amount: dropAmount
+      };
+      
+      const user = await prisma.user.findUnique({ where: { id: userId }});
+      if (user) {
+        const fragments = (user.fragments && typeof user.fragments === 'object' && !Array.isArray(user.fragments) ? user.fragments : {}) as Record<string, number>;
+        fragments[dropLang] = (fragments[dropLang] || 0) + dropAmount;
+        
+        const logs = Array.isArray(user.fragmentLogs) ? [...user.fragmentLogs] : [];
+        logs.unshift({
+          date: new Date().toISOString(),
+          source: `Pack drop - ${pack?.name || 'Generic Booster'}`,
+          language: dropLang,
+          amount: dropAmount
+        });
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: { fragments, fragmentLogs: logs }
+        });
+      }
+    }
+  }
+
+  return { newCards, packDropFragments };
 }
 
 async function upsertCard(dev: any) {
@@ -113,9 +169,44 @@ async function upsertCard(dev: any) {
   return card;
 }
 
-async function addCardToUser(userId: string, cardId: string) {
-  const isShiny = Math.random() < 0.05; // 5% chance
-  return await prisma.userCard.create({
-    data: { userId, cardId, isShiny }
+async function addCardToUser(userId: string, card: any) {
+  const existingCard = await prisma.userCard.findFirst({
+    where: { userId, cardId: card.id }
   });
+
+  const isShiny = Math.random() < 0.05;
+
+  if (existingCard) {
+    const lang = card.primaryLanguage || 'Unknown';
+    if (lang !== 'Unknown') {
+      const amount = FRAGMENTS_PER_RARITY[card.rarity] || 5;
+      
+      const user = await prisma.user.findUnique({ where: { id: userId }});
+      if (user) {
+        const fragments = (user.fragments && typeof user.fragments === 'object' && !Array.isArray(user.fragments) ? user.fragments : {}) as Record<string, number>;
+        fragments[lang] = (fragments[lang] || 0) + amount;
+        
+        const logs = Array.isArray(user.fragmentLogs) ? [...user.fragmentLogs] : [];
+        logs.unshift({
+          date: new Date().toISOString(),
+          source: `Duplicate - ${card.rarity} ${lang} card`,
+          language: lang,
+          amount: amount
+        });
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: { fragments, fragmentLogs: logs }
+        });
+
+        return { isShiny: existingCard.isShiny, id: existingCard.id, isDuplicate: true, fragmentsEarned: amount, language: lang };
+      }
+    }
+    return { isShiny: existingCard.isShiny, id: existingCard.id, isDuplicate: true, fragmentsEarned: 0, language: 'Unknown' };
+  }
+
+  const newCard = await prisma.userCard.create({
+    data: { userId, cardId: card.id, isShiny }
+  });
+  return { isShiny, id: newCard.id, isDuplicate: false, fragmentsEarned: 0, language: card.primaryLanguage };
 }
