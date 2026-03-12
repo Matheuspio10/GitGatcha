@@ -49,9 +49,9 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
     const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
 
     // Rebalanced stat formulas (sqrt compression for balanced battles)
-    const atk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
-    const def = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
-    const hp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(atk * 3);
+    const baseAtk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
+    const baseDef = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
+    const baseHp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(baseAtk * 3);
 
     // Rarity determination
     let rarity = expectedRarity || 'Common';
@@ -69,6 +69,20 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
         rarity = 'Uncommon';
       }
     }
+
+    // Apply rarity multipliers so low-rarity cards are definitively weaker
+    const rarityMultipliers: Record<string, number> = {
+      'Common': 0.5,
+      'Uncommon': 0.8,
+      'Rare': 1.2,
+      'Epic': 1.8,
+      'Legendary': 2.5
+    };
+    const multiplier = rarityMultipliers[rarity] || 1.0;
+
+    const atk = Math.max(10, Math.floor(baseAtk * multiplier));
+    const def = Math.max(10, Math.floor(baseDef * multiplier));
+    const hp = Math.max(50, Math.floor(baseHp * multiplier));
 
     const flavorText = user.bio || `Master of the ${primaryLanguage} shadows.`;
 
