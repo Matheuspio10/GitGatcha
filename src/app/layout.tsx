@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { getCurrentUser } from "@/lib/session";
 import { NextAuthProvider } from "@/components/Providers";
+import { LevelUpModal } from "@/components/LevelUpModal";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default async function RootLayout({
       <body className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black`}>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} />
+          <LevelUpModal />
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>

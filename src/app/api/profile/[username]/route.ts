@@ -89,6 +89,17 @@ export async function GET(
         .sort((a: any, b: any) => (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
         .slice(0, 5); // top 5 strongest cards
 
+    // Check for level ups in the last 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const notifications = Array.isArray(userProfile.notifications) ? userProfile.notifications as any[] : [];
+    const hasLeveledUpRecently = notifications.some((n: any) => {
+        if (n.type === 'LEVEL_UP') {
+            const notifDate = new Date(n.timestamp);
+            return notifDate >= oneDayAgo;
+        }
+        return false;
+    });
+
     return NextResponse.json({ 
         user: {
             id: userProfile.id,
@@ -107,6 +118,7 @@ export async function GET(
         },
         topCards,
         friends: friendsList,
+        hasLeveledUpRecently
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);

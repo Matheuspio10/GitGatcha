@@ -1,107 +1,203 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkle, Confetti, Star } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { Sparkle, Star, Coins, Checks } from '@phosphor-icons/react';
 
-interface LevelUpReward {
+interface PackReward {
+  packIds: string[];
+  packNames: string[];
+  coins: number;
+}
+
+interface LevelUpReward extends PackReward {
   level: number;
-  packId: string;
-  packName: string;
-  tier: 'Common' | 'Rare' | 'Epic';
+  badge?: string;
 }
 
-interface XPResult {
-  previousLevel: number;
-  newLevel: number;
-  levelUps: LevelUpReward[];
-}
+export function LevelUpModal() {
+  const [pendingRewards, setPendingRewards] = useState<LevelUpReward[]>([]);
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
-interface LevelUpModalProps {
-  xpResult: XPResult;
-  onClose: () => void;
-}
+  // Fetch pending rewards on mount
+  useEffect(() => {
+    const fetchPending = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.pendingRewards && data.pendingRewards.length > 0) {
+            // Sort by level ascending so they see progression
+            const sorted = data.pendingRewards.sort((a: LevelUpReward, b: LevelUpReward) => a.level - b.level);
+            setPendingRewards(sorted);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch pending rewards', err);
+      }
+    };
+    
+    const timer = setTimeout(fetchPending, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
-export function LevelUpModal({ xpResult, onClose }: LevelUpModalProps) {
-  if (!xpResult || xpResult.levelUps.length === 0) return null;
+  if (pendingRewards.length === 0) return null;
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'Epic': return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
-      case 'Rare': return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-      default: return 'text-slate-300 bg-slate-600/10 border-slate-600/30';
+  const handleNext = () => {
+    if (currentLevelIndex < pendingRewards.length - 1) {
+      setCurrentLevelIndex(prev => prev + 1);
+    } else {
+      setShowSummary(true);
     }
   };
 
+  const handleClaim = async () => {
+    setIsClosing(true);
+    try {
+      await fetch('/api/rewards/claim', { method: 'POST' });
+      
+      // Give time for exit animation
+      setTimeout(() => {
+        setPendingRewards([]);
+        setCurrentLevelIndex(0);
+        setShowSummary(false);
+        setIsClosing(false);
+      }, 500);
+    } catch (err) {
+      console.error('Failed to claim rewards', err);
+      setIsClosing(false);
+    }
+  };
+
+  const currentReward = pendingRewards[currentLevelIndex];
+  
+  // Combine all rewards for summary screen
+  const allPackNames = pendingRewards.flatMap(r => r.packNames);
+  const totalCoins = pendingRewards.reduce((sum, r) => sum + r.coins, 0);
+
   return (
-    <AnimatePresence>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
-      >
-        <motion.div 
-          initial={{ scale: 0.5, opacity: 0, y: 50 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
-          className="bg-slate-900 border-2 border-yellow-500/50 rounded-[2rem] p-8 md:p-12 max-w-2xl w-full shadow-[0_0_100px_rgba(234,179,8,0.2)] text-center relative overflow-hidden"
-        >
-          {/* Confetti Background FX */}
-          <div className="absolute inset-0 pointer-events-none opacity-20">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-500 rounded-full blur-[100px]" />
-            <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-500 rounded-full blur-[100px]" />
-          </div>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 transition-opacity duration-500 ${isClosing ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      
+      {/* Burst Particles Background Effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-indigo-500/20 via-purple-500/20 to-yellow-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-yellow-400/20 rounded-full blur-2xl animate-ping opacity-50 shadow-[0_0_100px_rgba(250,204,21,0.5)]"></div>
+      </div>
 
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: 0.3, type: "spring" }}
-            className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(250,204,21,0.6)] border-4 border-white/20 mb-8"
-          >
-            <Star weight="fill" className="text-white text-5xl drop-shadow-md" />
-          </motion.div>
+      <div className={`relative bg-slate-900 border-2 border-yellow-500/50 rounded-[2rem] p-8 md:p-12 max-w-lg w-full shadow-[0_0_50px_rgba(234,179,8,0.3)] overflow-hidden transition-transform duration-500 ${isClosing ? 'scale-90 translate-y-10' : 'scale-100 translate-y-0'}`}>
+        
+        {/* Header Ribbon */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
 
-          <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 mb-2">
-            LEVEL UP!
-          </h2>
-          <p className="text-2xl text-yellow-400 font-bold mb-8">
-            You reached Level {xpResult.newLevel}
-          </p>
-
-          <div className="bg-slate-950/50 rounded-2xl p-6 border border-white/5 mb-8">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Rewards Added to Inventory</h3>
-            <div className="flex flex-col gap-3">
-              {xpResult.levelUps.map((reward, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 + i * 0.1 }}
-                  className={`flex items-center justify-between p-4 rounded-xl border ${getTierColor(reward.tier)}`}
-                >
-                  <div className="flex items-center gap-3 font-bold">
-                    <Sparkle weight="fill" className={reward.tier === 'Epic' ? 'text-purple-400' : reward.tier === 'Rare' ? 'text-blue-400' : 'text-slate-400'} />
-                    {reward.packName}
-                  </div>
-                  <div className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-black/40 rounded">
-                    {reward.tier}
-                  </div>
-                </motion.div>
-              ))}
+        {!showSummary ? (
+          <div className="text-center animate-in zoom-in duration-500">
+            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest flex items-center justify-center gap-2">
+              <Sparkle className="text-yellow-400" />
+              Level Up!
+              <Sparkle className="text-yellow-400" />
+            </h2>
+            
+            <div className="relative flex justify-center items-center my-8">
+              <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full scale-150"></div>
+              <div className="relative z-10 w-32 h-32 rounded-full border-4 border-yellow-400 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shadow-[0_0_30px_rgba(250,204,21,0.5)]">
+                <span className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500 drop-shadow-md">
+                  {currentReward.level}
+                </span>
+              </div>
             </div>
+
+            <div className="space-y-4 mb-8">
+              <h3 className="text-lg font-bold text-slate-300">Rewards Unlocked</h3>
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                <div className="flex flex-col gap-3">
+                  {currentReward.packNames.map((packName, i) => (
+                    <div key={i} className="flex items-center gap-3 text-left">
+                      <div className="w-10 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded drop-shadow-md border border-white/20 flex flex-shrink-0 items-center justify-center">
+                        <Star size={18} weight="fill" className="text-yellow-300" />
+                      </div>
+                      <span className="font-bold text-white flex-1">{packName} Booster</span>
+                    </div>
+                  ))}
+                  
+                  {currentReward.coins > 0 && (
+                    <div className="flex items-center gap-3 text-left">
+                      <div className="w-10 h-10 bg-yellow-500/20 rounded-full border border-yellow-500/50 flex flex-shrink-0 items-center justify-center">
+                        <Coins size={20} weight="fill" className="text-yellow-400" />
+                      </div>
+                      <span className="font-bold text-yellow-400 flex-1">+{currentReward.coins} Bits</span>
+                    </div>
+                  )}
+
+                  {currentReward.badge && (
+                    <div className="flex items-center gap-3 text-left">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-full border border-purple-500/50 flex flex-shrink-0 items-center justify-center">
+                        <Sparkle size={20} weight="fill" className="text-purple-400" />
+                      </div>
+                      <span className="font-bold text-purple-400 flex-1">{currentReward.badge} Badge</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleNext}
+              className="w-full py-4 rounded-xl font-black text-lg bg-gradient-to-r from-yellow-400 to-amber-600 text-slate-900 border-b-4 border-amber-700 hover:brightness-110 hover:-translate-y-1 active:border-b-0 active:translate-y-1 transition-all shadow-lg"
+            >
+              {currentLevelIndex < pendingRewards.length - 1 ? 'Next Level ➔' : (pendingRewards.length > 1 ? 'View Summary' : 'Claim Rewards')}
+            </button>
+            
+            {pendingRewards.length > 1 && (
+              <p className="text-xs text-slate-500 mt-4 font-bold tracking-wider">
+                {currentLevelIndex + 1} of {pendingRewards.length} LEVELS
+              </p>
+            )}
           </div>
+        ) : (
+          <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-widest">
+              Total Haul
+            </h2>
+            
+            <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700 mb-8 max-h-[50vh] overflow-y-auto custom-scrollbar">
+              <p className="text-sm font-bold text-slate-400 mb-4 tracking-wider uppercase">
+                Levels {pendingRewards[0].level} - {pendingRewards[pendingRewards.length - 1].level}
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {allPackNames.map((packName, i) => (
+                  <div key={i} className="flex items-center gap-3 text-left bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                    <div className="w-8 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded flex items-center justify-center border border-white/20">
+                      <Star size={14} weight="fill" className="text-yellow-300" />
+                    </div>
+                    <span className="font-bold text-sm text-slate-200">{packName}</span>
+                  </div>
+                ))}
+                
+                {totalCoins > 0 && (
+                  <div className="flex items-center gap-3 text-left bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20">
+                    <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center border border-yellow-500/50">
+                      <Coins size={16} weight="fill" className="text-yellow-400" />
+                    </div>
+                    <span className="font-bold text-sm text-yellow-400">+{totalCoins} Total Bits</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClose}
-            className="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-black text-lg shadow-[0_10px_30px_-10px_rgba(245,158,11,0.5)] border border-yellow-400/50"
-          >
-            Awesome!
-          </motion.button>
-
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+            <button 
+              onClick={handleClaim}
+              className="w-full py-4 rounded-xl font-black text-lg bg-gradient-to-r from-yellow-400 to-amber-600 text-slate-900 border-b-4 border-amber-700 hover:brightness-110 hover:-translate-y-1 active:border-b-0 active:translate-y-1 transition-all shadow-lg overflow-hidden relative group"
+            >
+              <div className="absolute inset-0 w-1/4 h-full bg-white/30 skew-x-[-20deg] -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                Claim All <Checks weight="bold" />
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
