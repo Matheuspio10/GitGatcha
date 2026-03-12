@@ -17,8 +17,8 @@ if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
 import NodeCache from 'node-cache';
 export const cache = new NodeCache({ stdTTL: 86400 });
 
-export async function fetchGitHubUserStats(username: string) {
-  const cacheKey = `user_stats_${username}`;
+export async function fetchGitHubUserStats(username: string, expectedRarity?: string) {
+  const cacheKey = expectedRarity ? `user_stats_${username}_${expectedRarity}` : `user_stats_${username}`;
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey) as any;
   }
@@ -54,16 +54,20 @@ export async function fetchGitHubUserStats(username: string) {
     const hp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(atk * 3);
 
     // Rarity determination
-    let rarity = 'Common';
-    const score = user.followers * 2 + totalStars;
-    if (score > 50000 || (user.company && ['google', 'microsoft', 'vercel', 'facebook', 'meta'].some(c => user.company.toLowerCase().includes(c)))) {
-      rarity = 'Legendary';
-    } else if (score > 10000) {
-      rarity = 'Epic';
-    } else if (score > 2500) {
-      rarity = 'Rare';
-    } else if (score > 500) {
-      rarity = 'Uncommon';
+    let rarity = expectedRarity || 'Common';
+    
+    // Only calculate natural rarity if one wasn't explicitly requested by a pack drop
+    if (!expectedRarity) {
+      const score = user.followers * 2 + totalStars;
+      if (score > 50000 || (user.company && ['google', 'microsoft', 'vercel', 'facebook', 'meta'].some(c => user.company.toLowerCase().includes(c)))) {
+        rarity = 'Legendary';
+      } else if (score > 10000) {
+        rarity = 'Epic';
+      } else if (score > 2500) {
+        rarity = 'Rare';
+      } else if (score > 500) {
+        rarity = 'Uncommon';
+      }
     }
 
     const flavorText = user.bio || `Master of the ${primaryLanguage} shadows.`;
@@ -89,9 +93,17 @@ export async function fetchGitHubUserStats(username: string) {
   }
 }
 
-export async function searchUsersForPack(query: string, count: number): Promise<any[]> {
-  const page = Math.floor(Math.random() * 10) + 1;
-  const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(query)}&per_page=${Math.min(count * 3, 30)}&page=${page}`;
+export async function searchUsersForPackWithRarity(baseQuery: string, rarity: string, count: number): Promise<any[]> {
+  // Append rarity followers constraint to the base query
+  let query = baseQuery;
+  if (rarity === 'Legendary') query += ' followers:>25000';
+  else if (rarity === 'Epic') query += ' followers:5000..25000';
+  else if (rarity === 'Rare') query += ' followers:1000..5000';
+  else if (rarity === 'Uncommon') query += ' followers:200..1000';
+  else query += ' followers:<200';
+
+  const page = Math.floor(Math.random() * 5) + 1; // Limit page randomization for safer matching
+  const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(query)}&per_page=${Math.min(count * 5, 30)}&page=${page}`;
 
   try {
     const res = await axios.get(searchUrl, { headers });
@@ -102,13 +114,13 @@ export async function searchUsersForPack(query: string, count: number): Promise<
 
     const results = [];
     for (const u of shuffled) {
-      const stats = await fetchGitHubUserStats(u.login);
+      const stats = await fetchGitHubUserStats(u.login, rarity);
       if (stats) results.push(stats);
     }
     return results;
 
   } catch (err) {
-    console.error('Error searching users for pack', err);
+    console.error('Error searching users for pack with rarity', err);
     return [];
   }
 }
@@ -133,7 +145,7 @@ export async function getRandomDevelopersByRarity(rarity: string, limit: number 
     // We get only usernames, we need to fetch their full stats
     const results = [];
     for (const u of users) {
-      const stats = await fetchGitHubUserStats(u.login);
+      const stats = await fetchGitHubUserStats(u.login, rarity);
       if (stats) results.push(stats);
     }
     return results;
