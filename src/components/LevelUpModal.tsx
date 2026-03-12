@@ -85,7 +85,7 @@ export function LevelUpModal() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-yellow-400/20 rounded-full blur-2xl animate-ping opacity-50 shadow-[0_0_100px_rgba(250,204,21,0.5)]"></div>
       </div>
 
-      <div className={`relative bg-slate-900 border-2 border-yellow-500/50 rounded-[2rem] p-8 md:p-12 max-w-lg w-full shadow-[0_0_50px_rgba(234,179,8,0.3)] overflow-hidden transition-transform duration-500 ${isClosing ? 'scale-90 translate-y-10' : 'scale-100 translate-y-0'}`}>
+      <div className={`relative bg-slate-900 border-2 border-yellow-500/50 rounded-none sm:rounded-[2rem] p-8 md:p-12 w-full sm:max-w-lg h-full sm:h-auto overflow-y-auto sm:overflow-visible shadow-[0_0_50px_rgba(234,179,8,0.3)] transition-transform duration-500 ${isClosing ? 'scale-90 translate-y-10' : 'scale-100 translate-y-0'}`}>
         
         {/* Header Ribbon */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
