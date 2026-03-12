@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardProps } from '@/components/Card';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { Code, Trophy, Hourglass, Buildings, Globe, Sparkle } from '@phosphor-icons/react';
-import { LevelUpModal } from '@/components/LevelUpModal';
 
 interface PackVisualTheme {
   gradient: string;
@@ -51,7 +50,6 @@ export default function InventoryClient({ userId }: { userId: string }) {
   const [packState, setPackState] = useState<'IDLE' | 'SHAKING' | 'EXPLODED'>('IDLE');
   const [selectedPack, setSelectedPack] = useState<InventoryPack | null>(null);
   const [cards, setCards] = useState<CardProps[]>([]);
-  const [xpResult, setXpResult] = useState<any>(null);
   
   const router = useRouter();
 
@@ -101,11 +99,6 @@ export default function InventoryClient({ userId }: { userId: string }) {
         setPackState('EXPLODED');
         await new Promise(r => setTimeout(r, 400));
         setCards(data.cards);
-        
-        // Handle XP and Level Ups
-        if (data.xpResult) {
-          setXpResult(data.xpResult);
-        }
 
         // Update local inventory count
         setPacks(prev => {
@@ -132,25 +125,16 @@ export default function InventoryClient({ userId }: { userId: string }) {
     }
   };
 
-  const handleCloseModal = () => {
-    setXpResult(null);
-  };
-
   const resetView = () => {
     setPackState('IDLE');
     setSelectedPack(null);
     setCards([]);
-    setXpResult(null);
   };
 
   // ── PACK OPENING VIEW ── (Reused from store but without cost)
   if (selectedPack && (packState !== 'IDLE' || cards.length > 0)) {
     return (
       <div className="flex flex-col items-center min-h-[70vh] gap-12 pt-8">
-        
-        {xpResult?.levelUps?.length > 0 && (
-          <LevelUpModal xpResult={xpResult} onClose={handleCloseModal} />
-        )}
 
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
