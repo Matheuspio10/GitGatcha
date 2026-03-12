@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { getRandomDevelopersByRarity, searchUsersForPack } from './githubService';
+import { getRandomDevelopersByRarity, searchUsersForPackWithRarity } from './githubService';
 import { getPackById } from './packDefinitions';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
@@ -63,26 +63,36 @@ export async function openBoosterPack(userId: string, packId?: string) {
 
   if (pack) {
     const query = pack.buildQuery();
-    const devs = await searchUsersForPack(query, cardsToPull);
+    
+    // Group the picked rarities so we can fetch them in appropriately sized requests
+    const rarityCounts = pickedRarities.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    for (let i = 0; i < cardsToPull; i++) {
-      let dev = devs[i];
+    for (const [rarity, count] of Object.entries(rarityCounts)) {
+      const devs = await searchUsersForPackWithRarity(query, rarity, count);
+      
+      // If the specific pack query failed to find enough devs of this rarity,
+      // pad with general random devs of the same rarity
+      for (let i = 0; i < count; i++) {
+        let dev = devs[i];
+        if (!dev) {
+          const fallbacks = await getRandomDevelopersByRarity(rarity, 1);
+          dev = fallbacks[0];
+        }
 
-      if (!dev) {
-        const fallbacks = await getRandomDevelopersByRarity(pickedRarities[i], 1);
-        dev = fallbacks[0];
-      }
-
-      if (dev) {
-        const card = await upsertCard(dev);
-        const userCardResult = await addCardToUser(userId, card);
-        newCards.push({ 
-          ...dev, 
-          isShiny: userCardResult.isShiny, 
-          userCardId: userCardResult.id,
-          isDuplicate: userCardResult.isDuplicate,
-          fragmentsEarned: userCardResult.fragmentsEarned
-        });
+        if (dev) {
+          const card = await upsertCard(dev);
+          const userCardResult = await addCardToUser(userId, card);
+          newCards.push({ 
+            ...dev, 
+            isShiny: userCardResult.isShiny, 
+            userCardId: userCardResult.id,
+            isDuplicate: userCardResult.isDuplicate,
+            fragmentsEarned: userCardResult.fragmentsEarned
+          });
+        }
       }
     }
   } else {
