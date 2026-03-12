@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   description: "Collect developers, build your deck, rule the repository.",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +28,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black`}>
+      <body className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-x-hidden`}>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} />
           <LevelUpModal />

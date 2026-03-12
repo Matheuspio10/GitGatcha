@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Coin, X } from '@phosphor-icons/react';
+import { Coin, X, List } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
 
 export function Navbar({ username, currency: initialCurrency }: { username: string, currency: number }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(initialCurrency);
   const pathname = usePathname();
 
@@ -86,17 +87,30 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
               <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
             </button>
             <NotificationBell />
-            <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
-                {username.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
-            </Link>
-            <button 
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="text-xs text-slate-400 hover:text-white transition-colors ml-2"
+            
+            {/* Desktop Profile */}
+            <div className="hidden lg:flex items-center gap-2">
+              <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
+                  {username.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
+              </Link>
+              <button 
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="text-xs text-slate-400 hover:text-white transition-colors ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                Logout
+              </button>
+            </div>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
+              aria-label="Open global menu"
             >
-              Logout
+              <List size={24} weight="bold" />
             </button>
           </div>
         ) : (
@@ -106,6 +120,76 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
         )}
       </div>
     </header>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div 
+            className="fixed inset-y-0 right-0 w-64 bg-slate-900 border-l border-slate-800 shadow-2xl p-6 flex flex-col transform transition-transform"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <span className="font-bold text-lg text-white">Menu</span>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-slate-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center -mr-3"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {username && (
+              <div className="mb-6 pb-6 border-b border-slate-800">
+                <Link 
+                  href={`/profile/${username}`} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800/50 transition-colors group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
+                    {username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white line-clamp-1">{username}</div>
+                    <div className="text-xs text-slate-400">View Profile</div>
+                  </div>
+                </Link>
+              </div>
+            )}
+
+            <nav className="flex flex-col gap-2 flex-1">
+              {[
+                { name: 'Gacha', path: '/store' },
+                { name: 'Inventory', path: '/inventory' },
+                { name: 'Collection', path: '/collection' },
+                { name: 'Forge', path: '/forge' },
+                { name: 'Battle', path: '/battle' },
+                { name: 'Rankings', path: '/leaderboard' },
+              ].map(link => (
+                <Link
+                  key={link.name}
+                  href={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`p-3 rounded-lg flex items-center transition-all min-h-[44px] font-bold text-[15px] ${pathname === link.path ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="mt-8 pt-6 border-t border-slate-800">
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="w-full p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center font-bold min-h-[44px] text-[15px]"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Buy Bits Modal (Visual Only) */}
       {showBitsModal && (

@@ -659,7 +659,7 @@ function ConfirmationModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5"
+        className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-3xl p-6 sm:max-w-md w-full h-full sm:h-auto overflow-y-auto sm:overflow-visible shadow-2xl space-y-5"
       >
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
@@ -767,7 +767,7 @@ function FriendModal({
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4"
+        className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-3xl p-6 sm:max-w-sm w-full h-full sm:h-auto shadow-2xl space-y-4"
       >
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black text-white flex items-center gap-2">
@@ -859,7 +859,7 @@ function FilterSheet({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={e => e.stopPropagation()}
-        className="bg-slate-900 border-t border-slate-700 rounded-t-3xl p-5 w-full max-w-lg space-y-5 max-h-[80vh] overflow-y-auto"
+        className="bg-slate-900 border-t border-slate-700 rounded-t-3xl p-5 w-full sm:max-w-lg space-y-5 h-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between">
           <p className="font-bold text-white text-lg">Filter & Sort</p>
@@ -1008,15 +1008,17 @@ function FilterControls({
 
       {/* Sort */}
       <div className={vertical ? '' : 'flex items-center gap-1.5 ml-auto'}>
-        {!vertical && <SortAscending size={13} className="text-slate-500" />}
+        {!vertical && <SortAscending size={13} className="text-slate-500 hidden sm:block" />}
         {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">Sort By</p>}
-        <div className="flex flex-wrap gap-1.5">
+        
+        {/* Desktop Sort (Hidden on mobile unless vertical) */}
+        <div className={clsx("gap-1.5", vertical ? "flex flex-wrap" : "hidden sm:flex")}>
           {SORT_OPTIONS.map(opt => (
             <button
               key={opt.value}
               onClick={() => setSort(opt.value)}
               className={clsx(
-                'px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all',
+                'px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all min-h-[44px] sm:min-h-0',
                 sort === opt.value
                   ? 'bg-orange-500/20 text-orange-300 border-orange-500/50'
                   : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'
@@ -1026,6 +1028,24 @@ function FilterControls({
             </button>
           ))}
         </div>
+
+        {/* Mobile Sort Dropdown (Visible on non-vertical mobile) */}
+        {!vertical && (
+          <div className="sm:hidden w-full relative mt-2">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+               <SortAscending size={16} />
+            </span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="w-full pl-9 pr-4 py-3 min-h-[44px] bg-slate-800 border border-slate-700 rounded-xl text-sm font-bold text-slate-300 appearance-none focus:outline-none focus:border-orange-500/50"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1221,7 +1241,7 @@ export default function TeamBuilderUI({
     <div className="space-y-5">
 
       {/* ─── Action Buttons ─── */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3">
         {mode === 'respond' ? (
           <>
             <div className="flex-1 text-center py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
@@ -1272,7 +1292,7 @@ export default function TeamBuilderUI({
       </div>
 
       {/* ─── Team Slots ─── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {slots.map((card, i) => (
           <TeamSlot
             key={i}
@@ -1376,7 +1396,7 @@ export default function TeamBuilderUI({
         </div>
 
         {/* Grid */}
-        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[450px] overflow-y-auto">
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[450px] overflow-y-auto w-full overflow-x-hidden">
           <AnimatePresence>
             {filteredCards.map(card => {
               const placed = slottedIds.has(card.id!);
