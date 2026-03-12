@@ -187,7 +187,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       // Go First Strike OR Go Synergy First Strike
       if (card.type === 'Go' || (card as any).goSynergy) {
           logEvents.push({ type: 'passive', cardId: card.id, message: `${card.name} strikes first on entry!` });
-          let dmg = Math.floor(card.atk - opponent.def * 0.4);
+          let dmg = Math.floor(Math.max(card.atk * 0.15, card.atk - opponent.def * 0.25));
           if (dmg < 1) dmg = 1;
 
           if ((opponent as any).ironShieldActive) {
@@ -203,6 +203,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
   let cJustEntered = true;
   let dJustEntered = true;
+  let turnsInMatchup = 0;
 
   while (cIdx < 3 && dIdx < 3) {
     const cCard = cTeam[cIdx];
@@ -220,11 +221,11 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         // Someone died from first strike
         if (cCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
-            cIdx++; cJustEntered = true;
+            cIdx++; cJustEntered = true; turnsInMatchup = 0;
         }
         if (dCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
-            dIdx++; dJustEntered = true;
+            dIdx++; dJustEntered = true; turnsInMatchup = 0;
         }
         log.push({
             turnNumber, cCardId: cCard.id, dCardId: dCard.id,
@@ -302,8 +303,10 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     if ((dCard as any).rustSynergy) dDmgReceivedMult -= (dCard as any).rustSynergy;
 
     // Base damage formula
-    let cDmgToD = Math.floor((cCard.atk * cAtkBonus * cTypeMult) - (dDefEffective * 0.4));
-    let dDmgToC = Math.floor((dCard.atk * dAtkBonus * dTypeMult) - (cDefEffective * 0.4));
+    let cBaseAtk = cCard.atk * cAtkBonus * cTypeMult;
+    let dBaseAtk = dCard.atk * dAtkBonus * dTypeMult;
+    let cDmgToD = Math.floor(Math.max(cBaseAtk * 0.15, cBaseAtk - (dDefEffective * 0.25)));
+    let dDmgToC = Math.floor(Math.max(dBaseAtk * 0.15, dBaseAtk - (cDefEffective * 0.25)));
 
     if (cDmgToD < 1) cDmgToD = 1;
     if (dDmgToC < 1) dDmgToC = 1;
@@ -352,14 +355,14 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // End of Turn Effects (Regen)
     if (cCard.hp > 0 && (cCard.type === 'Python' || (cCard as any).pySynergy)) {
-        const healPct = cCard.type === 'Python' ? 0.05 : (cCard as any).pySynergy;
-        const heal = Math.floor(cCard.maxHp * healPct);
+        const healPct = cCard.type === 'Python' ? 0.1 : ((cCard as any).pySynergy * 2);
+        const heal = Math.floor(cCard.atk * healPct);
         cCard.hp = Math.min(cCard.maxHp, cCard.hp + heal);
         turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[Python] Regenerated ${heal} HP.` });
     }
     if (dCard.hp > 0 && (dCard.type === 'Python' || (dCard as any).pySynergy)) {
-        const healPct = dCard.type === 'Python' ? 0.05 : (dCard as any).pySynergy;
-        const heal = Math.floor(dCard.maxHp * healPct);
+        const healPct = dCard.type === 'Python' ? 0.1 : ((dCard as any).pySynergy * 2);
+        const heal = Math.floor(dCard.atk * healPct);
         dCard.hp = Math.min(dCard.maxHp, dCard.hp + heal);
         turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[Python] Regenerated ${heal} HP.` });
     }
@@ -367,14 +370,14 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     // Defeats
     if (cCard.hp <= 0 && dCard.hp <= 0) {
         turnEvents.push({ type: 'draw', message: `Both ${cCard.name} and ${dCard.name} go down!` });
-        cIdx++; cJustEntered = true;
-        dIdx++; dJustEntered = true;
+        cIdx++; cJustEntered = true; turnsInMatchup = 0;
+        dIdx++; dJustEntered = true; turnsInMatchup = 0;
     } else if (cCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
-        cIdx++; cJustEntered = true;
+        cIdx++; cJustEntered = true; turnsInMatchup = 0;
     } else if (dCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
-        dIdx++; dJustEntered = true;
+        dIdx++; dJustEntered = true; turnsInMatchup = 0;
     }
 
     log.push({
@@ -389,6 +392,50 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     });
 
     turnNumber++;
+    turnsInMatchup++;
+
+    // 50-turn cap per matchup ties breaker
+    if (turnsInMatchup >= 50) {
+        console.warn(`[BattleResolver] 50-turn cap reached between ${cCard.name} and ${dCard.name}!`);
+        
+        // Resolve by remaining HP percentage
+        const cPct = cCard.hp / cCard.maxHp;
+        const dPct = dCard.hp / dCard.maxHp;
+        
+        let tiebreakerEvents: BattleLogEvent[] = [
+            { type: 'passive', message: `Turn cap reached! Resolving matchup by HP%...` }
+        ];
+
+        if (cPct > dPct) {
+            dCard.hp = 0;
+            tiebreakerEvents.push({ type: 'defeat', cardId: dCard.id, message: `${cCard.name} wins by HP advantage (${Math.floor(cPct*100)}% to ${Math.floor(dPct*100)}%)!` });
+            dIdx++; dJustEntered = true; turnsInMatchup = 0;
+        } else if (dPct > cPct) {
+            cCard.hp = 0;
+            tiebreakerEvents.push({ type: 'defeat', cardId: cCard.id, message: `${dCard.name} wins by HP advantage (${Math.floor(dPct*100)}% to ${Math.floor(cPct*100)}%)!` });
+            cIdx++; cJustEntered = true; turnsInMatchup = 0;
+        } else {
+            // true tie
+            cCard.hp = 0;
+            dCard.hp = 0;
+            tiebreakerEvents.push({ type: 'draw', message: `Exact HP% draw! Both go down!` });
+            cIdx++; cJustEntered = true; turnsInMatchup = 0;
+            dIdx++; dJustEntered = true; turnsInMatchup = 0;
+        }
+
+        log.push({
+            turnNumber,
+            cCardId: cCard.id,
+            dCardId: dCard.id,
+            cHpStart: cCard.hp,
+            dHpStart: dCard.hp,
+            cHpEnd: Math.max(0, cCard.hp),
+            dHpEnd: Math.max(0, dCard.hp),
+            events: tiebreakerEvents
+        });
+        turnNumber++;
+    }
+
     // Failsafe wrapper to prevent infinite loops from 1 DMG minimums if HP gets incredibly high somehow (shouldn't realistically happen)
     if (turnNumber > 200) {
         log.push({ turnNumber, cCardId: cCard.id, dCardId: dCard.id, cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: 0, dHpEnd: 0, events: [{type: 'battle_end', message:'Turn Limit Reached!'}] });
