@@ -32,6 +32,7 @@ interface ProfileData {
   };
   topCards: any[];
   friends: FriendInfo[];
+  hasLeveledUpRecently: boolean;
 }
 
 export default function ProfilePage() {
@@ -180,7 +181,11 @@ export default function ProfilePage() {
                   <h1 className="text-5xl font-black tracking-tighter text-white mb-4 drop-shadow-sm">{profile.user.username}</h1>
                   
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-semibold">
-                    <span className="px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                    <span className={`px-4 py-1.5 rounded-full border shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-all ${
+                        profile.hasLeveledUpRecently 
+                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-pulse ring-2 ring-yellow-400 ring-offset-2 ring-offset-slate-900'
+                          : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                      }`}>
                       Level {xpData.currentLevel} Developer
                     </span>
                     <span className="flex items-center gap-1.5 text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full border border-yellow-400/20">
