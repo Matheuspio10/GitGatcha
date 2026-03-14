@@ -22,6 +22,8 @@ export type CardProps = {
   stamina?: number;
   lastUsedAt?: Date | string;
   inActiveTeam?: boolean;
+  loyaltyTier?: string;
+  loyaltyCount?: number;
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -49,6 +51,19 @@ const LANG_COLORS: Record<string, string> = {
   Unknown: 'from-slate-700/20 to-slate-900/20',
 };
 
+const LOYALTY_VISUALS: Record<string, { borderClass?: string; glowColor?: string; badgeIcon?: string; badgeColor?: string }> = {
+  none: {},
+  veteran: { badgeIcon: '⭐', badgeColor: '#a78bfa' },
+  trusted: { borderClass: 'border-yellow-500/60', glowColor: 'rgba(251,191,36,0.15)', badgeIcon: '🛡️', badgeColor: '#fbbf24' },
+  reliable: { borderClass: 'border-orange-500/60', glowColor: 'rgba(249,115,22,0.2)', badgeIcon: '🔥', badgeColor: '#f97316' },
+  legendary_bond: { borderClass: 'border-pink-500/60', glowColor: 'rgba(236,72,153,0.25)', badgeIcon: '💎', badgeColor: '#ec4899' },
+  eternal: { borderClass: 'border-cyan-400/70', glowColor: 'rgba(6,182,212,0.3)', badgeIcon: '♾️', badgeColor: '#06b6d4' },
+};
+
+function getLoyaltyBorderOverride(tier: string): string | undefined {
+  return LOYALTY_VISUALS[tier]?.borderClass;
+}
+
 export function Card({
   name,
   githubUsername,
@@ -65,8 +80,12 @@ export function Card({
   stamina,
   lastUsedAt,
   inActiveTeam,
+  loyaltyTier,
+  loyaltyCount,
 }: CardProps) {
   
+  const tier = loyaltyTier || 'none';
+  const loyaltyVisual = LOYALTY_VISUALS[tier] || {};
   const borderGlow = RARITY_COLORS[rarity] || RARITY_COLORS.Common;
   const bgGradient = LANG_COLORS[primaryLanguage] || LANG_COLORS.Unknown;
 
@@ -76,21 +95,60 @@ export function Card({
   const displayAtk = Math.floor(atk * multiplier);
   const displayDef = Math.floor(def * multiplier);
 
+  // Loyalty tier overrides border for trusted+ tiers
+  const loyaltyBorder = getLoyaltyBorderOverride(tier);
+  const isEternal = tier === 'eternal';
+  const isLegendaryBond = tier === 'legendary_bond';
+
   const cardClasses = clsx(
     "relative w-64 h-96 rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group",
-    multiplier < 1 ? (currentStamina === 0 ? "border-red-900 shadow-red-900/50" : "border-yellow-600 shadow-yellow-600/50") : borderGlow,
+    multiplier < 1 ? (currentStamina === 0 ? "border-red-900 shadow-red-900/50" : "border-yellow-600 shadow-yellow-600/50") : (loyaltyBorder || borderGlow),
     isShiny && multiplier === 1 ? "shadow-[0_0_30px_rgba(255,255,255,0.8)] border-white/80" : "shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]",
     currentStamina === 0 && "opacity-80 grayscale-[50%]"
   );
 
-  return (
-    disableLink ? (
-      <motion.div
-        whileHover={{ scale: 1.05, translateY: -2 }}
-        className={cardClasses}
-      >
+  const cardContent = (
+    <>
       {/* Background Gradient based on Lang */}
       <div className={clsx("absolute inset-0 bg-gradient-to-br opacity-50", bgGradient)} />
+
+      {/* Eternal holographic frame */}
+      {isEternal && (
+        <div
+          className="absolute inset-0 pointer-events-none z-[5]"
+          style={{
+            background: 'linear-gradient(135deg, rgba(6,182,212,0.15) 0%, rgba(168,85,247,0.15) 25%, rgba(236,72,153,0.15) 50%, rgba(251,191,36,0.15) 75%, rgba(6,182,212,0.15) 100%)',
+            backgroundSize: '400% 400%',
+            animation: 'holoShift 6s ease infinite',
+          }}
+        />
+      )}
+
+      {/* Legendary Bond particle effect */}
+      {isLegendaryBond && (
+        <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-pink-400/60"
+              style={{
+                left: `${15 + i * 14}%`,
+                animation: `particleFloat ${2 + i * 0.4}s ease-in-out infinite`,
+                animationDelay: `${i * 0.3}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Loyalty glow overlay */}
+      {loyaltyVisual.glowColor && multiplier === 1 && (
+        <div
+          className="absolute inset-0 pointer-events-none z-[4]"
+          style={{ boxShadow: `inset 0 0 30px ${loyaltyVisual.glowColor}` }}
+        />
+      )}
+
       {isShiny && (
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-60 mix-blend-color-dodge animate-pulse pointer-events-none z-20" />
       )}
@@ -101,9 +159,16 @@ export function Card({
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-300/40 blur-3xl rounded-full pointer-events-none z-10 mix-blend-screen" />
       )}
       
-      {/* Top Banner: Name and Rarity */}
+      {/* Top Banner: Name, Rarity, and Loyalty Badge */}
       <div className="relative z-10 bg-black/60 p-2 flex justify-between items-center border-b border-white/20">
-        <h3 className="font-bold truncate text-sm flex-1">{name}</h3>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {loyaltyVisual.badgeIcon && (
+            <span className="text-sm flex-shrink-0" title={`${LOYALTY_VISUALS[tier]?.badgeColor ? tier.replace('_', ' ') : ''}`}>
+              {loyaltyVisual.badgeIcon}
+            </span>
+          )}
+          <h3 className="font-bold truncate text-sm">{name}</h3>
+        </div>
         <span className="text-xs font-semibold ml-2 px-1.5 py-0.5 rounded-sm bg-white/10">{rarity}</span>
       </div>
 
@@ -152,17 +217,42 @@ export function Card({
       <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center">
         <div className="flex flex-col items-center min-w-0">
           <Sword size={16} weight="fill" className={multiplier < 1 ? "text-red-600 mb-1" : "text-red-400 mb-1"} />
-          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500")}>{displayAtk}</span>
+          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500", isEternal && "text-cyan-300")}>{displayAtk}</span>
         </div>
         <div className="flex flex-col items-center min-w-0 border-x border-white/20">
           <Shield size={16} weight="fill" className={multiplier < 1 ? "text-blue-600 mb-1" : "text-blue-400 mb-1"} />
-          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-blue-500")}>{displayDef}</span>
+          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-blue-500", isEternal && "text-cyan-300")}>{displayDef}</span>
         </div>
         <div className="flex flex-col items-center min-w-0">
           <Heart size={16} weight="fill" className="text-green-400 mb-1" />
-          <span className="font-bold text-sm">{hp}</span>
+          <span className={clsx("font-bold text-sm", isEternal && "text-cyan-300")}>{hp}</span>
         </div>
       </div>
+
+      {/* CSS animations for loyalty effects */}
+      <style jsx>{`
+        @keyframes holoShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes particleFloat {
+          0%, 100% { top: 100%; opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.6; }
+          50% { top: 10%; }
+        }
+      `}</style>
+    </>
+  );
+
+  return (
+    disableLink ? (
+      <motion.div
+        whileHover={{ scale: 1.05, translateY: -2 }}
+        className={cardClasses}
+      >
+        {cardContent}
       </motion.div>
     ) : (
       <motion.a
@@ -172,80 +262,7 @@ export function Card({
         whileHover={{ scale: 1.05, translateY: -2 }}
         className={cardClasses}
       >
-        {/* Background Gradient based on Lang */}
-        <div className={clsx("absolute inset-0 bg-gradient-to-br opacity-50", bgGradient)} />
-        {isShiny && (
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-60 mix-blend-color-dodge animate-pulse pointer-events-none z-20" />
-        )}
-        {isShiny && (
-          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-30 mix-blend-overlay" />
-        )}
-        {isShiny && (
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-300/40 blur-3xl rounded-full pointer-events-none z-10 mix-blend-screen" />
-        )}
-        
-        {/* Top Banner: Name and Rarity */}
-        <div className="relative z-10 bg-black/60 p-2 flex justify-between items-center border-b border-white/20">
-          <h3 className="font-bold truncate text-sm flex-1">{name}</h3>
-          <span className="text-xs font-semibold ml-2 px-1.5 py-0.5 rounded-sm bg-white/10">{rarity}</span>
-        </div>
-
-        {/* Main Image */}
-        <div className="relative z-10 w-full h-40 bg-black flex items-center justify-center p-2">
-          <div className="w-full h-full rounded-md overflow-hidden ring-2 ring-white/10 relative">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={githubUsername} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">No Image</div>
-            )}
-            {quantity !== undefined && quantity > 1 && (
-              <div className="absolute top-1 right-1 bg-blue-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full border border-blue-400">
-                x{quantity}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Flavor Text / Bio */}
-        <div className="relative z-10 flex-1 p-3 bg-gradient-to-t from-black/80 to-transparent">
-          <p className="text-xs italic text-stone-300 line-clamp-4 leading-relaxed tracking-wide font-serif">
-            &quot;{flavorText}&quot;
-          </p>
-        </div>
-
-        {/* Stamina Bar */}
-        {currentStamina !== undefined && (
-          <div className={clsx("relative z-10 px-3 pt-2 pb-2 text-xs border-t", currentStamina < 60 ? 'bg-black/90 border-yellow-500/30' : 'bg-black/80 border-white/10')}>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className={clsx("font-bold uppercase tracking-wider text-[10px]", currentStamina < 60 ? 'text-yellow-500' : 'text-slate-400')}>
-                {currentStamina === 0 ? 'Exhausted' : currentStamina < 60 ? 'Fatigued' : 'Stamina'}
-              </span>
-              <span className={clsx("font-mono font-bold text-[11px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
-              <div 
-                className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : currentStamina < 80 ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-green-500')}
-                style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Stats area */}
-        <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center">
-          <div className="flex flex-col items-center min-w-0">
-            <Sword size={18} weight="fill" className={multiplier < 1 ? "text-red-600 mb-1" : "text-red-400 mb-1"} />
-            <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500")}>{displayAtk}</span>
-          </div>
-          <div className="flex flex-col items-center min-w-0 border-x border-white/20">
-            <Shield size={18} weight="fill" className={multiplier < 1 ? "text-blue-600 mb-1" : "text-blue-400 mb-1"} />
-            <span className={clsx("font-bold text-sm", multiplier < 1 && "text-blue-500")}>{displayDef}</span>
-          </div>
-          <div className="flex flex-col items-center min-w-0">
-            <Heart size={18} weight="fill" className="text-green-400 mb-1" />
-            <span className="font-bold text-sm">{hp}</span>
-          </div>
-        </div>
+        {cardContent}
       </motion.a>
     )
   );

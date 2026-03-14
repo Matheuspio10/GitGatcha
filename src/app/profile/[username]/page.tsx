@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Trophy, Users, Sword, Plus, UserMinus, Clock } from '@phosphor-icons/react';
+import { 
+  Trophy, Shield, Sword, Heart, UserPlus, 
+  Users, UserMinus, UserCheck, Star, Envelope,
+  Sparkle, ShieldCheck, Fire, Plus, Clock
+} from '@phosphor-icons/react';
 import { Navbar } from '@/components/Navbar';
 import { getXPProgress } from '@/lib/xpService';
+import { Card } from '@/components/Card';
 
 interface FriendInfo {
   id: string;
@@ -33,6 +38,8 @@ interface ProfileData {
   topCards: any[];
   friends: FriendInfo[];
   hasLeveledUpRecently: boolean;
+  hasLegendaryBondPrestige: boolean;
+  showcaseCards: any[];
 }
 
 export default function ProfilePage() {
@@ -178,23 +185,36 @@ export default function ProfilePage() {
 
                 {/* Profile Info */}
                 <div className="flex-1 text-center md:text-left mt-2">
-                  <h1 className="text-5xl font-black tracking-tighter text-white mb-4 drop-shadow-sm">{profile.user.username}</h1>
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight leading-none mb-3">
+                    {profile.user.username}
+                  </h1>
                   
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm font-semibold">
+                  {/* Active Badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 border border-slate-700 rounded-full text-xs font-bold text-slate-300 shadow-inner">
+                      <Star weight="fill" className="text-yellow-500" />
+                      Level {profile.user.level}
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs font-bold text-indigo-400">
+                      <Trophy weight="fill" />
+                      {profile.user.rating} Rating
+                    </span>
+                    {profile.hasLegendaryBondPrestige && (
+                      <span className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full text-xs font-bold text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)] animate-pulse">
+                        <Sparkle weight="fill" />
+                        Legendary Bond
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-full border border-emerald-400/20">
+                      <Sword size={18} weight="fill" />
+                      {winRate}% Win Rate
+                    </span>
                     <span className={`px-4 py-1.5 rounded-full border shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-all ${
                         profile.hasLeveledUpRecently 
                           ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-pulse ring-2 ring-yellow-400 ring-offset-2 ring-offset-slate-900'
                           : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
                       }`}>
                       Level {xpData.currentLevel} Developer
-                    </span>
-                    <span className="flex items-center gap-1.5 text-yellow-400 bg-yellow-400/10 px-4 py-1.5 rounded-full border border-yellow-400/20">
-                      <Trophy size={18} weight="fill" className="drop-shadow-sm" />
-                      {profile.user.rating} Elo
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-full border border-emerald-400/20">
-                      <Sword size={18} weight="fill" />
-                      {winRate}% Win Rate
                     </span>
                   </div>
 
@@ -294,6 +314,44 @@ export default function ProfilePage() {
               <div className="text-slate-400 text-sm font-semibold mt-1 uppercase tracking-wider">Friends</div>
             </div>
           </div>
+
+          {/* Hall of Fame / Showcase */}
+          {profile.showcaseCards && profile.showcaseCards.length > 0 && (
+            <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 mb-2 flex items-center gap-3 relative z-10">
+                <Trophy size={32} weight="duotone" className="text-yellow-400" />
+                Hall of Fame
+              </h2>
+              <p className="text-slate-400 text-sm font-medium mb-8 relative z-10 max-w-2xl">
+                The most loyal cards in {profile.user.username}'s collection, battle-tested and forged through countless victories.
+              </p>
+              
+              <div className="flex flex-none overflow-x-auto gap-6 sm:gap-8 pb-8 pt-2 snap-x snap-mandatory hide-scrollbar relative z-10">
+                {profile.showcaseCards.map((card: any) => (
+                  <div key={card.id} className="snap-center sm:snap-start shrink-0">
+                    <Card
+                      id={card.id}
+                      name={card.name}
+                      githubUsername={card.githubUsername}
+                      avatarUrl={card.avatarUrl || ''}
+                      flavorText={card.flavorText}
+                      atk={card.atk}
+                      def={card.def}
+                      hp={card.hp}
+                      rarity={card.rarity}
+                      primaryLanguage={card.primaryLanguage || 'Unknown'}
+                      quantity={card.quantity}
+                      disableLink={false}
+                      isShiny={card.isShiny}
+                      loyaltyTier={card.loyaltyTier}
+                      loyaltyCount={card.loyaltyCount}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Top Cards Showcase */}
           <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl">

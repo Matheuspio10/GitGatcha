@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import { resolve3v3Battle, BattleCard, getCardType } from './battleResolver';
 import { syncCardStamina } from './staminaService';
+import { incrementLoyaltyAndCheck, updateLifetimeStats, MilestoneUnlock } from './loyaltyService';
 
 const RARITY_ORDER: Record<string, number> = {
   Common: 1,
@@ -79,6 +80,7 @@ export async function resolveRandomBattle(
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
+    loyaltyTier: c.loyaltyTier || 'none',
   }));
 
   const challengerAvgRank = getAverageRarityRank(cTeam);
@@ -205,6 +207,24 @@ export async function resolveRandomBattle(
     momentumAchieved: !!c.statsMomentumAchieved,
   }));
 
+  // --- Loyalty Processing for challenger cards ---
+  const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
+  for (const c of cTeam) {
+    const unlocks = await incrementLoyaltyAndCheck(c.id);
+    if (unlocks.length > 0) {
+      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
+    }
+    const cardStats = battleResult.challengerTeamState.find(cs => cs.id === c.id);
+    if (cardStats) {
+      await updateLifetimeStats(c.id, {
+        damageDealt: cardStats.statsDealtDamage || 0,
+        won: playerWon,
+        critsLanded: cardStats.statsCritsLanded || 0,
+        passivesTriggered: cardStats.statsPassivesTriggered || 0,
+      });
+    }
+  }
+
   return {
     battle,
     challengerTeam: cTeam,
@@ -214,6 +234,7 @@ export async function resolveRandomBattle(
     xpResult,
     log: battleResult.log,
     battleStats,
+    loyaltyUnlocks,
   };
 }
 
@@ -246,6 +267,7 @@ export async function resolveFriendBattle(
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
+    loyaltyTier: c.loyaltyTier || 'none',
   }));
   const challengerAvgRank = getAverageRarityRank(cTeam);
 
@@ -261,6 +283,7 @@ export async function resolveFriendBattle(
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
+    loyaltyTier: c.loyaltyTier || 'none',
   }));
   const defenderAvgRank = getAverageRarityRank(dTeam);
 
@@ -362,6 +385,32 @@ export async function resolveFriendBattle(
     });
   }
 
+  // --- Loyalty Processing for ALL participating cards ---
+  const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
+  const allCardsWithTeam = [
+    ...cTeam.map(c => ({ card: c, team: 'CHALLENGER' as const })),
+    ...dTeam.map(c => ({ card: c, team: 'DEFENDER' as const })),
+  ];
+
+  for (const { card: c, team } of allCardsWithTeam) {
+    const unlocks = await incrementLoyaltyAndCheck(c.id);
+    if (unlocks.length > 0) {
+      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
+    }
+    const cardState = team === 'CHALLENGER'
+      ? battleResult.challengerTeamState.find(cs => cs.id === c.id)
+      : battleResult.defenderTeamState.find(cs => cs.id === c.id);
+    if (cardState) {
+      const didWin = (team === 'CHALLENGER' && challengerWon) || (team === 'DEFENDER' && !challengerWon);
+      await updateLifetimeStats(c.id, {
+        damageDealt: cardState.statsDealtDamage || 0,
+        won: didWin,
+        critsLanded: cardState.statsCritsLanded || 0,
+        passivesTriggered: cardState.statsPassivesTriggered || 0,
+      });
+    }
+  }
+
   return {
     battle: updatedBattle,
     winnerSide: battleResult.winner,
@@ -369,5 +418,6 @@ export async function resolveFriendBattle(
     defenderRewards,
     xpResult: challengerXpResult,
     log: battleResult.log,
+    loyaltyUnlocks,
   };
 }

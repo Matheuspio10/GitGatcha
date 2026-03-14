@@ -104,6 +104,11 @@ model UserCard {
   stamina   Int      @default(100)
   lastUsedAt DateTime @default(now()) @map("last_used_at")
   inActiveTeam Boolean @default(false) @map("in_active_team")
+  loyaltyCount      Int      @default(0)
+  loyaltyTier       String   @default("none")
+  loyaltyMilestones Json     @default("[]")
+  lifetimeStats     Json     @default("{}")
+  showcaseOrder     Int?
   createdAt DateTime @default(now())
 }
 
