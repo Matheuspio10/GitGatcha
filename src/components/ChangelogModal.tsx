@@ -73,7 +73,12 @@ export function ChangelogModal({
                     </div>
 
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-slate-700/50 prose prose-invert max-w-none prose-sm prose-headings:font-bold prose-headings:text-indigo-300 prose-a:text-blue-400">
+                      <div className="mt-4 pt-4 border-t border-slate-700/50 prose prose-invert max-w-none prose-sm 
+                        prose-h3:text-indigo-300 prose-h3:font-black prose-h3:bg-indigo-500/10 prose-h3:px-3 prose-h3:py-1.5 prose-h3:rounded-lg prose-h3:border-l-2 prose-h3:border-indigo-500 prose-h3:mb-4
+                        prose-p:text-slate-300 prose-p:leading-relaxed
+                        prose-li:text-slate-300
+                        prose-strong:text-white prose-strong:font-bold
+                        prose-hr:border-slate-800 prose-hr:my-6">
                         <ReactMarkdown>
                           {entry.body}
                         </ReactMarkdown>
