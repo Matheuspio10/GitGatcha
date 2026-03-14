@@ -101,7 +101,7 @@ export function Card({
   const isLegendaryBond = tier === 'legendary_bond';
 
   const cardClasses = clsx(
-    "relative w-64 h-96 rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group",
+    "relative w-64 h-[410px] rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group flex-shrink-0",
     multiplier < 1 ? (currentStamina === 0 ? "border-red-900 shadow-red-900/50" : "border-yellow-600 shadow-yellow-600/50") : (loyaltyBorder || borderGlow),
     isShiny && multiplier === 1 ? "shadow-[0_0_30px_rgba(255,255,255,0.8)] border-white/80" : "shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]",
     currentStamina === 0 && "opacity-80 grayscale-[50%]"
@@ -173,7 +173,7 @@ export function Card({
       </div>
 
       {/* Main Image */}
-      <div className="relative z-10 w-full h-40 bg-black flex items-center justify-center p-2">
+      <div className="relative z-10 w-full h-36 bg-black flex items-center justify-center p-2 flex-shrink-0">
         <div className="w-full h-full rounded-md overflow-hidden ring-2 ring-white/10 relative">
           {avatarUrl ? (
             <img src={avatarUrl} alt={githubUsername} className="w-full h-full object-cover" />
@@ -189,8 +189,8 @@ export function Card({
       </div>
 
       {/* Flavor Text / Bio */}
-      <div className="relative z-10 flex-1 p-3 bg-gradient-to-t from-black/80 to-transparent">
-        <p className="text-xs italic text-stone-300 line-clamp-4 leading-relaxed tracking-wide font-serif">
+      <div className="relative z-10 flex-1 p-3 bg-gradient-to-t from-black/80 to-transparent min-h-0 overflow-hidden">
+        <p className="text-xs italic text-stone-300 line-clamp-3 leading-relaxed tracking-wide font-serif">
           &quot;{flavorText}&quot;
         </p>
       </div>
@@ -214,7 +214,7 @@ export function Card({
       )}
 
       {/* Stats area */}
-      <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center">
+      <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center flex-shrink-0">
         <div className="flex flex-col items-center min-w-0">
           <Sword size={16} weight="fill" className={multiplier < 1 ? "text-red-600 mb-1" : "text-red-400 mb-1"} />
           <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500", isEternal && "text-cyan-300")}>{displayAtk}</span>
