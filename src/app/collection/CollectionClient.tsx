@@ -494,8 +494,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <X size={24} />
              </button>
              
-             <div className="flex flex-col items-center gap-4 flex-shrink-0 mt-4 md:mt-0 xl:mr-8 origin-top">
-               <div className="pointer-events-none scale-90 sm:scale-100 xl:scale-110 origin-top">
+             <div className="flex flex-col items-center flex-shrink-0 mt-4 md:mt-0 xl:mr-8 origin-top">
+               <div className="pointer-events-none scale-90 sm:scale-100 xl:scale-110 origin-top mb-2 sm:mb-4 xl:mb-12">
                  <Card
                    {...selectedCard}
                    quantity={1 + (selectedCard.shards || 0)}
@@ -506,7 +506,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                </div>
                
                {/* Buttons below the card */}
-               <div className="flex flex-row gap-3 items-center justify-center w-full mt-2">
+               <div className="flex flex-row gap-3 items-center justify-center w-full max-w-[280px] relative z-20">
                  <a 
                    href={`https://github.com/${selectedCard.githubUsername}`}
                    target="_blank"
