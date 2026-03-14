@@ -78,8 +78,9 @@ export function Card({
 
   const cardClasses = clsx(
     "relative w-64 h-96 rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group",
-    borderGlow,
-    isShiny ? "shadow-[0_0_30px_rgba(255,255,255,0.8)] border-white/80" : "shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
+    multiplier < 1 ? (currentStamina === 0 ? "border-red-900 shadow-red-900/50" : "border-yellow-600 shadow-yellow-600/50") : borderGlow,
+    isShiny && multiplier === 1 ? "shadow-[0_0_30px_rgba(255,255,255,0.8)] border-white/80" : "shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]",
+    currentStamina === 0 && "opacity-80 grayscale-[50%]"
   );
 
   return (
@@ -131,18 +132,19 @@ export function Card({
 
       {/* Stamina Bar */}
       {currentStamina !== undefined && (
-        <div className="relative z-10 bg-black/80 px-3 pt-2 pb-1 text-xs">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Stamina</span>
-            <span className={clsx("font-mono text-[10px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
+        <div className={clsx("relative z-10 px-3 pt-2 pb-2 text-xs border-t", currentStamina < 60 ? 'bg-black/90 border-yellow-500/30' : 'bg-black/80 border-white/10')}>
+          <div className="flex justify-between items-center mb-1.5">
+            <span className={clsx("font-bold uppercase tracking-wider text-[10px]", currentStamina < 60 ? 'text-yellow-500' : 'text-slate-400')}>
+              {currentStamina === 0 ? 'Exhausted' : currentStamina < 60 ? 'Fatigued' : 'Stamina'}
+            </span>
+            <span className={clsx("font-mono font-bold text-[11px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
           </div>
-          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
             <div 
-              className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+              className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : currentStamina < 80 ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-green-500')}
               style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
             />
           </div>
-          {currentStamina === 0 && <div className="text-red-500 text-[9px] font-black tracking-widest text-center mt-1 animate-pulse uppercase">Exhausted</div>}
         </div>
       )}
 
@@ -213,18 +215,19 @@ export function Card({
 
         {/* Stamina Bar */}
         {currentStamina !== undefined && (
-          <div className="relative z-10 bg-black/80 px-3 pt-2 pb-1 text-xs">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Stamina</span>
-              <span className={clsx("font-mono text-[10px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
+          <div className={clsx("relative z-10 px-3 pt-2 pb-2 text-xs border-t", currentStamina < 60 ? 'bg-black/90 border-yellow-500/30' : 'bg-black/80 border-white/10')}>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className={clsx("font-bold uppercase tracking-wider text-[10px]", currentStamina < 60 ? 'text-yellow-500' : 'text-slate-400')}>
+                {currentStamina === 0 ? 'Exhausted' : currentStamina < 60 ? 'Fatigued' : 'Stamina'}
+              </span>
+              <span className={clsx("font-mono font-bold text-[11px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
             </div>
-            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div 
-                className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+                className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : currentStamina < 80 ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-green-500')}
                 style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
               />
             </div>
-            {currentStamina === 0 && <div className="text-red-500 text-[9px] font-black tracking-widest text-center mt-1 animate-pulse uppercase">Exhausted</div>}
           </div>
         )}
 

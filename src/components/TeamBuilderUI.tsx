@@ -288,12 +288,17 @@ function CompactCard({
         <p className={clsx("text-sm font-black leading-tight", multiplier < 1 ? "text-yellow-400" : "text-white")}>{displayAtk + displayDef + card.hp}</p>
         
         {/* Stamina line */}
-        <div className="w-full mt-2 h-[3px] bg-slate-800 rounded-full overflow-hidden" title={`Stamina: ${currentStamina}/100`}>
+        <div className="w-full mt-2 h-[4px] bg-slate-800 rounded-full overflow-hidden shadow-inner flex" title={`Stamina: ${currentStamina}/100`}>
           <div 
-            className={clsx("h-full transition-all duration-500", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+            className={clsx("h-full transition-all duration-500", currentStamina < 40 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : currentStamina < 80 ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-green-500')}
             style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
           />
         </div>
+        {currentStamina < 60 && (
+          <p className={clsx("text-[8px] mt-1 font-bold uppercase", currentStamina === 0 ? "text-red-500 animate-pulse" : "text-yellow-500")}>
+            {currentStamina === 0 ? "Exhaust" : "Fatigue"}
+          </p>
+        )}
       </div>
     </motion.button>
   );
@@ -328,10 +333,11 @@ function TeamSlot({
       className={clsx(
         'relative rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300',
         'w-full max-w-[200px] mx-auto',
-        card ? border : 'border-dashed border-slate-700',
+        multiplier < 1 ? (currentStamina === 0 ? "border-red-900 bg-red-950/20" : "border-yellow-600 bg-yellow-950/20") : (card ? border : 'border-dashed border-slate-700'),
         card ? `shadow-lg ${glow}` : '',
         isActive && 'ring-2 ring-orange-500/60',
-        multiplier < 1 && 'border-yellow-500/50 shadow-yellow-500/20'
+        multiplier < 1 && (currentStamina === 0 ? 'shadow-[0_0_15px_rgba(153,27,27,0.4)]' : 'shadow-[0_0_15px_rgba(202,138,4,0.3)]'),
+        currentStamina === 0 && 'opacity-70 grayscale-[30%]'
       )}
       style={{ minHeight: 220 }}
     >
@@ -368,8 +374,8 @@ function TeamSlot({
             {/* Custom Stamina Display on active Team Slot */}
             <div className="absolute top-2 left-10 z-20">
               {currentStamina < 60 && (
-                <div className="bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/50 text-yellow-300 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <WarningCircle size={10} weight="bold" /> Fatigue
+                <div className={clsx("backdrop-blur-sm text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border", currentStamina === 0 ? "bg-red-500/30 border-red-500/50 text-red-300 animate-pulse" : "bg-yellow-500/30 border-yellow-500/50 text-yellow-300")}>
+                  <WarningCircle size={10} weight="bold" /> {currentStamina === 0 ? 'Exhausted' : 'Fatigued'}
                 </div>
               )}
             </div>
