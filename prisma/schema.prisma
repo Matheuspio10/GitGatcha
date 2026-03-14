@@ -22,6 +22,7 @@ model User {
   rating        Int       @default(1000)
   inventory     Json      @default("[]")
   notifications Json      @default("[]")
+  seenChangelogs Json     @default("[]")
   pendingRewards Json     @default("[]")
   fragments     Json      @default("{}")
   fragmentLogs  Json      @default("[]")
@@ -184,4 +185,13 @@ model Friendship {
   friend    User     @relation("FriendRequests", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
+}
+
+model ChangelogEntry {
+  id        String   @id @default(uuid())
+  version   String
+  title     String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
