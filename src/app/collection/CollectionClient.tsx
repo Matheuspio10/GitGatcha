@@ -494,14 +494,40 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <X size={24} />
              </button>
              
-             <div className="flex-shrink-0 mt-4 md:mt-0 pointer-events-none scale-90 sm:scale-100 xl:scale-110 xl:mr-8 origin-top">
-               <Card
-                 {...selectedCard}
-                 quantity={1 + (selectedCard.shards || 0)}
-                 disableLink={true}
-                 loyaltyTier={selectedCard.loyaltyTier}
-                 loyaltyCount={selectedCard.loyaltyCount}
-               />
+             <div className="flex flex-col items-center gap-4 flex-shrink-0 mt-4 md:mt-0 xl:mr-8 origin-top">
+               <div className="pointer-events-none scale-90 sm:scale-100 xl:scale-110 origin-top">
+                 <Card
+                   {...selectedCard}
+                   quantity={1 + (selectedCard.shards || 0)}
+                   disableLink={true}
+                   loyaltyTier={selectedCard.loyaltyTier}
+                   loyaltyCount={selectedCard.loyaltyCount}
+                 />
+               </div>
+               
+               {/* Buttons below the card */}
+               <div className="flex flex-row gap-3 items-center justify-center w-full mt-2">
+                 <a 
+                   href={`https://github.com/${selectedCard.githubUsername}`}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all hover:scale-105 text-sm"
+                 >
+                   <GithubLogo size={18} weight="fill" />
+                   Open Profile
+                 </a>
+
+                 {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
+                   <button
+                     onClick={() => handleRecoverStamina(selectedCard)}
+                     disabled={recovering}
+                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all hover:scale-105 text-sm disabled:opacity-50 disabled:hover:scale-100"
+                   >
+                     <Lightning size={18} weight="fill" />
+                     {recovering ? 'Recovering...' : 'Cure (100)'}
+                   </button>
+                 )}
+               </div>
              </div>
 
              {/* Loyalty Progress Section */}
@@ -583,29 +609,6 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                      </div>
                    </div>
                  </div>
-               )}
-             </div>
-             
-             <div className="flex flex-col sm:flex-row gap-4 items-center w-full max-w-md">
-               <a 
-                 href={`https://github.com/${selectedCard.githubUsername}`}
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all hover:scale-105 w-full"
-               >
-                 <GithubLogo size={20} weight="fill" />
-                 Open Profile
-               </a>
-
-               {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
-                 <button
-                   onClick={() => handleRecoverStamina(selectedCard)}
-                   disabled={recovering}
-                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 w-full disabled:opacity-50 disabled:hover:scale-100"
-                 >
-                   <Lightning size={20} weight="fill" />
-                   {recovering ? 'Recovering...' : 'Cure (100 BITS)'}
-                 </button>
                )}
              </div>
           </div>
