@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { Coin, X, List } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
+import { ChangelogFeature } from './ChangelogFeature';
 
 export function Navbar({ username, currency: initialCurrency }: { username: string, currency: number }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
@@ -86,6 +87,7 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
               <span className="font-bold text-sm">{currency}</span>
               <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
             </button>
+            <ChangelogFeature username={username} />
             <NotificationBell />
             
             {/* Desktop Profile */}
