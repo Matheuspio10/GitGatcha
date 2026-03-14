@@ -28,6 +28,9 @@ export default async function BattlePage() {
     rarity: uc.card.rarity,
     primaryLanguage: uc.card.primaryLanguage || 'Unknown',
     pack: (uc.card as any).pack || 'Unknown',
+    stamina: uc.stamina,
+    lastUsedAt: uc.lastUsedAt,
+    inActiveTeam: uc.inActiveTeam,
   }));
 
   return (

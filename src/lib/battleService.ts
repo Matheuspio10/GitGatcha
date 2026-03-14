@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { resolve3v3Battle, BattleCard, getCardType } from './battleResolver';
+import { syncCardStamina } from './staminaService';
 
 const RARITY_ORDER: Record<string, number> = {
   Common: 1,
@@ -73,6 +74,7 @@ export async function resolveRandomBattle(
     def: c.def,
     hp: c.hp,
     maxHp: c.hp,
+    stamina: c.stamina ?? 100,
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
@@ -99,6 +101,7 @@ export async function resolveRandomBattle(
     def: c.def,
     hp: c.hp,
     maxHp: c.hp,
+    stamina: 100, // Random opponents start with 100 stamina
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
@@ -159,7 +162,19 @@ export async function resolveRandomBattle(
         data: {
           rating: playerWon ? eloRes.newWinnerRating : eloRes.newLoserRating
         }
-      });
+    });
+  }
+
+  // Deduct 20 stamina from challenger cards
+  const now = new Date();
+  for (const c of cTeam) {
+    await prisma.userCard.update({
+      where: { id: c.id },
+      data: {
+        stamina: { decrement: 20 },
+        lastUsedAt: now,
+      }
+    }); // c.id is userCardId as mapped in api route
   }
 
   return {
@@ -195,7 +210,8 @@ export async function resolveFriendBattle(
     atk: c.atk,
     def: c.def,
     hp: c.hp,
-    maxHp: c.hp,
+    maxHp: c.maxHp || c.hp,
+    stamina: c.stamina ?? 100,
     rarity: c.rarity,
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
@@ -210,6 +226,7 @@ export async function resolveFriendBattle(
     def: c.def,
     hp: c.hp,
     maxHp: c.hp,
+    stamina: c.stamina ?? 100,
     rarity: c.rarity as any,
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
@@ -285,6 +302,21 @@ export async function resolveFriendBattle(
         await prisma.user.update({ where: { id: loser.id }, data: { rating: newLoserRating } });
       }
     }
+  }
+
+  // Deduct 20 stamina from all participating cards
+  const now = new Date();
+  for (const c of cTeam) {
+    await prisma.userCard.update({
+      where: { id: c.id },
+      data: { stamina: { decrement: 20 }, lastUsedAt: now }
+    });
+  }
+  for (const c of dTeam) {
+    await prisma.userCard.update({
+      where: { id: c.id },
+      data: { stamina: { decrement: 20 }, lastUsedAt: now }
+    });
   }
 
   return {

@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { CardProps } from '@/components/Card';
 import clsx from 'clsx';
+import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -220,6 +221,12 @@ function CompactCard({
   const langColor = LANG_COLOR[card.primaryLanguage || 'Unknown'] || LANG_COLOR.Unknown;
   const glow = RARITY_GLOW[card.rarity] || '';
 
+  const currentStamina = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
+  const multiplier = getStaminaMultiplier(currentStamina);
+  
+  const displayAtk = Math.floor(card.atk * multiplier);
+  const displayDef = Math.floor(card.def * multiplier);
+
   return (
     <motion.button
       onClick={onClick}
@@ -231,6 +238,8 @@ function CompactCard({
         border,
         placed
           ? 'opacity-40 cursor-default'
+          : currentStamina === 0
+          ? 'opacity-50 cursor-not-allowed border-red-900/50'
           : `cursor-pointer hover:shadow-lg ${glow} hover:shadow-current`,
         dimmed && 'grayscale',
       )}
@@ -261,11 +270,11 @@ function CompactCard({
           {card.primaryLanguage || 'Unknown'} · <span className="text-slate-400">{card.rarity}</span>
         </p>
         <div className="flex items-center gap-2.5 mt-1">
-          <span className="text-xs text-red-400 flex items-center gap-0.5">
-            <Sword size={10} weight="fill" /> {card.atk}
+          <span className={clsx("text-xs flex items-center gap-0.5", multiplier < 1 ? "text-red-500 font-bold" : "text-red-400")}>
+            <Sword size={10} weight="fill" /> {displayAtk}
           </span>
-          <span className="text-xs text-blue-400 flex items-center gap-0.5">
-            <Shield size={10} weight="fill" /> {card.def}
+          <span className={clsx("text-xs flex items-center gap-0.5", multiplier < 1 ? "text-blue-500 font-bold" : "text-blue-400")}>
+            <Shield size={10} weight="fill" /> {displayDef}
           </span>
           <span className="text-xs text-green-400 flex items-center gap-0.5">
             <Heart size={10} weight="fill" /> {card.hp}
@@ -274,9 +283,17 @@ function CompactCard({
       </div>
 
       {/* Power score */}
-      <div className="flex-shrink-0 text-right">
-        <p className="text-xs text-slate-500 uppercase tracking-wider">PWR</p>
-        <p className="text-sm font-black text-white">{card.atk + card.def + card.hp}</p>
+      <div className="flex-shrink-0 text-right w-12 flex flex-col items-end justify-center">
+        <p className="text-[10px] text-slate-500 uppercase tracking-wider">PWR</p>
+        <p className={clsx("text-sm font-black leading-tight", multiplier < 1 ? "text-yellow-400" : "text-white")}>{displayAtk + displayDef + card.hp}</p>
+        
+        {/* Stamina line */}
+        <div className="w-full mt-2 h-[3px] bg-slate-800 rounded-full overflow-hidden" title={`Stamina: ${currentStamina}/100`}>
+          <div 
+            className={clsx("h-full transition-all duration-500", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+            style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
+          />
+        </div>
       </div>
     </motion.button>
   );
@@ -299,6 +316,12 @@ function TeamSlot({
   const glow = card ? (RARITY_GLOW[card.rarity] || '') : '';
   const langColor = card ? (LANG_COLOR[card.primaryLanguage || 'Unknown'] || LANG_COLOR.Unknown) : '';
 
+  const currentStamina = card && card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
+  const multiplier = getStaminaMultiplier(currentStamina);
+  
+  const displayAtk = Math.floor((card?.atk || 0) * multiplier);
+  const displayDef = Math.floor((card?.def || 0) * multiplier);
+
   return (
     <motion.div
       layout
@@ -308,6 +331,7 @@ function TeamSlot({
         card ? border : 'border-dashed border-slate-700',
         card ? `shadow-lg ${glow}` : '',
         isActive && 'ring-2 ring-orange-500/60',
+        multiplier < 1 && 'border-yellow-500/50 shadow-yellow-500/20'
       )}
       style={{ minHeight: 220 }}
     >
@@ -341,6 +365,15 @@ function TeamSlot({
             {/* Background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
+            {/* Custom Stamina Display on active Team Slot */}
+            <div className="absolute top-2 left-10 z-20">
+              {currentStamina < 60 && (
+                <div className="bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/50 text-yellow-300 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <WarningCircle size={10} weight="bold" /> Fatigue
+                </div>
+              )}
+            </div>
+
             {/* Avatar */}
             <div className="relative w-full h-28 bg-black overflow-hidden">
               <img src={card.avatarUrl} alt={card.name} className="w-full h-full object-cover opacity-90" />
@@ -356,11 +389,11 @@ function TeamSlot({
               <div className="grid grid-cols-3 gap-1 mt-auto pt-2 border-t border-white/10 text-center">
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase">ATK</p>
-                  <p className="text-xs font-black text-red-400">{card.atk}</p>
+                  <p className={clsx("text-xs font-black", multiplier < 1 ? "text-yellow-400" : "text-red-400")}>{displayAtk}</p>
                 </div>
                 <div className="border-x border-white/10">
                   <p className="text-[9px] text-slate-500 uppercase">DEF</p>
-                  <p className="text-xs font-black text-blue-400">{card.def}</p>
+                  <p className={clsx("text-xs font-black", multiplier < 1 ? "text-yellow-400" : "text-blue-400")}>{displayDef}</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-slate-500 uppercase">HP</p>
@@ -677,29 +710,36 @@ function ConfirmationModal({
         <div>
           <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Your Team (in order)</p>
           <div className="space-y-2">
-            {filled.map((card, i) => (
-              <div key={card.id} className={clsx(
-                'flex items-center gap-3 p-2.5 rounded-xl border',
-                RARITY_COLOR[card.rarity]?.replace('text-', 'border-') || 'border-slate-700',
-                'bg-slate-800/60'
-              )}>
-                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs font-black text-white flex-shrink-0">
-                  {i + 1}
+            {filled.map((card, i) => {
+              const currentStamina = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
+              const multiplier = getStaminaMultiplier(currentStamina);
+              const isFatigued = currentStamina < 60;
+              return (
+                <div key={card.id} className={clsx(
+                  'flex items-center gap-3 p-2.5 rounded-xl border',
+                  isFatigued ? 'border-yellow-500/50 bg-yellow-900/20' : (RARITY_COLOR[card.rarity]?.replace('text-', 'border-') || 'border-slate-700'),
+                  !isFatigued && 'bg-slate-800/60'
+                )}>
+                  <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs font-black text-white flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <img src={card.avatarUrl} alt={card.name} className="w-8 h-8 rounded-lg object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{card.name}</p>
+                    <p className="text-[10px] text-slate-400">
+                      {isFatigued ? <span className="text-yellow-400 font-bold">FATIGUED ({currentStamina}%)</span> : `${SLOT_LABELS[i]} · ${card.rarity}`}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 text-xs">
+                    <span className={isFatigued ? "text-yellow-400 font-bold" : "text-red-400"}>{Math.floor(card.atk * multiplier)}</span>
+                    <span className="text-slate-600 mx-0.5">/</span>
+                    <span className={isFatigued ? "text-yellow-400 font-bold" : "text-blue-400"}>{Math.floor(card.def * multiplier)}</span>
+                    <span className="text-slate-600 mx-0.5">/</span>
+                    <span className="text-green-400">{card.hp}</span>
+                  </div>
                 </div>
-                <img src={card.avatarUrl} alt={card.name} className="w-8 h-8 rounded-lg object-cover" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white truncate">{card.name}</p>
-                  <p className="text-xs text-slate-400">{SLOT_LABELS[i]} · {card.rarity}</p>
-                </div>
-                <div className="text-right flex-shrink-0 text-xs">
-                  <span className="text-red-400">{card.atk}</span>
-                  <span className="text-slate-600 mx-0.5">/</span>
-                  <span className="text-blue-400">{card.def}</span>
-                  <span className="text-slate-600 mx-0.5">/</span>
-                  <span className="text-green-400">{card.hp}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -1075,7 +1115,6 @@ export default function TeamBuilderUI({
   respondingToChallenger,
   onRespond,
 }: TeamBuilderProps) {
-  const [slots, setSlots] = useState<(TeamBuilderCard | null)[]>([null, null, null]);
   const [showTypeChart, setShowTypeChart] = useState(false);
   const [showConfirmRandom, setShowConfirmRandom] = useState(false);
   const [showFriendModal, setShowFriendModal] = useState(false);
@@ -1084,7 +1123,21 @@ export default function TeamBuilderUI({
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [slots, setSlots] = useState<(TeamBuilderCard | null)[]>(() => {
+    const activeCards = userCards.filter(c => c.inActiveTeam);
+    if (activeCards.length > 0) {
+      const init: (TeamBuilderCard | null)[] = [null, null, null];
+      activeCards.forEach((c, i) => { if (i < 3) init[i] = c; });
+      return init;
+    }
+    if (userCards.length === 3) {
+      return [userCards[0], userCards[1], userCards[2]];
+    }
+    return [null, null, null];
+  });
+
   const prevSynergyCount = useRef(0);
+  const isInitialMount = useRef(true);
 
   const [filters, setFiltersState] = useState<Filters>(() =>
     loadSession<Filters>(SESSION_KEY_FILTERS, { rarity: [], language: [], pack: [] })
@@ -1097,17 +1150,28 @@ export default function TeamBuilderUI({
     setFiltersState(f);
     sessionStorage.setItem(SESSION_KEY_FILTERS, JSON.stringify(f));
   };
+  
   const setSort = (s: SortOption) => {
     setSortState(s);
     sessionStorage.setItem(SESSION_KEY_SORT, s);
   };
 
-  // Auto-fill when exactly 3 cards
+  // Sync team selection to database
   useEffect(() => {
-    if (userCards.length === 3) {
-      setSlots([userCards[0], userCards[1], userCards[2]]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [userCards.length]);
+    const handler = setTimeout(() => {
+      const activeIds = slots.filter(Boolean).map(c => c!.id);
+      fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardIds: activeIds })
+      }).catch(console.error);
+    }, 1000);
+    return () => clearTimeout(handler);
+  }, [slots]);
 
   // Unique filter data
   const availableRarities = RARITY_ORDER.filter(r => userCards.some(c => c.rarity === r));
@@ -1136,6 +1200,12 @@ export default function TeamBuilderUI({
   const teamFull = slots.every(Boolean);
 
   const placeCard = (card: TeamBuilderCard) => {
+    const currentStamina = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
+    if (currentStamina === 0) {
+      // Do nothing, UI already disables the click for exhausted cards
+      return;
+    }
+
     if (slottedIds.has(card.id!)) return;
     setSlots(prev => {
       const next = [...prev];

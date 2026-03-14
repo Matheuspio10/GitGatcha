@@ -4,6 +4,7 @@ import { resolveRandomBattle } from '@/lib/battleService';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getCardStamina } from '@/lib/staminaService';
 
 export async function POST(req: Request) {
   try {
@@ -44,19 +45,32 @@ export async function POST(req: Request) {
     }
 
     // Map to preserve the chosen order
-    const cTeamCardsRaw = cardIds.map(id => userCards.find(uc => uc.cardId === id)?.card);
-    if (cTeamCardsRaw.some(c => !c)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
+    // Validate stamina
+    for (const id of cardIds as string[]) {
+      const uc = userCards.find(u => u.cardId === id);
+      if (uc) {
+        const currentStamina = getCardStamina(uc);
+        if (currentStamina === 0) {
+          return NextResponse.json({ error: `Card ${uc.card.name} is exhausted and cannot battle` }, { status: 400 });
+        }
+      }
+    }
 
-    const cTeamCards = cTeamCardsRaw.map(c => ({
-      id: c!.id,
-      name: c!.name,
-      atk: c!.atk,
-      def: c!.def,
-      hp: c!.hp,
-      rarity: c!.rarity,
-      primaryLanguage: c!.primaryLanguage,
-      avatarUrl: c!.avatarUrl,
-    }));
+    const cTeamCards = cardIds.map(id => {
+      const uc = userCards.find(u => u.cardId === id)!;
+      return {
+        id: uc.id, // Pass userCardId as the 'id' so we can deduct stamina later
+        cardId: uc.cardId,
+        name: uc.card.name,
+        atk: uc.card.atk,
+        def: uc.card.def,
+        hp: uc.card.hp,
+        stamina: getCardStamina(uc),
+        rarity: uc.card.rarity,
+        primaryLanguage: uc.card.primaryLanguage,
+        avatarUrl: uc.card.avatarUrl,
+      };
+    });
 
     const result = await resolveRandomBattle(userId, cTeamCards);
 

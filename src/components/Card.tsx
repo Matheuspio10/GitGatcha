@@ -2,6 +2,7 @@ import React from 'react';
 import { Shield, Sword, Heart } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
 
 export type CardProps = {
   id?: string;
@@ -18,6 +19,9 @@ export type CardProps = {
   disableLink?: boolean;
   isShiny?: boolean;
   userCardId?: string;
+  stamina?: number;
+  lastUsedAt?: Date | string;
+  inActiveTeam?: boolean;
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -58,10 +62,19 @@ export function Card({
   quantity,
   disableLink = false,
   isShiny = false,
+  stamina,
+  lastUsedAt,
+  inActiveTeam,
 }: CardProps) {
   
   const borderGlow = RARITY_COLORS[rarity] || RARITY_COLORS.Common;
   const bgGradient = LANG_COLORS[primaryLanguage] || LANG_COLORS.Unknown;
+
+  const currentStamina = stamina !== undefined ? calculateCurrentStamina(stamina, lastUsedAt || new Date(), inActiveTeam || false) : undefined;
+  const multiplier = currentStamina !== undefined ? getStaminaMultiplier(currentStamina) : 1;
+  
+  const displayAtk = Math.floor(atk * multiplier);
+  const displayDef = Math.floor(def * multiplier);
 
   const cardClasses = clsx(
     "relative w-64 h-96 rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group",
@@ -116,15 +129,32 @@ export function Card({
         </p>
       </div>
 
+      {/* Stamina Bar */}
+      {currentStamina !== undefined && (
+        <div className="relative z-10 bg-black/80 px-3 pt-2 pb-1 text-xs">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Stamina</span>
+            <span className={clsx("font-mono text-[10px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
+          </div>
+          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div 
+              className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+              style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
+            />
+          </div>
+          {currentStamina === 0 && <div className="text-red-500 text-[9px] font-black tracking-widest text-center mt-1 animate-pulse uppercase">Exhausted</div>}
+        </div>
+      )}
+
       {/* Stats area */}
       <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center">
         <div className="flex flex-col items-center min-w-0">
-          <Sword size={16} weight="fill" className="text-red-400 mb-1" />
-          <span className="font-bold text-sm">{atk}</span>
+          <Sword size={16} weight="fill" className={multiplier < 1 ? "text-red-600 mb-1" : "text-red-400 mb-1"} />
+          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500")}>{displayAtk}</span>
         </div>
         <div className="flex flex-col items-center min-w-0 border-x border-white/20">
-          <Shield size={16} weight="fill" className="text-blue-400 mb-1" />
-          <span className="font-bold text-sm">{def}</span>
+          <Shield size={16} weight="fill" className={multiplier < 1 ? "text-blue-600 mb-1" : "text-blue-400 mb-1"} />
+          <span className={clsx("font-bold text-sm", multiplier < 1 && "text-blue-500")}>{displayDef}</span>
         </div>
         <div className="flex flex-col items-center min-w-0">
           <Heart size={16} weight="fill" className="text-green-400 mb-1" />
@@ -181,15 +211,32 @@ export function Card({
           </p>
         </div>
 
+        {/* Stamina Bar */}
+        {currentStamina !== undefined && (
+          <div className="relative z-10 bg-black/80 px-3 pt-2 pb-1 text-xs">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Stamina</span>
+              <span className={clsx("font-mono text-[10px]", currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400')}>{currentStamina}/100</span>
+            </div>
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className={clsx("h-full transition-all duration-1000", currentStamina < 40 ? 'bg-red-500' : currentStamina < 80 ? 'bg-yellow-500' : 'bg-green-500')}
+                style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
+              />
+            </div>
+            {currentStamina === 0 && <div className="text-red-500 text-[9px] font-black tracking-widest text-center mt-1 animate-pulse uppercase">Exhausted</div>}
+          </div>
+        )}
+
         {/* Stats area */}
         <div className="relative z-10 border-t border-white/20 bg-black/80 p-3 grid grid-cols-3 gap-2 text-center items-center">
           <div className="flex flex-col items-center min-w-0">
-            <Sword size={18} weight="fill" className="text-red-400 mb-1" />
-            <span className="font-bold text-sm">{atk}</span>
+            <Sword size={18} weight="fill" className={multiplier < 1 ? "text-red-600 mb-1" : "text-red-400 mb-1"} />
+            <span className={clsx("font-bold text-sm", multiplier < 1 && "text-red-500")}>{displayAtk}</span>
           </div>
           <div className="flex flex-col items-center min-w-0 border-x border-white/20">
-            <Shield size={18} weight="fill" className="text-blue-400 mb-1" />
-            <span className="font-bold text-sm">{def}</span>
+            <Shield size={18} weight="fill" className={multiplier < 1 ? "text-blue-600 mb-1" : "text-blue-400 mb-1"} />
+            <span className={clsx("font-bold text-sm", multiplier < 1 && "text-blue-500")}>{displayDef}</span>
           </div>
           <div className="flex flex-col items-center min-w-0">
             <Heart size={18} weight="fill" className="text-green-400 mb-1" />
