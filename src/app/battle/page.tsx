@@ -16,6 +16,10 @@ export default async function BattlePage() {
     orderBy: { card: { atk: 'desc' } }
   });
 
+  const allCards = await prisma.card.findMany({ select: { atk: true, def: true, hp: true } });
+  const avgPower = allCards.length > 0 ? allCards.reduce((acc, c) => acc + c.atk + c.def + c.hp, 0) / allCards.length : 0;
+  const powerCap = Math.floor(avgPower * 3);
+
   const cardsList = userCards.map(uc => ({
     id: uc.card.id,
     name: uc.card.name,
@@ -35,7 +39,7 @@ export default async function BattlePage() {
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white font-bold">Loading Arena...</div>}>
-      <BattleClient userCards={cardsList} userId={user.id} />
+      <BattleClient userCards={cardsList} userId={user.id} powerCap={powerCap} userBits={user.currency} />
     </Suspense>
   );
 }

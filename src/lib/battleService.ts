@@ -22,7 +22,7 @@ import { grantXP, XP_AMOUNTS } from './xpService';
 
 export function calculateRewards(
   didWin: boolean,
-  isRandom: boolean,
+  leagueMode: string,
   winnerAvgRank: number,
   loserAvgRank: number
 ): { bits: number; xp: number } {
@@ -30,17 +30,17 @@ export function calculateRewards(
   let xp: number;
 
   if (didWin) {
-    bits = isRandom ? 50 : 75;
-    xp = isRandom ? XP_AMOUNTS.WIN_BATTLE_RANDOM : XP_AMOUNTS.WIN_BATTLE_FRIEND;
-
-    // Upset bonus: winner team has lower avg rarity than loser team
-    if (winnerAvgRank < loserAvgRank) {
-      bits = Math.floor(bits * 1.3); // 30% bonus
-      xp = Math.floor(xp * 1.3);
+    switch (leagueMode) {
+      case 'COMMON': bits = 80; xp = 100; break;
+      case 'BALANCED': bits = 100; xp = 120; break;
+      case 'DIVERSITY': bits = 120; xp = 140; break;
+      case 'LEGENDARY': bits = 300; xp = 200; break;
+      case 'OPEN':
+      default: bits = 50; xp = 80; break;
     }
   } else {
-    bits = isRandom ? 10 : 15;
-    xp = XP_AMOUNTS.LOSE_BATTLE;
+    bits = 10;
+    xp = 30; // 30 XP for loss regardless of league
   }
 
   return { bits, xp };
@@ -61,10 +61,10 @@ export function calculateNewRatings(
   return { newWinnerRating, newLoserRating };
 }
 
-// Resolve a full random battle
 export async function resolveRandomBattle(
   challengerId: string,
-  challengerTeamCards: any[]
+  challengerTeamCards: any[],
+  leagueMode: string = 'OPEN'
 ) {
   // Map challenger info
   const cTeam: BattleCard[] = challengerTeamCards.map(c => ({
@@ -116,7 +116,7 @@ export async function resolveRandomBattle(
   const playerWon = battleResult.winner === 'CHALLENGER';
   const rewards = calculateRewards(
     playerWon,
-    true,
+    leagueMode,
     playerWon ? challengerAvgRank : defenderAvgRank,
     playerWon ? defenderAvgRank : challengerAvgRank
   );
@@ -131,6 +131,20 @@ export async function resolveRandomBattle(
       log: battleResult.log as any, // the turn-by-turn history
       status: 'COMPLETED',
       isRandom: true,
+      leagueMode,
+      battleStats: [
+        ...battleResult.challengerTeamState,
+        ...battleResult.defenderTeamState
+      ].map(c => ({
+        cardId: c.id,
+        name: c.name,
+        team: cTeam.some(ct => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
+        damageDealt: c.statsDealtDamage || 0,
+        damageReceived: c.statsTakenDamage || 0,
+        passivesTriggered: c.statsPassivesTriggered || 0,
+        critsLanded: c.statsCritsLanded || 0,
+        momentumAchieved: !!c.statsMomentumAchieved
+      })) as any,
       winnerId: playerWon ? challengerId : '__SYSTEM__',
       rewardBits: rewards.bits,
       completedAt: new Date(),
@@ -177,13 +191,28 @@ export async function resolveRandomBattle(
     }); // c.id is userCardId as mapped in api route
   }
 
+  const battleStats = [
+    ...battleResult.challengerTeamState,
+    ...battleResult.defenderTeamState
+  ].map(c => ({
+    cardId: c.id,
+    name: c.name,
+    team: cTeam.some(ct => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
+    damageDealt: c.statsDealtDamage || 0,
+    damageReceived: c.statsTakenDamage || 0,
+    passivesTriggered: c.statsPassivesTriggered || 0,
+    critsLanded: c.statsCritsLanded || 0,
+    momentumAchieved: !!c.statsMomentumAchieved,
+  }));
+
   return {
     battle,
     defenderTeam: dTeam,
     winnerSide: battleResult.winner,
     rewards,
     xpResult,
-    log: battleResult.log
+    log: battleResult.log,
+    battleStats,
   };
 }
 
@@ -242,13 +271,13 @@ export async function resolveFriendBattle(
 
   // Calculate rewards for both players
   const challengerRewards = calculateRewards(
-    challengerWon, false,
+    challengerWon, 'OPEN',
     challengerWon ? challengerAvgRank : defenderAvgRank,
     challengerWon ? defenderAvgRank : challengerAvgRank
   );
   
   const defenderRewards = calculateRewards(
-    !challengerWon, false,
+    !challengerWon, 'OPEN',
     !challengerWon ? defenderAvgRank : challengerAvgRank,
     !challengerWon ? challengerAvgRank : defenderAvgRank
   );
@@ -262,6 +291,19 @@ export async function resolveFriendBattle(
       status: 'COMPLETED',
       winnerId,
       rewardBits: challengerRewards.bits + defenderRewards.bits,
+      battleStats: [
+        ...battleResult.challengerTeamState,
+        ...battleResult.defenderTeamState
+      ].map((c: any) => ({
+        cardId: c.id,
+        name: c.name,
+        team: cTeam.some((ct: any) => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
+        damageDealt: c.statsDealtDamage || 0,
+        damageReceived: c.statsTakenDamage || 0,
+        passivesTriggered: c.statsPassivesTriggered || 0,
+        critsLanded: c.statsCritsLanded || 0,
+        momentumAchieved: !!c.statsMomentumAchieved
+      })) as any,
       completedAt: new Date(),
     },
     include: {

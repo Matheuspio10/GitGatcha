@@ -5,7 +5,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   Sword, Shield, Heart, Lightning, Users, Star, Funnel,
   X, CheckCircle, ArrowsVertical, GameController, MagnifyingGlass,
-  ChartBar, Info, ArrowRight, WarningCircle, SortAscending
+  ChartBar, Info, ArrowRight, WarningCircle, SortAscending, Lock, Crown
 } from '@phosphor-icons/react';
 import { CardProps } from '@/components/Card';
 import clsx from 'clsx';
@@ -17,6 +17,16 @@ export interface TeamBuilderCard extends CardProps {
   pack?: string;
 }
 
+export type LeagueMode = 'OPEN' | 'COMMON' | 'BALANCED' | 'DIVERSITY' | 'LEGENDARY';
+
+export const LEAGUE_CONFIG: Record<LeagueMode, { label: string; icon: string; color: string; border: string; bg: string; description: string; winBits: number; winXp: number; entryFee?: number }> = {
+  OPEN: { label: 'Open League', icon: '⚔️', color: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-500/10', description: 'No restrictions — use any cards.', winBits: 50, winXp: 80 },
+  COMMON: { label: 'Common League', icon: '🛡️', color: 'text-green-400', border: 'border-green-500', bg: 'bg-green-500/10', description: 'Common & Uncommon cards only.', winBits: 80, winXp: 100 },
+  BALANCED: { label: 'Balanced League', icon: '⚖️', color: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-500/10', description: 'Team power cannot exceed the cap.', winBits: 100, winXp: 120 },
+  DIVERSITY: { label: 'Diversity League', icon: '🌍', color: 'text-purple-400', border: 'border-purple-500', bg: 'bg-purple-500/10', description: '3 different primary languages required.', winBits: 120, winXp: 140 },
+  LEGENDARY: { label: 'Legendary Only', icon: '👑', color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-500/10', description: 'Legendary cards only. 500 BITS entry.', winBits: 300, winXp: 200, entryFee: 500 },
+};
+
 interface TeamBuilderProps {
   userCards: TeamBuilderCard[];
   challengeUsername?: string;
@@ -26,6 +36,10 @@ interface TeamBuilderProps {
   mode: 'quick' | 'challenge' | 'respond';
   respondingToChallenger?: string;
   onRespond?: (cardIds: string[]) => void;
+  leagueMode?: LeagueMode;
+  setLeagueMode?: (mode: LeagueMode) => void;
+  powerCap?: number;
+  userBits?: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1120,6 +1134,10 @@ export default function TeamBuilderUI({
   mode,
   respondingToChallenger,
   onRespond,
+  leagueMode = 'OPEN',
+  setLeagueMode,
+  powerCap = 99999,
+  userBits = 0,
 }: TeamBuilderProps) {
   const [showTypeChart, setShowTypeChart] = useState(false);
   const [showConfirmRandom, setShowConfirmRandom] = useState(false);
@@ -1205,11 +1223,45 @@ export default function TeamBuilderUI({
   const activeFilterCount = filters.rarity.length + filters.language.length + filters.pack.length;
   const teamFull = slots.every(Boolean);
 
+  // ─── League Eligibility ─────────────────────────────────────────────────────
+
+  function getCardIneligibilityReason(card: TeamBuilderCard): string | null {
+    if (leagueMode === 'COMMON') {
+      if (card.rarity !== 'Common' && card.rarity !== 'Uncommon') return 'Only Common/Uncommon cards allowed';
+    }
+    if (leagueMode === 'LEGENDARY') {
+      if (card.rarity !== 'Legendary') return 'Only Legendary cards allowed';
+    }
+    if (leagueMode === 'DIVERSITY') {
+      const currentLangs = slots.filter(Boolean).map(c => c!.primaryLanguage || '');
+      if (slots.filter(Boolean).length >= 1 && currentLangs.includes(card.primaryLanguage || '')) {
+        return 'Card shares a language with existing team member';
+      }
+      if (!card.primaryLanguage) return 'Card has no primary language';
+    }
+    return null;
+  }
+
+  const teamPower = slots.filter(Boolean).reduce((acc, c) => acc + c!.atk + c!.def + c!.hp, 0);
+
+  function handleLeagueChange(newMode: LeagueMode) {
+    if (newMode === leagueMode) return;
+    const hasCards = slots.some(Boolean);
+    if (hasCards) {
+      setSlots([null, null, null]);
+    }
+    setLeagueMode?.(newMode);
+  }
+
   const placeCard = (card: TeamBuilderCard) => {
     const currentStamina = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
-    if (currentStamina === 0) {
-      // Do nothing, UI already disables the click for exhausted cards
-      return;
+    if (currentStamina === 0) return;
+    if (getCardIneligibilityReason(card)) return;
+
+    // Balanced league: check if adding this would exceed cap
+    if (leagueMode === 'BALANCED') {
+      const newPower = teamPower + card.atk + card.def + card.hp;
+      if (newPower > powerCap) return;
     }
 
     if (slottedIds.has(card.id!)) return;
@@ -1220,7 +1272,6 @@ export default function TeamBuilderUI({
         next[emptyIdx] = card;
         return next;
       }
-      // All full → swap slot 3
       next[2] = card;
       return next;
     });
@@ -1315,6 +1366,71 @@ export default function TeamBuilderUI({
 
   return (
     <div className="space-y-5">
+
+      {/* ─── League Selector ─── */}
+      {setLeagueMode && (
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+            <Crown size={12} className="text-yellow-400" /> Select League Mode
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {(Object.keys(LEAGUE_CONFIG) as LeagueMode[]).map(mode => {
+              const cfg = LEAGUE_CONFIG[mode];
+              const isActive = leagueMode === mode;
+              const cantAfford = mode === 'LEGENDARY' && userBits < 500;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => handleLeagueChange(mode)}
+                  disabled={cantAfford}
+                  className={clsx(
+                    'relative rounded-xl border-2 p-3 text-left transition-all duration-200',
+                    isActive ? `${cfg.border} ${cfg.bg} shadow-lg` : 'border-slate-700 bg-slate-900/40 hover:border-slate-500',
+                    cantAfford && 'opacity-40 cursor-not-allowed'
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-lg">{cfg.icon}</span>
+                    <span className={clsx('text-xs font-bold', isActive ? cfg.color : 'text-slate-400')}>{cfg.label}</span>
+                  </div>
+                  <p className="text-[9px] text-slate-500 leading-tight">{cfg.description}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[9px] text-yellow-400">+{cfg.winBits} BITS</span>
+                    <span className="text-[9px] text-blue-400">+{cfg.winXp} XP</span>
+                  </div>
+                  {cfg.entryFee && <span className="text-[8px] text-red-400 mt-0.5 block">Entry: {cfg.entryFee} BITS</span>}
+                  {isActive && <div className={clsx('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', cfg.border.replace('border-', 'bg-'))} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Balanced League Power Meter */}
+          {leagueMode === 'BALANCED' && (
+            <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2">
+              <span className="text-xs text-blue-400 font-bold">Team Power:</span>
+              <div className="flex-1 bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={clsx('h-full rounded-full transition-all duration-300', teamPower > powerCap ? 'bg-red-500' : teamPower > powerCap * 0.8 ? 'bg-yellow-500' : 'bg-blue-500')}
+                  style={{ width: `${Math.min(100, (teamPower / powerCap) * 100)}%` }}
+                />
+              </div>
+              <span className={clsx('text-xs font-black', teamPower > powerCap ? 'text-red-400' : 'text-blue-300')}>
+                {teamPower} / {powerCap}
+              </span>
+            </div>
+          )}
+
+          {/* Legendary League Entry Fee Warning */}
+          {leagueMode === 'LEGENDARY' && (
+            <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
+              <Crown size={16} className="text-yellow-400" />
+              <span className="text-xs text-yellow-300">500 BITS entry fee will be charged per battle</span>
+              <span className="ml-auto text-xs text-slate-400">Balance: <span className="text-yellow-400 font-bold">{userBits}</span></span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Action Buttons ─── */}
       <div className="flex flex-col gap-3">
@@ -1477,6 +1593,9 @@ export default function TeamBuilderUI({
             {filteredCards.map(card => {
               const placed = slottedIds.has(card.id!);
               const slotIdx = slots.findIndex(s => s?.id === card.id);
+              const ineligibleReason = !placed ? getCardIneligibilityReason(card) : null;
+              const isBalancedOverflow = !placed && leagueMode === 'BALANCED' && (teamPower + card.atk + card.def + card.hp) > powerCap;
+              const isDimmed = !!ineligibleReason || isBalancedOverflow;
               return (
                 <motion.div
                   key={card.id}
@@ -1485,13 +1604,24 @@ export default function TeamBuilderUI({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.18 }}
+                  className="relative"
+                  title={ineligibleReason || (isBalancedOverflow ? 'Would exceed power cap' : undefined)}
                 >
                   <CompactCard
                     card={card}
                     placed={placed}
                     slotIndex={slotIdx >= 0 ? slotIdx : undefined}
-                    onClick={() => !placed && placeCard(card)}
+                    dimmed={isDimmed}
+                    onClick={() => !placed && !isDimmed && placeCard(card)}
                   />
+                  {isDimmed && !placed && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 pointer-events-none">
+                      <div className="flex flex-col items-center gap-1">
+                        <Lock size={20} weight="fill" className="text-slate-400" />
+                        <span className="text-[9px] text-slate-400 text-center px-2 leading-tight">{ineligibleReason || 'Exceeds cap'}</span>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
