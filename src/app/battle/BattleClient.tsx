@@ -661,14 +661,15 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       });
       const data = await res.json();
       if (data.success) {
-        const cTeam = cardIds.map(id => {
-          const c = userCards.find(uc => uc.id === id)!;
-          return toTeamCard(c);
-        });
+        // Use challenger team from API so IDs match the battle log
+        const cTeam: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({
+          ...c,
+          maxHp: c.maxHp || c.hp,
+        }));
         setReplayData({
           log: data.log,
           challengerTeam: cTeam,
-          defenderTeam: data.defenderTeam,
+          defenderTeam: (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp })),
           winnerSide: data.winnerSide,
           rewards: data.rewards,
           battleStats: data.battleStats,
