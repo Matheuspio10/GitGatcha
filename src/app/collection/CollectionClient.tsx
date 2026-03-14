@@ -485,8 +485,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
 
       {/* 4. Large Card Modal with Loyalty Details */}
       {selectedCard && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setSelectedCard(null)}>
-          <div className="relative flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto" onClick={() => setSelectedCard(null)}>
+          <div className="relative flex flex-col md:flex-row items-center md:items-start justify-center gap-6 w-full max-w-5xl my-auto" onClick={e => e.stopPropagation()}>
              <button 
                onClick={() => setSelectedCard(null)}
                className="absolute -top-2 right-0 md:-right-12 text-slate-400 hover:text-white transition-colors bg-black/50 p-2 rounded-full border border-slate-700 z-10"
@@ -494,7 +494,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <X size={24} />
              </button>
              
-             <div className="scale-[0.8] sm:scale-100 md:scale-110 transform transition-transform mt-8 mb-2 pointer-events-none">
+             <div className="flex-shrink-0 mt-4 md:mt-0 pointer-events-none scale-90 sm:scale-100 xl:scale-110 xl:mr-8 origin-top">
                <Card
                  {...selectedCard}
                  quantity={1 + (selectedCard.shards || 0)}
@@ -505,7 +505,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
              </div>
 
              {/* Loyalty Progress Section */}
-             <div className="w-full max-w-md bg-slate-900/90 border border-slate-700 rounded-xl p-4 space-y-3">
+             <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
                <div className="flex items-center justify-between">
                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
                    <Fire size={16} weight="fill" className="text-orange-400" />
@@ -516,8 +516,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <LoyaltyProgressBar count={selectedCard.loyaltyCount || 0} tier={selectedCard.loyaltyTier || 'none'} />
 
                {/* Milestone History */}
-               <div className="space-y-1.5 mt-3">
-                 <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Milestones</p>
+               <div className="space-y-2 mt-4">
+                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Milestones</p>
                  {MILESTONE_ORDER.map(tier => {
                    const info = LOYALTY_TIERS[tier];
                    const milestones = (selectedCard.loyaltyMilestones || []) as any[];
