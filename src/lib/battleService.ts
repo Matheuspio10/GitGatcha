@@ -183,11 +183,11 @@ export async function resolveRandomBattle(
 
   // Deduct 20 stamina from challenger cards
   const now = new Date();
-  for (const c of cTeam) {
+  for (const c of challengerTeamCards) {
     await prisma.userCard.update({
       where: { id: c.id },
       data: {
-        stamina: { decrement: 20 },
+        stamina: Math.max(0, c.stamina - 20),
         lastUsedAt: now,
       }
     }); // c.id is userCardId as mapped in api route
@@ -372,10 +372,10 @@ export async function resolveFriendBattle(
 
   // Deduct 20 stamina from all participating cards
   const now = new Date();
-  for (const c of cTeam) {
+  for (const c of cTeamRaw as any as BattleCard[]) {
     await prisma.userCard.update({
       where: { id: c.id },
-      data: { stamina: { decrement: 20 }, lastUsedAt: now }
+      data: { stamina: Math.max(0, c.stamina - 20), lastUsedAt: now }
     });
   }
   for (const c of dTeam) {
