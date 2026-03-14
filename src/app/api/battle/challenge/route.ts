@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
+import { getCardStamina } from '@/lib/staminaService';
 
 // POST: Create a friend challenge (challenger picks their 3-card team)
 export async function POST(req: Request) {
@@ -46,21 +47,35 @@ export async function POST(req: Request) {
     }
 
     // Preserve chosen card order
-    const orderedCards = cardIds.map(id => userCards.find(uc => uc.cardId === id)?.card);
-    if (orderedCards.some(c => !c)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
+    // Validate stamina
+    for (const id of cardIds as string[]) {
+      const uc = userCards.find(u => u.cardId === id);
+      if (uc) {
+        const currentStamina = getCardStamina(uc);
+        if (currentStamina === 0) {
+          return NextResponse.json({ error: `Card ${uc.card.name} is exhausted and cannot battle` }, { status: 400 });
+        }
+      }
+    }
 
-    const challengerTeam = orderedCards.map(c => ({
-      id: c!.id,
-      name: c!.name,
-      avatarUrl: c!.avatarUrl,
-      atk: c!.atk,
-      def: c!.def,
-      hp: c!.hp,
-      maxHp: c!.hp,
-      rarity: c!.rarity,
-      primaryLanguage: c!.primaryLanguage,
-      type: getCardType(c!),
-    }));
+    const challengerTeam = cardIds.map(id => {
+      const uc = userCards.find(u => u.cardId === id)!;
+      const c = uc.card;
+      return {
+        id: uc.id, // Store userCardId as id so we can deduct stamina later
+        cardId: c.id,
+        name: c.name,
+        avatarUrl: c.avatarUrl,
+        atk: c.atk,
+        def: c.def,
+        hp: c.hp,
+        maxHp: c.hp,
+        stamina: getCardStamina(uc),
+        rarity: c.rarity,
+        primaryLanguage: c.primaryLanguage,
+        type: getCardType(c),
+      };
+    });
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 

@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { CardProps, Card } from '@/components/Card';
-import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning } from '@phosphor-icons/react';
+import { calculateCurrentStamina } from '@/lib/staminaUtils';
+import clsx from 'clsx';
 
 type ExtendedCard = CardProps & { shards?: number; userCardId?: string; isShiny?: boolean };
 
@@ -39,25 +41,27 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'LIST' | 'GRID'>('LIST');
   const [selectedCard, setSelectedCard] = useState<ExtendedCard | null>(null);
+  const [recovering, setRecovering] = useState(false);
+  const [localCards, setLocalCards] = useState<ExtendedCard[]>(initialCards);
   const itemsPerPage = 20;
 
   // Global Collection Stats calculations
-  const totalUnique = initialCards.length;
-  const totalPulls = initialCards.reduce((acc, card) => acc + (1 + (card.shards || 0)), 0);
+  const totalUnique = localCards.length;
+  const totalPulls = localCards.reduce((acc, card) => acc + (1 + (card.shards || 0)), 0);
 
   const rarityCounts = useMemo(() => {
     const counts = { Legendary: 0, Epic: 0, Rare: 0, Uncommon: 0, Common: 0 };
-    initialCards.forEach(c => {
+    localCards.forEach(c => {
       const r = c.rarity as keyof typeof counts;
       if (counts[r] !== undefined) {
         counts[r] += 1;
       }
     });
     return counts;
-  }, [initialCards]);
+  }, [localCards]);
 
   const sortedAndFiltered = useMemo(() => {
-    let result = [...initialCards];
+    let result = [...localCards];
 
     // Filter
     if (search) {
@@ -101,7 +105,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
     });
 
     return result;
-  }, [initialCards, search, sortBy, sortDesc]);
+  }, [localCards, search, sortBy, sortDesc]);
 
   const totalPages = Math.ceil(sortedAndFiltered.length / itemsPerPage) || 1;
   const paginatedData = sortedAndFiltered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
@@ -114,6 +118,37 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       setSortDesc(true);
     }
     setPage(1);
+  };
+
+  const handleRecoverStamina = async (card: ExtendedCard) => {
+    if (!card.userCardId || recovering) return;
+    setRecovering(true);
+    try {
+      const res = await fetch('/api/collection/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userCardId: card.userCardId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to recover stamina');
+      } else {
+        // Optimistically update the local state to 100 stamina
+        setLocalCards(prev => prev.map(c => 
+          c.userCardId === card.userCardId 
+            ? { ...c, stamina: 100, lastUsedAt: new Date().toISOString() as any } 
+            : c
+        ));
+        if (selectedCard && selectedCard.userCardId === card.userCardId) {
+          setSelectedCard({ ...selectedCard, stamina: 100, lastUsedAt: new Date().toISOString() as any });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred');
+    } finally {
+      setRecovering(false);
+    }
   };
 
   return (
@@ -247,13 +282,14 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                   <th className="px-6 py-4 text-right">HP</th>
                   <th className="px-6 py-4 text-right">ATK</th>
                   <th className="px-6 py-4 text-right">DEF</th>
+                  <th className="px-6 py-4 text-center">STM</th>
                   <th className="px-6 py-4 text-right">CNT</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                       No records found in the database.
                     </td>
                   </tr>
@@ -290,6 +326,16 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-blue-400/90 text-sm">
                           {card.def}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          {(() => {
+                            const st = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
+                            return (
+                              <span className={clsx("text-xs font-mono font-bold px-2 py-1 rounded", st < 40 ? 'text-red-400 bg-red-400/10' : st < 80 ? 'text-yellow-400 bg-yellow-400/10' : 'text-green-400 bg-green-400/10')}>
+                                {st}%
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
@@ -339,15 +385,28 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <Card {...selectedCard} quantity={1 + (selectedCard.shards || 0)} disableLink={true} />
              </div>
              
-             <a 
-               href={`https://github.com/${selectedCard.githubUsername}`}
-               target="_blank"
-               rel="noopener noreferrer"
-               className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all hover:scale-105"
-             >
-               <GithubLogo size={24} weight="fill" />
-               Access Dev's Profile
-             </a>
+             <div className="flex flex-col sm:flex-row gap-4 items-center w-full max-w-sm">
+               <a 
+                 href={`https://github.com/${selectedCard.githubUsername}`}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all hover:scale-105 w-full"
+               >
+                 <GithubLogo size={20} weight="fill" />
+                 Open Profile
+               </a>
+
+               {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
+                 <button
+                   onClick={() => handleRecoverStamina(selectedCard)}
+                   disabled={recovering}
+                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 w-full disabled:opacity-50 disabled:hover:scale-100"
+                 >
+                   <Lightning size={20} weight="fill" />
+                   {recovering ? 'Recovering...' : 'Cure (100 BITS)'}
+                 </button>
+               )}
+             </div>
           </div>
         </div>
       )}

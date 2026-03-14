@@ -301,6 +301,19 @@ function BattleReplay({
                   <p className="text-[10px] uppercase text-slate-400 tracking-wider">XP</p>
                 </div>
               </div>
+
+              {/* Stamina Changes Summary */}
+              <div className="mt-5 border-t border-white/10 pt-4 px-2 text-center text-sm text-slate-300">
+                <div className="flex items-center justify-center gap-2 text-orange-400 font-bold mb-1">
+                  <Star size={16} weight="fill" />
+                  Stamina Penalty
+                </div>
+                <p>Your team cards lost <span className="text-red-400 font-bold">20 Stamina</span>.</p>
+                <p className="text-[10px] mt-1 text-slate-500">
+                  <Lightning size={10} className="inline mr-1 text-yellow-500" />
+                  Fatigued cards (&lt;60 STA) suffer stat penalties. Go to your <a href="/collection" className="text-indigo-400 hover:text-indigo-300 underline font-bold">Collection</a> to recover!
+                </p>
+              </div>
             </div>
             <button
               onClick={onReset}

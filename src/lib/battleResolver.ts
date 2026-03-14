@@ -2,12 +2,13 @@ export type CardType = 'Python' | 'JavaScript' | 'Ruby' | 'PHP' | 'Rust' | 'C' |
 export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 
 export interface BattleCard {
-  id: string;
+  id: string; // This will map to UserCard.id in practice for user cards, or Card.id for random defenders
   name: string;
   atk: number;
   def: number;
   hp: number;
   maxHp: number;
+  stamina: number;
   rarity: Rarity;
   primaryLanguage: string | null;
   type: CardType;
@@ -116,6 +117,24 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   // Deep copy teams
   const cTeam = JSON.parse(JSON.stringify(cTeamInitial)) as BattleCard[];
   const dTeam = JSON.parse(JSON.stringify(dTeamInitial)) as BattleCard[];
+
+  // Apply stamina penalty to Base ATK and DEF
+  const applyStaminaPenalty = (team: BattleCard[]) => {
+    team.forEach(c => {
+      let multiplier = 1.0;
+      if (c.stamina <= 20) multiplier = 0.40;
+      else if (c.stamina <= 40) multiplier = 0.60;
+      else if (c.stamina <= 60) multiplier = 0.75;
+      else if (c.stamina <= 80) multiplier = 0.90;
+      // c.stamina === 0 is prevented by UI, but handled as 0.40 here.
+
+      c.atk = Math.floor(c.atk * multiplier);
+      c.def = Math.floor(c.def * multiplier);
+    });
+  };
+
+  applyStaminaPenalty(cTeam);
+  applyStaminaPenalty(dTeam);
 
   const log: TurnLog[] = [];
   let turnNumber = 1;

@@ -101,6 +101,9 @@ model UserCard {
   quantity  Int      @default(1)
   shards    Int      @default(0)
   isShiny   Boolean  @default(false)
+  stamina   Int      @default(100)
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  inActiveTeam Boolean @default(false) @map("in_active_team")
   createdAt DateTime @default(now())
 }
 

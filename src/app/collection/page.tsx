@@ -29,7 +29,10 @@ export default async function CollectionPage() {
     primaryLanguage: uc.card.primaryLanguage || 'Unknown',
     quantity: uc.quantity,
     shards: uc.shards,
-    isShiny: uc.isShiny
+    isShiny: uc.isShiny,
+    stamina: uc.stamina,
+    lastUsedAt: uc.lastUsedAt,
+    inActiveTeam: uc.inActiveTeam,
   }));
 
   return <CollectionClient initialCards={cardsList} />;
