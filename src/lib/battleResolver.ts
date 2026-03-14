@@ -13,6 +13,15 @@ export interface BattleCard {
   primaryLanguage: string | null;
   type: CardType;
   avatarUrl?: string | null;
+
+  // Momentum & Tracking
+  consecutiveWins?: number;
+  momentumStacks?: number;
+  statsDealtDamage?: number;
+  statsTakenDamage?: number;
+  statsPassivesTriggered?: number;
+  statsCritsLanded?: number;
+  statsMomentumAchieved?: boolean;
 }
 
 export interface BattleLogEvent {
@@ -241,10 +250,32 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         if (cCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
             cIdx++; cJustEntered = true; turnsInMatchup = 0;
+            
+            dCard.consecutiveWins = (dCard.consecutiveWins || 0) + 1;
+            if (dCard.consecutiveWins >= 2) {
+               const newStacks = Math.min(3, dCard.consecutiveWins - 1);
+               if ((dCard.momentumStacks || 0) < newStacks) {
+                   dCard.momentumStacks = newStacks;
+                   dCard.statsMomentumAchieved = true;
+                   turnEvents.push({ type: 'passive', cardId: dCard.id, message: `${dCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
+               }
+            }
         }
         if (dCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
             dIdx++; dJustEntered = true; turnsInMatchup = 0;
+
+            if (cCard.hp > 0) {
+                cCard.consecutiveWins = (cCard.consecutiveWins || 0) + 1;
+                if (cCard.consecutiveWins >= 2) {
+                   const newStacks = Math.min(3, cCard.consecutiveWins - 1);
+                   if ((cCard.momentumStacks || 0) < newStacks) {
+                       cCard.momentumStacks = newStacks;
+                       cCard.statsMomentumAchieved = true;
+                       turnEvents.push({ type: 'passive', cardId: cCard.id, message: `${cCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
+                   }
+                }
+            }
         }
         log.push({
             turnNumber, cCardId: cCard.id, dCardId: dCard.id,
@@ -321,11 +352,16 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     if ((cCard as any).rustSynergy) cDmgReceivedMult -= (cCard as any).rustSynergy;
     if ((dCard as any).rustSynergy) dDmgReceivedMult -= (dCard as any).rustSynergy;
 
-    // Base damage formula
-    let cBaseAtk = cCard.atk * cAtkBonus * cTypeMult;
-    let dBaseAtk = dCard.atk * dAtkBonus * dTypeMult;
-    let cDmgToD = Math.floor(Math.max(cBaseAtk * 0.15, cBaseAtk - (dDefEffective * 0.25)));
-    let dDmgToC = Math.floor(Math.max(dBaseAtk * 0.15, dBaseAtk - (cDefEffective * 0.25)));
+    // Base damage formula with Momentum
+    let cBaseAtk = cCard.atk * cAtkBonus * cTypeMult * (1 + (cCard.momentumStacks || 0) * 0.1);
+    let dBaseAtk = dCard.atk * dAtkBonus * dTypeMult * (1 + (dCard.momentumStacks || 0) * 0.1);
+    
+    // Effective DEF with Momentum
+    let cDefMom = cDefEffective * (1 + (cCard.momentumStacks || 0) * 0.1);
+    let dDefMom = dDefEffective * (1 + (dCard.momentumStacks || 0) * 0.1);
+
+    let cDmgToD = Math.floor(Math.max(cBaseAtk * 0.15, cBaseAtk - (dDefMom * 0.25)));
+    let dDmgToC = Math.floor(Math.max(dBaseAtk * 0.15, dBaseAtk - (cDefMom * 0.25)));
 
     if (cDmgToD < 1) cDmgToD = 1;
     if (dDmgToC < 1) dDmgToC = 1;
@@ -369,6 +405,15 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     cCard.hp -= dDmgToC;
     dCard.hp -= cDmgToD;
 
+    // Track stats
+    cCard.statsTakenDamage = (cCard.statsTakenDamage || 0) + dDmgToC;
+    dCard.statsTakenDamage = (dCard.statsTakenDamage || 0) + cDmgToD;
+    cCard.statsDealtDamage = (cCard.statsDealtDamage || 0) + cDmgToD;
+    dCard.statsDealtDamage = (dCard.statsDealtDamage || 0) + dDmgToC;
+
+    if (cAtkBonus > 1) cCard.statsPassivesTriggered = (cCard.statsPassivesTriggered || 0) + 1;
+    if (dAtkBonus > 1) dCard.statsPassivesTriggered = (dCard.statsPassivesTriggered || 0) + 1;
+
     if (cDmgToD > 0) turnEvents.push({ type: 'damage', cardId: cCard.id, targetId: dCard.id, value: cDmgToD, message: `${cCard.name} dealt ${cDmgToD} damage.` });
     if (dDmgToC > 0) turnEvents.push({ type: 'damage', cardId: dCard.id, targetId: cCard.id, value: dDmgToC, message: `${dCard.name} dealt ${dDmgToC} damage.` });
 
@@ -394,9 +439,29 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     } else if (cCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
         cIdx++; cJustEntered = true; turnsInMatchup = 0;
+        
+        dCard.consecutiveWins = (dCard.consecutiveWins || 0) + 1;
+        if (dCard.consecutiveWins >= 2) {
+           const newStacks = Math.min(3, dCard.consecutiveWins - 1);
+           if ((dCard.momentumStacks || 0) < newStacks) {
+               dCard.momentumStacks = newStacks;
+               dCard.statsMomentumAchieved = true;
+               turnEvents.push({ type: 'passive', cardId: dCard.id, message: `${dCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
+           }
+        }
     } else if (dCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
         dIdx++; dJustEntered = true; turnsInMatchup = 0;
+
+        cCard.consecutiveWins = (cCard.consecutiveWins || 0) + 1;
+        if (cCard.consecutiveWins >= 2) {
+           const newStacks = Math.min(3, cCard.consecutiveWins - 1);
+           if ((cCard.momentumStacks || 0) < newStacks) {
+               cCard.momentumStacks = newStacks;
+               cCard.statsMomentumAchieved = true;
+               turnEvents.push({ type: 'passive', cardId: cCard.id, message: `${cCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
+           }
+        }
     }
 
     log.push({

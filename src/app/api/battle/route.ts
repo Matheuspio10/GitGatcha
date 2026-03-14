@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { cardIds } = await req.json();
+    const { cardIds, leagueMode = 'OPEN' } = await req.json();
 
     if (!Array.isArray(cardIds) || cardIds.length !== 3) {
         return NextResponse.json({ error: 'You must select exactly 3 cards for your team' }, { status: 400 });
@@ -72,7 +72,42 @@ export async function POST(req: Request) {
       };
     });
 
-    const result = await resolveRandomBattle(userId, cTeamCards);
+    const userObj = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true }});
+    if (!userObj) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // League Validations
+    if (leagueMode === 'COMMON') {
+      const invalid = cTeamCards.some(c => c.rarity !== 'Common' && c.rarity !== 'Uncommon');
+      if (invalid) return NextResponse.json({ error: 'Common League only allows Common and Uncommon cards' }, { status: 400 });
+    } else if (leagueMode === 'BALANCED') {
+      const allCards = await prisma.card.findMany({ select: { atk: true, def: true, hp: true } });
+      const avgPower = allCards.reduce((acc, c) => acc + c.atk + c.def + c.hp, 0) / (allCards.length || 1);
+      const cap = Math.floor(avgPower * 3);
+      const teamPower = cTeamCards.reduce((acc, c) => acc + c.atk + c.def + c.hp, 0);
+      if (teamPower > cap) {
+        return NextResponse.json({ error: `Team power (${teamPower}) exceeds Balanced League cap (${cap})` }, { status: 400 });
+      }
+    } else if (leagueMode === 'DIVERSITY') {
+      const langs = new Set(cTeamCards.map(c => c.primaryLanguage).filter(Boolean));
+      if (langs.size < 3) {
+        return NextResponse.json({ error: 'Diversity League requires exactly 3 different primary languages and no empty languages' }, { status: 400 });
+      }
+    } else if (leagueMode === 'LEGENDARY') {
+      const invalid = cTeamCards.some(c => c.rarity !== 'Legendary');
+      if (invalid) return NextResponse.json({ error: 'Legendary League only allows Legendary cards' }, { status: 400 });
+      if (userObj.currency < 500) {
+        return NextResponse.json({ error: 'Insufficient BITS for Legendary League entry fee (500 required)' }, { status: 400 });
+      }
+    }
+
+    if (leagueMode === 'LEGENDARY') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { currency: { decrement: 500 } }
+      });
+    }
+
+    const result = await resolveRandomBattle(userId, cTeamCards, leagueMode);
 
     // Advance missions if won
     if (result.winnerSide === 'CHALLENGER') {
@@ -86,6 +121,7 @@ export async function POST(req: Request) {
       winnerSide: result.winnerSide,
       rewards: result.rewards,
       log: result.log,
+      battleStats: result.battleStats || [],
     });
 
   } catch (error) {

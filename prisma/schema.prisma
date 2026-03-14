@@ -142,6 +142,8 @@ model Battle {
   winnerId         String?
   rewardBits       Int           @default(0)
   isRandom         Boolean       @default(false)
+  leagueMode       String        @default("OPEN")
+  battleStats      Json?
   expiresAt        DateTime?
   createdAt        DateTime      @default(now())
   completedAt      DateTime?
