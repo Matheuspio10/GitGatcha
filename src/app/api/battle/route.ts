@@ -117,6 +117,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       battleId: result.battle.id,
+      challengerTeam: result.challengerTeam,
       defenderTeam: result.defenderTeam,
       winnerSide: result.winnerSide,
       rewards: result.rewards,

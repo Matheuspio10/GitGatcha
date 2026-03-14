@@ -207,6 +207,7 @@ export async function resolveRandomBattle(
 
   return {
     battle,
+    challengerTeam: cTeam,
     defenderTeam: dTeam,
     winnerSide: battleResult.winner,
     rewards,
