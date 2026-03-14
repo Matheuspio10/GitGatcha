@@ -1,3 +1,5 @@
+import { getLoyaltyBonuses } from './loyaltyService';
+
 export type CardType = 'Python' | 'JavaScript' | 'Ruby' | 'PHP' | 'Rust' | 'C' | 'C++' | 'Go' | 'TypeScript' | 'CSS' | 'Neutral' | 'Legendary';
 export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 
@@ -13,6 +15,7 @@ export interface BattleCard {
   primaryLanguage: string | null;
   type: CardType;
   avatarUrl?: string | null;
+  loyaltyTier?: string;
 
   // Momentum & Tracking
   consecutiveWins?: number;
@@ -127,7 +130,21 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   const cTeam = JSON.parse(JSON.stringify(cTeamInitial)) as BattleCard[];
   const dTeam = JSON.parse(JSON.stringify(dTeamInitial)) as BattleCard[];
 
-  // Apply stamina penalty to Base ATK and DEF
+  // Apply loyalty bonuses FIRST (permanent multiplier on base stats)
+  const applyLoyaltyBonuses = (team: BattleCard[]) => {
+    team.forEach(c => {
+      const bonuses = getLoyaltyBonuses(c.loyaltyTier || 'none');
+      c.atk = Math.floor(c.atk * bonuses.atkMult);
+      c.def = Math.floor(c.def * bonuses.defMult);
+      c.hp = Math.floor(c.hp * bonuses.hpMult);
+      c.maxHp = Math.floor(c.maxHp * bonuses.hpMult);
+    });
+  };
+
+  applyLoyaltyBonuses(cTeam);
+  applyLoyaltyBonuses(dTeam);
+
+  // Apply stamina penalty to ATK and DEF (after loyalty)
   const applyStaminaPenalty = (team: BattleCard[]) => {
     team.forEach(c => {
       let multiplier = 1.0;
@@ -135,7 +152,6 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       else if (c.stamina <= 40) multiplier = 0.60;
       else if (c.stamina <= 60) multiplier = 0.75;
       else if (c.stamina <= 80) multiplier = 0.90;
-      // c.stamina === 0 is prevented by UI, but handled as 0.40 here.
 
       c.atk = Math.floor(c.atk * multiplier);
       c.def = Math.floor(c.def * multiplier);

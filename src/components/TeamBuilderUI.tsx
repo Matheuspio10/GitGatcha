@@ -15,6 +15,8 @@ import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtil
 
 export interface TeamBuilderCard extends CardProps {
   pack?: string;
+  loyaltyTier?: string;
+  loyaltyCount?: number;
 }
 
 export type LeagueMode = 'OPEN' | 'COMMON' | 'BALANCED' | 'DIVERSITY' | 'LEGENDARY';
@@ -279,7 +281,14 @@ function CompactCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-white truncate">{card.name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-bold text-white truncate">{card.name}</p>
+          {card.loyaltyTier && card.loyaltyTier !== 'none' && (
+            <span className="text-xs flex-shrink-0" title={card.loyaltyTier.replace('_', ' ')}>
+              {card.loyaltyTier === 'veteran' ? '⭐' : card.loyaltyTier === 'trusted' ? '🛡️' : card.loyaltyTier === 'reliable' ? '🔥' : card.loyaltyTier === 'legendary_bond' ? '💎' : card.loyaltyTier === 'eternal' ? '♾️' : ''}
+            </span>
+          )}
+        </div>
         <p className={clsx('text-xs font-medium', langColor)}>
           {card.primaryLanguage || 'Unknown'} · <span className="text-slate-400">{card.rarity}</span>
         </p>
@@ -313,6 +322,21 @@ function CompactCard({
             {currentStamina === 0 ? "Exhaust" : "Fatigue"}
           </p>
         )}
+        {(() => {
+          const count = card.loyaltyCount || 0;
+          const thresholds = [10, 25, 50, 100, 200];
+          const tierNames = ['Veteran', 'Trusted', 'Reliable', 'L.Bond', 'Eternal'];
+          for (let i = 0; i < thresholds.length; i++) {
+            if (count < thresholds[i] && thresholds[i] - count <= 5) {
+              return (
+                <p className="text-[7px] mt-0.5 font-bold text-amber-400 animate-pulse truncate">
+                  ~{tierNames[i]}!
+                </p>
+              );
+            }
+          }
+          return null;
+        })()}
       </div>
     </motion.button>
   );
@@ -402,7 +426,14 @@ function TeamSlot({
 
             {/* Info */}
             <div className="relative flex-1 p-3 flex flex-col gap-1.5">
-              <p className="font-bold text-sm text-white leading-tight truncate">{card.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-bold text-sm text-white leading-tight truncate">{card.name}</p>
+                {card.loyaltyTier && card.loyaltyTier !== 'none' && (
+                  <span className="text-sm flex-shrink-0">
+                    {card.loyaltyTier === 'veteran' ? '⭐' : card.loyaltyTier === 'trusted' ? '🛡️' : card.loyaltyTier === 'reliable' ? '🔥' : card.loyaltyTier === 'legendary_bond' ? '💎' : card.loyaltyTier === 'eternal' ? '♾️' : ''}
+                  </span>
+                )}
+              </div>
               <p className={clsx('text-xs font-semibold', langColor)}>
                 {card.primaryLanguage || 'Unknown'}
               </p>

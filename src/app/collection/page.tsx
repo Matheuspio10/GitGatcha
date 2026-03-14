@@ -33,6 +33,11 @@ export default async function CollectionPage() {
     stamina: uc.stamina,
     lastUsedAt: uc.lastUsedAt,
     inActiveTeam: uc.inActiveTeam,
+    loyaltyCount: uc.loyaltyCount,
+    loyaltyTier: uc.loyaltyTier,
+    loyaltyMilestones: uc.loyaltyMilestones as any[],
+    lifetimeStats: uc.lifetimeStats as any,
+    showcaseOrder: uc.showcaseOrder,
   }));
 
   return <CollectionClient initialCards={cardsList} />;

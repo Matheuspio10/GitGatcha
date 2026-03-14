@@ -221,6 +221,7 @@ function BattleReplay({
   userId,
   leagueMode,
   battleStats,
+  loyaltyUnlocks,
 }: {
   log: TurnLog[];
   challengerTeam: TeamCard[];
@@ -231,6 +232,7 @@ function BattleReplay({
   userId: string;
   leagueMode?: string;
   battleStats?: any[];
+  loyaltyUnlocks?: { cardId: string; cardName: string; milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[] }[];
 }) {
   const [currentTurn, setCurrentTurn] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -371,6 +373,57 @@ function BattleReplay({
               ))}
             </div>
           </div>
+        )}
+
+        {/* Loyalty Milestone Notifications */}
+        {loyaltyUnlocks && loyaltyUnlocks.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, type: 'spring' }}
+            className="space-y-3"
+          >
+            {loyaltyUnlocks.map((unlock, i) => (
+              <div
+                key={i}
+                className="bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-amber-500/10 border-2 border-yellow-500/30 rounded-2xl p-5 relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/5 to-transparent animate-pulse pointer-events-none" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl">🏆</span>
+                    <div>
+                      <h4 className="text-lg font-black text-yellow-400">Loyalty Milestone!</h4>
+                      <p className="text-sm text-white font-bold">{unlock.cardName}</p>
+                    </div>
+                  </div>
+                  {unlock.milestones.map((m, mi) => (
+                    <div key={mi} className="flex items-center gap-3 bg-black/30 rounded-xl px-4 py-3 mt-2">
+                      <div className="text-center">
+                        <p className="text-xs text-slate-400 uppercase">New Title</p>
+                        <p className="text-lg font-black text-yellow-300">{m.title}</p>
+                      </div>
+                      <div className="flex-1 flex flex-wrap gap-2 ml-4">
+                        <span className="text-xs bg-red-500/20 text-red-400 font-bold px-2 py-1 rounded-lg border border-red-500/30">
+                          +{Math.round(m.atkDefBonus * 100)}% ATK/DEF
+                        </span>
+                        {m.hpBonus > 0 && (
+                          <span className="text-xs bg-green-500/20 text-green-400 font-bold px-2 py-1 rounded-lg border border-green-500/30">
+                            +{Math.round(m.hpBonus * 100)}% HP
+                          </span>
+                        )}
+                        {m.cosmetics.filter(c => !c.includes('badge')).map((cosmetic, ci) => (
+                          <span key={ci} className="text-xs bg-purple-500/20 text-purple-400 font-bold px-2 py-1 rounded-lg border border-purple-500/30">
+                            ✨ {cosmetic.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </motion.div>
         )}
 
         {/* Stamina Summary */}
@@ -603,6 +656,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     winnerSide: 'CHALLENGER' | 'DEFENDER';
     rewards: { bits: number; xp: number };
     battleStats?: any[];
+    loyaltyUnlocks?: any[];
   } | null>(null);
 
   // Challenge state
@@ -673,6 +727,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           winnerSide: data.winnerSide,
           rewards: data.rewards,
           battleStats: data.battleStats,
+          loyaltyUnlocks: data.loyaltyUnlocks,
         });
       } else {
         alert(data.error);
@@ -760,6 +815,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           userId={userId}
           leagueMode={leagueMode}
           battleStats={replayData.battleStats}
+          loyaltyUnlocks={replayData.loyaltyUnlocks}
         />
       </div>
     );

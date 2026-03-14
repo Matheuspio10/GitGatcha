@@ -69,6 +69,7 @@ export async function POST(req: Request) {
         rarity: uc.card.rarity,
         primaryLanguage: uc.card.primaryLanguage,
         avatarUrl: uc.card.avatarUrl,
+        loyaltyTier: uc.loyaltyTier || 'none',
       };
     });
 
@@ -123,6 +124,7 @@ export async function POST(req: Request) {
       rewards: result.rewards,
       log: result.log,
       battleStats: result.battleStats || [],
+      loyaltyUnlocks: result.loyaltyUnlocks || [],
     });
 
   } catch (error) {

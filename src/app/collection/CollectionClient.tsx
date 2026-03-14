@@ -2,13 +2,22 @@
 
 import { useState, useMemo } from 'react';
 import { CardProps, Card } from '@/components/Card';
-import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown } from '@phosphor-icons/react';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import clsx from 'clsx';
 
-type ExtendedCard = CardProps & { shards?: number; userCardId?: string; isShiny?: boolean };
+type ExtendedCard = CardProps & {
+  shards?: number;
+  userCardId?: string;
+  isShiny?: boolean;
+  loyaltyCount?: number;
+  loyaltyTier?: string;
+  loyaltyMilestones?: any[];
+  lifetimeStats?: any;
+  showcaseOrder?: number | null;
+};
 
-type SortOption = 'RARITY' | 'NAME' | 'HP' | 'ATK' | 'DEF' | 'COUNT';
+type SortOption = 'RARITY' | 'NAME' | 'HP' | 'ATK' | 'DEF' | 'COUNT' | 'LOYALTY';
 
 const RARITY_ORDER: Record<string, number> = {
   'Legendary': 5,
@@ -33,6 +42,92 @@ const RARITY_ABBR: Record<string, string> = {
   'Uncommon': 'U',
   'Common': 'C'
 };
+
+// ─── Loyalty Constants ─────────────────────────────────────────────────────────
+
+const LOYALTY_TIERS: Record<string, { title: string; color: string; icon: string; atkDefBonus: number; hpBonus: number; threshold: number }> = {
+  none: { title: '', color: '#475569', icon: '', atkDefBonus: 0, hpBonus: 0, threshold: 0 },
+  veteran: { title: 'Veteran', color: '#a78bfa', icon: '⭐', atkDefBonus: 3, hpBonus: 0, threshold: 10 },
+  trusted: { title: 'Trusted', color: '#fbbf24', icon: '🛡️', atkDefBonus: 7, hpBonus: 0, threshold: 25 },
+  reliable: { title: 'Reliable', color: '#f97316', icon: '🔥', atkDefBonus: 12, hpBonus: 0, threshold: 50 },
+  legendary_bond: { title: 'Legendary Bond', color: '#ec4899', icon: '💎', atkDefBonus: 18, hpBonus: 5, threshold: 100 },
+  eternal: { title: 'Eternal', color: '#06b6d4', icon: '♾️', atkDefBonus: 25, hpBonus: 10, threshold: 200 },
+};
+
+const MILESTONE_ORDER = ['veteran', 'trusted', 'reliable', 'legendary_bond', 'eternal'];
+
+function getNextMilestone(count: number): { tier: string; threshold: number } | null {
+  for (const tier of MILESTONE_ORDER) {
+    if (count < LOYALTY_TIERS[tier].threshold) {
+      return { tier, threshold: LOYALTY_TIERS[tier].threshold };
+    }
+  }
+  return null;
+}
+
+function LoyaltyBadge({ tier, size = 'sm' }: { tier: string; size?: 'sm' | 'md' | 'lg' }) {
+  const info = LOYALTY_TIERS[tier];
+  if (!info || tier === 'none') return null;
+
+  const sizeClasses = {
+    sm: 'text-[9px] px-1.5 py-0.5 gap-0.5',
+    md: 'text-[10px] px-2 py-1 gap-1',
+    lg: 'text-xs px-2.5 py-1 gap-1.5',
+  };
+
+  return (
+    <span
+      className={clsx('inline-flex items-center font-bold rounded-full border whitespace-nowrap', sizeClasses[size])}
+      style={{ color: info.color, borderColor: `${info.color}40`, backgroundColor: `${info.color}15` }}
+    >
+      <span>{info.icon}</span>
+      <span>{info.title}</span>
+    </span>
+  );
+}
+
+function LoyaltyProgressBar({ count, tier }: { count: number; tier: string }) {
+  const next = getNextMilestone(count);
+
+  if (!next) {
+    // Eternal tier - max reached
+    const info = LOYALTY_TIERS.eternal;
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-bold" style={{ color: info.color }}>♾️ ETERNAL</span>
+        <span className="text-[9px] text-slate-500 font-mono">{count} battles</span>
+      </div>
+    );
+  }
+
+  const prevThreshold = MILESTONE_ORDER.indexOf(next.tier) > 0
+    ? LOYALTY_TIERS[MILESTONE_ORDER[MILESTONE_ORDER.indexOf(next.tier) - 1]].threshold
+    : 0;
+  const progress = ((count - prevThreshold) / (next.threshold - prevThreshold)) * 100;
+  const nextInfo = LOYALTY_TIERS[next.tier];
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Loyalty</span>
+        <span className="text-[9px] font-mono text-slate-400">
+          {count} / {next.threshold} <span className="text-slate-600">→</span>{' '}
+          <span style={{ color: nextInfo.color }}>{nextInfo.title}</span>
+        </span>
+      </div>
+      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner">
+        <div
+          className="h-full transition-all duration-700 rounded-full"
+          style={{
+            width: `${Math.max(2, Math.min(100, progress))}%`,
+            backgroundColor: nextInfo.color,
+            boxShadow: `0 0 8px ${nextInfo.color}80`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function CollectionClient({ initialCards }: { initialCards: ExtendedCard[] }) {
   const [search, setSearch] = useState('');
@@ -93,6 +188,9 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
           break;
         case 'COUNT':
           comparison = (a.shards || 0) - (b.shards || 0);
+          break;
+        case 'LOYALTY':
+          comparison = (a.loyaltyCount || 0) - (b.loyaltyCount || 0);
           break;
       }
       // if same on primary sort, fallback to ID/name
@@ -216,7 +314,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
               </button>
             </div>
             <span className="text-sm text-slate-400 mr-2">Sort By:</span>
-            {(['RARITY', 'NAME', 'HP', 'ATK', 'DEF', 'COUNT'] as SortOption[]).map(opt => (
+            {(['RARITY', 'NAME', 'HP', 'ATK', 'DEF', 'COUNT', 'LOYALTY'] as SortOption[]).map(opt => (
               <button
                 key={opt}
                 onClick={() => handleSort(opt)}
@@ -283,13 +381,14 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                   <th className="px-6 py-4 text-right">ATK</th>
                   <th className="px-6 py-4 text-right">DEF</th>
                   <th className="px-6 py-4 text-center">STM</th>
+                  <th className="px-6 py-4 text-center">Loyalty</th>
                   <th className="px-6 py-4 text-right">CNT</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                       No records found in the database.
                     </td>
                   </tr>
@@ -298,6 +397,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                     const qty = 1 + (card.shards || 0);
                     const rarityColor = RARITY_COLORS[card.rarity] || '#fff';
                     const abbr = RARITY_ABBR[card.rarity] || 'UNK';
+                    const loyaltyCount = card.loyaltyCount || 0;
+                    const loyaltyTier = card.loyaltyTier || 'none';
                     
                     return (
                       <tr 
@@ -313,10 +414,13 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                             {abbr}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
-                          <Star weight="fill" className="opacity-20 group-hover:opacity-100 transition-opacity" style={{ color: rarityColor }} size={16} />
-                          <span className="font-medium text-slate-200">{card.name}</span>
-                          <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <Star weight="fill" className="opacity-20 group-hover:opacity-100 transition-opacity flex-shrink-0" style={{ color: rarityColor }} size={16} />
+                            <span className="font-medium text-slate-200">{card.name}</span>
+                            <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
+                            <LoyaltyBadge tier={loyaltyTier} size="sm" />
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-emerald-400/90 text-sm">
                           {card.hp}
@@ -336,6 +440,9 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                               </span>
                             );
                           })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className="text-xs font-mono text-slate-400">{loyaltyCount}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
@@ -363,29 +470,123 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                 onClick={() => setSelectedCard(card)} 
                 className="cursor-pointer flex justify-center w-full"
               >
-                 <Card {...card} quantity={1 + (card.shards || 0)} disableLink={true} />
+                 <Card
+                   {...card}
+                   quantity={1 + (card.shards || 0)}
+                   disableLink={true}
+                   loyaltyTier={card.loyaltyTier}
+                   loyaltyCount={card.loyaltyCount}
+                 />
               </div>
             ))
           )}
         </div>
       )}
 
-      {/* 4. Large Card Modal */}
+      {/* 4. Large Card Modal with Loyalty Details */}
       {selectedCard && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setSelectedCard(null)}>
-          <div className="relative flex flex-col items-center gap-6" onClick={e => e.stopPropagation()}>
+          <div className="relative flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
              <button 
                onClick={() => setSelectedCard(null)}
-               className="absolute -top-12 md:-top-16 right-0 md:-right-16 text-slate-400 hover:text-white transition-colors bg-black/50 p-2 rounded-full border border-slate-700 z-10"
+               className="absolute -top-2 right-0 md:-right-12 text-slate-400 hover:text-white transition-colors bg-black/50 p-2 rounded-full border border-slate-700 z-10"
              >
                <X size={24} />
              </button>
              
-             <div className="scale-[0.8] sm:scale-100 md:scale-125 transform transition-transform mt-8 md:mt-12 mb-4 md:mb-8 pointer-events-none">
-               <Card {...selectedCard} quantity={1 + (selectedCard.shards || 0)} disableLink={true} />
+             <div className="scale-[0.8] sm:scale-100 md:scale-110 transform transition-transform mt-8 mb-2 pointer-events-none">
+               <Card
+                 {...selectedCard}
+                 quantity={1 + (selectedCard.shards || 0)}
+                 disableLink={true}
+                 loyaltyTier={selectedCard.loyaltyTier}
+                 loyaltyCount={selectedCard.loyaltyCount}
+               />
+             </div>
+
+             {/* Loyalty Progress Section */}
+             <div className="w-full max-w-md bg-slate-900/90 border border-slate-700 rounded-xl p-4 space-y-3">
+               <div className="flex items-center justify-between">
+                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                   <Fire size={16} weight="fill" className="text-orange-400" />
+                   Loyalty Contract
+                 </h3>
+                 <LoyaltyBadge tier={selectedCard.loyaltyTier || 'none'} size="md" />
+               </div>
+               <LoyaltyProgressBar count={selectedCard.loyaltyCount || 0} tier={selectedCard.loyaltyTier || 'none'} />
+
+               {/* Milestone History */}
+               <div className="space-y-1.5 mt-3">
+                 <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Milestones</p>
+                 {MILESTONE_ORDER.map(tier => {
+                   const info = LOYALTY_TIERS[tier];
+                   const milestones = (selectedCard.loyaltyMilestones || []) as any[];
+                   const completed = milestones.find((m: any) => m.tier === tier);
+                   const battlesRemaining = Math.max(0, info.threshold - (selectedCard.loyaltyCount || 0));
+                   
+                   return (
+                     <div
+                       key={tier}
+                       className={clsx(
+                         'flex items-center gap-3 px-3 py-2 rounded-lg border text-xs',
+                         completed
+                           ? 'border-white/10 bg-white/5'
+                           : 'border-slate-800 bg-slate-950/50 opacity-60'
+                       )}
+                     >
+                       <span className="text-sm">{info.icon}</span>
+                       <div className="flex-1 min-w-0">
+                         <p className="font-bold" style={{ color: completed ? info.color : '#64748b' }}>
+                           {info.title}
+                           <span className="text-slate-500 font-normal ml-1">({info.threshold} battles)</span>
+                         </p>
+                         <p className="text-[10px] text-slate-500">
+                           +{info.atkDefBonus}% ATK/DEF{info.hpBonus > 0 ? `, +${info.hpBonus}% HP` : ''}
+                         </p>
+                       </div>
+                       <div className="text-right flex-shrink-0">
+                         {completed ? (
+                           <span className="text-[10px] text-green-400 font-bold">
+                             ✓ {new Date(completed.unlockedAt).toLocaleDateString()}
+                           </span>
+                         ) : (
+                           <span className="text-[10px] text-slate-500 font-mono">
+                             {battlesRemaining} left
+                           </span>
+                         )}
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
+
+               {/* Lifetime Stats */}
+               {selectedCard.lifetimeStats && (
+                 <div className="mt-3 pt-3 border-t border-slate-800">
+                   <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2">Lifetime Stats</p>
+                   <div className="grid grid-cols-2 gap-2">
+                     <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-center">
+                       <p className="text-lg font-black text-red-400">{(selectedCard.lifetimeStats.damageDealt || 0).toLocaleString()}</p>
+                       <p className="text-[9px] text-slate-500 uppercase">Damage Dealt</p>
+                     </div>
+                     <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-center">
+                       <p className="text-lg font-black text-emerald-400">{selectedCard.lifetimeStats.battlesWon || 0}</p>
+                       <p className="text-[9px] text-slate-500 uppercase">Battles Won</p>
+                     </div>
+                     <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-center">
+                       <p className="text-lg font-black text-yellow-400">{selectedCard.lifetimeStats.critsLanded || 0}</p>
+                       <p className="text-[9px] text-slate-500 uppercase">Crits Landed</p>
+                     </div>
+                     <div className="bg-slate-950/50 border border-slate-800 rounded-lg p-2 text-center">
+                       <p className="text-lg font-black text-purple-400">{selectedCard.lifetimeStats.passivesTriggered || 0}</p>
+                       <p className="text-[9px] text-slate-500 uppercase">Passives Used</p>
+                     </div>
+                   </div>
+                 </div>
+               )}
              </div>
              
-             <div className="flex flex-col sm:flex-row gap-4 items-center w-full max-w-sm">
+             <div className="flex flex-col sm:flex-row gap-4 items-center w-full max-w-md">
                <a 
                  href={`https://github.com/${selectedCard.githubUsername}`}
                  target="_blank"

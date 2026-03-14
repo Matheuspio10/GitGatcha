@@ -89,6 +89,28 @@ export async function GET(
         .sort((a: any, b: any) => (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
         .slice(0, 5); // top 5 strongest cards
 
+    // Get showcase cards (loyalty system Hall of Fame)
+    // Showcase cards must be Reliable tier or higher, and ordered by showcaseOrder
+    const showcaseCards = userProfile.cards
+        .filter((uc: any) => uc.loyaltyTier === 'reliable' || uc.loyaltyTier === 'legendary_bond' || uc.loyaltyTier === 'eternal')
+        .sort((a: any, b: any) => {
+            if (a.showcaseOrder !== null && b.showcaseOrder !== null) return a.showcaseOrder - b.showcaseOrder;
+            if (a.showcaseOrder !== null) return -1;
+            if (b.showcaseOrder !== null) return 1;
+            return b.loyaltyCount - a.loyaltyCount; // fallback to highest loyalty
+        })
+        .slice(0, 6)
+        .map((uc: any) => ({
+            ...uc.card,
+            quantity: uc.quantity,
+            isShiny: uc.isShiny,
+            loyaltyTier: uc.loyaltyTier,
+            loyaltyCount: Math.max(0, uc.loyaltyCount),
+        }));
+
+    // Check for Prestige Badge: Legendary Bond (has any card with 100+ battles)
+    const hasLegendaryBondPrestige = userProfile.cards.some((uc: any) => uc.loyaltyCount >= 100);
+
     // Check for level ups in the last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const notifications = Array.isArray(userProfile.notifications) ? userProfile.notifications as any[] : [];
@@ -117,8 +139,10 @@ export async function GET(
             friendsCount,
         },
         topCards,
+        showcaseCards,
         friends: friendsList,
-        hasLeveledUpRecently
+        hasLeveledUpRecently,
+        hasLegendaryBondPrestige,
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
