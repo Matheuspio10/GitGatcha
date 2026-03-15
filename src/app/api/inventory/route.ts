@@ -18,9 +18,35 @@ export async function GET() {
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    const inventory: InventoryItem[] = Array.isArray(user.inventory)
+    let inventory: InventoryItem[] = Array.isArray(user.inventory)
       ? (user.inventory as unknown as InventoryItem[])
       : [];
+
+    let needsUpdate = false;
+    const LEGACY_ID_MAP: Record<string, string> = {
+      'the-go-gophers': 'go-gophers',
+      'c-plus-plus-ancients': 'cpp-ancients',
+      'the-open-source-heroes': 'open-source-heroes',
+      'the-solo-architects': 'solo-architects',
+      'the-silent-giants': 'silent-giants',
+      'the-maintainers': 'maintainers',
+      'the-fossils': 'fossils'
+    };
+
+    inventory = inventory.map(item => {
+      if (LEGACY_ID_MAP[item.packId]) {
+        needsUpdate = true;
+        return { ...item, packId: LEGACY_ID_MAP[item.packId] };
+      }
+      return item;
+    });
+
+    if (needsUpdate) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { inventory: inventory as any },
+      });
+    }
 
     // Group packs by packId with count
     const packCounts: Record<string, { count: number; packId: string; packName: string; items: InventoryItem[] }> = {};
