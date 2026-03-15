@@ -853,6 +853,24 @@ function FriendModal({
   onCancel: () => void;
 }) {
   const [search, setSearch] = useState('');
+  const [friends, setFriends] = useState<{user: {id: string, username: string, level: number}}[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/friends')
+      .then(res => res.json())
+      .then(data => {
+        if (data.friends) {
+          setFriends(data.friends);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredFriends = friends.filter(f => 
+    f.user.username.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <motion.div
@@ -865,9 +883,9 @@ function FriendModal({
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-3xl p-6 sm:max-w-sm w-full h-full sm:h-auto shadow-2xl space-y-4"
+        className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-3xl p-6 sm:max-w-sm w-full h-full sm:h-auto shadow-2xl space-y-4 flex flex-col"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between shrink-0">
           <h2 className="text-xl font-black text-white flex items-center gap-2">
             <Users size={20} className="text-orange-400" /> Challenge a Friend
           </h2>
@@ -876,47 +894,61 @@ function FriendModal({
           </button>
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0">
           <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Enter username..."
+            placeholder="Search friends..."
             className="w-full pl-9 pr-4 py-3 rounded-xl bg-black/40 border border-slate-700 text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-colors"
             autoFocus
           />
         </div>
 
-        {search.trim() && (
-          <button
-            onClick={() => onSelect(search.trim())}
-            className="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors flex items-center justify-center gap-2"
-          >
-            <ArrowRight size={16} /> Challenge &quot;{search.trim()}&quot;
-          </button>
-        )}
-
-        {recentOpponents.length > 0 && (
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Recent Opponents</p>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {recentOpponents.map(opp => (
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 custom-scrollbar">
+          {loading ? (
+            <div className="py-8 text-center text-slate-500">
+              <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-sm">Loading friends...</p>
+            </div>
+          ) : filteredFriends.length > 0 ? (
+            <>
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2 py-1">Your Friends</p>
+              {filteredFriends.map(f => (
                 <button
-                  key={opp}
-                  onClick={() => onSelect(opp)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 transition-colors text-left"
+                  key={f.user.id}
+                  onClick={() => onSelect(f.user.username)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 hover:border-orange-500/30 border border-transparent transition-all text-left group"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-sm font-black text-white flex-shrink-0">
-                    {opp[0]?.toUpperCase()}
+                  <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-black text-white flex-shrink-0 relative overflow-hidden ring-1 ring-white/10">
+                    {f.user.username[0]?.toUpperCase()}
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 pt-0.5">
+                      <p className="text-[7px] text-center font-bold text-orange-400">LVL {f.user.level}</p>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold text-white">{opp}</span>
-                  <ArrowRight size={14} className="ml-auto text-slate-500" />
+                  <span className="text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">{f.user.username}</span>
+                  <ArrowRight size={14} className="ml-auto text-slate-500 group-hover:text-orange-400 transition-colors" />
                 </button>
               ))}
+            </>
+          ) : search.trim() ? (
+            <div className="py-8 text-center text-slate-500">
+              <p className="text-sm mb-3">No friends found matching &quot;{search}&quot;</p>
+              <button
+                onClick={() => onSelect(search.trim())}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors flex items-center justify-center gap-2 border border-slate-700"
+              >
+                <ArrowRight size={16} /> Challenge anyway
+              </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="py-8 text-center text-slate-500">
+              <p className="text-sm">You have no friends yet.</p>
+              <p className="text-xs mt-1 opacity-70">Add friends from their profiles to challenge them easily!</p>
+            </div>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -1489,34 +1521,39 @@ export default function TeamBuilderUI({
           </>
         ) : (
           <>
-            <motion.button
-              onClick={handleBattleRandom}
-              disabled={!teamFull || loading || submitting}
-              whileTap={teamFull ? { scale: 0.97 } : {}}
-              className={clsx(
-                'flex-1 py-4 rounded-2xl font-black text-lg text-white transition-all flex items-center justify-center gap-2.5',
-                teamFull
-                  ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 shadow-[0_0_25px_rgba(220,38,38,0.4)]'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed',
-              )}
-            >
-              <Lightning size={22} weight="fill" />
-              {loading ? 'Matchmaking...' : teamFull ? 'Battle Random' : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
-            </motion.button>
-            <motion.button
-              onClick={handleChallengeClick}
-              disabled={!teamFull || loading || submitting}
-              whileTap={teamFull ? { scale: 0.97 } : {}}
-              className={clsx(
-                'flex-1 py-4 rounded-2xl font-black text-lg text-white transition-all flex items-center justify-center gap-2.5',
-                teamFull
-                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)]'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed',
-              )}
-            >
-              <Users size={22} weight="fill" />
-              Challenge a Friend
-            </motion.button>
+            {mode === 'quick' && (
+              <motion.button
+                onClick={handleBattleRandom}
+                disabled={!teamFull || loading || submitting}
+                whileTap={teamFull ? { scale: 0.97 } : {}}
+                className={clsx(
+                  'flex-1 py-4 rounded-2xl font-black text-lg text-white transition-all flex items-center justify-center gap-2.5',
+                  teamFull
+                    ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 shadow-[0_0_25px_rgba(220,38,38,0.4)]'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed',
+                )}
+              >
+                <Lightning size={22} weight="fill" />
+                {loading ? 'Matchmaking...' : teamFull ? 'Battle Random' : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
+              </motion.button>
+            )}
+            
+            {mode === 'challenge' && (
+              <motion.button
+                onClick={handleChallengeClick}
+                disabled={!teamFull || loading || submitting}
+                whileTap={teamFull ? { scale: 0.97 } : {}}
+                className={clsx(
+                  'flex-1 py-4 rounded-2xl font-black text-lg text-white transition-all flex items-center justify-center gap-2.5',
+                  teamFull
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.3)]'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed',
+                )}
+              >
+                <Users size={22} weight="fill" />
+                Challenge a Friend
+              </motion.button>
+            )}
           </>
         )}
       </div>
