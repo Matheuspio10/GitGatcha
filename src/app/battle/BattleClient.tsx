@@ -10,6 +10,7 @@ import {
   GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText
 } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
+import { useBattleAudio } from './useBattleAudio';
 
 // Types
 interface TurnEvent {
@@ -100,10 +101,12 @@ function StatBar({ label, current, max, color, large }: { label: string; current
 
 function FloatingDamage({ value, side, isCrit }: { value: number; side: 'top' | 'bottom'; isCrit?: boolean }) {
   const fontSize = Math.min(48, 20 + Math.floor(value / 100) * 6);
+  // Random horizontal offset between -30px and 30px
+  const randomX = Math.floor(Math.random() * 60) - 30;
   return (
     <motion.div
-      initial={{ opacity: 1, y: 0, scale: 0.5 }}
-      animate={{ opacity: 0, y: side === 'top' ? 80 : -80, scale: 1.5 }}
+      initial={{ opacity: 1, y: 0, x: randomX, scale: 0.5 }}
+      animate={{ opacity: 0, y: side === 'top' ? 80 : -80, x: randomX + (Math.random() * 40 - 20), scale: 1.5 }}
       transition={{ duration: 1.0, ease: 'easeOut' }}
       className={clsx(
         'absolute z-40 font-black pointer-events-none drop-shadow-lg',
@@ -347,6 +350,9 @@ function BattleReplay({
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<'normal' | 'fast'>('normal');
   const [floatingDmg, setFloatingDmg] = useState<{ id: number; value: number; side: 'top' | 'bottom'; isCrit?: boolean }[]>([]);
+  
+  // Audio system
+  const { initAudio, playSound, isMuted, setIsMuted, isInitialized } = useBattleAudio();
   const logEndRef = useRef<HTMLDivElement>(null);
   const dmgIdRef = useRef(0);
 
@@ -399,10 +405,11 @@ function BattleReplay({
   // Trigger end state hold
   useEffect(() => {
     if (done) {
+      playSound(winnerSide === 'CHALLENGER' ? 'victory' : 'defeat');
       const timer = setTimeout(() => setShowResults(true), 2500);
       return () => clearTimeout(timer);
     }
-  }, [done]);
+  }, [done, playSound, winnerSide]);
 
   // Auto-play Sequencer
   useEffect(() => {
@@ -448,9 +455,11 @@ function BattleReplay({
     if (ev.type === 'passive') {
       setActivePassiveMsg(ev.message);
       setActiveAnim('passive');
+      playSound('passive');
       delay = 1200; // Hold the pause for banner
     } else if (ev.type === 'damage') {
       setActiveAnim('lunge'); // Trigger lunge
+      playSound('lunge');
       delay = 800; // Total sequence (lunge, projectile, hit)
       
       // Schedule the hit parts
@@ -460,6 +469,7 @@ function BattleReplay({
         if (ev.value && ev.value > 0) {
           const side = challengerTeam.some(c => c.id === ev.targetId) ? 'bottom' : 'top';
           const isCrit = ev.message.includes('Critical');
+          playSound(isCrit ? 'crit' : 'hit');
           const id = ++dmgIdRef.current;
           setFloatingDmg(prev => [...prev, { id, value: ev.value!, side, isCrit }]);
           setTimeout(() => setFloatingDmg(prev => prev.filter(d => d.id !== id)), 1500);
@@ -469,6 +479,7 @@ function BattleReplay({
     } else if (ev.type === 'enter_field') {
       delay = 800; // Entry animation time
     } else if (ev.type === 'defeat') {
+      playSound('hit');
       delay = 600; // Delay for card dying
     }
 
@@ -494,8 +505,9 @@ function BattleReplay({
   // ── RESULTS SCREEN ──
   if (showResults) {
     return (
-      <div className="space-y-6 max-w-4xl mx-auto">
-        {/* Winner announcement */}
+      <div className="fixed inset-0 z-[100] w-full h-[100dvh] bg-black/95 backdrop-blur-md overflow-y-auto isolate py-10 px-4">
+        <div className="space-y-6 max-w-4xl mx-auto mt-10">
+          {/* Winner announcement */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -634,12 +646,18 @@ function BattleReplay({
           </button>
         </div>
       </div>
+    </div>
     );
   }
 
   // ── BATTLE IN PROGRESS ──
   return (
-    <div className="relative min-h-[600px] w-full max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-2xl bg-black border border-slate-800 isolate">
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1, x: activeAnim === 'hit' ? [-10, 10, -10, 10, 0] : 0 }} 
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[100] w-full h-[100dvh] bg-black isolate overflow-hidden flex flex-col"
+    >
       {/* Deep Atmospheric Background */}
       <div className="absolute inset-0 pointer-events-none -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(50,55,75,0.4)_0%,rgba(10,12,20,1)_100%)]" />
@@ -672,7 +690,20 @@ function BattleReplay({
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col h-full h-[800px] max-h-[85vh] p-4 gap-6">
+      {/* Hit Flash Overlay */}
+      <AnimatePresence>
+        {activeAnim === 'hit' && (
+          <motion.div
+            initial={{ opacity: 0.3 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-white pointer-events-none z-40 mix-blend-overlay"
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col h-full max-h-[100dvh] p-4 gap-6 max-w-5xl mx-auto w-full relative">
         
         {/* ================= OPPONENT ZONE (TOP) ================= */}
         <div className="flex justify-between items-start z-10 sticky top-0">
@@ -719,7 +750,7 @@ function BattleReplay({
              <p className="text-[10px] uppercase text-slate-500 tracking-widest mt-1 font-bold">Round {Math.min(currentTurn + 1, log.length)}</p>
           </div>
 
-          <div className="relative w-full max-w-sm flex flex-col items-center justify-between h-[520px]">
+          <div className="relative w-full max-w-sm flex flex-col items-center justify-center flex-1 py-10">
             {/* Opponent Active */}
             <AnimatePresence mode="wait">
               {defenderTeam.map(card => {
@@ -797,7 +828,7 @@ function BattleReplay({
 
           {/* Floating Battle Log Panel */}
           <div className={clsx(
-              "absolute top-0 right-4 w-64 h-full max-h-[520px] bg-black/70 border border-slate-700/50 rounded-2xl flex flex-col shadow-2xl backdrop-blur-md transition-transform duration-300 z-30",
+              "absolute top-4 right-4 w-64 bottom-20 bg-black/70 border border-slate-700/50 rounded-2xl flex flex-col shadow-2xl backdrop-blur-md transition-transform duration-300 z-30",
               isLogOpenMobile ? "translate-x-0" : "hidden sm:flex",
               "sm:translate-x-0"
             )}>
@@ -856,7 +887,20 @@ function BattleReplay({
                   <Clock size={20} />
                 </button>
                 <button
-                  onClick={() => setPlaying(p => !p)}
+                  onClick={() => {
+                     setIsMuted(!isMuted);
+                     if (!isInitialized) initAudio();
+                  }}
+                  className="p-2 transition-colors font-bold text-sm flex items-center gap-1 hover:bg-slate-800 rounded-lg text-slate-300"
+                  title="Toggle Sound"
+                >
+                  {isMuted ? '🔇' : '🔊'}
+                </button>
+                <button
+                  onClick={() => {
+                     setPlaying(p => !p);
+                     if (!isInitialized) initAudio();
+                  }}
                   className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-colors"
                   title={playing ? 'Pause' : 'Play'}
                 >
@@ -896,7 +940,7 @@ function BattleReplay({
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 }
 
