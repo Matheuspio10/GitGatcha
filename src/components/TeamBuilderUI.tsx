@@ -132,10 +132,12 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
 
   const uniqueCount = Object.keys(typeCounts).length;
 
+  const CORE_LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Rust', 'Go', 'Ruby', 'C', 'C++', 'CSS', 'PHP'];
+
   // Pair/Triple synergies
   Object.keys(typeCounts).forEach(type => {
     const count = typeCounts[type];
-    if (count >= 2) {
+    if (count >= 2 && CORE_LANGUAGES.includes(type)) {
       const mult = count === 3 ? 2 : 1;
       if (type === 'Python') {
         results.push({
