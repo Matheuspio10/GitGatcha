@@ -166,7 +166,6 @@ export default function InventoryClient({ userId }: { userId: string }) {
 
   const handlePackClick = (e: React.MouseEvent | React.TouchEvent) => {
     if (packState !== 'CHARGING' && packState !== 'OVERCHARGED') return;
-    if (energy >= requiredClicks) return;
 
     // Mobile haptics
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -190,9 +189,9 @@ export default function InventoryClient({ userId }: { userId: string }) {
       setClickParticles(prev => prev.filter(p => p.id !== newId));
     }, 400);
 
-    const newEnergy = energy + 1;
+    const newEnergy = Math.min(energy + 1, requiredClicks);
     setEnergy(newEnergy);
-    playClickSound(newEnergy / requiredClicks);
+    playClickSound(Math.min(newEnergy / requiredClicks, 1));
   };
 
   useEffect(() => {
