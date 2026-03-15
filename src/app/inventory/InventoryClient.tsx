@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardProps } from '@/components/Card';
+import { CardProps } from '@/components/Card';
+import { BoosterReveal } from '@/components/BoosterReveal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkle } from '@phosphor-icons/react';
 
 interface PackVisualTheme {
   gradient: string;
@@ -237,7 +237,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
   // ── PACK OPENING VIEW ──
   if (selectedPack && (packState !== 'IDLE' || cards.length > 0 || errorMessage)) {
     return (
-      <div className="flex flex-col items-center min-h-[70vh] gap-12 pt-8 relative w-full overflow-hidden">
+      <div className="flex flex-col items-center min-h-[70vh] gap-12 pt-8 pb-40 relative w-full overflow-hidden">
         {clickParticles.map(p => (
           <motion.div
             key={p.id}
@@ -356,7 +356,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                 </motion.div>
               </motion.div>
 
-              <div className="absolute -bottom-16 left-0 right-0 text-center pointer-events-none font-bold text-xl drop-shadow-md" style={{ color: apiState === 'ERROR' ? '#ef4444' : glowColor }}>
+              <div className="absolute -bottom-20 left-0 right-0 text-center pointer-events-none font-bold text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] pb-8" style={{ color: apiState === 'ERROR' ? '#ef4444' : glowColor }}>
                 {chargingText}
               </div>
 
@@ -378,66 +378,12 @@ export default function InventoryClient({ userId }: { userId: string }) {
           )}
 
           {packState === 'CARDS_REVEALED' && cards.length > 0 && (
-            <motion.div 
-              key="cards"
-              className="w-full max-w-7xl mx-auto space-y-12 z-20"
-            >
-              {packDropFragments && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-8 text-center"
-                >
-                  <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 rounded-xl border border-yellow-300 shadow-[0_0_30px_rgba(245,158,11,0.5)]">
-                    <Sparkle size={24} weight="fill" className="text-white animate-pulse" />
-                    <span className="font-black text-white text-xl drop-shadow-md">Bonus: +{packDropFragments.amount} {packDropFragments.language} Fragments!</span>
-                  </div>
-                </motion.div>
-              )}
-
-              <div className="flex flex-wrap justify-center gap-6 perspective-1000 mt-8">
-                <AnimatePresence>
-                  {cards.map((c: CardProps & { isDuplicate?: boolean, fragmentsEarned?: number }, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.2, y: 100, rotateY: 180 }}
-                      animate={{ opacity: 1, scale: 1, y: 0, rotateY: 0 }}
-                      transition={{ 
-                        duration: 0.8, 
-                        delay: i * 0.15, // slightly faster stagger
-                        type: "spring",
-                        bounce: 0.4
-                      }}
-                      className="relative"
-                    >
-                      <Card {...c} />
-                      {c.isDuplicate && (
-                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs font-black px-3 py-1.5 rotate-12 z-20 shadow-xl border-2 border-white rounded-lg pointer-events-none">
-                          DUPLICATE +{c.fragmentsEarned}
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-              
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                transition={{ delay: cards.length * 0.15 + 0.5 }}
-                className="text-center pt-12 pb-12"
-              >
-                <div className="mb-6 font-bold text-yellow-500">
-                  +50 XP
-                </div>
-                <button
-                  onClick={resetView}
-                  className="px-8 py-4 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 font-bold tracking-wider text-slate-300 transition-colors"
-                >
-                  Return to Inventory
-                </button>
-              </motion.div>
+            <motion.div key="cards" className="w-full z-20 relative">
+              <BoosterReveal 
+                cards={cards as (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[]} 
+                packDropFragments={packDropFragments} 
+                onComplete={resetView} 
+              />
             </motion.div>
           )}
         </AnimatePresence>
