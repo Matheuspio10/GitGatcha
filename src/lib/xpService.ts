@@ -44,17 +44,17 @@ const LANGUAGE_PACKS = [
   { id: 'pythonistas', name: 'Pythonistas' },
   { id: 'rust-or-bust', name: 'Rust or Bust' },
   { id: 'css-wizards', name: 'CSS Wizards' },
-  { id: 'the-go-gophers', name: 'The Go Gophers' },
+  { id: 'go-gophers', name: 'The Go Gophers' },
   { id: 'ruby-relics', name: 'Ruby Relics' },
-  { id: 'c-plus-plus-ancients', name: 'C++ Ancients' }
+  { id: 'cpp-ancients', name: 'C++ Ancients' }
 ];
 
 // Contributor Type Packs pool
 const CONTRIBUTOR_PACKS = [
-  { id: 'the-open-source-heroes', name: 'The Open Source Heroes' },
-  { id: 'the-solo-architects', name: 'The Solo Architects' },
-  { id: 'the-silent-giants', name: 'The Silent Giants' },
-  { id: 'the-maintainers', name: 'The Maintainers' }
+  { id: 'open-source-heroes', name: 'The Open Source Heroes' },
+  { id: 'solo-architects', name: 'The Solo Architects' },
+  { id: 'silent-giants', name: 'The Silent Giants' },
+  { id: 'maintainers', name: 'The Maintainers' }
 ];
 
 // Era Packs pool

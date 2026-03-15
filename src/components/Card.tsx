@@ -60,6 +60,8 @@ const LOYALTY_VISUALS: Record<string, { borderClass?: string; glowColor?: string
   eternal: { borderClass: 'border-cyan-400/70', glowColor: 'rgba(6,182,212,0.3)', badgeIcon: '♾️', badgeColor: '#06b6d4' },
 };
 
+const CORE_LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Rust', 'Go', 'Ruby', 'C', 'C++', 'CSS', 'PHP'];
+
 function getLoyaltyBorderOverride(tier: string): string | undefined {
   return LOYALTY_VISUALS[tier]?.borderClass;
 }
@@ -189,8 +191,18 @@ export function Card({
       </div>
 
       {/* Flavor Text / Bio */}
-      <div className="relative z-10 flex-1 p-3 bg-gradient-to-t from-black/80 to-transparent min-h-0 overflow-hidden">
-        <p className="text-xs italic text-stone-300 line-clamp-3 leading-relaxed tracking-wide font-serif">
+      <div className="relative z-10 flex-1 p-3 bg-gradient-to-t from-black/80 to-transparent min-h-0 flex flex-col">
+        <div className="mb-1.5 flex-shrink-0">
+          <span className={clsx(
+            "inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded border",
+            CORE_LANGUAGES.includes(primaryLanguage)
+              ? "bg-indigo-900/50 border-indigo-500/50 text-indigo-200"
+              : "bg-slate-800/50 border-slate-600/50 text-slate-400"
+          )} title={CORE_LANGUAGES.includes(primaryLanguage) ? "Core Combat Type" : "Treated as Neutral in combat"}>
+            {primaryLanguage} {CORE_LANGUAGES.includes(primaryLanguage) ? '' : '(Neutral)'}
+          </span>
+        </div>
+        <p className="text-[11px] italic text-stone-300 line-clamp-2 leading-relaxed tracking-wide font-serif">
           &quot;{flavorText}&quot;
         </p>
       </div>

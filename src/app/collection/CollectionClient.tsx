@@ -17,7 +17,9 @@ type ExtendedCard = CardProps & {
   showcaseOrder?: number | null;
 };
 
-type SortOption = 'RARITY' | 'NAME' | 'HP' | 'ATK' | 'DEF' | 'COUNT' | 'LOYALTY';
+type SortOption = 'RARITY' | 'NAME' | 'TYPE' | 'HP' | 'ATK' | 'DEF' | 'COUNT' | 'LOYALTY';
+
+const CORE_LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Rust', 'Go', 'Ruby', 'C', 'C++', 'CSS', 'PHP'];
 
 const RARITY_ORDER: Record<string, number> = {
   'Legendary': 5,
@@ -177,6 +179,9 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
         case 'NAME':
           comparison = a.name.localeCompare(b.name);
           break;
+        case 'TYPE':
+          comparison = (a.primaryLanguage || '').localeCompare(b.primaryLanguage || '');
+          break;
         case 'ATK':
           comparison = a.atk - b.atk;
           break;
@@ -319,7 +324,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
               </button>
             </div>
             <span className="text-sm text-slate-400 mr-2">Sort By:</span>
-            {(['RARITY', 'NAME', 'HP', 'ATK', 'DEF', 'COUNT', 'LOYALTY'] as SortOption[]).map(opt => (
+            {(['RARITY', 'NAME', 'TYPE', 'HP', 'ATK', 'DEF', 'COUNT', 'LOYALTY'] as SortOption[]).map(opt => (
               <button
                 key={opt}
                 onClick={() => handleSort(opt)}
@@ -382,6 +387,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                 <tr className="bg-slate-900/80 border-b border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-wider">
                   <th className="px-6 py-4">Rank</th>
                   <th className="px-6 py-4">Title (Username)</th>
+                  <th className="px-6 py-4 text-center">Type</th>
                   <th className="px-6 py-4 text-right">HP</th>
                   <th className="px-6 py-4 text-right">ATK</th>
                   <th className="px-6 py-4 text-right">DEF</th>
@@ -426,6 +432,16 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                             <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
                             <LoyaltyBadge tier={loyaltyTier} size="sm" />
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className={clsx(
+                            "inline-block px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded border",
+                            CORE_LANGUAGES.includes(card.primaryLanguage || 'Unknown')
+                              ? "bg-indigo-900/50 border-indigo-500/50 text-indigo-200"
+                              : "bg-slate-800/50 border-slate-600/50 text-slate-400"
+                          )} title={CORE_LANGUAGES.includes(card.primaryLanguage || 'Unknown') ? "Core Combat Type" : "Treated as Neutral in combat"}>
+                            {card.primaryLanguage || 'Unknown'} {CORE_LANGUAGES.includes(card.primaryLanguage || 'Unknown') ? '' : '(Neutral)'}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right font-mono text-emerald-400/90 text-sm">
                           {card.hp}
