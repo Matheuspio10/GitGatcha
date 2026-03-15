@@ -142,7 +142,7 @@ function FlippableCard({
   return (
     <motion.div
       className={clsx(
-        "relative w-64 md:w-80 select-none flex items-center justify-center",
+        "relative w-64 h-[410px] select-none flex items-center justify-center",
         isPressing ? "z-[100]" : "z-10"
       )}
       initial={false}
@@ -208,7 +208,7 @@ function FlippableCard({
 
       {/* Legendary Screen Shake Wrapper */}
       <motion.div
-        className="relative w-full aspect-[64/102]" // approximate card ratio
+        className="relative w-64 h-[410px]"
         animate={
           isLegendaryAntic && !isFlipped ? { 
             x: [0, -4, 4, -4, 4, 0], 
@@ -452,7 +452,7 @@ export function BoosterReveal({
   const currentCard = sortedCards[currentIndex];
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto min-h-[60vh] flex flex-col items-center justify-center overflow-hidden overscroll-none touch-none">
+    <div className="relative w-full max-w-5xl mx-auto min-h-[60vh] flex flex-col items-center justify-center overscroll-none touch-none">
       <div className="absolute top-4 w-full flex justify-between px-6 items-center z-50">
         <div className="text-slate-400 font-bold tracking-widest text-sm bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700/50 backdrop-blur-md">
           {currentIndex + 1} / {sortedCards.length}
