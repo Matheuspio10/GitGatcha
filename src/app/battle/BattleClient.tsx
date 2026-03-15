@@ -98,89 +98,198 @@ function StatBar({ label, current, max, color, large }: { label: string; current
   );
 }
 
-function FloatingDamage({ value, x }: { value: number; x: 'left' | 'right' }) {
-  const fontSize = Math.min(36, 16 + Math.floor(value / 100) * 4);
+function FloatingDamage({ value, side, isCrit }: { value: number; side: 'top' | 'bottom'; isCrit?: boolean }) {
+  const fontSize = Math.min(48, 20 + Math.floor(value / 100) * 6);
   return (
     <motion.div
-      initial={{ opacity: 1, y: 0, scale: 1 }}
-      animate={{ opacity: 0, y: -60, scale: 1.3 }}
-      transition={{ duration: 0.9, ease: 'easeOut' }}
-      className={clsx('absolute z-30 font-black text-red-400 pointer-events-none', x === 'left' ? 'left-1/2' : 'right-1/2')}
-      style={{ fontSize, top: '30%' }}
+      initial={{ opacity: 1, y: 0, scale: 0.5 }}
+      animate={{ opacity: 0, y: side === 'top' ? 80 : -80, scale: 1.5 }}
+      transition={{ duration: 1.0, ease: 'easeOut' }}
+      className={clsx(
+        'absolute z-40 font-black pointer-events-none drop-shadow-lg',
+        side === 'top' ? 'top-10 left-1/2 -ml-8' : 'bottom-10 left-1/2 -ml-8',
+        isCrit ? 'text-yellow-300' : 'text-red-500'
+      )}
+      style={{ fontSize }}
     >
+      {isCrit && <div className="text-[10px] uppercase text-yellow-200 text-center -mb-2 tracking-widest bg-black/50 px-2 rounded-full w-fit mx-auto border border-yellow-500/50">CRIT</div>}
       -{value}
     </motion.div>
   );
 }
 
+function CombatProjectile({ from, language }: { from: 'top' | 'bottom'; language?: string | null }) {
+  const colors: Record<string, string> = {
+    Python: 'from-green-400 to-green-600',
+    JavaScript: 'from-yellow-400 to-orange-500',
+    TypeScript: 'from-blue-400 to-blue-600',
+    Rust: 'from-orange-600 to-red-800',
+    Go: 'from-cyan-400 to-teal-500',
+    Java: 'from-red-500 to-orange-600',
+    'C++': 'from-blue-600 to-indigo-800',
+    'C#': 'from-purple-500 to-purple-700',
+    Ruby: 'from-red-600 to-rose-800',
+    PHP: 'from-indigo-400 to-purple-600',
+  };
+  
+  const bg = language && colors[language] ? colors[language] : 'from-slate-300 to-slate-500';
+
+  return (
+    <motion.div
+      initial={{ top: from === 'top' ? '10%' : '90%', opacity: 1, scale: 0.5 }}
+      animate={{ top: from === 'top' ? '90%' : '10%', opacity: 0, scale: 1.5 }}
+      transition={{ duration: 0.3, ease: 'linear' }}
+      className={`absolute left-1/2 -ml-2 w-4 h-16 rounded-full bg-gradient-to-b ${bg} shadow-[0_0_15px_currentColor] z-30 opacity-80 blur-[1px]`}
+      style={{ transform: from === 'bottom' ? 'rotate(180deg)' : 'none' }}
+    />
+  );
+}
+
+function PassiveBanner({ message }: { message: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scaleY: 0 }}
+      animate={{ opacity: 1, scaleY: 1 }}
+      exit={{ opacity: 0, scaleY: 0 }}
+      transition={{ duration: 0.2 }}
+      className="absolute top-1/2 left-0 right-0 -mt-8 h-16 bg-gradient-to-r from-transparent via-purple-900/90 to-transparent z-50 flex items-center justify-center border-y border-purple-500/50 backdrop-blur-sm"
+    >
+      <div className="flex items-center gap-3">
+        <Sparkle weight="fill" className="text-purple-400 animate-pulse" size={24} />
+        <span className="text-xl font-black text-white tracking-wider glow-text-purple uppercase">{message}</span>
+        <Sparkle weight="fill" className="text-purple-400 animate-pulse" size={24} />
+      </div>
+    </motion.div>
+  );
+}
+
 // Active Card on battlefield
-function BattleFieldCard({ card, hp, maxHp, side, defeated, onFire }: {
-  card: TeamCard; hp: number; maxHp: number; side: 'left' | 'right'; defeated?: boolean; onFire?: number;
+function BattleFieldCard({ card, hp, maxHp, side, defeated, onFire, isAttacking, isDefending }: {
+  card: TeamCard; hp: number; maxHp: number; side: 'left' | 'right' | 'top' | 'bottom'; defeated?: boolean; onFire?: number;
+  isAttacking?: boolean; isDefending?: boolean;
 }) {
   const lowHp = hp > 0 && hp < maxHp * 0.25;
+  const isTop = side === 'top';
+  
+  // Rarity Effects
+  const getRarityAura = (rarity: string) => {
+    switch (rarity) {
+      case 'Rare': return 'ring-2 ring-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]';
+      case 'Epic': return 'ring-4 ring-purple-500/60 shadow-[0_0_25px_rgba(168,85,247,0.4)]';
+      case 'Legendary': return 'ring-4 ring-yellow-400 shadow-[0_0_35px_rgba(250,204,21,0.6)] animate-[pulse_2s_ease-in-out_infinite]';
+      default: return 'border-2 border-slate-600';
+    }
+  };
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: side === 'left' ? -60 : 60, scale: 0.8 }}
+      initial={{ opacity: 0, y: isTop ? -80 : 80, scale: 0.8, rotateX: 30 }}
       animate={{
         opacity: defeated ? 0.2 : 1,
-        x: 0,
+        y: isAttacking ? (isTop ? 20 : -20) : 0,
+        x: isDefending ? [0, -5, 5, -5, 5, 0] : 0,
         scale: defeated ? 0.85 : 1,
-        filter: defeated ? 'grayscale(100%)' : 'none',
+        rotateX: defeated ? 60 : 10,
+        filter: defeated ? 'grayscale(100%) blur(2px)' : 'none',
+        zIndex: isAttacking ? 20 : 10
       }}
       exit={{ opacity: 0, scale: 0.5, rotateY: 90 }}
-      transition={{ type: 'spring', stiffness: 250, damping: 25 }}
+      transition={{ 
+        type: 'spring', stiffness: 250, damping: 25,
+        x: { duration: 0.4 }, // hit shake
+      }}
       className={clsx(
-        'relative flex flex-col items-center gap-2 w-40',
-        lowHp && !defeated && 'animate-pulse',
+        'relative flex flex-col items-center gap-3',
+        lowHp && !defeated && 'animate-[pulse_1s_ease-in-out_infinite]',
+        isTop ? 'mb-4' : 'mt-4'
       )}
+      style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
     >
-      {/* On Fire badge */}
+      {/* Rarity particles - simplified here for Epic/Legendary */}
+      {(!defeated && (card.rarity === 'Epic' || card.rarity === 'Legendary')) && (
+        <div className="absolute inset-0 -m-4 rounded-xl border border-white/10 flex items-center justify-center animate-spin-slow pointer-events-none opacity-50 block" style={{ borderRadius: '50%' }}>
+           <div className={`w-2 h-2 rounded-full absolute top-0 ${card.rarity === 'Legendary' ? 'bg-yellow-400 shadow-[0_0_10px_yellow]' : 'bg-purple-400 shadow-[0_0_10px_purple]'}`} />
+           <div className={`w-2 h-2 rounded-full absolute bottom-0 ${card.rarity === 'Legendary' ? 'bg-yellow-400 shadow-[0_0_10px_yellow]' : 'bg-purple-400 shadow-[0_0_10px_purple]'}`} />
+        </div>
+      )}
+
+      {/* On Fire/Momentum badge */}
       {onFire && onFire > 0 && !defeated && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: [1, 1.15, 1] }}
           transition={{ repeat: Infinity, duration: 1.2 }}
-          className="absolute -top-3 z-20 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-lg"
+          className="absolute -top-4 -right-4 z-30 bg-gradient-to-br from-orange-400 via-red-500 to-red-700 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.8)] border border-orange-300 transform rotate-12"
         >
-          🔥 On Fire! +{onFire * 10}%
+          🔥 +{onFire * 10}%
         </motion.div>
       )}
 
-      {/* Card avatar */}
+      {/* Card Body */}
       <div className={clsx(
-        'relative rounded-xl overflow-hidden border-2 w-32 h-32',
-        defeated ? 'border-red-900/30' : lowHp ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'border-slate-600',
-        onFire && onFire > 0 && !defeated && 'shadow-[0_0_25px_rgba(249,115,22,0.6)] border-orange-500',
+        'relative bg-slate-900 rounded-xl overflow-hidden shadow-2xl w-48 h-[270px] flex flex-col',
+        getRarityAura(card.rarity),
+        defeated ? 'border-red-900/30' : lowHp ? 'ring-4 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)]' : '',
+        onFire && onFire > 0 && !defeated && '!ring-4 !ring-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.8)]'
       )}>
-        {card.avatarUrl && (
-          <img src={card.avatarUrl} alt={card.name} className="w-full h-full object-cover" />
-        )}
-        {defeated && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-0 bg-black/70 flex items-center justify-center"
-          >
-            <Skull size={40} className="text-red-500" weight="fill" />
-          </motion.div>
-        )}
+        {/* Avatar Area */}
+        <div className="relative h-36 w-full bg-slate-800">
+          {card.avatarUrl ? (
+            <img src={card.avatarUrl} alt={card.name} className="w-full h-full object-cover object-top" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-600"><Sword size={40} /></div>
+          )}
+          {defeated && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center backdrop-blur-sm">
+              <Skull size={60} className="text-red-500" weight="fill" />
+            </div>
+          )}
+          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-slate-900 to-transparent" />
+        </div>
+
+        {/* Info Area */}
+        <div className="px-3 pb-3 pt-1 flex-1 flex flex-col z-10 -mt-4">
+          <div className="text-center mb-2">
+            <h3 className="text-base font-black text-white leading-tight min-h-[40px] flex items-center justify-center drop-shadow-md">{card.name}</h3>
+            {card.primaryLanguage && (
+              <span className="text-[9px] bg-slate-800/80 border border-slate-700 text-slate-300 rounded px-2 py-0.5 inline-block uppercase tracking-wider font-bold shadow-sm">
+                {card.primaryLanguage}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-auto space-y-1.5 w-full bg-black/40 p-2 rounded-lg border border-slate-800/50">
+            <StatBar label="ATK" current={card.atk} max={card.atk} color="bg-red-500" />
+            <StatBar label="DEF" current={card.def} max={card.def} color="bg-blue-500" />
+          </div>
+        </div>
       </div>
 
-      {/* Name & Language */}
-      <div className="text-center w-full">
-        <p className="text-sm font-bold text-white truncate">{card.name}</p>
-        {card.primaryLanguage && (
-          <span className="text-[10px] bg-slate-800 text-slate-400 rounded px-1.5 py-0.5">{card.primaryLanguage}</span>
-        )}
+      {/* Prominent external HP Bar */}
+      <div className="w-48 mt-1 relative z-20">
+        <div className="absolute -top-7 left-1/2 -ml-6 bg-black text-white font-black text-xs px-3 py-1 rounded-t-lg border border-b-0 border-slate-700 shadow-lg">
+          {Math.max(0, hp)} / {maxHp}
+        </div>
+        <div className="bg-slate-950 p-1.5 rounded-xl border-2 border-slate-800 shadow-xl overflow-visible relative">
+           <div className="w-full h-4 bg-black rounded-lg overflow-hidden relative">
+             <motion.div
+               className={clsx('h-full', hp > maxHp * 0.5 ? 'bg-gradient-to-r from-emerald-600 to-green-400' : hp > maxHp * 0.25 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' : 'bg-gradient-to-r from-red-700 to-red-500')}
+               initial={{ width: '100%' }}
+               animate={{ width: `${Math.max(0, Math.min(100, (hp / maxHp) * 100))}%` }}
+               transition={{ duration: 0.5, ease: 'easeOut' }}
+             />
+             {/* Gloss overlay */}
+             <div className="absolute inset-x-0 top-0 h-1.5 bg-white/20" />
+           </div>
+        </div>
+      </div>
+      
+      {/* Status Indicators Container */}
+      <div className="flex gap-2">
+        {/* Placeholder for stamina / type advantage indicators which we will populate from state later */}
       </div>
 
-      {/* Stat Bars */}
-      <div className="w-full space-y-1 px-1">
-        <StatBar label="HP" current={hp} max={maxHp} color="" large />
-        <StatBar label="ATK" current={card.atk} max={card.atk} color="bg-red-500" />
-        <StatBar label="DEF" current={card.def} max={card.def} color="bg-blue-500" />
-      </div>
     </motion.div>
   );
 }
@@ -237,7 +346,7 @@ function BattleReplay({
   const [currentTurn, setCurrentTurn] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<'normal' | 'fast'>('normal');
-  const [floatingDmg, setFloatingDmg] = useState<{ id: number; value: number; side: 'left' | 'right' }[]>([]);
+  const [floatingDmg, setFloatingDmg] = useState<{ id: number; value: number; side: 'top' | 'bottom'; isCrit?: boolean }[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
   const dmgIdRef = useRef(0);
 
@@ -279,42 +388,111 @@ function BattleReplay({
 
   const interval = speed === 'fast' ? 400 : 1500;
 
-  // Auto-play
+  // ── SEQUENCE STATE ──
+  // Instead of just mapping over turns, we break each turn's events into sequence states for specific animations
+  const [subseqIdx, setSubseqIdx] = useState(0); // Which event in the current turn we are playing
+  const [activeAnim, setActiveAnim] = useState<'lunge' | 'projectile' | 'hit' | 'passive' | null>(null);
+  const [activePassiveMsg, setActivePassiveMsg] = useState<string | null>(null);
+  const [isLogOpenMobile, setIsLogOpenMobile] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  // Trigger end state hold
   useEffect(() => {
-    if (!playing) return;
-    if (currentTurn >= log.length - 1) { 
-      setTimeout(() => setPlaying(false), 0); 
-      return; 
+    if (done) {
+      const timer = setTimeout(() => setShowResults(true), 2500);
+      return () => clearTimeout(timer);
     }
+  }, [done]);
+
+  // Auto-play Sequencer
+  useEffect(() => {
+    if (!playing || done) return;
+
+    const currentTurnObj = log[currentTurn];
+    if (!currentTurnObj) return;
+
+    // Fast skip path: if fast speed or no animations needed, just zip through turns
+    if (speed === 'fast') {
+      const timer = setTimeout(() => {
+        setCurrentTurn(p => p + 1);
+        const nextTurn = log[currentTurn + 1];
+        if (nextTurn) {
+          nextTurn.events.forEach(ev => {
+            if (ev.type === 'damage' && ev.value && ev.value > 0) {
+              const side = challengerTeam.some(c => c.id === ev.targetId) ? 'bottom' : 'top'; // bottom=player
+              const id = ++dmgIdRef.current;
+              setFloatingDmg(prev => [...prev, { id, value: ev.value!, side }]);
+              setTimeout(() => setFloatingDmg(prev => prev.filter(d => d.id !== id)), 1000);
+            }
+          });
+        }
+      }, 300); // Super fast mode
+      return () => clearTimeout(timer);
+    } // End fast path
+    
+    // Detailed Sequence Path (Normal Speed)
+    // We iterate through events[subseqIdx]
+    const ev = currentTurnObj.events[subseqIdx];
+    
+    if (!ev) {
+      // Finished all events in this turn, move to next turn
+      const timer = setTimeout(() => {
+        setCurrentTurn(p => p + 1);
+        setSubseqIdx(0);
+      }, 500); // 500ms delay between rounds
+      return () => clearTimeout(timer);
+    }
+
+    let delay = 300; // default delay before next event
+    
+    if (ev.type === 'passive') {
+      setActivePassiveMsg(ev.message);
+      setActiveAnim('passive');
+      delay = 1200; // Hold the pause for banner
+    } else if (ev.type === 'damage') {
+      setActiveAnim('lunge'); // Trigger lunge
+      delay = 800; // Total sequence (lunge, projectile, hit)
+      
+      // Schedule the hit parts
+      setTimeout(() => setActiveAnim('projectile'), 200);
+      setTimeout(() => {
+        setActiveAnim('hit');
+        if (ev.value && ev.value > 0) {
+          const side = challengerTeam.some(c => c.id === ev.targetId) ? 'bottom' : 'top';
+          const isCrit = ev.message.includes('Critical');
+          const id = ++dmgIdRef.current;
+          setFloatingDmg(prev => [...prev, { id, value: ev.value!, side, isCrit }]);
+          setTimeout(() => setFloatingDmg(prev => prev.filter(d => d.id !== id)), 1500);
+        }
+      }, 400);
+      setTimeout(() => setActiveAnim(null), 800);
+    } else if (ev.type === 'enter_field') {
+      delay = 800; // Entry animation time
+    } else if (ev.type === 'defeat') {
+      delay = 600; // Delay for card dying
+    }
+
     const timer = setTimeout(() => {
-      setCurrentTurn(p => p + 1);
-      // floating damage
-      const nextTurn = log[currentTurn + 1];
-      if (nextTurn) {
-        nextTurn.events.forEach(ev => {
-          if (ev.type === 'damage' && ev.value && ev.value > 0) {
-            const side = challengerTeam.some(c => c.id === ev.targetId) ? 'left' : 'right';
-            const id = ++dmgIdRef.current;
-            setFloatingDmg(prev => [...prev, { id, value: ev.value!, side }]);
-            setTimeout(() => setFloatingDmg(prev => prev.filter(d => d.id !== id)), 1000);
-          }
-        });
-      }
-    }, interval);
+      setActivePassiveMsg(null);
+      setSubseqIdx(p => p + 1);
+    }, delay);
+
     return () => clearTimeout(timer);
-  }, [currentTurn, playing, log.length, interval]);
+  }, [currentTurn, subseqIdx, playing, done, speed, log, challengerTeam]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentTurn]);
+  }, [currentTurn, subseqIdx]);
 
   const handleSkip = () => {
     setPlaying(false);
     setCurrentTurn(log.length - 1);
+    setSubseqIdx(log[log.length-1].events.length);
+    setShowResults(true); // Jump straight to results
   };
 
   // ── RESULTS SCREEN ──
-  if (done) {
+  if (showResults) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* Winner announcement */}
@@ -420,7 +598,7 @@ function BattleReplay({
                             +{Math.round(m.hpBonus * 100)}% HP
                           </span>
                         )}
-                        {m.cosmetics.filter(c => !c.includes('badge')).map((cosmetic, ci) => (
+                        {m.cosmetics.filter((c: string) => !c.includes('badge')).map((cosmetic: string, ci: number) => (
                           <span key={ci} className="text-xs bg-purple-500/20 text-purple-400 font-bold px-2 py-1 rounded-lg border border-purple-500/30">
                             ✨ {cosmetic.replace(/_/g, ' ')}
                           </span>
@@ -461,192 +639,266 @@ function BattleReplay({
 
   // ── BATTLE IN PROGRESS ──
   return (
-    <div className="space-y-4">
-      {/* Top: Score Bar */}
-      <div className="flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-2xl px-6 py-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-xs font-black text-white">YOU</div>
-          <span className="text-2xl font-black text-white">{cScore}</span>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-widest text-slate-600">Turn {Math.min(currentTurn + 1, log.length)} / {log.length}</p>
-          <p className="text-lg font-black text-slate-500">VS</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-black text-white">{dScore}</span>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-xs font-black text-white">OPP</div>
-        </div>
+    <div className="relative min-h-[600px] w-full max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-2xl bg-black border border-slate-800 isolate">
+      {/* Deep Atmospheric Background */}
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(50,55,75,0.4)_0%,rgba(10,12,20,1)_100%)]" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 mix-blend-overlay" />
+        <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-blue-900/10 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-1/3 bg-gradient-to-b from-red-900/10 to-transparent" />
       </div>
 
-      {/* Main Battle Area — Split Screen */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-start min-h-[380px]">
-        {/* Player side */}
-        <div className="flex flex-col items-center relative">
-          <span className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-2">YOUR CARD</span>
-          <AnimatePresence mode="wait">
-            {challengerTeam.map(card => {
-              if (card.id !== activeCCardId) return null;
-              const hp = cHpTracker[card.id] ?? card.maxHp;
-              return (
-                <BattleFieldCard
-                  key={card.id}
-                  card={card}
-                  hp={hp}
-                  maxHp={card.maxHp}
-                  side="left"
-                  defeated={hp <= 0}
-                  onFire={cMomentum[card.id]}
-                />
-              );
-            })}
-          </AnimatePresence>
-          {/* Floating damage on player side */}
-          <AnimatePresence>
-            {floatingDmg.filter(d => d.side === 'left').map(d => (
-              <FloatingDamage key={d.id} value={d.value} x="left" />
-            ))}
-          </AnimatePresence>
-        </div>
+      {/* Passive Banner Interruption */}
+      <AnimatePresence>
+        {activePassiveMsg && <PassiveBanner message={activePassiveMsg} />}
+      </AnimatePresence>
 
-        {/* Center: Battle Log */}
-        <div className="w-64 lg:w-80 bg-black/50 border border-slate-800 rounded-2xl overflow-hidden flex flex-col" style={{ maxHeight: 380 }}>
-          <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/80">
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 text-center">Battle Log</p>
+      {/* End State Banner (Victory/Defeat) */}
+      <AnimatePresence>
+        {done && !showResults && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <h2 className={clsx('text-7xl font-black drop-shadow-[0_0_20px_currentColor] mb-4', winnerSide === 'CHALLENGER' ? 'text-yellow-400' : 'text-red-500')}>
+              {winnerSide === 'CHALLENGER' ? 'VICTORY' : 'DEFEAT'}
+            </h2>
+            <div className="text-5xl">
+              {winnerSide === 'CHALLENGER' ? '🏆✨' : '💀🔥'}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex flex-col h-full h-[800px] max-h-[85vh] p-4 gap-6">
+        
+        {/* ================= OPPONENT ZONE (TOP) ================= */}
+        <div className="flex justify-between items-start z-10 sticky top-0">
+          <div className="flex gap-4 items-center bg-black/40 p-2.5 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-xl font-black text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-red-400">
+              OPP
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-100">Opponent</p>
+              <div className="flex gap-1 mt-1">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className={clsx("w-3 h-3 rounded-full border", i < dScore ? "bg-red-500 border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.8)]" : "bg-slate-800 border-slate-700")} />
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-            {log.slice(0, currentTurn + 1).map((turn, ti) =>
-              turn.events.slice(-5).map((ev, ei) => (
-                <motion.div
-                  key={`${ti}-${ei}`}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={clsx('text-[11px] flex items-start gap-1.5 leading-tight', LOG_COLORS[ev.type] || 'text-slate-300')}
-                >
-                  <span className="flex-shrink-0 mt-0.5 text-[10px]">{LOG_ICONS[ev.type] || '•'}</span>
-                  <span>{ev.message}</span>
-                  {ev.value !== undefined && ev.type === 'damage' && (
-                    <span className="ml-auto font-black text-red-400 flex-shrink-0">-{ev.value}</span>
-                  )}
-                </motion.div>
-              ))
-            )}
-            <div ref={logEndRef} />
-          </div>
-        </div>
-
-        {/* Opponent side */}
-        <div className="flex flex-col items-center relative">
-          <span className="text-[10px] uppercase tracking-widest text-red-400 font-bold mb-2">OPPONENT</span>
-          <AnimatePresence mode="wait">
-            {defenderTeam.map(card => {
-              if (card.id !== activeDCardId) return null;
-              const hp = dHpTracker[card.id] ?? card.maxHp;
-              return (
-                <BattleFieldCard
-                  key={card.id}
-                  card={card}
-                  hp={hp}
-                  maxHp={card.maxHp}
-                  side="right"
-                  defeated={hp <= 0}
-                  onFire={dMomentum[card.id]}
-                />
-              );
-            })}
-          </AnimatePresence>
-          <AnimatePresence>
-            {floatingDmg.filter(d => d.side === 'right').map(d => (
-              <FloatingDamage key={d.id} value={d.value} x="right" />
-            ))}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Speed Controls */}
-      <div className="flex justify-center gap-3">
-        <button
-          onClick={() => setPlaying(p => !p)}
-          className="px-5 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold text-white transition-colors"
-        >
-          {playing ? '⏸ Pause' : '▶ Play'}
-        </button>
-        <button
-          onClick={() => setSpeed(s => s === 'normal' ? 'fast' : 'normal')}
-          className={clsx('px-5 py-2 rounded-xl text-sm font-bold transition-colors', speed === 'fast' ? 'bg-orange-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white')}
-        >
-          {speed === 'fast' ? '🐇 Fast' : '🐢 Normal'}
-        </button>
-        <button
-          onClick={handleSkip}
-          className="px-5 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold text-white transition-colors flex items-center gap-1.5"
-        >
-          <ArrowRight size={16} weight="bold" /> Skip
-        </button>
-      </div>
-
-      {/* Bottom: Team Roster */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Player team */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-3">
-          <p className="text-[9px] uppercase tracking-widest text-blue-400 mb-2">Your Team</p>
-          <div className="flex gap-2">
-            {challengerTeam.map(card => {
-              const hp = cHpTracker[card.id] ?? card.maxHp;
-              const isDefeated = hp <= 0;
-              const isActive = card.id === activeCCardId;
-              return (
-                <div key={card.id} className={clsx('flex-1 text-center', isDefeated && 'grayscale opacity-40')}>
-                  <div className={clsx('relative rounded-lg overflow-hidden border', isActive ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-700')}>
-                    {card.avatarUrl && <img src={card.avatarUrl} alt={card.name} className="w-full h-12 object-cover" />}
-                    {isDefeated && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <Skull size={16} className="text-red-500" weight="fill" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[9px] text-white font-bold mt-1 truncate">{card.name}</p>
-                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-0.5">
-                    <div className={clsx('h-full rounded-full', hp > card.maxHp * 0.5 ? 'bg-green-500' : hp > card.maxHp * 0.25 ? 'bg-yellow-500' : 'bg-red-500')} style={{ width: `${Math.max(0, (hp / card.maxHp) * 100)}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Opponent team */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-3">
-          <p className="text-[9px] uppercase tracking-widest text-red-400 mb-2">Opponent</p>
-          <div className="flex gap-2">
-            {defenderTeam.map(card => {
+          
+          <div className="flex gap-1.5 -space-x-4">
+            {/* Opponent bench (Face Down) */}
+            {defenderTeam.map((card, i) => {
               const hp = dHpTracker[card.id] ?? card.maxHp;
               const isDefeated = hp <= 0;
               const isActive = card.id === activeDCardId;
+              if (isActive) return null;
+              
               return (
-                <div key={card.id} className={clsx('flex-1 text-center', isDefeated && 'grayscale opacity-40')}>
-                  <div className={clsx('relative rounded-lg overflow-hidden border', isActive ? 'border-red-500 ring-2 ring-red-500/30' : 'border-slate-700')}>
-                    {card.avatarUrl && <img src={card.avatarUrl} alt={card.name} className="w-full h-12 object-cover" />}
-                    {isDefeated && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <Skull size={16} className="text-red-500" weight="fill" />
-                      </div>
-                    )}
+                <div key={card.id} className={clsx("w-14 h-20 rounded-lg border-2 shadow-lg transition-transform", isDefeated ? "hidden" : "bg-[repeating-linear-gradient(45deg,#1e293b,#1e293b_5px,#0f172a_5px,#0f172a_10px)] border-slate-700 transform hover:-translate-y-2")} style={{ zIndex: 10 - i }}>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ================= ACTIVE BATTLEFIELD (CENTER) ================= */}
+        <div className="flex-1 flex flex-col justify-center items-center relative my-4">
+          
+          {/* Central Match Score / Turn indicator */}
+          <div className="absolute top-1/2 left-4 -mt-6 flex flex-col items-center bg-black/50 px-4 py-2 rounded-2xl border border-slate-800/50 backdrop-blur-sm shadow-xl hidden sm:flex">
+             <div className="flex gap-3 text-3xl font-black">
+               <span className="text-blue-400">{cScore}</span>
+               <span className="text-slate-600">-</span>
+               <span className="text-red-400">{dScore}</span>
+             </div>
+             <p className="text-[10px] uppercase text-slate-500 tracking-widest mt-1 font-bold">Round {Math.min(currentTurn + 1, log.length)}</p>
+          </div>
+
+          <div className="relative w-full max-w-sm flex flex-col items-center justify-between h-[520px]">
+            {/* Opponent Active */}
+            <AnimatePresence mode="wait">
+              {defenderTeam.map(card => {
+                if (card.id !== activeDCardId) return null;
+                const hp = dHpTracker[card.id] ?? card.maxHp;
+                
+                // Read next event for attack animations
+                const ev = log[currentTurn]?.events[subseqIdx];
+                const isAttacking = activeAnim === 'lunge' && ev?.cardId === card.id;
+                const isDefending = activeAnim === 'hit' && ev?.targetId === card.id;
+
+                return (
+                  <BattleFieldCard
+                    key={card.id}
+                    card={card}
+                    hp={hp}
+                    maxHp={card.maxHp}
+                    side="top"
+                    defeated={hp <= 0}
+                    onFire={dMomentum[card.id]}
+                    isAttacking={isAttacking}
+                    isDefending={isDefending}
+                  />
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Combat Projectile Area between cards */}
+            <AnimatePresence>
+               {activeAnim === 'projectile' && (
+                 <CombatProjectile 
+                   from={log[currentTurn]?.events[subseqIdx]?.cardId === activeCCardId ? 'bottom' : 'top'} 
+                   language={
+                     log[currentTurn]?.events[subseqIdx]?.cardId === activeCCardId 
+                       ? challengerTeam.find(c => c.id === activeCCardId)?.primaryLanguage 
+                       : defenderTeam.find(c => c.id === activeDCardId)?.primaryLanguage
+                   }
+                 />
+               )}
+            </AnimatePresence>
+
+            {/* Floating Damage Numbers */}
+            <AnimatePresence>
+              {floatingDmg.map(d => (
+                <FloatingDamage key={d.id} value={d.value} side={d.side} isCrit={d.isCrit} />
+              ))}
+            </AnimatePresence>
+
+            {/* Player Active */}
+            <AnimatePresence mode="wait">
+              {challengerTeam.map(card => {
+                if (card.id !== activeCCardId) return null;
+                const hp = cHpTracker[card.id] ?? card.maxHp;
+                
+                const ev = log[currentTurn]?.events[subseqIdx];
+                const isAttacking = activeAnim === 'lunge' && ev?.cardId === card.id;
+                const isDefending = activeAnim === 'hit' && ev?.targetId === card.id;
+
+                return (
+                  <BattleFieldCard
+                    key={card.id}
+                    card={card}
+                    hp={hp}
+                    maxHp={card.maxHp}
+                    side="bottom"
+                    defeated={hp <= 0}
+                    onFire={cMomentum[card.id]}
+                    isAttacking={isAttacking}
+                    isDefending={isDefending}
+                  />
+                );
+              })}
+            </AnimatePresence>
+          </div>
+
+          {/* Floating Battle Log Panel */}
+          <div className={clsx(
+              "absolute top-0 right-4 w-64 h-full max-h-[520px] bg-black/70 border border-slate-700/50 rounded-2xl flex flex-col shadow-2xl backdrop-blur-md transition-transform duration-300 z-30",
+              isLogOpenMobile ? "translate-x-0" : "hidden sm:flex",
+              "sm:translate-x-0"
+            )}>
+            <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/50 rounded-t-2xl flex justify-between items-center">
+              <p className="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2"><Clock size={14}/> Battle Log</p>
+              <button className="sm:hidden text-slate-500" onClick={() => setIsLogOpenMobile(false)}>✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700">
+              {log.slice(0, currentTurn + 1).map((turn, ti) =>
+                turn.events.filter((_, idx) => ti < currentTurn || idx <= subseqIdx).map((ev, ei) => (
+                  <motion.div
+                    key={`${ti}-${ei}`}
+                    initial={{ opacity: 0, x: 10, height: 0 }}
+                    animate={{ opacity: 1, x: 0, height: 'auto' }}
+                    className={clsx('text-xs flex flex-col p-2 rounded-lg bg-slate-800/30 border border-slate-700/30')}
+                  >
+                    <div className="flex items-start gap-2">
+                       <span className="flex-shrink-0 text-lg leading-none">{LOG_ICONS[ev.type] || '•'}</span>
+                       <span className={clsx('flex-1 leading-tight mt-0.5', LOG_COLORS[ev.type] || 'text-slate-300')}>{ev.message}</span>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+              <div ref={logEndRef} className="h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* ================= PLAYER ZONE (BOTTOM) ================= */}
+        <div className="flex justify-between items-end z-10 sticky bottom-0">
+          {/* Player Bench (Face Up) */}
+          <div className="flex gap-2">
+            {challengerTeam.map((card) => {
+              const hp = cHpTracker[card.id] ?? card.maxHp;
+              const isDefeated = hp <= 0;
+              const isActive = card.id === activeCCardId;
+              
+              return (
+                <div key={card.id} className={clsx("w-16 flex flex-col gap-1 transition-all", isDefeated ? "opacity-30 grayscale" : isActive ? "ring-2 ring-blue-500 rounded-lg scale-105" : "")}>
+                  <div className="h-20 rounded-lg overflow-hidden border border-slate-700 relative bg-slate-800">
+                     {card.avatarUrl ? <img src={card.avatarUrl} className="w-full h-full object-cover" /> : <div className="p-2"><Sword className="w-full h-full text-slate-600"/></div>}
+                     {isDefeated && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Skull className="text-red-500"/></div>}
                   </div>
-                  <p className="text-[9px] text-white font-bold mt-1 truncate">{card.name}</p>
-                  <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                  <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
                     <div className={clsx('h-full rounded-full', hp > card.maxHp * 0.5 ? 'bg-green-500' : hp > card.maxHp * 0.25 ? 'bg-yellow-500' : 'bg-red-500')} style={{ width: `${Math.max(0, (hp / card.maxHp) * 100)}%` }} />
                   </div>
                 </div>
               );
             })}
           </div>
+
+          <div className="flex flex-col items-end gap-3">
+             {/* Controls Cluster */}
+             <div className="flex gap-2 bg-black/60 p-1.5 rounded-xl border border-slate-800 backdrop-blur-sm">
+                <button className="sm:hidden p-2 text-slate-400 hover:text-white" onClick={() => setIsLogOpenMobile(true)}>
+                  <Clock size={20} />
+                </button>
+                <button
+                  onClick={() => setPlaying(p => !p)}
+                  className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-colors"
+                  title={playing ? 'Pause' : 'Play'}
+                >
+                  {playing ? '⏸' : '▶'}
+                </button>
+                <button
+                  onClick={() => setSpeed(s => s === 'normal' ? 'fast' : 'normal')}
+                  className={clsx('p-2 rounded-lg transition-colors font-bold text-sm flex items-center gap-1', speed === 'fast' ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-slate-800 text-slate-300')}
+                  title="Toggle Speed"
+                >
+                  <Lightning size={16} weight={speed === 'fast' ? 'fill' : 'regular'} /> {speed === 'fast' ? '2x' : '1x'}
+                </button>
+                <button
+                  onClick={handleSkip}
+                  className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 transition-colors"
+                  title="Skip to End"
+                >
+                  <ArrowRight size={20} />
+                </button>
+             </div>
+
+             {/* Player Avatar */}
+             <div className="flex gap-4 items-center bg-black/40 p-2.5 rounded-2xl border border-slate-800/80 backdrop-blur-md">
+                <div className="text-right">
+                  <p className="text-sm font-bold text-blue-100">You</p>
+                  <div className="flex gap-1 justify-end mt-1">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className={clsx("w-3 h-3 rounded-full border", i < cScore ? "bg-blue-500 border-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.8)]" : "bg-slate-800 border-slate-700")} />
+                    ))}
+                  </div>
+                </div>
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] border border-blue-400">
+                  YOU
+                </div>
+             </div>
+          </div>
         </div>
+
       </div>
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
 
 export default function BattleClient({ userCards, userId, powerCap, userBits }: { userCards: TeamBuilderCard[]; userId: string; powerCap: number; userBits: number }) {
   const searchParams = useSearchParams();
