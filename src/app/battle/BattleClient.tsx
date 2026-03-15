@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import {
   Sword, Shield, Heart, Lightning, Trophy, Clock, Users,
-  GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar
+  GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText
 } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
 
@@ -282,7 +282,10 @@ function BattleReplay({
   // Auto-play
   useEffect(() => {
     if (!playing) return;
-    if (currentTurn >= log.length - 1) { setPlaying(false); return; }
+    if (currentTurn >= log.length - 1) { 
+      setTimeout(() => setPlaying(false), 0); 
+      return; 
+    }
     const timer = setTimeout(() => {
       setCurrentTurn(p => p + 1);
       // floating damage
@@ -355,7 +358,12 @@ function BattleReplay({
         {/* Battle Summary by matchup */}
         {battleStats && battleStats.length > 0 && (
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2"><ChartBar size={16} className="text-purple-400" /> Battle Summary</h3>
+            <div className="flex items-center justify-between pointer-events-auto">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2"><ChartBar size={16} className="text-purple-400" /> Battle Summary</h3>
+              <a href="/wiki#battle-system" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 z-50 relative pointer-events-auto">
+                <BookOpenText size={14} weight="bold" /> Learn more in the Wiki
+              </a>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {battleStats.map((stat: any, i: number) => (
                 <div key={i} className={clsx('rounded-xl p-3 border', stat.team === 'CHALLENGER' ? 'border-blue-500/20 bg-blue-500/5' : 'border-red-500/20 bg-red-500/5')}>
@@ -828,7 +836,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
         <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 mb-2 tracking-tighter">
           The Arena
         </h1>
-        <p className="text-slate-400">Assemble a team of 3. The battle resolves itself — only strategy matters.</p>
+        <p className="text-slate-400 mb-2">Assemble a team of 3. The battle resolves itself — only strategy matters.</p>
+        <a href="/wiki#leagues-tournaments" className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium relative z-10">
+          <BookOpenText size={16} weight="bold" /> Learn more in the Wiki
+        </a>
       </div>
 
       {/* Tabs */}

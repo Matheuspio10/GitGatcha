@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/Card';
 import { useSession } from 'next-auth/react';
-import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin } from '@phosphor-icons/react';
+import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin, BookOpenText } from '@phosphor-icons/react';
 import { toast, Toaster } from 'react-hot-toast';
 
 type FragmentWallet = Record<string, number>;
@@ -210,7 +210,12 @@ export default function ForgeClient() {
           </div>
           <div>
             <h1 className="text-2xl font-black text-white">The Forge</h1>
-            <p className="text-slate-400 text-sm">Combine Language Fragments with BITS to invoke specific developers.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-1">
+              <p className="text-slate-400 text-sm">Combine Language Fragments with BITS to invoke specific developers.</p>
+              <a href="/wiki#forge-system" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 font-medium bg-indigo-500/10 px-2 py-1 rounded-lg w-fit">
+                <BookOpenText size={14} weight="bold" /> Learn more in the Wiki
+              </a>
+            </div>
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-slate-800">

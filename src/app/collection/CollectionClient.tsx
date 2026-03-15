@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { CardProps, Card } from '@/components/Card';
-import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText } from '@phosphor-icons/react';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import clsx from 'clsx';
 
@@ -254,7 +254,12 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       {/* 1. Stats Dashboard Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-6 shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-4">
-          <h1 className="text-2xl font-black text-white px-2">Collection Stats</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-2">
+            <h1 className="text-2xl font-black text-white">Collection Stats</h1>
+            <a href="/wiki#cards-rarities" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 font-medium">
+              <BookOpenText size={18} weight="bold" /> Learn more in the Wiki
+            </a>
+          </div>
           <div className="text-sm text-slate-400 font-medium px-2">
             Unique Cards: <span className="text-white font-bold text-base">{totalUnique}</span>{' '}
             <span className="text-slate-600 mx-2">|</span>{' '}

@@ -5,7 +5,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   Sword, Shield, Heart, Lightning, Users, Star, Funnel,
   X, CheckCircle, ArrowsVertical, GameController, MagnifyingGlass,
-  ChartBar, Info, ArrowRight, WarningCircle, SortAscending, Lock, Crown
+  ChartBar, Info, ArrowRight, WarningCircle, SortAscending, Lock, Crown, BookOpenText
 } from '@phosphor-icons/react';
 import { CardProps } from '@/components/Card';
 import clsx from 'clsx';
@@ -479,18 +479,18 @@ function TeamSlot({
 
 // ─── Synergy Panel ────────────────────────────────────────────────────────────
 
-function SynergyPanel({ slots, prevSynergyCount }: { slots: (TeamBuilderCard | null)[]; prevSynergyCount: React.MutableRefObject<number> }) {
+function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard | null)[]; prevSynergyCountRef: React.MutableRefObject<number> }) {
   const synergies = computeSynergies(slots);
   const activeSynergies = synergies.filter(s => s.active);
   const [pulsing, setPulsing] = useState(false);
 
   useEffect(() => {
     const activeCount = activeSynergies.length;
-    if (activeCount > prevSynergyCount.current) {
+    if (activeCount > prevSynergyCountRef.current) {
       setPulsing(true);
       setTimeout(() => setPulsing(false), 1500);
     }
-    prevSynergyCount.current = activeCount;
+    prevSynergyCountRef.current = activeCount;
   }, [activeSynergies.length]);
 
   return (
@@ -504,10 +504,15 @@ function SynergyPanel({ slots, prevSynergyCount }: { slots: (TeamBuilderCard | n
         pulsing && 'shadow-[0_0_30px_rgba(168,85,247,0.4)]',
       )}
     >
-      <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-1.5">
-        <Star size={10} className="text-purple-400" />
-        Team Synergy
-      </p>
+      <div className="flex items-center justify-between pointer-events-auto mb-2">
+        <p className="text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+          <Star size={10} className="text-purple-400" />
+          Team Synergy
+        </p>
+        <a href="/wiki#team-synergies" className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 z-50 relative pointer-events-auto">
+          <BookOpenText size={12} weight="bold" /> Learn more in the Wiki
+        </a>
+      </div>
       <div className="flex flex-wrap gap-2">
         <AnimatePresence>
           {synergies.map((syn, i) => (
@@ -1538,7 +1543,7 @@ export default function TeamBuilderUI({
       )}
 
       {/* ─── Synergy Panel ─── */}
-      <SynergyPanel slots={slots} prevSynergyCount={prevSynergyCount} />
+      <SynergyPanel slots={slots} prevSynergyCountRef={prevSynergyCount} />
 
       {/* ─── Type Chart Toggle ─── */}
       <div>
