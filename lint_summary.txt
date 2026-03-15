@@ -1,0 +1,224 @@
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\calculate_stats.js
+  Line 2: A `require()` style import is forbidden.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\migrate_stats.js
+  Line 13: A `require()` style import is forbidden.
+  Line 14: A `require()` style import is forbidden.
+  Line 15: A `require()` style import is forbidden.
+  Line 16: A `require()` style import is forbidden.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\seed_changelog.js
+  Line 1: A `require()` style import is forbidden.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\battle\challenge\route.ts
+  Line 86: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\forge\wishlist\route.ts
+  Line 19: Unexpected any. Specify a different type.
+  Line 74: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\inventory\open\route.ts
+  Line 37: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\notifications\route.ts
+  Line 67: Unexpected any. Specify a different type.
+  Line 104: Unexpected any. Specify a different type.
+  Line 116: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\profile\[username]\route.ts
+  Line 56: Unexpected any. Specify a different type.
+  Line 57: Unexpected any. Specify a different type.
+  Line 73: Unexpected any. Specify a different type.
+  Line 78: Unexpected any. Specify a different type.
+  Line 88: Unexpected any. Specify a different type.
+  Line 89: Unexpected any. Specify a different type.
+  Line 89: Unexpected any. Specify a different type.
+  Line 95: Unexpected any. Specify a different type.
+  Line 96: Unexpected any. Specify a different type.
+  Line 96: Unexpected any. Specify a different type.
+  Line 103: Unexpected any. Specify a different type.
+  Line 112: Unexpected any. Specify a different type.
+  Line 116: Unexpected any. Specify a different type.
+  Line 117: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\store\booster\route.ts
+  Line 53: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\api\team\route.ts
+  Line 56: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\battle\BattleClient.tsx
+  Line 234: Unexpected any. Specify a different type.
+  Line 285: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\battle\BattleClient.tsx:285:42
+  283 |   useEffect(() => {
+  284 |     if (!playing) return;
+> 285 |     if (currentTurn >= log.length - 1) { setPlaying(false); return; }
+      |                                          ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  286 |     const timer = setTimeout(() => {
+  287 |       setCurrentTurn(p => p + 1);
+  288 |       // floating damage
+  Line 365: Unexpected any. Specify a different type.
+  Line 663: Unexpected any. Specify a different type.
+  Line 664: Unexpected any. Specify a different type.
+  Line 676: Unexpected any. Specify a different type.
+  Line 724: Unexpected any. Specify a different type.
+  Line 731: Unexpected any. Specify a different type.
+  Line 990: Unexpected any. Specify a different type.
+  Line 997: Unexpected any. Specify a different type.
+  Line 998: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\battle\page.tsx
+  Line 34: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\collection\CollectionClient.tsx
+  Line 15: Unexpected any. Specify a different type.
+  Line 16: Unexpected any. Specify a different type.
+  Line 237: Unexpected any. Specify a different type.
+  Line 241: Unexpected any. Specify a different type.
+  Line 554: Unexpected any. Specify a different type.
+  Line 555: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\collection\page.tsx
+  Line 38: Unexpected any. Specify a different type.
+  Line 39: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\forge\ForgeClient.tsx
+  Line 52: Unexpected any. Specify a different type.
+  Line 55: Unexpected any. Specify a different type.
+  Line 370: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\friends\page.tsx
+  Line 14: Unexpected any. Specify a different type.
+  Line 15: Unexpected any. Specify a different type.
+  Line 16: Unexpected any. Specify a different type.
+  Line 130: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\inventory\InventoryClient.tsx
+  Line 115: Unexpected any. Specify a different type.
+  Line 120: Unexpected any. Specify a different type.
+  Line 260: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\profile\[username]\page.tsx
+  Line 38: Unexpected any. Specify a different type.
+  Line 42: Unexpected any. Specify a different type.
+  Line 85: Unexpected any. Specify a different type.
+  Line 92: Unexpected any. Specify a different type.
+  Line 139: Unexpected any. Specify a different type.
+  Line 327: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 331: Unexpected any. Specify a different type.
+  Line 390: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 437: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\store\StoreClient.tsx
+  Line 76: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\app\wiki\page.tsx
+  Line 203: 'Link' is not defined.
+  Line 204: 'Link' is not defined.
+  Line 205: 'Link' is not defined.
+  Line 205: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 218: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 218: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 218: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 262: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 401: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 553: 'Link' is not defined.
+  Line 555: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+  Line 556: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\components\NotificationBell.tsx
+  Line 114: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\components\NotificationBell.tsx:114:18
+  112 |
+  113 |   const timeAgo = (dateStr: string) => {
+> 114 |     const diff = Date.now() - new Date(dateStr).getTime();
+      |                  ^^^^^^^^^^ Cannot call impure function
+  115 |     const mins = Math.floor(diff / 60000);
+  116 |     if (mins < 1) return 'Just now';
+  117 |     if (mins < 60) return `${mins}m ago`;
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\components\TeamBuilderUI.tsx
+  Line 493: Error: This value cannot be modified
+
+Modifying component props or hook arguments is not allowed. Consider using a local variable instead.
+
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\components\TeamBuilderUI.tsx:493:5
+  491 |       setTimeout(() => setPulsing(false), 1500);
+  492 |     }
+> 493 |     prevSynergyCount.current = activeCount;
+      |     ^^^^^^^^^^^^^^^^ `prevSynergyCount` cannot be modified
+  494 |   }, [activeSynergies.length]);
+  495 |
+  496 |   return (
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref".
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\auth.ts
+  Line 10: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\battleResolver.ts
+  Line 60: Unexpected any. Specify a different type.
+  Line 191: Unexpected any. Specify a different type.
+  Line 194: Unexpected any. Specify a different type.
+  Line 197: Unexpected any. Specify a different type.
+  Line 200: Unexpected any. Specify a different type.
+  Line 227: Unexpected any. Specify a different type.
+  Line 232: Unexpected any. Specify a different type.
+  Line 237: Unexpected any. Specify a different type.
+  Line 239: Unexpected any. Specify a different type.
+  Line 310: 'cTypeMult' is never reassigned. Use 'const' instead.
+  Line 311: 'dTypeMult' is never reassigned. Use 'const' instead.
+  Line 368: Unexpected any. Specify a different type.
+  Line 368: Unexpected any. Specify a different type.
+  Line 369: Unexpected any. Specify a different type.
+  Line 369: Unexpected any. Specify a different type.
+  Line 372: 'cBaseAtk' is never reassigned. Use 'const' instead.
+  Line 373: 'dBaseAtk' is never reassigned. Use 'const' instead.
+  Line 376: 'cDefMom' is never reassigned. Use 'const' instead.
+  Line 377: 'dDefMom' is never reassigned. Use 'const' instead.
+  Line 389: Unexpected any. Specify a different type.
+  Line 390: Unexpected any. Specify a different type.
+  Line 396: Unexpected any. Specify a different type.
+  Line 397: Unexpected any. Specify a different type.
+  Line 409: Unexpected any. Specify a different type.
+  Line 411: Unexpected any. Specify a different type.
+  Line 414: Unexpected any. Specify a different type.
+  Line 416: Unexpected any. Specify a different type.
+  Line 437: Unexpected any. Specify a different type.
+  Line 438: Unexpected any. Specify a different type.
+  Line 443: Unexpected any. Specify a different type.
+  Line 444: Unexpected any. Specify a different type.
+  Line 505: 'tiebreakerEvents' is never reassigned. Use 'const' instead.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\battleService.ts
+  Line 67: Unexpected any. Specify a different type.
+  Line 79: Unexpected any. Specify a different type.
+  Line 107: Unexpected any. Specify a different type.
+  Line 131: Unexpected any. Specify a different type.
+  Line 132: Unexpected any. Specify a different type.
+  Line 133: Unexpected any. Specify a different type.
+  Line 149: Unexpected any. Specify a different type.
+  Line 244: Unexpected any. Specify a different type.
+  Line 257: Unexpected any. Specify a different type.
+  Line 258: Unexpected any. Specify a different type.
+  Line 282: Unexpected any. Specify a different type.
+  Line 313: Unexpected any. Specify a different type.
+  Line 314: Unexpected any. Specify a different type.
+  Line 321: Unexpected any. Specify a different type.
+  Line 324: Unexpected any. Specify a different type.
+  Line 330: Unexpected any. Specify a different type.
+  Line 375: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\boosterService.ts
+  Line 62: 'newCards' is never reassigned. Use 'const' instead.
+  Line 170: Unexpected any. Specify a different type.
+  Line 182: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\githubService.ts
+  Line 23: Unexpected any. Specify a different type.
+  Line 110: Unexpected any. Specify a different type.
+  Line 142: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\loyaltyService.ts
+  Line 116: Unexpected any. Specify a different type.
+  Line 117: Unexpected any. Specify a different type.
+  Line 171: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\src\lib\xpService.ts
+  Line 200: Unexpected any. Specify a different type.
+  Line 200: Unexpected any. Specify a different type.
+  Line 201: 'updatedNotifications' is never reassigned. Use 'const' instead.
+  Line 225: Unexpected any. Specify a different type.
+  Line 226: Unexpected any. Specify a different type.
+  Line 227: Unexpected any. Specify a different type.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\test-db.js
+  Line 1: A `require()` style import is forbidden.
+C:\Users\joaom\OneDrive\Desktop\GitGatcha\test_xp.ts
+  Line 34: Unexpected any. Specify a different type.
+  Line 35: Unexpected any. Specify a different type.
+  Line 36: Unexpected any. Specify a different type.
+  Line 39: Unexpected any. Specify a different type.
+  Line 47: Unexpected any. Specify a different type.
