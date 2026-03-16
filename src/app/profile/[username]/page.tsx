@@ -78,18 +78,18 @@ export default function ProfilePage() {
 
   const checkFriendStatus = async () => {
     try {
-      const res = await fetch('/api/friends');
+      const res = await fetch('/api/friends', { cache: 'no-store' });
       const data = await res.json();
       
       if (res.ok) {
-        const isFriend = data.friends.find((f: any) => f.user.username === profileUsername);
+        const isFriend = data.friends.find((f: any) => (f.user.username || '').toLowerCase() === profileUsername.toLowerCase());
         if (isFriend) {
           setFriendStatus('FRIENDS');
           setFriendshipId(isFriend.friendshipId);
           return;
         }
 
-        const isOutgoing = data.outgoingRequests.find((r: any) => r.user.username === profileUsername);
+        const isOutgoing = data.outgoingRequests.find((r: any) => (r.user.username || '').toLowerCase() === profileUsername.toLowerCase());
         if (isOutgoing) {
           setFriendStatus('PENDING');
           setFriendshipId(isOutgoing.id);

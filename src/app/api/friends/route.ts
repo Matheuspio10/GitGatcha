@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession();
@@ -26,15 +28,21 @@ export async function GET(req: Request) {
         ],
       },
       include: {
-        user: { select: { id: true, username: true, level: true } },
-        friend: { select: { id: true, username: true, level: true } },
+        user: { select: { id: true, username: true, name: true, level: true } },
+        friend: { select: { id: true, username: true, name: true, level: true } },
       },
     });
 
     // Format friends list to normalize who is the friend
     const friends = friendships.map(f => {
       const isCurrentUserSender = f.userId === currentUser.id;
-      const friendData = isCurrentUserSender ? f.friend : f.user;
+      const rawFriendData = isCurrentUserSender ? f.friend : f.user;
+      
+      const friendData = {
+        id: rawFriendData.id,
+        username: rawFriendData.username || rawFriendData.name || 'Unknown',
+        level: rawFriendData.level,
+      };
       
       return {
         friendshipId: f.id,
@@ -50,7 +58,7 @@ export async function GET(req: Request) {
         status: 'PENDING',
       },
       include: {
-        user: { select: { id: true, username: true, level: true } },
+        user: { select: { id: true, username: true, name: true, level: true } },
       },
     });
 
@@ -61,14 +69,18 @@ export async function GET(req: Request) {
         status: 'PENDING',
       },
       include: {
-        friend: { select: { id: true, username: true, level: true } },
+        friend: { select: { id: true, username: true, name: true, level: true } },
       },
     });
 
     return NextResponse.json({ 
       friends, 
-      pendingRequests: pendingRequests.map(r => ({ id: r.id, user: r.user, createdAt: r.createdAt })),
-      outgoingRequests: outgoingRequests.map(r => ({ id: r.id, user: r.friend, createdAt: r.createdAt })) 
+      pendingRequests: pendingRequests.map(r => ({ id: r.id, user: { id: r.user.id, username: r.user.username || r.user.name || 'Unknown', level: r.user.level }, createdAt: r.createdAt })),
+      outgoingRequests: outgoingRequests.map(r => ({ id: r.id, user: { id: r.friend.id, username: r.friend.username || r.friend.name || 'Unknown', level: r.friend.level }, createdAt: r.createdAt })) 
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      }
     });
   } catch (error) {
     console.error('Error fetching friends:', error);
