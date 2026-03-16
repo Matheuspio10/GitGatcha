@@ -101,6 +101,10 @@ export async function POST(
       challengerRewards: result.challengerRewards,
       defenderRewards: result.defenderRewards,
       log: result.log,
+      challengerTeam: result.challengerTeam,
+      defenderTeam: result.defenderTeam,
+      battleStats: result.battle.battleStats,
+      loyaltyUnlocks: result.loyaltyUnlocks,
     });
 
   } catch (error: any) {

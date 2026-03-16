@@ -1114,16 +1114,30 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       });
       const data = await res.json();
       if (data.success) {
-        const dTeam = cardIds.map(id => {
-          const c = userCards.find(uc => uc.id === id)!;
-          return toTeamCard(c);
-        });
+        // The API returns teams from the battle's perspective (challenger = who sent, defender = us)
+        // For the replay UI, we swap so "us" (defender) is shown as CHALLENGER (bottom)
+        const cTeamRaw: TeamCard[] = (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
+        const dTeamRaw: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
+
+        // Swap the log's c/d references to match our perspective swap
+        const swappedLog = (data.log || []).map((turn: TurnLog) => ({
+          ...turn,
+          cCardId: turn.dCardId,
+          dCardId: turn.cCardId,
+          cHpStart: turn.dHpStart,
+          dHpStart: turn.cHpStart,
+          cHpEnd: turn.dHpEnd,
+          dHpEnd: turn.cHpEnd,
+        }));
+
         setReplayData({
-          log: data.log,
-          challengerTeam: [],
-          defenderTeam: dTeam,
+          log: swappedLog,
+          challengerTeam: cTeamRaw,
+          defenderTeam: dTeamRaw,
           winnerSide: data.winnerSide === 'DEFENDER' ? 'CHALLENGER' : 'DEFENDER',
           rewards: data.defenderRewards,
+          battleStats: data.battleStats,
+          loyaltyUnlocks: data.loyaltyUnlocks,
         });
         setRespondingToId(null);
         setRespondingToChallenger('');

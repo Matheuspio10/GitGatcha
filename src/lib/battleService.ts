@@ -418,6 +418,8 @@ export async function resolveFriendBattle(
     defenderRewards,
     xpResult: challengerXpResult,
     log: battleResult.log,
+    challengerTeam: cTeam,
+    defenderTeam: dTeam,
     loyaltyUnlocks,
   };
 }
