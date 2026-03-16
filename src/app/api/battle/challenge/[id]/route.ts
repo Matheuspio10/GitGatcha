@@ -67,7 +67,8 @@ export async function POST(
     const dTeamCards = orderedCards.map(uc => {
       const c = uc!.card;
       return {
-        id: c.id,
+        id: uc!.id,
+        cardId: c.id,
         name: c.name,
         avatarUrl: c.avatarUrl,
         atk: c.atk,
@@ -102,8 +103,8 @@ export async function POST(
       log: result.log,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Challenge response error:', error);
-    return NextResponse.json({ error: 'Failed to respond to challenge' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to respond to challenge: ' + error.message }, { status: 500 });
   }
 }
