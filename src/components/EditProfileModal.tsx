@@ -157,7 +157,15 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
         }),
       });
 
-      const data = await res.json();
+      const resText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (e) {
+        console.error('Non-JSON response:', resText);
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
+
       if (!res.ok) throw new Error(data.error || 'Failed to save');
 
       onSave();
