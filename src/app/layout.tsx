@@ -31,7 +31,7 @@ export default async function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-x-hidden`}>
         <NextAuthProvider>
-          <Navbar username={user?.username || ''} currency={user?.currency || 0} />
+          <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
           <SetupProfileModal />
           <main className="container mx-auto px-4 py-8">
