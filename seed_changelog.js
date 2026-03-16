@@ -85,7 +85,46 @@ Added a **Changelog button** to the main navigation bar. Displays a floating mod
       createdAt: new Date('2026-03-15T02:30:00Z'),
     },
   });
-  console.log('Created v1.6 changelog:', v1_6.id);
+  const v1_7 = await prisma.changelogEntry.create({
+    data: {
+      version: 'v1.7 — March 16, 2026',
+      title: 'Battle Arena Redesign, Username Onboarding & Challenge System Updates',
+      body: `### ⚔️ Battle Arena Redesign
+The battle screen has been completely overhauled for a more immersive, premium trading card game experience.
+
+- Implemented a full-screen, five-zone layout to ensure all elements are visible without clipping.
+- Redesigned battle cards with a fixed aspect ratio and all stats contained within the card boundaries.
+- Replaced the flat black background with a dark, atmospheric arena environment.
+- Typography overhaul for all numerical displays and card names.
+- Both the player's and opponent's cards are now visible simultaneously.
+
+***
+
+### 👤 Username Onboarding
+To personalize the experience, all players must now select a unique nickname upon their first login.
+
+- Dedicated onboarding flow to choose and validate a unique nickname.
+- All game systems (friends list, battle challenges, profile) now utilize your chosen nickname instead of default provider names.
+
+***
+
+### 🎮 Challenge System Improvements
+Challenging your friends is now smoother and more reliable.
+
+- Replaced the free-text input with a convenient autocomplete dropdown populated directly from your friends list.
+- Removed the "random battle" option to streamline the challenge menu.
+- Fixed critical issues where battles would fail to initiate or display correct team data upon accepting a challenge.
+
+***
+
+### 🐛 Bug Fixes & Polish
+- **Achievements:** Fixed an issue where the achievement popover on the profile page would get cut off by its scrollable container.
+- **Collection:** Clarified language types in the collection UI, visually distinguishing between the 10 core languages (used in battle mechanics) and neutral languages.
+- **Inventory:** Fixed a display bug preventing the "The Open Source Heroes" booster pack from appearing correctly.`,
+      createdAt: new Date('2026-03-16T16:30:00Z'),
+    },
+  });
+  console.log('Created v1.7 changelog:', v1_7.id);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
