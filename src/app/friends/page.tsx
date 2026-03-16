@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { UserAvatar } from '@/components/UserAvatar';
 import Link from 'next/link';
 import { Users, UserPlus, Check, X, Shield, Sword } from '@phosphor-icons/react';
 
@@ -135,9 +136,7 @@ export default function FriendsPage() {
                     {friends.map((friendConnection) => (
                       <div key={friendConnection.friendshipId} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700 hover:border-slate-600 transition-all group">
                         <Link href={`/profile/${friendConnection.user.username}`} className="flex items-center gap-4 flex-1">
-                          <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
-                            {friendConnection.user.username.charAt(0).toUpperCase()}
-                          </div>
+                          <UserAvatar username={friendConnection.user.username} image={friendConnection.user.image} size="md" />
                           <div>
                             <div className="font-bold text-white group-hover:text-indigo-300 transition-colors">
                               {friendConnection.user.username}

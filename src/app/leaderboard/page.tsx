@@ -2,6 +2,7 @@ import { Trophy, Medal, Sword, Shield, Star } from '@phosphor-icons/react/dist/s
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { UserAvatar } from '@/components/UserAvatar';
 
 async function getBattleStats(userId: string) {
   try {
@@ -159,9 +160,7 @@ export default async function LeaderboardPage() {
                 </td>
                 <td className="px-5 py-4 font-bold text-white">
                   <Link href={`/profile/${encodeURIComponent(linkUsername)}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
-                    <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-500 transition-colors">
-                      {displayUsername.charAt(0).toUpperCase()}
-                    </div>
+                    <UserAvatar username={displayUsername} image={u.image} size="sm" />
                     <span>{displayUsername}</span>
                     {currentUser?.id === u.id && (
                       <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
@@ -223,8 +222,9 @@ export default async function LeaderboardPage() {
                   <tr key={u.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-5 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
                     <td className="px-5 py-3 font-bold text-white">
-                      <Link href={`/profile/${encodeURIComponent(uLinkUser)}`} className="hover:text-indigo-400 transition-colors">
-                        {u.username || u.name || 'Anonymous'}
+                      <Link href={`/profile/${encodeURIComponent(uLinkUser)}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
+                        <UserAvatar username={uLinkUser} image={u.image} size="sm" />
+                        <span>{u.username || u.name || 'Anonymous'}</span>
                       </Link>
                     </td>
                     <td className="px-5 py-3 text-yellow-400 font-bold font-mono">{u.rating}</td>

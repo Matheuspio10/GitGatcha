@@ -83,9 +83,24 @@ export const authOptions: NextAuthOptions = {
         token.hasSetupProfile = (user as any).hasSetupProfile;
         token.image = (user as any).image;
       }
-      if (trigger === 'update' && session?.username) {
-        token.username = session.username;
-        token.hasSetupProfile = session.hasSetupProfile;
+      if (trigger === 'update') {
+        if (session?.username) {
+          token.username = session.username;
+        }
+        if (session?.hasSetupProfile !== undefined) {
+          token.hasSetupProfile = session.hasSetupProfile;
+        }
+        if (session?.image !== undefined) {
+          if (session.image === 'refresh') {
+             const dbUser = await prisma.user.findUnique({
+               where: { id: token.sub! },
+               select: { image: true }
+             });
+             token.image = dbUser?.image || null;
+          } else {
+             token.image = session.image;
+          }
+        }
       }
       return token;
     }
