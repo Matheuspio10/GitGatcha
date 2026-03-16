@@ -397,45 +397,73 @@ export default function ProfilePage() {
           <p className="text-slate-500 text-xs font-medium mb-6">{profile.achievements.filter(a => a.unlocked).length} / {profile.achievements.length} unlocked</p>
 
           <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
-            {profile.achievements.map(achievement => (
-              <div
-                key={achievement.id}
-                className="relative snap-start shrink-0"
-              >
-                <button
-                  onClick={() => setAchievementPopover(achievementPopover === achievement.id ? null : achievement.id)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all min-w-[80px] ${
-                    achievement.unlocked
-                      ? 'bg-slate-800/60 border-slate-700 hover:border-indigo-500/50 hover:-translate-y-1 cursor-pointer'
-                      : 'bg-slate-900/40 border-slate-800/50 opacity-50 grayscale cursor-pointer'
-                  }`}
+            {profile.achievements.map(achievement => {
+              const isActive = achievementPopover === achievement.id;
+              return (
+                <div
+                  key={achievement.id}
+                  className="relative snap-start shrink-0"
                 >
-                  <span className="text-2xl">{achievement.icon}</span>
-                  <span className={`text-[10px] font-bold text-center leading-tight ${achievement.unlocked ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {achievement.unlocked ? achievement.name : '???'}
-                  </span>
-                  {!achievement.unlocked && <Lock size={10} className="text-slate-600" />}
-                </button>
-
-                {/* Popover */}
-                <AnimatePresence>
-                  {achievementPopover === achievement.id && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-2xl z-20 min-w-[180px]"
-                    >
-                      <div className="text-xs font-bold text-white mb-1">{achievement.name}</div>
-                      <div className="text-[10px] text-slate-400">{achievement.description}</div>
-                      {achievement.unlocked && <div className="text-[10px] text-emerald-400 font-bold mt-1">✓ Unlocked</div>}
-                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-l border-t border-slate-700 rotate-45"></div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
+                  <button
+                    onClick={() => setAchievementPopover(isActive ? null : achievement.id)}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all min-w-[80px] hover:-translate-y-1 cursor-pointer ${
+                      achievement.unlocked
+                        ? 'bg-slate-800/60 border-slate-700 hover:border-indigo-500/50'
+                        : 'bg-slate-900/40 border-slate-800/50 opacity-50 grayscale'
+                    } ${isActive ? 'ring-2 ring-indigo-500 bg-slate-800/80 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : ''}`}
+                  >
+                    <span className="text-2xl">{achievement.icon}</span>
+                    <span className={`text-[10px] font-bold text-center leading-tight ${achievement.unlocked ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {achievement.unlocked ? achievement.name : '???'}
+                    </span>
+                    {!achievement.unlocked && <Lock size={10} className="text-slate-600" />}
+                  </button>
+                </div>
+              );
+            })}
           </div>
+
+          {/* Achievement Details Panel */}
+          <AnimatePresence mode="wait">
+            {achievementPopover && (
+              <motion.div
+                key={achievementPopover}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                {(() => {
+                  const achievement = profile.achievements.find(a => a.id === achievementPopover);
+                  if (!achievement) return null;
+                  return (
+                    <div className="mt-2 bg-slate-800/60 border border-slate-700 rounded-2xl p-4 flex items-center gap-4 shadow-inner">
+                      <div className="text-4xl bg-slate-900/50 w-16 h-16 shrink-0 flex items-center justify-center rounded-xl border border-slate-700/50 shadow-md">
+                        {achievement.icon}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-white mb-1">
+                          {achievement.unlocked ? achievement.name : 'Unknown Achievement'}
+                        </div>
+                        <div className="text-xs text-slate-400 leading-relaxed">
+                          {achievement.unlocked ? achievement.description : 'Keep playing and exploring to discover how to unlock this hidden achievement.'}
+                        </div>
+                        {achievement.unlocked ? (
+                          <div className="text-xs text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
+                            <Check size={14} weight="bold" /> Unlocked
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-500 font-bold mt-2 flex items-center gap-1.5">
+                            <Lock size={14} weight="bold" /> Locked
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ═══════════ HALL OF FAME / SHOWCASE ═══════════ */}
