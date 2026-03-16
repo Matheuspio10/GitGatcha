@@ -61,21 +61,26 @@ export async function POST(
       }
     }
 
-    const orderedCards = cardIds.map(id => userCards.find(uc => uc.cardId === id)?.card);
-    if (orderedCards.some(c => !c)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
+    const orderedCards = cardIds.map(id => userCards.find(uc => uc.cardId === id));
+    if (orderedCards.some(uc => !uc)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
 
-    const dTeamCards = orderedCards.map(c => ({
-      id: c!.id,
-      name: c!.name,
-      avatarUrl: c!.avatarUrl,
-      atk: c!.atk,
-      def: c!.def,
-      hp: c!.hp,
-      maxHp: c!.hp,
-      rarity: c!.rarity,
-      primaryLanguage: c!.primaryLanguage,
-      type: getCardType(c!),
-    }));
+    const dTeamCards = orderedCards.map(uc => {
+      const c = uc!.card;
+      return {
+        id: c.id,
+        name: c.name,
+        avatarUrl: c.avatarUrl,
+        atk: c.atk,
+        def: c.def,
+        hp: c.hp,
+        maxHp: c.hp,
+        stamina: uc!.stamina,
+        rarity: c.rarity,
+        primaryLanguage: c.primaryLanguage,
+        type: getCardType(c),
+        loyaltyTier: uc!.loyaltyTier || 'none',
+      };
+    });
 
     // Resolve the full battle
     const result = await resolveFriendBattle(battleId, dTeamCards);

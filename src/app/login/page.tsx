@@ -1,13 +1,15 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { GithubLogo, Envelope } from '@phosphor-icons/react';
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(searchParams?.get('register') === 'true');
   const [loading, setLoading] = useState(false);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -117,5 +119,13 @@ export default function LoginPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center"><div className="animate-spin h-8 w-8 border-b-2 border-indigo-500 rounded-full"></div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

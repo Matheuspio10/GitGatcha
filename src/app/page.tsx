@@ -28,7 +28,7 @@ export default async function Home() {
           <Link href="/login" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 text-center">
             Login
           </Link>
-          <Link href="/register" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all hover:-translate-y-0.5 text-center">
+          <Link href="/login?register=true" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all hover:-translate-y-0.5 text-center">
             Register Account
           </Link>
         </div>
