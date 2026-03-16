@@ -23,7 +23,7 @@ export async function GET() {
         status: 'PENDING',
       },
       include: {
-        user: { select: { id: true, username: true, level: true } },
+        user: { select: { id: true, username: true, name: true, level: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -36,31 +36,37 @@ export async function GET() {
         expiresAt: { gt: new Date() },
       },
       include: {
-        challenger: { select: { id: true, username: true } },
+        challenger: { select: { id: true, username: true, name: true } },
         challengerCard: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
     const standardNotifications = [
-      ...friendRequests.map(fr => ({
-        id: fr.id,
-        type: 'friend_request' as const,
-        from: fr.user.username || 'Unknown',
-        message: `${fr.user.username} wants to be your friend`,
-        actionUrl: '/friends',
-        createdAt: fr.createdAt,
-        read: false,
-      })),
-      ...battleChallenges.map(bc => ({
-        id: bc.id,
-        type: 'battle_challenge' as const,
-        from: bc.challenger.username || 'Unknown',
-        message: `${bc.challenger.username} challenged you to a 3v3 battle!`,
-        actionUrl: '/battle',
-        createdAt: bc.createdAt,
-        read: false,
-      })),
+      ...friendRequests.map(fr => {
+        const friendDisplayName = fr.user.username || fr.user.name || 'Unknown';
+        return {
+          id: fr.id,
+          type: 'friend_request' as const,
+          from: friendDisplayName,
+          message: `${friendDisplayName} wants to be your friend`,
+          actionUrl: '/friends',
+          createdAt: fr.createdAt,
+          read: false,
+        };
+      }),
+      ...battleChallenges.map(bc => {
+        const challengerDisplayName = bc.challenger.username || bc.challenger.name || 'Unknown';
+        return {
+          id: bc.id,
+          type: 'battle_challenge' as const,
+          from: challengerDisplayName,
+          message: `${challengerDisplayName} challenged you to a 3v3 battle!`,
+          actionUrl: '/battle',
+          createdAt: bc.createdAt,
+          read: false,
+        };
+      }),
     ];
 
     const unreadDbNotifications = Array.isArray(dbUser.notifications) 
