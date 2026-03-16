@@ -9,6 +9,10 @@ import { authOptions } from '@/lib/auth';
 const MAX_BIO_LENGTH = 160;
 const MAX_IMAGE_SIZE = 300 * 1024; // 300KB in base64
 
+// Allow larger JSON payloads for base64 images
+export const maxDuration = 10;
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
