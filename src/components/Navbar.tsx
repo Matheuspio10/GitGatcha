@@ -7,8 +7,9 @@ import { useState, useEffect } from 'react';
 import { Coin, X, List } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
+import { UserAvatar } from './UserAvatar';
 
-export function Navbar({ username, currency: initialCurrency }: { username: string, currency: number }) {
+export function Navbar({ username, currency: initialCurrency, userImage }: { username: string, currency: number, userImage?: string | null }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(initialCurrency);
@@ -94,9 +95,7 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
             {/* Desktop Profile */}
             <div className="hidden lg:flex items-center gap-2">
               <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
-                  {username.charAt(0).toUpperCase()}
-                </div>
+                <UserAvatar username={username} image={userImage} size="sm" />
                 <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
               </Link>
               <button 
@@ -151,9 +150,7 @@ export function Navbar({ username, currency: initialCurrency }: { username: stri
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800/50 transition-colors group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
-                    {username.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar username={username} image={userImage} size="md" />
                   <div>
                     <div className="text-sm font-bold text-white line-clamp-1">{username}</div>
                     <div className="text-xs text-slate-400">View Profile</div>
