@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // Update the db
     await prisma.user.update({
       where: { id: userId },
-      data: { username: username }
+      data: { username: username, hasSetupProfile: true }
     });
 
     return NextResponse.json({ success: true, username });

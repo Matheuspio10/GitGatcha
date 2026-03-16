@@ -53,19 +53,21 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Only fetch if token is missing username (initial login) or to sync currency
-        if (!token.username) {
+        if (!token.username || token.hasSetupProfile === undefined) {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub! },
-            select: { username: true, currency: true }
+            select: { username: true, currency: true, hasSetupProfile: true }
           });
           
-          if (dbUser?.username) {
+          if (dbUser) {
             token.username = dbUser.username;
+            token.hasSetupProfile = dbUser.hasSetupProfile;
           }
           session.user.currency = dbUser?.currency || 0;
         }
 
         session.user.username = token.username as string | undefined;
+        session.user.hasSetupProfile = token.hasSetupProfile as boolean | undefined;
       }
       return session;
     },
@@ -73,9 +75,11 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         token.username = (user as any).username;
+        token.hasSetupProfile = (user as any).hasSetupProfile;
       }
       if (trigger === 'update' && session?.username) {
         token.username = session.username;
+        token.hasSetupProfile = session.hasSetupProfile;
       }
       return token;
     }

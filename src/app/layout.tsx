@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { getCurrentUser } from "@/lib/session";
 import { NextAuthProvider } from "@/components/Providers";
 import { LevelUpModal } from "@/components/LevelUpModal";
+import { SetupProfileModal } from "@/components/SetupProfileModal";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,6 +33,7 @@ export default async function RootLayout({
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} />
           <LevelUpModal />
+          <SetupProfileModal />
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>

@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { LoginForm } from '@/components/LoginForm';
+import Link from 'next/link';
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -24,7 +24,14 @@ export default async function Home() {
       
       <div className="w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl z-10 transform hover:scale-[1.02] transition-transform duration-500">
         <h2 className="text-2xl font-bold mb-8 text-white">Start Your Journey</h2>
-        <LoginForm />
+        <div className="flex flex-col gap-4">
+          <Link href="/login" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 text-center">
+            Login
+          </Link>
+          <Link href="/register" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all hover:-translate-y-0.5 text-center">
+            Register Account
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string
       username?: string
       currency?: number
+      hasSetupProfile?: boolean
     } & DefaultSession["user"]
   }
 }

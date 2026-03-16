@@ -27,6 +27,7 @@ model User {
   fragments     Json      @default("{}")
   fragmentLogs  Json      @default("[]")
   wishlist      Json      @default("[]")
+  hasSetupProfile Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
