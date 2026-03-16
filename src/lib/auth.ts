@@ -43,38 +43,39 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async session({ session, token }) {
+    async session({ session, token, trigger, newSession }) {
       if (token && session.user) {
         session.user.id = token.sub!;
         
-        // Let's pass username to the session
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub! },
-          select: { username: true, currency: true, name: true }
-        });
-
-        // Auto-populate username in DB if it's null (OAuth users)
-        if (dbUser && !dbUser.username) {
-          const fallbackUsername = dbUser.name || session.user.name || session.user.email?.split('@')[0] || 'user';
-          try {
-            await prisma.user.update({
-              where: { id: token.sub! },
-              data: { username: fallbackUsername }
-            });
-            dbUser.username = fallbackUsername;
-          } catch {
-            // Username might conflict (unique constraint), skip
-          }
+        // Allow client to update the session with the new username
+        if (trigger === 'update' && newSession?.username) {
+          token.username = newSession.username;
         }
-        
-        session.user.username = dbUser?.username || session.user.name || session.user.email?.split('@')[0];
-        session.user.currency = dbUser?.currency || 0;
+
+        // Only fetch if token is missing username (initial login) or to sync currency
+        if (!token.username) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub! },
+            select: { username: true, currency: true }
+          });
+          
+          if (dbUser?.username) {
+            token.username = dbUser.username;
+          }
+          session.user.currency = dbUser?.currency || 0;
+        }
+
+        session.user.username = token.username as string | undefined;
       }
       return session;
     },
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.sub = user.id;
+        token.username = (user as any).username;
+      }
+      if (trigger === 'update' && session?.username) {
+        token.username = session.username;
       }
       return token;
     }
