@@ -25,7 +25,7 @@ export default function FriendsPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/friends');
+      const res = await fetch('/api/friends', { cache: 'no-store' });
       const data = await res.json();
       if (res.ok) {
         setFriends(data.friends || []);

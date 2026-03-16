@@ -44,13 +44,13 @@ export async function GET(
         friendships: {
             where: { status: 'ACCEPTED' },
             include: {
-              friend: { select: { id: true, username: true, level: true } },
+              friend: { select: { id: true, username: true, name: true, level: true } },
             }
         },
         friendRequests: {
             where: { status: 'ACCEPTED' },
             include: {
-              user: { select: { id: true, username: true, level: true } },
+              user: { select: { id: true, username: true, name: true, level: true } },
             }
         }
       } as any,
@@ -72,12 +72,12 @@ export async function GET(
     const friendsList = [
       ...userProfile.friendships.map((f: any) => ({
         id: f.friend.id,
-        username: f.friend.username,
+        username: f.friend.username || f.friend.name || 'Unknown',
         level: f.friend.level,
       })),
       ...userProfile.friendRequests.map((f: any) => ({
         id: f.user.id,
-        username: f.user.username,
+        username: f.user.username || f.user.name || 'Unknown',
         level: f.user.level,
       })),
     ];
