@@ -17,6 +17,10 @@ if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
 import NodeCache from 'node-cache';
 export const cache = new NodeCache({ stdTTL: 86400 });
 
+function getRandomUserId(maxId: number = 150000000) {
+  return Math.floor(Math.random() * maxId) + 1;
+}
+
 export async function fetchGitHubUserStats(username: string, expectedRarity?: string) {
   const cacheKey = expectedRarity ? `user_stats_${username}_${expectedRarity}` : `user_stats_${username}`;
   if (cache.has(cacheKey)) {
@@ -110,14 +114,22 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
 export async function searchUsersForPackWithRarity(baseQuery: string, rarity: string, count: number): Promise<any[]> {
   // Append rarity followers constraint to the base query
   let query = baseQuery;
+  
+  // Inject a random character for lower rarities to bypass GitHub's 1000 result limit
+  if (['Common', 'Uncommon', 'Rare'].includes(rarity)) {
+    const randomChar = String.fromCharCode(97 + Math.floor(Math.random() * 26)); // 'a' through 'z'
+    query += ` ${randomChar}`;
+  }
+
   if (rarity === 'Legendary') query += ' followers:>25000';
   else if (rarity === 'Epic') query += ' followers:5000..25000';
   else if (rarity === 'Rare') query += ' followers:1000..5000';
   else if (rarity === 'Uncommon') query += ' followers:200..1000';
   else query += ' followers:<200';
 
-  const page = Math.floor(Math.random() * 5) + 1; // Limit page randomization for safer matching
-  const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(query)}&per_page=${Math.min(count * 5, 30)}&page=${page}`;
+  // Use 100 per page to pull a large chunk (up to rank 1000) and get variety
+  const page = Math.floor(Math.random() * 10) + 1;
+  const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(query)}&per_page=100&page=${page}`;
 
   try {
     const res = await axios.get(searchUrl, { headers });
@@ -140,32 +152,38 @@ export async function searchUsersForPackWithRarity(baseQuery: string, rarity: st
 }
 
 export async function getRandomDevelopersByRarity(rarity: string, limit: number = 1): Promise<any[]> {
-  // Query strings to match rarity bands
-  let query = 'type:user';
-  if (rarity === 'Legendary') query += ' followers:>25000';
-  else if (rarity === 'Epic') query += ' followers:5000..25000';
-  else if (rarity === 'Rare') query += ' followers:1000..5000';
-  else if (rarity === 'Uncommon') query += ' followers:200..1000';
-  else query += ' followers:<200';
+  const results: any[] = [];
+  const MAX_GLOBAL_GITHUB_ID = 150000000;
 
-  // pick a random page up to 10 (since pagination limit might apply)
-  const page = Math.floor(Math.random() * 10) + 1;
-  const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(query)}&per_page=${limit}&page=${page}`;
+  // We loop because we need to keep drawing mathematically random users
+  // until we organically find `limit` number of users that match the requested rarity tier.
+  while (results.length < limit) {
+    const randomId = getRandomUserId(MAX_GLOBAL_GITHUB_ID);
+    const searchUrl = `${API_BASE}/users?since=${randomId}&per_page=30`;
 
-  try {
-    const res = await axios.get(searchUrl, { headers });
-    const users = res.data.items;
-    
-    // We get only usernames, we need to fetch their full stats
-    const results = [];
-    for (const u of users) {
-      const stats = await fetchGitHubUserStats(u.login, rarity);
-      if (stats) results.push(stats);
+    try {
+      const res = await axios.get(searchUrl, { headers });
+      const users = res.data || [];
+      
+      // Shuffle the block of users we just pulled to ensure we aren't bias-selecting sequentially
+      const shuffled = users.sort(() => 0.5 - Math.random());
+
+      for (const u of shuffled) {
+        if (results.length >= limit) break;
+
+        // Note: fetchGitHubUserStats calculates their absolute 'natural' rarity organically
+        // unless you force it (which we aren't doing here, we are inspecting them).
+        const stats = await fetchGitHubUserStats(u.login); 
+        
+        if (stats && stats.rarity === rarity) {
+           results.push(stats);
+        }
+      }
+    } catch (err) {
+      console.error(`Error fetching random batch since ID ${randomId}:`, err);
+      // Even if one batch fails, the while loop will simply try a new random ID next loop.
     }
-    return results;
-
-  } catch (err) {
-    console.error(`Error searching users for rarity ${rarity}`, err);
-    return [];
   }
+
+  return results;
 }
