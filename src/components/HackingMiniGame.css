@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   Hacking Mini-Game — CRT Terminal Aesthetic
+   Hacking Mini-Game — Dispatch-Inspired CRT Terminal
    ═══════════════════════════════════════════════════════ */
 
 /* ── Base Container ────────────────────────────────────── */
@@ -7,24 +7,40 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: #050a0e;
+  background: #020c10;
   font-family: var(--font-mono), 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
+/* ── CRT Monitor Frame ─────────────────────────────────── */
+.hacking-monitor {
+  position: relative;
+  width: calc(100% - 32px);
+  height: calc(100% - 32px);
+  max-width: 1400px;
+  max-height: 900px;
+  border: 2px solid rgba(0, 255, 200, 0.25);
+  border-radius: 18px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #0a1f1f 0%, #050e10 60%, #020808 100%);
+  box-shadow:
+    0 0 60px rgba(0, 255, 200, 0.08),
+    0 0 120px rgba(0, 255, 200, 0.04),
+    inset 0 0 80px rgba(0, 0, 0, 0.6);
+}
+
 /* ── Background Grid Pattern ───────────────────────────── */
-.hacking-container::before {
+.hacking-monitor::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 255, 200, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 200, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(rgba(0, 255, 200, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 200, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
   pointer-events: none;
   z-index: 0;
 }
@@ -36,19 +52,28 @@
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.15) 2px,
-    rgba(0, 0, 0, 0.15) 4px
+    transparent 3px,
+    rgba(0, 0, 0, 0.12) 3px,
+    rgba(0, 0, 0, 0.12) 6px
   );
-  animation: scanlineScroll 8s linear infinite;
+  animation: scanlineScroll 10s linear infinite;
   pointer-events: none;
   z-index: 50;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 @keyframes scanlineScroll {
   from { transform: translateY(0); }
-  to { transform: translateY(100px); }
+  to { transform: translateY(120px); }
+}
+
+/* ── Vignette (CRT curvature feel) ─────────────────────── */
+.hacking-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
+  pointer-events: none;
+  z-index: 48;
 }
 
 /* ── Flavor Text Intro ─────────────────────────────────── */
@@ -65,26 +90,26 @@
 
 .hacking-intro-text {
   color: #00ffc8;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   text-align: center;
   padding: 0 2rem;
-  text-shadow: 0 0 20px rgba(0, 255, 200, 0.6);
-  animation: textFlicker 0.1s ease-in-out 3;
+  text-shadow: 0 0 30px rgba(0, 255, 200, 0.6);
+  animation: textFlicker 0.08s ease-in-out 4;
 }
 
 .hacking-intro-sub {
-  color: rgba(0, 255, 200, 0.5);
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
+  color: rgba(0, 255, 200, 0.45);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
 }
 
 @keyframes textFlicker {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.6; }
 }
 
 /* ── Grid Area ─────────────────────────────────────────── */
@@ -95,9 +120,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 700px;
-  aspect-ratio: 1;
-  max-height: 70vh;
+  height: 100%;
+  padding: 60px 80px;
 }
 
 /* ── SVG Graph ─────────────────────────────────────────── */
@@ -106,66 +130,71 @@
   height: 100%;
 }
 
-/* ── Edge Lines ────────────────────────────────────────── */
+/* ── Edge Lines (Pathways) ─────────────────────────────── */
 .hacking-edge {
-  stroke: rgba(100, 120, 140, 0.25);
+  stroke: rgba(0, 255, 200, 0.12);
   stroke-width: 2;
-  stroke-linecap: round;
+  stroke-linecap: square;
   transition: stroke 0.3s, stroke-width 0.3s;
 }
 
 .hacking-edge.active {
-  stroke: #00ffc8;
-  stroke-width: 3;
-  filter: drop-shadow(0 0 6px rgba(0, 255, 200, 0.6));
+  stroke: rgba(0, 255, 200, 0.7);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 200, 0.5));
 }
 
 .hacking-edge.flash {
   stroke: #ffffff;
-  stroke-width: 4;
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
 }
 
-/* ── Animated Data Flow on Active Edges ────────────────── */
+/* ── Data Flow Animation on Active Edges ───────────────── */
 .hacking-edge-flow {
-  stroke: rgba(0, 255, 200, 0.8);
-  stroke-width: 3;
-  stroke-dasharray: 8 12;
-  stroke-linecap: round;
-  animation: edgeFlow 0.8s linear infinite;
-  filter: drop-shadow(0 0 4px rgba(0, 255, 200, 0.4));
+  stroke: rgba(0, 255, 200, 0.6);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 10;
+  stroke-linecap: square;
+  animation: edgeFlow 0.6s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(0, 255, 200, 0.3));
 }
 
 @keyframes edgeFlow {
-  from { stroke-dashoffset: 20; }
+  from { stroke-dashoffset: 16; }
   to { stroke-dashoffset: 0; }
 }
 
-/* ── Node Circles ──────────────────────────────────────── */
+/* ── Node Squares ──────────────────────────────────────── */
 .hacking-node {
   cursor: pointer;
-  transition: fill 0.3s, filter 0.3s, r 0.15s;
+  transition: fill 0.2s, stroke 0.2s, filter 0.2s;
+  stroke-width: 1.5;
 }
 
 .hacking-node.relay {
-  fill: #2a3a4a;
+  fill: rgba(0, 20, 25, 0.8);
+  stroke: rgba(0, 255, 200, 0.2);
 }
 
 .hacking-node.relay.active {
-  fill: #00e5ff;
-  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+  fill: rgba(0, 60, 65, 0.9);
+  stroke: rgba(0, 255, 200, 0.6);
+  filter: drop-shadow(0 0 6px rgba(0, 255, 200, 0.4));
 }
 
 .hacking-node.source {
-  fill: #ff8c00;
-  filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.7));
-  animation: pulseSource 1.5s ease-in-out infinite;
+  fill: rgba(40, 25, 0, 0.9);
+  stroke: #ff8c00;
+  filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.5));
+  animation: pulseSource 2s ease-in-out infinite;
 }
 
 .hacking-node.target {
-  fill: #00e676;
-  filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.7));
-  animation: pulseTarget 1.5s ease-in-out infinite;
+  fill: rgba(0, 35, 15, 0.9);
+  stroke: #00e676;
+  filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.5));
+  animation: pulseTarget 2s ease-in-out infinite;
 }
 
 .hacking-node.hint {
@@ -173,48 +202,80 @@
 }
 
 .hacking-node.flash {
-  fill: #ffffff !important;
-  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.9)) !important;
+  fill: rgba(200, 255, 240, 0.6) !important;
+  stroke: #ffffff !important;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)) !important;
+}
+
+/* ── Player Cursor Block ───────────────────────────────── */
+.hacking-player {
+  fill: rgba(255, 255, 255, 0.15);
+  stroke: #ffffff;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6));
+  animation: playerPulse 1.2s ease-in-out infinite;
+  transition: x 0.12s cubic-bezier(0.25,0.46,0.45,0.94), y 0.12s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+.hacking-player-inner {
+  fill: rgba(200, 255, 245, 0.8);
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+}
+
+@keyframes playerPulse {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4)); stroke-opacity: 0.8; }
+  50% { filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.8)); stroke-opacity: 1; }
 }
 
 @keyframes pulseSource {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.5)); }
-  50% { filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 140, 0, 0.4)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255, 140, 0, 0.8)); }
 }
 
 @keyframes pulseTarget {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 230, 118, 0.5)); }
-  50% { filter: drop-shadow(0 0 20px rgba(0, 230, 118, 0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(0, 230, 118, 0.4)); }
+  50% { filter: drop-shadow(0 0 16px rgba(0, 230, 118, 0.8)); }
 }
 
 @keyframes hintPulse {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(0, 255, 200, 0.3)); }
-  50% { fill: rgba(0, 255, 200, 0.5); filter: drop-shadow(0 0 18px rgba(0, 255, 200, 0.8)); }
+  50% { fill: rgba(0, 80, 60, 0.6); stroke: rgba(0, 255, 200, 0.8); filter: drop-shadow(0 0 14px rgba(0, 255, 200, 0.7)); }
+}
+
+/* ── Source/Target Icons ───────────────────────────────── */
+.hacking-icon-text {
+  fill: currentColor;
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 3px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
 }
 
 /* ── Status Text ───────────────────────────────────────── */
 .hacking-status {
   position: absolute;
-  top: 8%;
+  top: 12%;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 40;
   color: #00e676;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  text-shadow: 0 0 15px rgba(0, 230, 118, 0.7);
+  text-shadow: 0 0 20px rgba(0, 230, 118, 0.7);
   opacity: 0;
-  animation: statusFade 1.5s ease forwards;
+  animation: statusFade 1.8s ease forwards;
   text-align: center;
   white-space: nowrap;
 }
 
 @keyframes statusFade {
-  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  80% { opacity: 1; }
+  0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75% { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -226,86 +287,164 @@
   align-items: center;
   justify-content: center;
   z-index: 45;
-  background: rgba(0, 10, 5, 0.85);
+  background: rgba(0, 10, 5, 0.9);
 }
 
 .hacking-access-text {
   color: #00e676;
-  font-size: clamp(2rem, 6vw, 4rem);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 900;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
   text-shadow:
-    0 0 30px rgba(0, 230, 118, 0.8),
-    0 0 60px rgba(0, 230, 118, 0.4);
-  animation: accessPulse 0.5s ease-in-out 2;
+    0 0 40px rgba(0, 230, 118, 0.8),
+    0 0 80px rgba(0, 230, 118, 0.3);
+  animation: accessPulse 0.4s ease-in-out 3;
 }
 
 @keyframes accessPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+  50% { transform: scale(1.04); opacity: 0.85; }
 }
 
 /* ── Corner Readouts ───────────────────────────────────── */
 .hacking-readout {
   position: absolute;
   z-index: 20;
-  color: rgba(0, 255, 200, 0.4);
-  font-size: 0.65rem;
+  color: rgba(0, 255, 200, 0.35);
+  font-size: 0.6rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   pointer-events: none;
-  line-height: 1.6;
+  line-height: 1.8;
 }
 
 .hacking-readout.top-left {
-  top: 16px;
-  left: 20px;
+  top: 10px;
+  left: 16px;
 }
 
 .hacking-readout.top-right {
-  top: 16px;
-  right: 20px;
+  top: 10px;
+  right: 16px;
   text-align: right;
 }
 
 .hacking-readout.bottom-left {
-  bottom: 16px;
-  left: 20px;
+  bottom: 54px;
+  left: 16px;
 }
 
 .hacking-readout.bottom-right {
-  bottom: 16px;
-  right: 20px;
+  bottom: 54px;
+  right: 16px;
   text-align: right;
 }
 
-/* ── Cascade Flash for Exit ────────────────────────────── */
-@keyframes cascadeFlash {
-  0% { opacity: 0; }
-  50% { opacity: 1; }
-  100% { opacity: 0.3; }
+/* ── BUILD PATH HUD ────────────────────────────────────── */
+.hacking-hud {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 15, 12, 0.9) 40%);
+  border-top: 1px solid rgba(0, 255, 200, 0.1);
 }
 
-/* ── Grid Fade In ──────────────────────────────────────── */
+.hacking-hud-label {
+  color: rgba(0, 255, 200, 0.5);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ── Data Collected Bar ────────────────────────────────── */
+.hacking-data-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 500px;
+}
+
+.hacking-data-bar-label {
+  color: rgba(0, 255, 200, 0.5);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hacking-data-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(0, 255, 200, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.hacking-data-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e676, #00ffc8);
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.5);
+}
+
+/* ── Controls Indicator ────────────────────────────────── */
+.hacking-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hacking-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: rgba(0, 255, 200, 0.08);
+  border: 1px solid rgba(0, 255, 200, 0.25);
+  border-radius: 4px;
+  color: rgba(0, 255, 200, 0.6);
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.hacking-key.pressed {
+  background: rgba(0, 255, 200, 0.2);
+  border-color: rgba(0, 255, 200, 0.6);
+  color: #00ffc8;
+  box-shadow: 0 0 8px rgba(0, 255, 200, 0.3);
+}
+
+/* ── Grid Animations ───────────────────────────────────── */
 .hacking-grid-enter {
   animation: gridFadeIn 0.5s ease-out forwards;
 }
 
 @keyframes gridFadeIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
 
-/* ── Grid Dissolve ─────────────────────────────────────── */
 .hacking-grid-dissolve {
-  animation: gridDissolve 0.4s ease-in forwards;
+  animation: gridDissolve 0.35s ease-in forwards;
 }
 
 @keyframes gridDissolve {
   from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(1.05); filter: blur(8px); }
+  to { opacity: 0; transform: scale(1.03); filter: blur(6px); }
 }
 
 /* ── Mobile Responsive ─────────────────────────────────── */
@@ -314,17 +453,32 @@
     display: none;
   }
 
+  .hacking-monitor {
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    border-radius: 10px;
+  }
+
   .hacking-grid-area {
-    max-width: 95vw;
-    max-height: 60vh;
+    padding: 40px 24px 60px;
   }
 
   .hacking-intro-text {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .hacking-status {
-    font-size: 0.9rem;
-    top: 5%;
+    font-size: 0.85rem;
+    top: 8%;
+  }
+
+  .hacking-hud {
+    padding: 6px 12px;
+  }
+
+  .hacking-key {
+    width: 22px;
+    height: 22px;
+    font-size: 0.5rem;
   }
 }
