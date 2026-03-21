@@ -43,7 +43,8 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
       totalStars += repo.stargazers_count;
       totalForks += repo.forks_count;
       if (repo.language) {
-        languages[repo.language] = (languages[repo.language] || 0) + 1;
+        // Weight the language by repository size to determine dominant language by bytes/code quantity
+        languages[repo.language] = (languages[repo.language] || 0) + (repo.size || 1);
       }
     }
 
@@ -146,7 +147,7 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
       
       const shuffled = eligibleUsers.sort(() => 0.5 - Math.random());
 
-      // Fetch full stats and enforce exact targetRarity
+      // Fetch full stats and enforce exact targetRarity AND strict primary language requirement
       for (const u of shuffled) {
         if (results.length >= count) break;
         
@@ -154,9 +155,28 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
         if (results.some(r => r.githubUsername === u.login)) continue;
         
         const stats = await fetchGitHubUserStats(u.login);
-        if (stats && stats.rarity === targetRarity) {
-          results.push(stats);
+        if (!stats) continue;
+
+        if (stats.rarity !== targetRarity) continue;
+
+        // Strict Primary Language Validation: 
+        // GitHub search returns anyone who has even 1 repo in that language, but we only 
+        // want them if it's their DOMINANT language.
+        const langRegex = /language:([^\s]+)/ig;
+        let match;
+        const requiredLangs: string[] = [];
+        while ((match = langRegex.exec(baseQuery)) !== null) {
+          requiredLangs.push(match[1].toLowerCase());
         }
+
+        if (requiredLangs.length > 0) {
+          const userPrimary = stats.primaryLanguage.toLowerCase();
+          if (!requiredLangs.includes(userPrimary)) {
+            continue; // Does not qualify for this language booster
+          }
+        }
+
+        results.push(stats);
       }
     } catch (err) {
       console.error('Error in search API for themed pack', err);

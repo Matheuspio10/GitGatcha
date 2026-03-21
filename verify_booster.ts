@@ -2,19 +2,21 @@ import { searchUsersForPackWithRarity, getRandomDevelopersByRarity } from './src
 import { getPackById } from './src/lib/packDefinitions';
 
 async function testGitHubLiveFetch() {
-  console.log("Testing live fetching for 'brazilian-devs' pack...");
-  const devPack = getPackById('brazilian-devs');
+  console.log("Testing live fetching for 'css-wizards' pack...");
+  const devPack = getPackById('css-wizards');
   if (!devPack) return console.error("Pack not found.");
   
   const query = devPack.buildQuery();
   console.log("Built Query:", query);
   
-  // Test 1 Rare card
-  console.log("Fetching 1 Rare Brazilian Developer...");
-  const devs = await searchUsersForPackWithRarity(query, 'Rare', 1, []);
+  // Test 5 Common cards
+  console.log("Fetching 5 Common CSS Developers...");
+  const devs = await searchUsersForPackWithRarity(query, 'Common', 5, []);
   
   if (devs.length > 0) {
-    console.log("Found:", devs[0].githubUsername, "| Rarity:", devs[0].rarity, "| Stats:", devs[0].atk, devs[0].def, devs[0].hp);
+    devs.forEach(d => {
+      console.log("Found:", d.githubUsername, "| Rarity:", d.rarity, "| Lang:", d.primaryLanguage);
+    });
   } else {
     console.log("No dev found from API or DB. Check DB seeds or Rate limits.");
   }
