@@ -125,6 +125,38 @@ Challenging your friends is now smoother and more reliable.
     },
   });
   console.log('Created v1.7 changelog:', v1_7.id);
+
+  const v1_8 = await prisma.changelogEntry.create({
+    data: {
+      version: 'v1.8 — March 21, 2026',
+      title: 'True Randomness Engine, Dynamic Power Scores & UI Transparency',
+      body: `### 🎲 True Randomness Engine
+Booster pack generation has been rewritten from the ground up to ensure mathematically perfect, unbiased probability.
+
+- **Query Sharding:** Completely bypasses GitHub's 1,000 search result limit by dynamically cutting queries into random 30-day slices. Every single valid developer across GitHub's 100M+ accounts now has a truly equal chance to drop.
+- **Strict Theme Adherence:** Language boosters now heavily weigh repository size (bytes of code) to determine a developer's primary language instead of flat repo counts, strictly filtering out any profile that doesn't natively match the booster's domain.
+- **Live Shuffling:** Page depth offsets and regional variations are heavily randomized.
+
+***
+
+### 📊 Dynamic Power Scores
+Developer rarities are no longer pre-determined or stagnant. Rarity is now computed live at the exact moment a pack is opened through a **Power Score** algorithm combining Stars, Forks, Repositories, and Followers.
+
+***
+
+### 🛡️ Duplicate Prevention System
+Drawing the same exact developer back-to-back has been addressed. The system now maintains an active short-term memory of your last 15 drawn developers (across 3 packs) and will instantly reroll if it encounters a duplicate during generation.
+
+***
+
+### 🔍 Pack Transparency
+The pack confirmation modal has been redesigned to provide absolute clarity before you open it. 
+- Preview the exact **Active Filters** attached to the pack (e.g., \`Language: CSS\`, \`Region: Brazil\`).
+- Explicit **Drop Odds** for each of the 5 slots are now displayed natively so you know exactly what rarity distribution you are pulling from.`,
+      createdAt: new Date('2026-03-21T16:52:00Z'),
+    },
+  });
+  console.log('Created v1.8 changelog:', v1_8.id);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

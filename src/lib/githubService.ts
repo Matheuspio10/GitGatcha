@@ -103,13 +103,30 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
     cache.set(cacheKey, stats);
     return stats;
 
-  } catch (err) {
+  } catch (err: any) {
     console.error(`Error fetching user ${username}`, err);
     return null;
   }
 }
 
 import { prisma } from './prisma';
+
+// Generates a random 30-day window between GitHub's inception (2008) and today
+// Bypasses GitHub's 1000 search result cap to unlock all 100M+ developers
+function getRandomDateSlice(): string {
+  const start = new Date('2008-04-01').getTime();
+  const end = new Date().getTime() - (30 * 24 * 60 * 60 * 1000); // Up to 30 days ago
+  
+  const randomStartMs = start + Math.random() * (end - start);
+  const randomEndMs = randomStartMs + (30 * 24 * 60 * 60 * 1000);
+  
+  const formatDate = (ms: number) => {
+    const d = new Date(ms);
+    return `${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`;
+  };
+
+  return `created:${formatDate(randomStartMs)}..${formatDate(randomEndMs)}`;
+}
 
 export async function searchUsersForPackWithRarity(baseQuery: string, targetRarity: string, count: number, ignoreSessionUsernames: string[] = []): Promise<any[]> {
   const results: any[] = [];
@@ -125,6 +142,11 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
     else if (targetRarity === 'Rare') searchQuery += ' followers:200..1000';
     else if (targetRarity === 'Uncommon') searchQuery += ' followers:50..200';
     else searchQuery += ' followers:<50';
+
+    // Query Sharding: If pack does not have an era filter, heavily slice time to guarantee all devs are reachable
+    if (!searchQuery.includes('created:')) {
+      searchQuery += ` ${getRandomDateSlice()}`;
+    }
 
     // Randomize page offset for un-biased genuine randomness
     // High rarities have fewer pages on GitHub
@@ -198,14 +220,14 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
         },
       });
       
-      let validFallbacks = dbFallbacks.filter(c => 
+      let validFallbacks = dbFallbacks.filter((c: any) => 
         !ignoreSessionUsernames.includes(c.githubUsername) && 
         !results.some(r => r.githubUsername === c.githubUsername)
       );
 
       // Relax cache constraints if strict fallback yields nothing
       if (validFallbacks.length === 0) {
-        validFallbacks = dbFallbacks.filter(c => !results.some(r => r.githubUsername === c.githubUsername));
+        validFallbacks = dbFallbacks.filter((c: any) => !results.some(r => r.githubUsername === c.githubUsername));
       }
       
       const shuffledFallbacks = validFallbacks.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
