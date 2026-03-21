@@ -124,6 +124,39 @@ export function playAccessGranted() {
   });
 }
 
+/** Short harsh digital alarm — security alert for firewall collision */
+export function playFirewallAlarm() {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  // Descending sawtooth burst
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.type = 'sawtooth';
+  osc1.frequency.setValueAtTime(900, ctx.currentTime);
+  osc1.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.15);
+  gain1.gain.setValueAtTime(0.25, ctx.currentTime);
+  gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+  osc1.connect(gain1);
+  gain1.connect(ctx.destination);
+  osc1.start();
+  osc1.stop(ctx.currentTime + 0.18);
+
+  // Second burst slightly delayed for alarm feel
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  osc2.type = 'square';
+  osc2.frequency.setValueAtTime(600, ctx.currentTime + 0.08);
+  osc2.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.2);
+  gain2.gain.setValueAtTime(0, ctx.currentTime);
+  gain2.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.08);
+  gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+  osc2.connect(gain2);
+  gain2.connect(ctx.destination);
+  osc2.start(ctx.currentTime + 0.08);
+  osc2.stop(ctx.currentTime + 0.22);
+}
+
 /** Start the ambient server-room drone (loops until stopped) */
 export function startAmbientDrone() {
   const ctx = getCtx();
