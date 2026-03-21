@@ -318,49 +318,49 @@ export default function StoreClient({
               {/* Branding Wrapper */}
               <div className="relative z-10 flex flex-col items-center text-center mt-16 px-4">
                 <h3 
-                  className="text-3xl font-black tracking-tighter drop-shadow-lg mb-1 leading-none" 
+                  className="text-3xl font-black tracking-tighter mb-1 leading-none [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]" 
                   style={{ color: pack.visualTheme.textColor }}
                 >
                   {pack.name}
                 </h3>
                 <div 
-                  className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-80 mb-6 bg-black/20 px-3 py-1 rounded-full" 
+                  className="text-[10px] font-bold uppercase tracking-[0.3em] mb-6 bg-slate-900/40 backdrop-blur-sm border border-white/20 px-3 py-1 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" 
                   style={{ color: pack.visualTheme.textColor }}
                 >
                   {pack.cardCount} Cards
                 </div>
                 
-                <p className="text-sm font-medium leading-snug line-clamp-4 mix-blend-luminosity opacity-90" style={{ color: pack.visualTheme.textColor }}>
+                <p className="text-sm font-medium leading-snug line-clamp-4 mix-blend-luminosity opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" style={{ color: pack.visualTheme.textColor }}>
                   {pack.noPreview ? '??? Unknown Contents' : pack.description}
                 </p>
               </div>
 
               {/* Information Badges Container */}
-              <div className="absolute top-14 right-[-2.5rem] rotate-45 z-20 w-32 text-center shadow-lg">
+              <div className="absolute top-14 right-[-2.5rem] rotate-45 z-20 w-32 text-center shadow-[0_4px_0_rgba(0,0,0,0.4)]">
                   {pack.guaranteedMinRarity && (
                     <div 
-                      className="text-[10px] font-black uppercase tracking-widest py-1 drop-shadow-md"
+                      className="text-[10px] font-black uppercase tracking-[0.2em] py-1 border-y border-white/20"
                       style={{ backgroundColor: getRarityBadgeColor(pack.guaranteedMinRarity), color: '#000' }}
                     >
                       ≥1 {pack.guaranteedMinRarity}
                     </div>
                   )}
                   {pack.allCommon && (
-                    <div className="text-[10px] font-black uppercase tracking-widest py-1 bg-slate-400 text-black drop-shadow-md">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] py-1 bg-slate-200 text-slate-800 border-y border-white/40">
                       Common
                     </div>
                   )}
                   {pack.noPreview && (
-                    <div className="text-[10px] font-black uppercase tracking-widest py-1 bg-purple-500 text-white drop-shadow-md animate-pulse">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] py-1 bg-purple-600 text-purple-50 border-y border-purple-400/50 animate-pulse">
                       Mystery
                     </div>
                   )}
               </div>
 
               {/* Cost Button */}
-              <div className="absolute bottom-12 w-3/4 py-3 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white font-bold text-lg shadow-2xl flex items-center justify-center gap-2 group-hover:bg-black/70 transition-colors">
-                <span className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]">{pack.cost}</span>
-                <span className="text-xs text-yellow-400/80 uppercase tracking-widest mt-1">Bits</span>
+              <div className="absolute bottom-12 w-3/4 py-3 rounded-full bg-slate-900/60 backdrop-blur-md border border-white/10 text-white font-bold text-lg shadow-[0_10px_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 group-hover:bg-slate-900/80 transition-colors">
+                <span className="text-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.8)] font-black">{pack.cost}</span>
+                <span className="text-[10px] text-yellow-400/90 uppercase tracking-[0.2em] mt-1 font-bold">Bits</span>
               </div>
             </div>
             

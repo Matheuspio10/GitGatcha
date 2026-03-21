@@ -276,8 +276,8 @@ function FlippableCard({
                 <div className="absolute inset-2 border-2 border-dashed border-slate-600 rounded-lg pointer-events-none" />
                 
                 <div className={clsx(
-                  "relative z-10 font-black text-4xl transform -rotate-12 italic tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]",
-                  isLegendaryAntic ? "text-yellow-400 font-bold" : "text-slate-400"
+                  "relative z-10 font-black text-4xl transform -rotate-12 italic tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] [text-shadow:0_2px_0_#94a3b8,0_4px_0_#475569,0_6px_0_#0f172a,0_8px_10px_rgba(0,0,0,0.8)]",
+                  isLegendaryAntic ? "text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-600 font-bold drop-shadow-[0_0_20px_rgba(250,204,21,1)]" : "text-transparent bg-clip-text bg-gradient-to-b from-slate-200 to-slate-500"
                 )}>
                   GITGACHA
                 </div>
@@ -385,10 +385,10 @@ export function BoosterReveal({
         className="w-full max-w-7xl mx-auto space-y-12 z-20 pb-20 pt-10 px-4"
       >
         <div className="text-center">
-          <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-lg mb-2">
+          <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] mb-3 uppercase">
             Pack Summary
           </h2>
-          <p className="text-slate-400">All revealed cards from this booster.</p>
+          <p className="text-slate-300 uppercase tracking-widest text-sm font-semibold">All revealed cards from this booster</p>
         </div>
 
         {packDropFragments && (
@@ -398,9 +398,11 @@ export function BoosterReveal({
             transition={{ delay: 0.3 }}
             className="mt-8 text-center"
           >
-            <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-3 rounded-xl border border-yellow-300 shadow-[0_0_30px_rgba(245,158,11,0.5)]">
-              <Sparkle size={24} weight="fill" className="text-white animate-pulse" />
-              <span className="font-black text-white text-xl drop-shadow-md">Bonus: +{packDropFragments.amount} {packDropFragments.language} Fragments!</span>
+            <div className="inline-flex items-center gap-3 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-500/50 shadow-[0_4px_20px_rgba(245,158,11,0.3),inset_0_1px_1px_rgba(255,255,255,0.1)]">
+              <Sparkle size={24} weight="fill" className="text-amber-400 animate-pulse" />
+              <span className="font-bold text-slate-200 text-lg">
+                Bonus: <span className="text-amber-400 font-black text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">+{packDropFragments.amount}</span> {packDropFragments.language} Fragments!
+              </span>
             </div>
           </motion.div>
         )}
@@ -416,11 +418,11 @@ export function BoosterReveal({
             >
               <Card {...c} />
               {c.isDuplicate ? (
-                <div className="absolute -top-3 -right-3 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs font-black px-3 py-1.5 rotate-12 z-20 shadow-xl border-2 border-white rounded-lg pointer-events-none">
-                  DUPLICATE +{c.fragmentsEarned}
+                <div className="absolute -top-3 -right-3 bg-slate-900/90 backdrop-blur-xl text-rose-400 text-xs font-black px-3 py-1.5 rotate-12 z-20 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-rose-500/50 rounded-full pointer-events-none tracking-widest uppercase">
+                  DUP <span className="text-rose-300 drop-shadow-[0_0_4px_rgba(244,63,94,0.8)]">+{c.fragmentsEarned}</span>
                 </div>
               ) : (
-                <div className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-black px-3 py-1.5 -rotate-12 z-20 shadow-xl border-2 border-white rounded-lg pointer-events-none tracking-widest uppercase">
+                <div className="absolute -top-3 -right-3 bg-slate-900/90 backdrop-blur-xl text-emerald-400 text-[10px] font-black px-3 py-1.5 -rotate-12 z-20 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-emerald-500/50 rounded-full pointer-events-none tracking-widest uppercase">
                   NEW
                 </div>
               )}
@@ -439,9 +441,9 @@ export function BoosterReveal({
           </div>
           <button
             onClick={onComplete}
-            className="px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 font-bold tracking-wider text-white transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1"
+            className="px-10 py-4 rounded-2xl bg-slate-100 hover:bg-white border border-white text-slate-900 font-extrabold tracking-[0.15em] text-sm uppercase transition-all shadow-[0_4px_20px_rgba(255,255,255,0.3),inset_0_2px_4px_rgba(255,255,255,1)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.5)] hover:-translate-y-1 active:translate-y-0 active:shadow-md"
           >
-            Add all to collection
+            Add to collection
           </button>
         </motion.div>
       </motion.div>
@@ -501,7 +503,7 @@ export function BoosterReveal({
         </AnimatePresence>
       </div>
 
-      <div className="absolute bottom-8 text-slate-500 text-sm font-medium z-40 bg-black/40 px-4 py-2 rounded-full backdrop-blur-md">
+      <div className="absolute bottom-8 text-slate-300 text-xs tracking-widest uppercase font-bold z-40 bg-slate-900/60 border border-white/10 px-6 py-3 rounded-full backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
         Tap to reveal • Swipe or click arrows to navigate
       </div>
     </div>
