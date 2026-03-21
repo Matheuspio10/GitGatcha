@@ -45,44 +45,59 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token, trigger, newSession }) {
       if (token && session.user) {
+        // Core fields requested (id, name, email)
         session.user.id = token.sub!;
+        session.user.name = token.name as string | undefined;
+        session.user.email = token.email as string | undefined;
         
+        // Remove image to save cookie space
+        if ('image' in session.user) {
+          delete session.user.image;
+        }
+
         // Allow client to update the session with the new username
         if (trigger === 'update' && newSession?.username) {
           token.username = newSession.username;
-        }
-        if (trigger === 'update' && newSession?.image !== undefined) {
-          token.image = newSession.image;
         }
 
         // Only fetch if token is missing username (initial login) or to sync currency
         if (!token.username || token.hasSetupProfile === undefined) {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub! },
-            select: { username: true, currency: true, hasSetupProfile: true, image: true }
+            select: { username: true, currency: true, hasSetupProfile: true }
           });
           
           if (dbUser) {
             token.username = dbUser.username;
             token.hasSetupProfile = dbUser.hasSetupProfile;
-            token.image = dbUser.image;
+            token.currency = dbUser.currency;
           }
-          session.user.currency = dbUser?.currency || 0;
         }
 
+        // Keep necessary app custom fields, but no large provider data
         session.user.username = token.username as string | undefined;
         session.user.hasSetupProfile = token.hasSetupProfile as boolean | undefined;
-        session.user.image = token.image as string | undefined;
+        session.user.currency = (token.currency as number) || 0;
       }
       return session;
     },
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user, account, trigger, session }) {
+      // Remove unnecessary large fields to fix Vercel 494 Request Header Too Large
+      if (account) {
+        delete token.accessToken;
+        delete token.refreshToken;
+        delete token.access_token;
+        delete token.refresh_token;
+      }
+      if (token.picture) delete token.picture;
+      if (token.image) delete token.image;
+
       if (user) {
         token.sub = user.id;
         token.username = (user as any).username;
         token.hasSetupProfile = (user as any).hasSetupProfile;
-        token.image = (user as any).image;
       }
+
       if (trigger === 'update') {
         if (session?.username) {
           token.username = session.username;
@@ -90,19 +105,17 @@ export const authOptions: NextAuthOptions = {
         if (session?.hasSetupProfile !== undefined) {
           token.hasSetupProfile = session.hasSetupProfile;
         }
-        if (session?.image !== undefined) {
-          if (session.image === 'refresh') {
-             const dbUser = await prisma.user.findUnique({
-               where: { id: token.sub! },
-               select: { image: true }
-             });
-             token.image = dbUser?.image || null;
-          } else {
-             token.image = session.image;
-          }
-        }
       }
-      return token;
+
+      // Explicitly return only what's needed to keep JWT cookie minimal
+      return {
+        sub: token.sub,
+        name: token.name,
+        email: token.email,
+        username: token.username,
+        hasSetupProfile: token.hasSetupProfile,
+        currency: token.currency,
+      };
     }
   },
   pages: {
