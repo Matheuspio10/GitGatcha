@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════
+   Hacking Mini-Game — CRT Terminal Aesthetic
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Base Container ────────────────────────────────────── */
+.hacking-container {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #050a0e;
+  font-family: var(--font-mono), 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Background Grid Pattern ───────────────────────────── */
+.hacking-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 255, 200, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 200, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Scanline Overlay ──────────────────────────────────── */
+.hacking-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  animation: scanlineScroll 8s linear infinite;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.5;
+}
+
+@keyframes scanlineScroll {
+  from { transform: translateY(0); }
+  to { transform: translateY(100px); }
+}
+
+/* ── Flavor Text Intro ─────────────────────────────────── */
+.hacking-intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  gap: 16px;
+}
+
+.hacking-intro-text {
+  color: #00ffc8;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0 2rem;
+  text-shadow: 0 0 20px rgba(0, 255, 200, 0.6);
+  animation: textFlicker 0.1s ease-in-out 3;
+}
+
+.hacking-intro-sub {
+  color: rgba(0, 255, 200, 0.5);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ── Grid Area ─────────────────────────────────────────── */
+.hacking-grid-area {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 700px;
+  aspect-ratio: 1;
+  max-height: 70vh;
+}
+
+/* ── SVG Graph ─────────────────────────────────────────── */
+.hacking-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Edge Lines ────────────────────────────────────────── */
+.hacking-edge {
+  stroke: rgba(100, 120, 140, 0.25);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke 0.3s, stroke-width 0.3s;
+}
+
+.hacking-edge.active {
+  stroke: #00ffc8;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 200, 0.6));
+}
+
+.hacking-edge.flash {
+  stroke: #ffffff;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+}
+
+/* ── Animated Data Flow on Active Edges ────────────────── */
+.hacking-edge-flow {
+  stroke: rgba(0, 255, 200, 0.8);
+  stroke-width: 3;
+  stroke-dasharray: 8 12;
+  stroke-linecap: round;
+  animation: edgeFlow 0.8s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 200, 0.4));
+}
+
+@keyframes edgeFlow {
+  from { stroke-dashoffset: 20; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Node Circles ──────────────────────────────────────── */
+.hacking-node {
+  cursor: pointer;
+  transition: fill 0.3s, filter 0.3s, r 0.15s;
+}
+
+.hacking-node.relay {
+  fill: #2a3a4a;
+}
+
+.hacking-node.relay.active {
+  fill: #00e5ff;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+}
+
+.hacking-node.source {
+  fill: #ff8c00;
+  filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.7));
+  animation: pulseSource 1.5s ease-in-out infinite;
+}
+
+.hacking-node.target {
+  fill: #00e676;
+  filter: drop-shadow(0 0 12px rgba(0, 230, 118, 0.7));
+  animation: pulseTarget 1.5s ease-in-out infinite;
+}
+
+.hacking-node.hint {
+  animation: hintPulse 0.8s ease-in-out 3;
+}
+
+.hacking-node.flash {
+  fill: #ffffff !important;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.9)) !important;
+}
+
+@keyframes pulseSource {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.5)); }
+  50% { filter: drop-shadow(0 0 20px rgba(255, 140, 0, 0.9)); }
+}
+
+@keyframes pulseTarget {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 230, 118, 0.5)); }
+  50% { filter: drop-shadow(0 0 20px rgba(0, 230, 118, 0.9)); }
+}
+
+@keyframes hintPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(0, 255, 200, 0.3)); }
+  50% { fill: rgba(0, 255, 200, 0.5); filter: drop-shadow(0 0 18px rgba(0, 255, 200, 0.8)); }
+}
+
+/* ── Status Text ───────────────────────────────────────── */
+.hacking-status {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  color: #00e676;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 0 15px rgba(0, 230, 118, 0.7);
+  opacity: 0;
+  animation: statusFade 1.5s ease forwards;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes statusFade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── ACCESS GRANTED Overlay ────────────────────────────── */
+.hacking-access-granted {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 45;
+  background: rgba(0, 10, 5, 0.85);
+}
+
+.hacking-access-text {
+  color: #00e676;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 30px rgba(0, 230, 118, 0.8),
+    0 0 60px rgba(0, 230, 118, 0.4);
+  animation: accessPulse 0.5s ease-in-out 2;
+}
+
+@keyframes accessPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* ── Corner Readouts ───────────────────────────────────── */
+.hacking-readout {
+  position: absolute;
+  z-index: 20;
+  color: rgba(0, 255, 200, 0.4);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+  line-height: 1.6;
+}
+
+.hacking-readout.top-left {
+  top: 16px;
+  left: 20px;
+}
+
+.hacking-readout.top-right {
+  top: 16px;
+  right: 20px;
+  text-align: right;
+}
+
+.hacking-readout.bottom-left {
+  bottom: 16px;
+  left: 20px;
+}
+
+.hacking-readout.bottom-right {
+  bottom: 16px;
+  right: 20px;
+  text-align: right;
+}
+
+/* ── Cascade Flash for Exit ────────────────────────────── */
+@keyframes cascadeFlash {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+/* ── Grid Fade In ──────────────────────────────────────── */
+.hacking-grid-enter {
+  animation: gridFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes gridFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ── Grid Dissolve ─────────────────────────────────────── */
+.hacking-grid-dissolve {
+  animation: gridDissolve 0.4s ease-in forwards;
+}
+
+@keyframes gridDissolve {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.05); filter: blur(8px); }
+}
+
+/* ── Mobile Responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .hacking-readout {
+    display: none;
+  }
+
+  .hacking-grid-area {
+    max-width: 95vw;
+    max-height: 60vh;
+  }
+
+  .hacking-intro-text {
+    font-size: 0.9rem;
+  }
+
+  .hacking-status {
+    font-size: 0.9rem;
+    top: 5%;
+  }
+}
