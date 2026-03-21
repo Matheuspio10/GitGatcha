@@ -6,6 +6,7 @@ import {
   playPathSegment,
   playPuzzleComplete,
   playAccessGranted,
+  playFirewallAlarm,
   startAmbientDrone,
   stopAmbientDrone,
 } from '@/lib/hackingAudio';
@@ -31,6 +32,12 @@ interface GridData {
   rows: number;
   cols: number;
   adj: Map<number, number[]>;
+}
+
+interface FirewallState {
+  nodeId: number;
+  corner: number; // corner node id where it spawned
+  interval: number; // ms per step
 }
 
 interface HackingMiniGameProps {
@@ -196,6 +203,14 @@ export function HackingMiniGame({
   const [isMobile, setIsMobile] = useState(false);
   const [pressedKey, setPressedKey] = useState<string | null>(null);
 
+  // ── Firewall state ──
+  const [firewalls, setFirewalls] = useState<FirewallState[]>([]);
+  const [firewallPredictions, setFirewallPredictions] = useState<number[]>([]);
+  const [proximityLevel, setProximityLevel] = useState<0 | 1 | 2>(0);
+  const [collisionFlash, setCollisionFlash] = useState(false);
+  const [closeCallText, setCloseCallText] = useState<string | null>(null);
+  const [statusIsFirewall, setStatusIsFirewall] = useState(false);
+
   const [fakeIp] = useState(() =>
     `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
   );
@@ -208,12 +223,16 @@ export function HackingMiniGame({
   const tracePathRef = useRef(tracePath);
   const playerPosRef = useRef(playerPos);
   const traceStartedRef = useRef(traceStarted);
+  const firewallsRef = useRef<FirewallState[]>([]);
+  const firewallTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const collisionLockedRef = useRef(false);
 
   useEffect(() => { apiResolvedRef.current = apiResolved; }, [apiResolved]);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   useEffect(() => { tracePathRef.current = tracePath; }, [tracePath]);
   useEffect(() => { playerPosRef.current = playerPos; }, [playerPos]);
   useEffect(() => { traceStartedRef.current = traceStarted; }, [traceStarted]);
+  useEffect(() => { firewallsRef.current = firewalls; }, [firewalls]);
 
   // Detect mobile
   useEffect(() => {
@@ -231,8 +250,66 @@ export function HackingMiniGame({
     return Math.min(baseSize + growth, maxSize);
   }, [puzzleCount, isMobile]);
 
+  // ── Firewall BFS across raw grid coordinates (ignoring edge connections) ──
+  const firewallBFS = useCallback((gridData: GridData, startId: number, endId: number, excludeTargetNode: boolean): number[] | null => {
+    const targetNode = gridData.nodes.find(n => n.type === 'target');
+    const blocked = new Set<number>();
+    if (excludeTargetNode && targetNode) blocked.add(targetNode.id);
+
+    const visited = new Set<number>();
+    const queue: number[][] = [[startId]];
+    visited.add(startId);
+
+    while (queue.length > 0) {
+      const path = queue.shift()!;
+      const current = path[path.length - 1];
+      if (current === endId) return path;
+
+      const node = gridData.nodes[current];
+      // 4-directional neighbors on raw grid
+      const dirs = [
+        { dr: -1, dc: 0 }, { dr: 1, dc: 0 },
+        { dr: 0, dc: -1 }, { dr: 0, dc: 1 },
+      ];
+      for (const { dr, dc } of dirs) {
+        const nr = node.row + dr;
+        const nc = node.col + dc;
+        if (nr < 0 || nr >= gridData.rows || nc < 0 || nc >= gridData.cols) continue;
+        const nid = nr * gridData.cols + nc;
+        if (visited.has(nid) || blocked.has(nid)) continue;
+        visited.add(nid);
+        queue.push([...path, nid]);
+      }
+    }
+    return null;
+  }, []);
+
+  // ── Get corner node IDs ──
+  const getCornerNodes = useCallback((gridData: GridData): number[] => {
+    const { rows, cols } = gridData;
+    return [
+      0,                        // top-left
+      cols - 1,                 // top-right
+      (rows - 1) * cols,        // bottom-left
+      (rows - 1) * cols + cols - 1, // bottom-right
+    ];
+  }, []);
+
+  // ── Compute Firewall interval based on puzzle count ──
+  const getFirewallInterval = useCallback((count: number, isMob: boolean, isSecondary: boolean): number => {
+    const base = Math.max(600, 1200 - count * 40);
+    const mobileBuffer = isMob ? 200 : 0;
+    const secondaryPenalty = isSecondary ? 200 : 0;
+    return base + mobileBuffer + secondaryPenalty;
+  }, []);
+
   // Initialize a new puzzle
   const initPuzzle = useCallback((count: number) => {
+    // Clear existing firewall timers
+    firewallTimersRef.current.forEach(t => clearInterval(t));
+    firewallTimersRef.current = [];
+    collisionLockedRef.current = false;
+
     const maxSize = isMobile ? 5 : 7;
     const baseSize = 4;
     const growth = Math.floor(count / 2);
@@ -250,8 +327,54 @@ export function HackingMiniGame({
     setHintNodeId(null);
     hintGivenRef.current = false;
     setGridAnimClass('hacking-grid-enter');
+    setCollisionFlash(false);
+    setCloseCallText(null);
+    setStatusIsFirewall(false);
+    setFirewallPredictions([]);
+    setProximityLevel(0);
+
+    // ── Spawn Firewalls ──
+    const corners = getCornerNodes(newGrid);
+    // Find corner diagonally furthest from source
+    let maxDist = -1;
+    let farthestCorner = corners[0];
+    for (const cId of corners) {
+      const cn = newGrid.nodes[cId];
+      const dist = Math.abs(cn.row - src.row) + Math.abs(cn.col - src.col);
+      if (dist > maxDist) {
+        maxDist = dist;
+        farthestCorner = cId;
+      }
+    }
+
+    const newFirewalls: FirewallState[] = [
+      { nodeId: farthestCorner, corner: farthestCorner, interval: getFirewallInterval(count, isMobile, false) },
+    ];
+
+    // Second firewall on grids >= 6x6
+    if (size >= 6) {
+      // Pick a different corner, also far from source
+      const remaining = corners
+        .filter(c => c !== farthestCorner)
+        .sort((a, b) => {
+          const na = newGrid.nodes[a];
+          const nb = newGrid.nodes[b];
+          return (Math.abs(nb.row - src.row) + Math.abs(nb.col - src.col)) -
+                 (Math.abs(na.row - src.row) + Math.abs(na.col - src.col));
+        });
+      if (remaining.length > 0) {
+        newFirewalls.push({
+          nodeId: remaining[0],
+          corner: remaining[0],
+          interval: getFirewallInterval(count, isMobile, true),
+        });
+      }
+    }
+
+    setFirewalls(newFirewalls);
+    firewallsRef.current = newFirewalls;
     setPhase('playing');
-  }, [isMobile]);
+  }, [isMobile, getCornerNodes, getFirewallInterval]);
 
   // ── Intro phase ──
   useEffect(() => {
@@ -297,15 +420,169 @@ export function HackingMiniGame({
     return () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); };
   }, [phase, apiResolved, grid, traceStarted, playerPos]);
 
+  // ── Firewall movement timers ──
+  useEffect(() => {
+    if (phase !== 'playing' || !grid || firewalls.length === 0) return;
+
+    // Clear old timers
+    firewallTimersRef.current.forEach(t => clearInterval(t));
+    firewallTimersRef.current = [];
+
+    const g = grid;
+
+    firewalls.forEach((fw, fwIndex) => {
+      const timer = setInterval(() => {
+        if (phaseRef.current !== 'playing' || collisionLockedRef.current) return;
+
+        const currentFws = firewallsRef.current;
+        const currentFw = currentFws[fwIndex];
+        if (!currentFw) return;
+
+        const playerTarget = playerPosRef.current;
+        const path = firewallBFS(g, currentFw.nodeId, playerTarget, true);
+
+        if (path && path.length > 1) {
+          const nextNode = path[1];
+
+          // Update this firewall's position
+          const updated = [...currentFws];
+          updated[fwIndex] = { ...updated[fwIndex], nodeId: nextNode };
+          setFirewalls(updated);
+          firewallsRef.current = updated;
+
+          // Prediction: show where it will go NEXT (after this move)
+          const nextPath = firewallBFS(g, nextNode, playerTarget, true);
+          if (nextPath && nextPath.length > 1) {
+            setFirewallPredictions(prev => {
+              const next = [...prev];
+              next[fwIndex] = nextPath[1];
+              return next;
+            });
+            setTimeout(() => {
+              setFirewallPredictions(prev => {
+                const next = [...prev];
+                next[fwIndex] = -1;
+                return next;
+              });
+            }, 400);
+          }
+        }
+      }, fw.interval);
+
+      firewallTimersRef.current.push(timer);
+    });
+
+    return () => {
+      firewallTimersRef.current.forEach(t => clearInterval(t));
+      firewallTimersRef.current = [];
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, grid, firewalls.length]);
+
+  // ── Collision detection (every frame) ──
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    let rafId: number;
+
+    const checkCollision = () => {
+      if (collisionLockedRef.current || phaseRef.current !== 'playing') return;
+      const fws = firewallsRef.current;
+      const pPos = playerPosRef.current;
+
+      for (const fw of fws) {
+        if (fw.nodeId === pPos) {
+          // COLLISION!
+          collisionLockedRef.current = true;
+          firewallTimersRef.current.forEach(t => clearInterval(t));
+          firewallTimersRef.current = [];
+
+          setCollisionFlash(true);
+          playFirewallAlarm();
+          setStatusIsFirewall(true);
+          setStatusText('FIREWALL DETECTED — REROUTING');
+          setStatusKey(prev => prev + 1);
+
+          setTimeout(() => {
+            setCollisionFlash(false);
+            setStatusIsFirewall(false);
+            setGridAnimClass('hacking-grid-dissolve');
+            setTimeout(() => {
+              initPuzzle(puzzleCount);
+            }, 350);
+          }, 800);
+          return;
+        }
+      }
+
+      rafId = requestAnimationFrame(checkCollision);
+    };
+
+    rafId = requestAnimationFrame(checkCollision);
+    return () => cancelAnimationFrame(rafId);
+  }, [phase, puzzleCount, initPuzzle]);
+
+  // ── Proximity warning ──
+  useEffect(() => {
+    if (phase !== 'playing' || !grid) {
+      setProximityLevel(0);
+      return;
+    }
+    const playerNode = grid.nodes[playerPos];
+    if (!playerNode) { setProximityLevel(0); return; }
+
+    let minDist = Infinity;
+    for (const fw of firewalls) {
+      const fwNode = grid.nodes[fw.nodeId];
+      if (!fwNode) continue;
+      const dist = Math.abs(fwNode.row - playerNode.row) + Math.abs(fwNode.col - playerNode.col);
+      if (dist < minDist) minDist = dist;
+    }
+
+    if (minDist <= 1) setProximityLevel(1);
+    else if (minDist <= 2) setProximityLevel(2);
+    else setProximityLevel(0);
+  }, [phase, grid, playerPos, firewalls]);
+
   // ── Puzzle completion ──
   const handlePuzzleComplete = useCallback(() => {
+    // Stop firewalls immediately
+    firewallTimersRef.current.forEach(t => clearInterval(t));
+    firewallTimersRef.current = [];
+    collisionLockedRef.current = true;
+
     setPhase('completing');
     setFlashNodes(true);
     playPuzzleComplete();
+
+    // Close-call detection: any firewall within 2 nodes
+    const g = gridRef.current;
+    const pPos = playerPosRef.current;
+    let isCloseCall = false;
+    if (g) {
+      const playerNode = g.nodes[pPos];
+      for (const fw of firewallsRef.current) {
+        const fwNode = g.nodes[fw.nodeId];
+        if (fwNode && playerNode) {
+          const dist = Math.abs(fwNode.row - playerNode.row) + Math.abs(fwNode.col - playerNode.col);
+          if (dist <= 2) { isCloseCall = true; break; }
+        }
+      }
+    }
+
     setStatusText('Node Secured');
     setStatusKey(prev => prev + 1);
 
+    if (isCloseCall) {
+      const phrases = [
+        'Narrowly escaped detection',
+        'Close call — firewall bypassed',
+        'Security averted by milliseconds',
+      ];
+      setCloseCallText(phrases[Math.floor(Math.random() * phrases.length)]);
+    }
+
     const shouldExit = apiResolvedRef.current;
+    const completionDelay = isCloseCall ? 400 : 600;
 
     setTimeout(() => {
       setFlashNodes(false);
@@ -319,6 +596,7 @@ export function HackingMiniGame({
           setPhase('access-granted');
           setStatusText('ACCESS GRANTED');
           setStatusKey(prev => prev + 1);
+          setCloseCallText(null);
         }, 600);
 
         setTimeout(() => {
@@ -332,7 +610,7 @@ export function HackingMiniGame({
           initPuzzle(newCount);
         }, 350);
       }
-    }, 600);
+    }, completionDelay);
   }, [puzzleCount, onComplete, initPuzzle]);
 
   // ── Movement handler ──
@@ -516,8 +794,15 @@ export function HackingMiniGame({
 
         {/* Status Text */}
         {statusText && (
-          <div key={statusKey} className="hacking-status">
+          <div key={statusKey} className={`hacking-status ${statusIsFirewall ? 'firewall-alert' : ''}`}>
             {statusText}
+          </div>
+        )}
+
+        {/* Close-call flavor text */}
+        {closeCallText && (
+          <div key={`cc-${statusKey}`} className="hacking-close-call">
+            {closeCallText}
           </div>
         )}
 
@@ -544,7 +829,7 @@ export function HackingMiniGame({
 
         {/* Grid */}
         {grid && phase !== 'intro' && phase !== 'access-granted' && (
-          <div className={`hacking-grid-area ${gridAnimClass}`}>
+          <div className={`hacking-grid-area ${gridAnimClass}${proximityLevel === 1 ? ' proximity-1' : proximityLevel === 2 ? ' proximity-2' : ''}`}>
             <svg className="hacking-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
               {/* Edges */}
               {grid.edges.map((edge, i) => {
@@ -561,7 +846,7 @@ export function HackingMiniGame({
                     <line
                       x1={posA.x} y1={posA.y}
                       x2={posB.x} y2={posB.y}
-                      className={`hacking-edge ${isFlash ? 'flash' : isActive ? 'active' : ''}`}
+                      className={`hacking-edge ${collisionFlash && isActive ? 'collision-flash' : isFlash ? 'flash' : isActive ? 'active' : ''}`}
                     />
                     {isActive && !isFlash && (
                       <line
@@ -585,7 +870,8 @@ export function HackingMiniGame({
                 if (node.type === 'source') className += ' source';
                 else if (node.type === 'target') className += ' target';
                 else className += ` relay${isInPath ? ' active' : ''}`;
-                if (isFlashing) className += ' flash';
+                if (collisionFlash && isInPath) className += ' collision-flash';
+                else if (isFlashing) className += ' flash';
                 if (isHinted && !isInPath) className += ' hint';
 
                 return (
@@ -624,6 +910,38 @@ export function HackingMiniGame({
                       </text>
                     )}
                   </g>
+                );
+              })}
+
+              {/* Firewall Prediction Indicators */}
+              {firewallPredictions.map((predId, i) => {
+                if (predId < 0 || predId >= grid.nodes.length) return null;
+                const predNode = grid.nodes[predId];
+                const predPos = getNodePos(predNode, grid);
+                return (
+                  <circle
+                    key={`fw-predict-${i}-${predId}`}
+                    cx={predPos.x}
+                    cy={predPos.y}
+                    r={nodeSize * 0.8}
+                    className="hacking-firewall-predict"
+                  />
+                );
+              })}
+
+              {/* Firewall Entities */}
+              {firewalls.map((fw, i) => {
+                if (fw.nodeId < 0 || fw.nodeId >= grid.nodes.length) return null;
+                const fwNode = grid.nodes[fw.nodeId];
+                const fwPos = getNodePos(fwNode, grid);
+                return (
+                  <circle
+                    key={`firewall-${i}`}
+                    cx={fwPos.x}
+                    cy={fwPos.y}
+                    r={nodeSize * 0.9}
+                    className={`hacking-firewall${proximityLevel > 0 ? ' proximity-close' : ''}`}
+                  />
                 );
               })}
 
