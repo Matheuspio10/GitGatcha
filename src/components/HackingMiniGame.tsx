@@ -210,6 +210,7 @@ export function HackingMiniGame({
   const [collisionFlash, setCollisionFlash] = useState(false);
   const [closeCallText, setCloseCallText] = useState<string | null>(null);
   const [statusIsFirewall, setStatusIsFirewall] = useState(false);
+  const [firewallPrevPos, setFirewallPrevPos] = useState<{x: number; y: number}[]>([]);
 
   const [fakeIp] = useState(() =>
     `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
@@ -332,6 +333,7 @@ export function HackingMiniGame({
     setStatusIsFirewall(false);
     setFirewallPredictions([]);
     setProximityLevel(0);
+    setFirewallPrevPos([]);
 
     // ── Spawn Firewalls ──
     const corners = getCornerNodes(newGrid);
@@ -443,6 +445,22 @@ export function HackingMiniGame({
 
         if (path && path.length > 1) {
           const nextNode = path[1];
+
+          // Record previous position for trail
+          const g2 = gridRef.current;
+          if (g2) {
+            const prevNode = g2.nodes[currentFw.nodeId];
+            if (prevNode) {
+              const padding = 0.1;
+              const px = (padding + (prevNode.col / Math.max(g2.cols - 1, 1)) * (1 - 2 * padding)) * 100;
+              const py = (padding + (prevNode.row / Math.max(g2.rows - 1, 1)) * (1 - 2 * padding)) * 100;
+              setFirewallPrevPos(prev => {
+                const next = [...prev];
+                next[fwIndex] = { x: px, y: py };
+                return next;
+              });
+            }
+          }
 
           // Update this firewall's position
           const updated = [...currentFws];
@@ -831,6 +849,30 @@ export function HackingMiniGame({
         {grid && phase !== 'intro' && phase !== 'access-granted' && (
           <div className={`hacking-grid-area ${gridAnimClass}${proximityLevel === 1 ? ' proximity-1' : proximityLevel === 2 ? ' proximity-2' : ''}`}>
             <svg className="hacking-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+              {/* SVG Defs — Firewall gradients */}
+              <defs>
+                <radialGradient id="firewallGrad" cx="40%" cy="40%" r="50%">
+                  <stop offset="0%" stopColor="#ffe066" stopOpacity="1" />
+                  <stop offset="25%" stopColor="#ff6600" stopOpacity="0.95" />
+                  <stop offset="55%" stopColor="#cc0000" stopOpacity="0.85" />
+                  <stop offset="85%" stopColor="#880000" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#440000" stopOpacity="0.3" />
+                </radialGradient>
+                <radialGradient id="firewallCore" cx="45%" cy="45%" r="50%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+                  <stop offset="40%" stopColor="#ffcc00" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#ff4400" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="firewallHalo" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#ff2200" stopOpacity="0.3" />
+                  <stop offset="60%" stopColor="#ff0000" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="#ff0000" stopOpacity="0" />
+                </radialGradient>
+                <filter id="firewallGlow">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
               {/* Edges */}
               {grid.edges.map((edge, i) => {
                 const nodeA = grid.nodes[edge.a];
@@ -929,19 +971,63 @@ export function HackingMiniGame({
                 );
               })}
 
-              {/* Firewall Entities */}
+              {/* Firewall Entities — Multi-layered fiery orb */}
               {firewalls.map((fw, i) => {
                 if (fw.nodeId < 0 || fw.nodeId >= grid.nodes.length) return null;
                 const fwNode = grid.nodes[fw.nodeId];
                 const fwPos = getNodePos(fwNode, grid);
+                const fwRadius = nodeSize * 1.2;
+                const prev = firewallPrevPos[i];
+                const isClose = proximityLevel > 0;
+
                 return (
-                  <circle
-                    key={`firewall-${i}`}
-                    cx={fwPos.x}
-                    cy={fwPos.y}
-                    r={nodeSize * 0.9}
-                    className={`hacking-firewall${proximityLevel > 0 ? ' proximity-close' : ''}`}
-                  />
+                  <g key={`firewall-${i}`} filter="url(#firewallGlow)">
+                    {/* Motion trail from previous position */}
+                    {prev && (
+                      <line
+                        x1={prev.x} y1={prev.y}
+                        x2={fwPos.x} y2={fwPos.y}
+                        className="hacking-firewall-trail"
+                      />
+                    )}
+                    {/* Outer halo — large ambient glow */}
+                    <circle
+                      cx={fwPos.x} cy={fwPos.y}
+                      r={fwRadius * 2.5}
+                      fill="url(#firewallHalo)"
+                      className={`hacking-firewall-halo${isClose ? ' proximity-close' : ''}`}
+                    />
+                    {/* Body sphere — fiery gradient */}
+                    <circle
+                      cx={fwPos.x} cy={fwPos.y}
+                      r={fwRadius}
+                      fill="url(#firewallGrad)"
+                      className={`hacking-firewall${isClose ? ' proximity-close' : ''}`}
+                    />
+                    {/* Inner hot core */}
+                    <circle
+                      cx={fwPos.x - fwRadius * 0.1}
+                      cy={fwPos.y - fwRadius * 0.1}
+                      r={fwRadius * 0.45}
+                      fill="url(#firewallCore)"
+                      className="hacking-firewall-core"
+                    />
+                    {/* Surface crackle highlights */}
+                    <circle
+                      cx={fwPos.x + fwRadius * 0.2}
+                      cy={fwPos.y - fwRadius * 0.15}
+                      r={fwRadius * 0.15}
+                      fill="rgba(255, 200, 50, 0.6)"
+                      className="hacking-firewall-spark"
+                    />
+                    <circle
+                      cx={fwPos.x - fwRadius * 0.25}
+                      cy={fwPos.y + fwRadius * 0.2}
+                      r={fwRadius * 0.1}
+                      fill="rgba(255, 150, 30, 0.5)"
+                      className="hacking-firewall-spark"
+                    />
+                  </g>
                 );
               })}
 
