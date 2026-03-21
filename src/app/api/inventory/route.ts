@@ -71,6 +71,9 @@ export async function GET() {
         guaranteedMinRarity: packDef?.guaranteedMinRarity || null,
         category: packDef?.category || 'unknown',
         description: packDef?.description || '',
+        activeFilters: packDef?.activeFilters || '',
+        allCommon: packDef?.allCommon || false,
+        noPreview: packDef?.noPreview || false,
       };
     });
 

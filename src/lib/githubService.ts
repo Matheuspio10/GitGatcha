@@ -57,24 +57,21 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
     const baseDef = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
     const baseHp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(baseAtk * 3);
 
-    // Rarity determination
-    let rarity = expectedRarity || 'Common';
-    
-    // Only calculate natural rarity if one wasn't explicitly requested by a pack drop
-    if (!expectedRarity) {
-      const score = user.followers * 2 + totalStars;
-      if (score > 50000 || (user.company && ['google', 'microsoft', 'vercel', 'facebook', 'meta'].some(c => user.company.toLowerCase().includes(c)))) {
-        rarity = 'Legendary';
-      } else if (score > 10000) {
-        rarity = 'Epic';
-      } else if (score > 2500) {
-        rarity = 'Rare';
-      } else if (score > 500) {
-        rarity = 'Uncommon';
-      }
+    // Dynamic Power Score for accurate rarity determination at generation time
+    const powerScore = (user.followers * 2) + totalStars * 2 + (totalForks * 2) + (user.public_repos * 5);
+
+    let rarity = 'Common';
+    // Base the rarity on the dynamically calculated powerScore instead of forcing it
+    if (powerScore > 50000 || (user.company && ['google', 'microsoft', 'vercel', 'facebook', 'meta'].some(c => user.company.toLowerCase().includes(c)))) {
+      rarity = 'Legendary';
+    } else if (powerScore > 10000) {
+      rarity = 'Epic';
+    } else if (powerScore > 2500) {
+      rarity = 'Rare';
+    } else if (powerScore > 500) {
+      rarity = 'Uncommon';
     }
 
-    // Apply rarity multipliers so low-rarity cards are definitively weaker
     const rarityMultipliers: Record<string, number> = {
       'Common': 0.5,
       'Uncommon': 0.8,
@@ -111,116 +108,96 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
   }
 }
 
-export async function searchUsersForPackWithRarity(baseQuery: string, rarity: string, count: number): Promise<any[]> {
-  const results = [];
-  
-  // 1. Attempt Pure True-Random sampling first (Max 3 attempts per requested card)
-  // If we want a Common Python dev, randomly teleporting 3x30 worldwide has a good chance of hitting one organically.
-  // If we want a Legendary Rust dev, it probably won't, so we fail fast.
-  const MAX_GLOBAL_GITHUB_ID = 150000000;
-  let pureRandomAttempts = 0;
-  
-  // Helper to parse the baseQuery for basic verification
-  const isLanguageTarget = baseQuery.includes('language:');
-  const targetLanguage = isLanguageTarget ? baseQuery.match(/language:([a-zA-Z0-9+#]+)/i)?.[1]?.toLowerCase() : null;
+import { prisma } from './prisma';
 
-  while (results.length < count && pureRandomAttempts < (count * 3)) {
-    pureRandomAttempts++;
-    const randomId = getRandomUserId(MAX_GLOBAL_GITHUB_ID);
-    const searchUrl = `${API_BASE}/users?since=${randomId}&per_page=30`;
+export async function searchUsersForPackWithRarity(baseQuery: string, targetRarity: string, count: number, ignoreSessionUsernames: string[] = []): Promise<any[]> {
+  const results: any[] = [];
+  let attempts = 0;
+  
+  while (results.length < count && attempts < 3) {
+    attempts++;
+    let searchQuery = baseQuery;
+    
+    // Append loose followers constraints purely to optimize finding the correct rarity tier
+    if (targetRarity === 'Legendary') searchQuery += ' followers:>5000';
+    else if (targetRarity === 'Epic') searchQuery += ' followers:1000..5000';
+    else if (targetRarity === 'Rare') searchQuery += ' followers:200..1000';
+    else if (targetRarity === 'Uncommon') searchQuery += ' followers:50..200';
+    else searchQuery += ' followers:<50';
+
+    // Randomize page offset for un-biased genuine randomness
+    // High rarities have fewer pages on GitHub
+    const maxPage = targetRarity === 'Legendary' ? 5 : targetRarity === 'Epic' ? 10 : 30; 
+    const page = Math.floor(Math.random() * maxPage) + 1;
+    
+    const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(searchQuery)}&per_page=30&page=${page}`;
 
     try {
       const res = await axios.get(searchUrl, { headers });
-      const users = res.data || [];
-      const shuffled = users.sort(() => 0.5 - Math.random());
+      const users = res.data.items || [];
 
+      // Filter out cache session hits (recent 3 packs)
+      let eligibleUsers = users.filter((u: any) => !ignoreSessionUsernames.includes(u.login));
+      
+      if (eligibleUsers.length === 0) {
+        // If entirely filtered out (small pool), accept them anyway to avoid infinite loops, as per spec.
+        eligibleUsers = users;
+      }
+      
+      const shuffled = eligibleUsers.sort(() => 0.5 - Math.random());
+
+      // Fetch full stats and enforce exact targetRarity
       for (const u of shuffled) {
         if (results.length >= count) break;
         
-        // We need them to organically match the requested rarity
-        const stats = await fetchGitHubUserStats(u.login); 
-        if (!stats || stats.rarity !== rarity) continue;
-
-        // Thematic Verification: If it's a language pack, do they match the language?
-        if (targetLanguage && stats.primaryLanguage.toLowerCase() !== targetLanguage) continue;
+        // Ensure not querying duplicates already found
+        if (results.some(r => r.githubUsername === u.login)) continue;
         
-        // If they passed rarity and basic theme checks, take them!
-        results.push(stats);
+        const stats = await fetchGitHubUserStats(u.login);
+        if (stats && stats.rarity === targetRarity) {
+          results.push(stats);
+        }
       }
     } catch (err) {
-      console.error(`Error in pure-random thematic sampling:`, err);
+      console.error('Error in search API for themed pack', err);
     }
   }
 
-  // 2. If Pure Random failed to find enough matching the theme quickly, FALLBACK to Search API
+  // Graceful degradation: If API is rate-limited or pool small, fallback to DB pre-cached pool
   if (results.length < count) {
-      const shortfall = count - results.length;
-      let fallbackQuery = baseQuery;
+    console.warn(`Shortfall of ${count - results.length} for ${targetRarity}. Falling back to DB pool.`);
+    try {
+      // Basic language matching if base query has language
+      const langMatch = baseQuery.match(/language:([^\s]+)/i);
+      const languageFilter = langMatch ? langMatch[1] : undefined;
       
-      // Append rarity followers constraint to the base query
-      if (rarity === 'Legendary') fallbackQuery += ' followers:>25000';
-      else if (rarity === 'Epic') fallbackQuery += ' followers:5000..25000';
-      else if (rarity === 'Rare') fallbackQuery += ' followers:1000..5000';
-      else if (rarity === 'Uncommon') fallbackQuery += ' followers:200..1000';
-      else fallbackQuery += ' followers:<200';
+      const dbFallbacks = await prisma.card.findMany({
+        where: { 
+          rarity: targetRarity,
+          ...(languageFilter ? { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } } : {})
+        },
+      });
+      
+      let validFallbacks = dbFallbacks.filter(c => 
+        !ignoreSessionUsernames.includes(c.githubUsername) && 
+        !results.some(r => r.githubUsername === c.githubUsername)
+      );
 
-      // We explicitly DO NOT inject `a-z` here because it breaks structured searches (like `language:javascript`).
-      // Instead, we paginate as deeply as we realistically can (pages 1-10) for this specific query.
-      const page = Math.floor(Math.random() * 10) + 1;
-      const fallbackUrl = `${API_BASE}/search/users?q=${encodeURIComponent(fallbackQuery)}&per_page=100&page=${page}`;
-
-      try {
-        const res = await axios.get(fallbackUrl, { headers });
-        const users = res.data.items || [];
-
-        // Shuffle and take the remaining count
-        const shuffled = users.sort(() => 0.5 - Math.random()).slice(0, shortfall);
-
-        for (const u of shuffled) {
-          const stats = await fetchGitHubUserStats(u.login, rarity);
-          if (stats) results.push(stats);
-        }
-      } catch (err) {
-        console.error('Error in fallback search API for themed pack', err);
+      // Relax cache constraints if strict fallback yields nothing
+      if (validFallbacks.length === 0) {
+        validFallbacks = dbFallbacks.filter(c => !results.some(r => r.githubUsername === c.githubUsername));
       }
+      
+      const shuffledFallbacks = validFallbacks.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
+      results.push(...shuffledFallbacks);
+    } catch (e) {
+      console.error('Failed fetching fallback developers from DB', e);
+    }
   }
 
   return results;
 }
 
-export async function getRandomDevelopersByRarity(rarity: string, limit: number = 1): Promise<any[]> {
-  const results: any[] = [];
-  const MAX_GLOBAL_GITHUB_ID = 150000000;
-
-  // We loop because we need to keep drawing mathematically random users
-  // until we organically find `limit` number of users that match the requested rarity tier.
-  while (results.length < limit) {
-    const randomId = getRandomUserId(MAX_GLOBAL_GITHUB_ID);
-    const searchUrl = `${API_BASE}/users?since=${randomId}&per_page=30`;
-
-    try {
-      const res = await axios.get(searchUrl, { headers });
-      const users = res.data || [];
-      
-      // Shuffle the block of users we just pulled to ensure we aren't bias-selecting sequentially
-      const shuffled = users.sort(() => 0.5 - Math.random());
-
-      for (const u of shuffled) {
-        if (results.length >= limit) break;
-
-        // Note: fetchGitHubUserStats calculates their absolute 'natural' rarity organically
-        // unless you force it (which we aren't doing here, we are inspecting them).
-        const stats = await fetchGitHubUserStats(u.login); 
-        
-        if (stats && stats.rarity === rarity) {
-           results.push(stats);
-        }
-      }
-    } catch (err) {
-      console.error(`Error fetching random batch since ID ${randomId}:`, err);
-      // Even if one batch fails, the while loop will simply try a new random ID next loop.
-    }
-  }
-
-  return results;
+export async function getRandomDevelopersByRarity(rarity: string, limit: number = 1, ignoreSession: string[] = []): Promise<any[]> {
+  return searchUsersForPackWithRarity("type:user", rarity, limit, ignoreSession);
 }

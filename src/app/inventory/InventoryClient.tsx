@@ -23,6 +23,9 @@ interface InventoryPack {
   guaranteedMinRarity: string | null;
   category: string;
   description: string;
+  activeFilters?: string;
+  allCommon?: boolean;
+  noPreview?: boolean;
 }
 
 
@@ -104,7 +107,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
     setPackDropFragments(null);
     setErrorMessage(null);
     setEnergy(0);
-    setRequiredClicks(Math.floor(Math.random() * (20 - 15 + 1)) + 15); // 15 to 20
+    setRequiredClicks(Math.floor(Math.random() * (5 - 3 + 1)) + 3); // 3 to 5
     
     setPackState('CHARGING');
     setApiState('PENDING');
@@ -498,9 +501,39 @@ export default function InventoryClient({ userId }: { userId: string }) {
               <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
                 Open <span style={{ color: selectedPack.visualTheme?.textColor || '#fff' }}>{selectedPack.packName}</span>?
               </h3>
-              <p className="text-slate-400 mb-8">
+              <p className="text-slate-400 mb-6">
                 This will consume one pack from your inventory and reveal {selectedPack.cardCount} cards.
               </p>
+
+              {/* Transparency UI Info */}
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-8">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Pack Details</div>
+                {selectedPack.activeFilters && (
+                  <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700">
+                    <span className="text-slate-300 font-medium text-sm">Active Filter:</span>
+                    <span className="text-indigo-400 font-bold text-sm text-right max-w-[60%]">{selectedPack.activeFilters}</span>
+                  </div>
+                )}
+                
+                <div className="flex flex-col gap-1 mt-3">
+                  <span className="text-slate-300 font-medium text-sm mb-1">Rarity Distribution:</span>
+                  {selectedPack.noPreview ? (
+                    <div className="text-sm font-black text-purple-400 animate-pulse">??? Unknown Odds</div>
+                  ) : selectedPack.allCommon ? (
+                    <div className="text-sm text-slate-400">100% Common Junk</div>
+                  ) : selectedPack.cardCount === 5 ? (
+                    <ul className="text-xs text-slate-400 space-y-1 ml-1">
+                      <li><span className="text-slate-200">Slot 1 & 2:</span> 100% Common</li>
+                      <li><span className="text-slate-200">Slot 3:</span> 70% Common, 30% Uncommon</li>
+                      <li><span className="text-slate-200">Slot 4:</span> 60% Uncommon, 40% Rare</li>
+                      <li><span className="text-slate-200">Slot 5:</span> <span className="text-blue-400">55% Rare</span>, <span className="text-purple-400">30% Epic</span>, <span className="text-yellow-400">15% Legendary</span></li>
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-yellow-400 font-bold">Guaranteed ±{selectedPack.guaranteedMinRarity} pulls</div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <button 
                   onClick={() => setSelectedPack(null)}

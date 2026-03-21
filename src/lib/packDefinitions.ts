@@ -19,6 +19,7 @@ export interface PackDefinition {
   noPreview?: boolean;       // Mystery Box
   themeLanguage?: string;    // Fragment drop language
   buildQuery: () => string;  // Returns GitHub Search API query string
+  activeFilters?: string;    // UI transparency summary
 }
 
 // ─── LANGUAGE & STACK PACKS ──────────────────────────────────────────────
@@ -37,7 +38,8 @@ const theJavaScriptCoven: PackDefinition = {
     accentColor: '#1a1a1a',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:JavaScript language:TypeScript followers:>5',
+  activeFilters: 'Languages: JavaScript, TypeScript',
+  buildQuery: () => 'type:user language:JavaScript language:TypeScript',
 };
 
 const pythonistas: PackDefinition = {
@@ -54,7 +56,8 @@ const pythonistas: PackDefinition = {
     accentColor: '#306998',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:Python followers:>5',
+  activeFilters: 'Primary Language: Python',
+  buildQuery: () => 'type:user language:Python',
 };
 
 const rustOrBust: PackDefinition = {
@@ -71,7 +74,8 @@ const rustOrBust: PackDefinition = {
     accentColor: '#3a3a3a',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:Rust followers:>5',
+  activeFilters: 'Primary Language: Rust',
+  buildQuery: () => 'type:user language:Rust',
 };
 
 const cssWizards: PackDefinition = {
@@ -88,7 +92,8 @@ const cssWizards: PackDefinition = {
     accentColor: '#7b2ff7',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:CSS followers:>2',
+  activeFilters: 'Primary Language: CSS',
+  buildQuery: () => 'type:user language:CSS',
 };
 
 const goGophers: PackDefinition = {
@@ -105,7 +110,8 @@ const goGophers: PackDefinition = {
     accentColor: '#ffffff',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:Go followers:>5',
+  activeFilters: 'Primary Language: Go',
+  buildQuery: () => 'type:user language:Go',
 };
 
 const rubyRelics: PackDefinition = {
@@ -122,7 +128,8 @@ const rubyRelics: PackDefinition = {
     accentColor: '#4a0e0b',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:Ruby followers:>5',
+  activeFilters: 'Primary Language: Ruby',
+  buildQuery: () => 'type:user language:Ruby',
 };
 
 const cppAncients: PackDefinition = {
@@ -139,7 +146,8 @@ const cppAncients: PackDefinition = {
     accentColor: '#00427e',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user language:C language:C++ followers:>5',
+  activeFilters: 'Languages: C, C++',
+  buildQuery: () => 'type:user language:C language:C++',
 };
 
 // ─── CONTRIBUTOR TYPE PACKS ──────────────────────────────────────────────
@@ -158,7 +166,8 @@ const openSourceHeroes: PackDefinition = {
     accentColor: '#155724',
   },
   guaranteedMinRarity: 'Rare',
-  buildQuery: () => 'type:user repos:>50 followers:>100',
+  activeFilters: 'Stats: >50 Repos, >100 Followers',
+  buildQuery: () => 'type:user repos:>50',
 };
 
 const soloArchitects: PackDefinition = {
@@ -175,7 +184,8 @@ const soloArchitects: PackDefinition = {
     accentColor: '#2d1b69',
   },
   guaranteedMinRarity: 'Rare',
-  buildQuery: () => 'type:user repos:>30 followers:>50',
+  activeFilters: 'Stats: >30 Repos',
+  buildQuery: () => 'type:user repos:>30',
 };
 
 const silentGiants: PackDefinition = {
@@ -192,7 +202,8 @@ const silentGiants: PackDefinition = {
     accentColor: '#1a202c',
   },
   guaranteedMinRarity: 'Epic',
-  buildQuery: () => 'type:user followers:100..500 repos:>20',
+  activeFilters: 'Stats: >20 Repos',
+  buildQuery: () => 'type:user repos:>20',
 };
 
 const maintainers: PackDefinition = {
@@ -209,7 +220,8 @@ const maintainers: PackDefinition = {
     accentColor: '#7f4413',
   },
   guaranteedMinRarity: 'Rare',
-  buildQuery: () => 'type:user repos:>50 followers:>200',
+  activeFilters: 'Stats: >50 Repos',
+  buildQuery: () => 'type:user repos:>50',
 };
 
 // ─── ERA PACKS ───────────────────────────────────────────────────────────
@@ -228,7 +240,8 @@ const githubOGs: PackDefinition = {
     accentColor: '#8b6914',
   },
   guaranteedMinRarity: 'Epic',
-  buildQuery: () => 'type:user created:<2010-01-01 followers:>10',
+  activeFilters: 'Era: Created < 2010',
+  buildQuery: () => 'type:user created:<2010-01-01',
 };
 
 const newBlood: PackDefinition = {
@@ -245,7 +258,8 @@ const newBlood: PackDefinition = {
     accentColor: '#0a0a0a',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user created:>2022-01-01 followers:>50',
+  activeFilters: 'Era: Created > 2022',
+  buildQuery: () => 'type:user created:>2022-01-01',
 };
 
 const fossils: PackDefinition = {
@@ -262,7 +276,8 @@ const fossils: PackDefinition = {
     accentColor: '#2d5016',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user created:<2015-01-01 repos:>10 followers:>20',
+  activeFilters: 'Era: Created < 2015, >10 Repos',
+  buildQuery: () => 'type:user created:<2015-01-01 repos:>10',
 };
 
 // ─── COMPANY & ORIGIN PACKS ─────────────────────────────────────────────
@@ -281,7 +296,8 @@ const bigTechPack: PackDefinition = {
     accentColor: '#ffffff',
   },
   guaranteedMinRarity: 'Epic',
-  buildQuery: () => 'type:user followers:>100',
+  activeFilters: 'Any Account',
+  buildQuery: () => 'type:user',
 };
 
 const indieHackers: PackDefinition = {
@@ -298,7 +314,8 @@ const indieHackers: PackDefinition = {
     accentColor: '#fdf6e3',
   },
   guaranteedMinRarity: null,
-  buildQuery: () => 'type:user repos:>20 followers:>50',
+  activeFilters: 'Stats: >20 Repos',
+  buildQuery: () => 'type:user repos:>20',
 };
 
 // ─── REGIONAL PACKS ─────────────────────────────────────────────────────
@@ -322,9 +339,10 @@ function buildRegionalPack(
     cost: 300,
     visualTheme: { gradient, border, textColor, accentColor },
     guaranteedMinRarity: null,
+    activeFilters: `Region: ${locations.slice(0, 3).join(', ')}`,
     buildQuery: () => {
-      const locationQuery = locations.map(l => `location:${l}`).join(' ');
-      return `type:user ${locationQuery} followers:>5`;
+      const randomLoc = locations[Math.floor(Math.random() * locations.length)];
+      return `type:user location:"${randomLoc}"`;
     },
   };
 }
@@ -445,7 +463,8 @@ const legendaryDrop: PackDefinition = {
     animated: true,
   },
   guaranteedMinRarity: 'Legendary',
-  buildQuery: () => 'type:user followers:>10000',
+  activeFilters: 'Any Account',
+  buildQuery: () => 'type:user',
 };
 
 const junkDrawer: PackDefinition = {
@@ -463,7 +482,8 @@ const junkDrawer: PackDefinition = {
   },
   guaranteedMinRarity: null,
   allCommon: true,
-  buildQuery: () => 'type:user followers:<50 repos:>0',
+  activeFilters: 'Any Account (>0 Repos)',
+  buildQuery: () => 'type:user repos:>0',
 };
 
 const mysteryBox: PackDefinition = {
@@ -482,7 +502,8 @@ const mysteryBox: PackDefinition = {
   },
   guaranteedMinRarity: null,
   noPreview: true,
-  buildQuery: () => 'type:user followers:>0',
+  activeFilters: 'Mystery',
+  buildQuery: () => 'type:user',
 };
 
 // ─── ALL PACKS REGISTRY ─────────────────────────────────────────────────

@@ -4,13 +4,24 @@ import { getPackById } from './packDefinitions';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
-function rollRarity(): string {
-  const roll = Math.random() * 100;
-  if (roll < 0.3) return 'Legendary';  // 0.3%  (was 1%)
-  if (roll < 2.3) return 'Epic';       // 2%    (was 4%)
-  if (roll < 10.3) return 'Rare';      // 8%    (was 10%)
-  if (roll < 30.3) return 'Uncommon';  // 20%   (was 25%)
-  return 'Common';                     // ~69.7% (was 60%)
+// In-memory LRU for short-term duplicate prevention across packs
+const sessionCaches: Record<string, string[]> = {};
+
+function getRaritiesForSlots(count: number): string[] {
+  const rarities: string[] = [];
+  for (let i = 0; i < count; i++) {
+    if (i === 0 || i === 1) rarities.push('Common');
+    else if (i === 2) rarities.push(Math.random() < 0.70 ? 'Common' : 'Uncommon');
+    else if (i === 3) rarities.push(Math.random() < 0.60 ? 'Uncommon' : 'Rare');
+    else {
+      // Slot 5+ guaranteed variable slot
+      const roll = Math.random();
+      if (roll < 0.15) rarities.push('Legendary');
+      else if (roll < 0.45) rarities.push('Epic');
+      else rarities.push('Rare');
+    }
+  }
+  return rarities;
 }
 
 function ensureMinimumRarity(rarities: string[], minRarity: string): string[] {
@@ -51,9 +62,7 @@ export async function openBoosterPack(userId: string, packId?: string) {
   if (pack?.allCommon) {
     pickedRarities = Array(cardsToPull).fill('Common');
   } else {
-    for (let i = 0; i < cardsToPull; i++) {
-      pickedRarities.push(rollRarity());
-    }
+    pickedRarities = getRaritiesForSlots(cardsToPull);
     if (pack?.guaranteedMinRarity) {
       pickedRarities = ensureMinimumRarity(pickedRarities, pack.guaranteedMinRarity);
     }
@@ -61,28 +70,23 @@ export async function openBoosterPack(userId: string, packId?: string) {
 
   let newCards = [];
 
-  if (pack) {
-    const query = pack.buildQuery();
-    
-    // Group the picked rarities so we can fetch them in appropriately sized requests
     const rarityCounts = pickedRarities.reduce((acc, curr) => {
       acc[curr] = (acc[curr] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    for (const [rarity, count] of Object.entries(rarityCounts)) {
-      const devs = await searchUsersForPackWithRarity(query, rarity, count);
-      
-      // If the specific pack query failed to find enough devs of this rarity,
-      // pad with general random devs of the same rarity
-      for (let i = 0; i < count; i++) {
-        let dev = devs[i];
-        if (!dev) {
-          const fallbacks = await getRandomDevelopersByRarity(rarity, 1);
-          dev = fallbacks[0];
-        }
+    if (!sessionCaches[userId]) sessionCaches[userId] = [];
+    const ignoreList = sessionCaches[userId];
 
+    for (const [rarity, count] of Object.entries(rarityCounts)) {
+      const query = pack ? pack.buildQuery() : "type:user";
+      const devs = await searchUsersForPackWithRarity(query, rarity, count, ignoreList);
+      
+      for (const dev of devs) {
         if (dev) {
+          ignoreList.push(dev.githubUsername);
+          if (ignoreList.length > 15) ignoreList.shift(); // Keep last 15 elements (3 packs)
+
           const card = await upsertCard(dev);
           const userCardResult = await addCardToUser(userId, card);
           newCards.push({ 
@@ -95,27 +99,6 @@ export async function openBoosterPack(userId: string, packId?: string) {
         }
       }
     }
-  } else {
-    const rarityCounts = pickedRarities.reduce((acc, curr) => {
-      acc[curr] = (acc[curr] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    for (const [rarity, count] of Object.entries(rarityCounts)) {
-      const devs = await getRandomDevelopersByRarity(rarity, count);
-      for (const dev of devs) {
-        const card = await upsertCard(dev);
-        const userCardResult = await addCardToUser(userId, card);
-        newCards.push({ 
-          ...dev, 
-          isShiny: userCardResult.isShiny, 
-          userCardId: userCardResult.id,
-          isDuplicate: userCardResult.isDuplicate,
-          fragmentsEarned: userCardResult.fragmentsEarned
-        });
-      }
-    }
-  }
 
   // Handle 15% Pack Drop for Fragments
   let packDropFragments = null;
