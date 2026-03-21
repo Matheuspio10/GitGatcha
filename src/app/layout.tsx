@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { getCurrentUser } from "@/lib/session";
@@ -8,6 +8,7 @@ import { LevelUpModal } from "@/components/LevelUpModal";
 import { SetupProfileModal } from "@/components/SetupProfileModal";
 
 const inter = Inter({ subsets: ["latin"] });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: "GitGacha - Dev Card Game",
@@ -29,7 +30,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-x-hidden`}>
+      <body className={`${inter.className} ${jetbrainsMono.variable} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-x-hidden`}>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
