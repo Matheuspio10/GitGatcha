@@ -51,10 +51,10 @@ export async function advanceMissionProgress(userId: string, type: string, targe
     }
 
     const newProgress = um.progress + 1;
-    // Assuming target value is integer if type is "OPEN_BOOSTER", etc.. We will hack:
+
     let isComplete = false;
-    let required = parseInt(um.mission.targetValue || "1", 10);
-    if (isNaN(required)) required = 1; // if string like "Rare", required is just 1 occurrence.
+    const parsedTarget = parseInt(um.mission.targetValue || "1", 10);
+    const required = Number.isNaN(parsedTarget) ? 1 : parsedTarget;
 
     if (newProgress >= required) {
       isComplete = true;
