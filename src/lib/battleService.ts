@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { resolve3v3Battle, BattleCard, getCardType } from './battleResolver';
 import { syncCardStamina } from './staminaService';
-import { incrementLoyaltyAndCheck, updateLifetimeStats, MilestoneUnlock } from './loyaltyService';
+import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
 
 const RARITY_ORDER: Record<string, number> = {
   Common: 1,
@@ -211,19 +211,24 @@ export async function resolveRandomBattle(
 
   // --- Loyalty Processing for challenger cards ---
   const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
-  for (const c of cTeam) {
-    const unlocks = await incrementLoyaltyAndCheck(c.id);
-    if (unlocks.length > 0) {
-      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
-    }
+
+  const cardsStatsToProcess = cTeam.map(c => {
     const cardStats = battleResult.challengerTeamState.find(cs => cs.id === c.id);
-    if (cardStats) {
-      await updateLifetimeStats(c.id, {
-        damageDealt: cardStats.statsDealtDamage || 0,
-        won: playerWon,
-        critsLanded: cardStats.statsCritsLanded || 0,
-        passivesTriggered: cardStats.statsPassivesTriggered || 0,
-      });
+    return {
+      userCardId: c.id,
+      damageDealt: cardStats?.statsDealtDamage || 0,
+      won: playerWon,
+      critsLanded: cardStats?.statsCritsLanded || 0,
+      passivesTriggered: cardStats?.statsPassivesTriggered || 0,
+    };
+  });
+
+  const unlocksMap = await processPostBattleCardStats(cardsStatsToProcess);
+
+  for (const c of cTeam) {
+    const unlocks = unlocksMap.get(c.id);
+    if (unlocks && unlocks.length > 0) {
+      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
     }
   }
 
@@ -396,22 +401,27 @@ export async function resolveFriendBattle(
     ...dTeam.map(c => ({ card: c, team: 'DEFENDER' as const })),
   ];
 
-  for (const { card: c, team } of allCardsWithTeam) {
-    const unlocks = await incrementLoyaltyAndCheck(c.id);
-    if (unlocks.length > 0) {
-      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
-    }
+  const cardsStatsToProcess = allCardsWithTeam.map(({ card: c, team }) => {
     const cardState = team === 'CHALLENGER'
       ? battleResult.challengerTeamState.find(cs => cs.id === c.id)
       : battleResult.defenderTeamState.find(cs => cs.id === c.id);
-    if (cardState) {
-      const didWin = (team === 'CHALLENGER' && challengerWon) || (team === 'DEFENDER' && !challengerWon);
-      await updateLifetimeStats(c.id, {
-        damageDealt: cardState.statsDealtDamage || 0,
-        won: didWin,
-        critsLanded: cardState.statsCritsLanded || 0,
-        passivesTriggered: cardState.statsPassivesTriggered || 0,
-      });
+    const didWin = (team === 'CHALLENGER' && challengerWon) || (team === 'DEFENDER' && !challengerWon);
+
+    return {
+      userCardId: c.id,
+      damageDealt: cardState?.statsDealtDamage || 0,
+      won: didWin,
+      critsLanded: cardState?.statsCritsLanded || 0,
+      passivesTriggered: cardState?.statsPassivesTriggered || 0,
+    };
+  });
+
+  const unlocksMap = await processPostBattleCardStats(cardsStatsToProcess);
+
+  for (const { card: c } of allCardsWithTeam) {
+    const unlocks = unlocksMap.get(c.id);
+    if (unlocks && unlocks.length > 0) {
+      loyaltyUnlocks.push({ cardId: c.id, cardName: c.name, milestones: unlocks });
     }
   }
 
