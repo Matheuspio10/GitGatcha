@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 
 /**
@@ -12,8 +13,17 @@ export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (cronSecret) {
+    const expectedAuth = `Bearer ${cronSecret}`;
+    const providedAuth = authHeader || '';
+
+    // Create hashes to ensure constant time comparison even if lengths differ
+    const expectedBuffer = crypto.createHash('sha256').update(expectedAuth).digest();
+    const providedBuffer = crypto.createHash('sha256').update(providedAuth).digest();
+
+    if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
   }
 
   try {
