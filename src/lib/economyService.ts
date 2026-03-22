@@ -45,37 +45,46 @@ export async function advanceMissionProgress(userId: string, type: string, targe
     include: { mission: true }
   });
 
+  const missionUpdates = [];
+  let totalCurrencyGained = 0;
+  let totalXPGained = 0;
+
   for (const um of activeMissions) {
     if (um.mission.targetValue && targetValue && um.mission.targetValue !== targetValue) {
       continue; // e.g. looking for "Python" but we opened "JavaScript"
     }
 
     const newProgress = um.progress + 1;
-    // Assuming target value is integer if type is "OPEN_BOOSTER", etc.. We will hack:
     let isComplete = false;
     let required = parseInt(um.mission.targetValue || "1", 10);
-    if (isNaN(required)) required = 1; // if string like "Rare", required is just 1 occurrence.
+    if (isNaN(required)) required = 1;
 
     if (newProgress >= required) {
       isComplete = true;
     }
 
-    await prisma.userMission.update({
-      where: { id: um.id },
-      data: {
-        progress: newProgress,
-        completed: isComplete
-      }
-    });
+    missionUpdates.push(
+      prisma.userMission.update({
+        where: { id: um.id },
+        data: {
+          progress: newProgress,
+          completed: isComplete
+        }
+      })
+    );
 
     if (isComplete) {
-      // Grant reward
-      await prisma.user.update({
-        where: { id: userId },
-        data: { currency: { increment: um.mission.reward } }
-      });
-      await grantXP(userId, XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE);
+      totalCurrencyGained += um.mission.reward;
+      totalXPGained += XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE;
     }
+  }
+
+  if (missionUpdates.length > 0) {
+    await prisma.$transaction(missionUpdates);
+  }
+
+  if (totalXPGained > 0 || totalCurrencyGained > 0) {
+    await grantXP(userId, totalXPGained, totalCurrencyGained);
   }
 }
 
