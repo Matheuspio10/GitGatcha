@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
     "postinstall": "prisma generate && prisma db push --accept-data-loss || true"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "eslint-config-next": "16.1.6",
     "prisma": "^6.4.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.0"
   }
 }

@@ -2,7 +2,7 @@ import { prisma } from './prisma';
 
 // ─── Level Progression ──────────────────────────────────────────────────
 // XP required to reach level N: 100 * N^1.5 (rounded down)
-// Level 1 = 0 XP, Level 2 = 283 XP, Level 5 = 1118 XP, Level 10 = 3162 XP
+// Level 1 = 0 XP, Level 2 = 282 XP, Level 5 = 1118 XP, Level 10 = 3162 XP
 
 export function xpForLevel(level: number): number {
   if (level <= 1) return 0;
