@@ -198,7 +198,7 @@ export async function grantXP(userId: string, amount: number, additionalCurrency
   const updatedPendingRewards = [...currentPendingRewards, ...levelUps];
   
   const currentNotifications: any[] = Array.isArray(user.notifications) ? (user.notifications as any[]) : [];
-  let updatedNotifications = [...currentNotifications];
+  const updatedNotifications = [...currentNotifications];
 
   if (levelUps.length > 0) {
     const combinedPacks = levelUps.flatMap(reward => reward.packNames);
