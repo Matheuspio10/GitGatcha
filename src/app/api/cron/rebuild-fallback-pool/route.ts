@@ -27,9 +27,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    console.log('[Cron] Starting fallback pool rebuild...');
     const results = await rebuildFallbackPools();
-    console.log('[Cron] Fallback pool rebuild complete:', results);
 
     return NextResponse.json({
       success: true,
