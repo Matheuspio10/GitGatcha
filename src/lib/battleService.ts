@@ -183,15 +183,17 @@ export async function resolveRandomBattle(
 
   // Deduct 20 stamina from challenger cards
   const now = new Date();
-  for (const c of challengerTeamCards) {
-    await prisma.userCard.update({
-      where: { id: c.id },
-      data: {
-        stamina: Math.max(0, c.stamina - 20),
-        lastUsedAt: now,
-      }
-    }); // c.id is userCardId as mapped in api route
-  }
+  await Promise.all(
+    challengerTeamCards.map((c) =>
+      prisma.userCard.update({
+        where: { id: c.id },
+        data: {
+          stamina: Math.max(0, c.stamina - 20),
+          lastUsedAt: now,
+        },
+      })
+    )
+  );
 
   const battleStats = [
     ...battleResult.challengerTeamState,
@@ -372,18 +374,20 @@ export async function resolveFriendBattle(
 
   // Deduct 20 stamina from all participating cards
   const now = new Date();
-  for (const c of cTeamRaw as any as BattleCard[]) {
-    await prisma.userCard.update({
-      where: { id: c.id },
-      data: { stamina: Math.max(0, c.stamina - 20), lastUsedAt: now }
-    });
-  }
-  for (const c of dTeam) {
-    await prisma.userCard.update({
-      where: { id: c.id },
-      data: { stamina: { decrement: 20 }, lastUsedAt: now }
-    });
-  }
+  await Promise.all([
+    ...cTeamRaw.map((c: any) =>
+      prisma.userCard.update({
+        where: { id: c.id },
+        data: { stamina: Math.max(0, c.stamina - 20), lastUsedAt: now },
+      })
+    ),
+    ...dTeam.map((c) =>
+      prisma.userCard.update({
+        where: { id: c.id },
+        data: { stamina: { decrement: 20 }, lastUsedAt: now },
+      })
+    ),
+  ]);
 
   // --- Loyalty Processing for ALL participating cards ---
   const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
