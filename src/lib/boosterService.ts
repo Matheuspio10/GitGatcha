@@ -1,8 +1,11 @@
+import { randomInt } from 'node:crypto';
 import { prisma } from './prisma';
 import { getRandomDevelopersByRarity, searchUsersForPackWithRarity } from './githubService';
 import { getPackById } from './packDefinitions';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+
+const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 
 // ─── Per-User Per-Pack-Type Exclusion System ────────────────────────────
 // Prevents the same developer from appearing in consecutive openings of the
@@ -44,11 +47,11 @@ function getRaritiesForSlots(count: number): string[] {
   const rarities: string[] = [];
   for (let i = 0; i < count; i++) {
     if (i === 0 || i === 1) rarities.push('Common');
-    else if (i === 2) rarities.push(Math.random() < 0.70 ? 'Common' : 'Uncommon');
-    else if (i === 3) rarities.push(Math.random() < 0.60 ? 'Uncommon' : 'Rare');
+    else if (i === 2) rarities.push(secureMathRandom() < 0.70 ? 'Common' : 'Uncommon');
+    else if (i === 3) rarities.push(secureMathRandom() < 0.60 ? 'Uncommon' : 'Rare');
     else {
       // Slot 5+ guaranteed variable slot
-      const roll = Math.random();
+      const roll = secureMathRandom();
       if (roll < 0.15) rarities.push('Legendary');
       else if (roll < 0.45) rarities.push('Epic');
       else rarities.push('Rare');
@@ -137,7 +140,7 @@ export async function openBoosterPack(userId: string, packId?: string) {
 
   // Handle 15% Pack Drop for Fragments
   let packDropFragments = null;
-  if (Math.random() < 0.15 && newCards.length > 0) {
+  if (secureMathRandom() < 0.15 && newCards.length > 0) {
     // Determine language mapping
     let dropLang = pack?.themeLanguage;
     if (!dropLang) {
@@ -191,7 +194,8 @@ async function upsertCard(dev: any) {
   });
 
   if (!card) {
-    card = await prisma.card.create({ data: dev });
+    const { topLanguages, ...cardData } = dev;
+    card = await prisma.card.create({ data: cardData });
   }
 
   return card;
@@ -202,7 +206,7 @@ async function addCardToUser(userId: string, card: any) {
     where: { userId, cardId: card.id }
   });
 
-  const isShiny = Math.random() < 0.05;
+  const isShiny = secureMathRandom() < 0.05;
 
   if (existingCard) {
     const lang = card.primaryLanguage || 'Unknown';
