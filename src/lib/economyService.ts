@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { randomInt } from 'node:crypto';
 
 const POSSIBLE_MISSIONS = [
   { description: "Open 3 Boosters", type: "OPEN_BOOSTER", reward: 300, targetValue: "3" },
@@ -8,6 +9,15 @@ const POSSIBLE_MISSIONS = [
   { description: "Get a HTML Dev", type: "COLLECT_LANGUAGE", reward: 150, targetValue: "HTML" },
 ];
 
+function shuffleMissions<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export async function getUserMissions(userId: string) {
   let m = await prisma.userMission.findMany({
     where: { userId },
@@ -15,18 +25,29 @@ export async function getUserMissions(userId: string) {
   });
 
   if (m.length === 0) {
-    const picked = POSSIBLE_MISSIONS.sort(() => 0.5 - Math.random()).slice(0, 3);
-    for (const p of picked) {
-      let mission = await prisma.mission.findFirst({
-        where: { description: p.description }
-      });
-      if (!mission) {
-        mission = await prisma.mission.create({ data: p });
-      }
-      await prisma.userMission.create({
-        data: { userId, missionId: mission.id }
-      });
-    }
+    const picked = shuffleMissions(POSSIBLE_MISSIONS).slice(0, 3);
+    const pickedDescriptions = picked.map(p => p.description);
+
+    const existingMissions = await prisma.mission.findMany({
+      where: { description: { in: pickedDescriptions } }
+    });
+
+    const existingMissionsMap = new Map(existingMissions.map(m => [m.description, m]));
+    const missingMissions = picked.filter(p => !existingMissionsMap.has(p.description));
+
+    const newlyCreatedMissions = await Promise.all(
+      missingMissions.map(p => prisma.mission.create({ data: p }))
+    );
+
+    const allMissions = [...existingMissions, ...newlyCreatedMissions];
+
+    await prisma.userMission.createMany({
+      data: allMissions.map(mission => ({
+        userId,
+        missionId: mission.id
+      }))
+    });
+
     m = await prisma.userMission.findMany({
       where: { userId },
       include: { mission: true }
@@ -45,37 +66,46 @@ export async function advanceMissionProgress(userId: string, type: string, targe
     include: { mission: true }
   });
 
+  const missionUpdates = [];
+  let totalCurrencyGained = 0;
+  let totalXPGained = 0;
+
   for (const um of activeMissions) {
     if (um.mission.targetValue && targetValue && um.mission.targetValue !== targetValue) {
       continue; // e.g. looking for "Python" but we opened "JavaScript"
     }
 
     const newProgress = um.progress + 1;
-    // Assuming target value is integer if type is "OPEN_BOOSTER", etc.. We will hack:
     let isComplete = false;
     let required = parseInt(um.mission.targetValue || "1", 10);
-    if (isNaN(required)) required = 1; // if string like "Rare", required is just 1 occurrence.
+    if (isNaN(required)) required = 1;
 
     if (newProgress >= required) {
       isComplete = true;
     }
 
-    await prisma.userMission.update({
-      where: { id: um.id },
-      data: {
-        progress: newProgress,
-        completed: isComplete
-      }
-    });
+    missionUpdates.push(
+      prisma.userMission.update({
+        where: { id: um.id },
+        data: {
+          progress: newProgress,
+          completed: isComplete
+        }
+      })
+    );
 
     if (isComplete) {
-      // Grant reward
-      await prisma.user.update({
-        where: { id: userId },
-        data: { currency: { increment: um.mission.reward } }
-      });
-      await grantXP(userId, XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE);
+      totalCurrencyGained += um.mission.reward;
+      totalXPGained += XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE;
     }
+  }
+
+  if (missionUpdates.length > 0) {
+    await prisma.$transaction(missionUpdates);
+  }
+
+  if (totalXPGained > 0 || totalCurrencyGained > 0) {
+    await grantXP(userId, totalXPGained, totalCurrencyGained);
   }
 }
 
