@@ -43,14 +43,12 @@ export async function rebuildFallbackPools(): Promise<Record<string, number>> {
   const results: Record<string, number> = {};
 
   for (const pack of languagePacks) {
-    console.log(`[FallbackPool] Rebuilding pool for "${pack.name}" (${pack.id})...`);
     const existingCount = await prisma.boosterFallbackDev.count({
       where: { packId: pack.id },
     });
 
     // Skip if already has enough diversity
     if (existingCount >= TARGET_POOL_SIZE) {
-      console.log(`[FallbackPool] "${pack.name}" already has ${existingCount} devs, skipping.`);
       results[pack.id] = existingCount;
       continue;
     }
@@ -162,7 +160,6 @@ export async function rebuildFallbackPools(): Promise<Record<string, number>> {
     });
 
     results[pack.id] = finalCount;
-    console.log(`[FallbackPool] "${pack.name}": added ${added}, total ${finalCount}`);
   }
 
   return results;
