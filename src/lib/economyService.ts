@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { randomInt } from 'node:crypto';
 
 const POSSIBLE_MISSIONS = [
   { description: "Open 3 Boosters", type: "OPEN_BOOSTER", reward: 300, targetValue: "3" },
@@ -8,6 +9,15 @@ const POSSIBLE_MISSIONS = [
   { description: "Get a HTML Dev", type: "COLLECT_LANGUAGE", reward: 150, targetValue: "HTML" },
 ];
 
+function shuffleMissions<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export async function getUserMissions(userId: string) {
   let m = await prisma.userMission.findMany({
     where: { userId },
@@ -15,18 +25,29 @@ export async function getUserMissions(userId: string) {
   });
 
   if (m.length === 0) {
-    const picked = POSSIBLE_MISSIONS.sort(() => 0.5 - Math.random()).slice(0, 3);
-    for (const p of picked) {
-      let mission = await prisma.mission.findFirst({
-        where: { description: p.description }
-      });
-      if (!mission) {
-        mission = await prisma.mission.create({ data: p });
-      }
-      await prisma.userMission.create({
-        data: { userId, missionId: mission.id }
-      });
-    }
+    const picked = shuffleMissions(POSSIBLE_MISSIONS).slice(0, 3);
+    const pickedDescriptions = picked.map(p => p.description);
+
+    const existingMissions = await prisma.mission.findMany({
+      where: { description: { in: pickedDescriptions } }
+    });
+
+    const existingMissionsMap = new Map(existingMissions.map(m => [m.description, m]));
+    const missingMissions = picked.filter(p => !existingMissionsMap.has(p.description));
+
+    const newlyCreatedMissions = await Promise.all(
+      missingMissions.map(p => prisma.mission.create({ data: p }))
+    );
+
+    const allMissions = [...existingMissions, ...newlyCreatedMissions];
+
+    await prisma.userMission.createMany({
+      data: allMissions.map(mission => ({
+        userId,
+        missionId: mission.id
+      }))
+    });
+
     m = await prisma.userMission.findMany({
       where: { userId },
       include: { mission: true }
