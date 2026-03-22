@@ -6,7 +6,6 @@ import { CardProps } from '@/components/Card';
 import { BoosterReveal } from '@/components/BoosterReveal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
-import { GlobalAudio } from '@/lib/audioManager';
 
 interface PackVisualTheme {
   gradient: string;
@@ -238,7 +237,6 @@ export default function InventoryClient({ userId }: { userId: string }) {
               className="group cursor-pointer relative mx-auto w-full max-w-[280px]"
               onClick={() => {
                 if (opening) return;
-                GlobalAudio.play('booster/pack_select');
                 // If it's a click without dragging, we'll just open the modal or start the flow
                 setSelectedPack(pack);
               }}
