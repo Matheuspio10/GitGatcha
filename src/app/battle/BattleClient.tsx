@@ -10,7 +10,7 @@ import {
   GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText
 } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
-import { GlobalAudio } from '@/lib/audioManager';
+import { useBattleAudio } from './useBattleAudio';
 
 // Types
 interface TurnEvent {
@@ -343,12 +343,9 @@ function BattleReplay({
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<'normal' | 'fast'>('normal');
   const [floatingDmg, setFloatingDmg] = useState<{ id: number; value: number; side: 'top' | 'bottom'; isCrit?: boolean }[]>([]);
-  const [isMuted, setIsMuted] = useState(false);
   
-  useEffect(() => { 
-    setIsMuted(GlobalAudio.Settings.isMuted); 
-  }, []);
-  
+  // Audio system
+  const { initAudio, playSound, isMuted, setIsMuted, isInitialized } = useBattleAudio();
   const logEndRef = useRef<HTMLDivElement>(null);
   const dmgIdRef = useRef(0);
 
@@ -401,11 +398,11 @@ function BattleReplay({
   // Trigger end state hold
   useEffect(() => {
     if (done) {
-      GlobalAudio.play(winnerSide === 'CHALLENGER' ? 'battle/battle_win' : 'battle/battle_loss');
+      playSound(winnerSide === 'CHALLENGER' ? 'victory' : 'defeat');
       const timer = setTimeout(() => setShowResults(true), 2500);
       return () => clearTimeout(timer);
     }
-  }, [done, winnerSide]);
+  }, [done, playSound, winnerSide]);
 
   // Auto-play Sequencer
   useEffect(() => {
@@ -451,11 +448,11 @@ function BattleReplay({
     if (ev.type === 'passive') {
       setActivePassiveMsg(ev.message);
       setActiveAnim('passive');
-      GlobalAudio.play('battle/stat_win');
+      playSound('passive');
       delay = 1200; // Hold the pause for banner
     } else if (ev.type === 'damage') {
       setActiveAnim('lunge'); // Trigger lunge
-      GlobalAudio.play('general/nav_whoosh');
+      playSound('lunge');
       delay = 800; // Total sequence (lunge, projectile, hit)
       
       // Schedule the hit parts
@@ -465,7 +462,7 @@ function BattleReplay({
         if (ev.value && ev.value > 0) {
           const side = challengerTeam.some(c => c.id === ev.targetId) ? 'bottom' : 'top';
           const isCrit = ev.message.includes('Critical');
-          GlobalAudio.play(isCrit ? 'battle/stat_win' : 'battle/stat_loss');
+          playSound(isCrit ? 'crit' : 'hit');
           const id = ++dmgIdRef.current;
           setFloatingDmg(prev => [...prev, { id, value: ev.value!, side, isCrit }]);
           setTimeout(() => setFloatingDmg(prev => prev.filter(d => d.id !== id)), 1500);
@@ -475,7 +472,7 @@ function BattleReplay({
     } else if (ev.type === 'enter_field') {
       delay = 800; // Entry animation time
     } else if (ev.type === 'defeat') {
-      GlobalAudio.play('battle/stat_loss');
+      playSound('hit');
       delay = 600; // Delay for card dying
     }
 
@@ -940,11 +937,7 @@ function BattleReplay({
             <Clock size={18} />
           </button>
           <button
-            onClick={() => { 
-               GlobalAudio.toggleMute(); 
-               setIsMuted(GlobalAudio.Settings.isMuted); 
-               GlobalAudio.init(); 
-            }}
+            onClick={() => { setIsMuted(!isMuted); if (!isInitialized) initAudio(); }}
             className={clsx('p-2 rounded-lg transition-all', isMuted ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-orange-400 hover:bg-orange-500/10')}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
@@ -952,7 +945,7 @@ function BattleReplay({
           </button>
           <div className="w-px h-6 bg-slate-700" />
           <button
-            onClick={() => { setPlaying(p => !p); GlobalAudio.init(); }}
+            onClick={() => { setPlaying(p => !p); if (!isInitialized) initAudio(); }}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all"
             title={playing ? 'Pause' : 'Play'}
           >

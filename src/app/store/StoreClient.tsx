@@ -15,7 +15,6 @@ import {
   CheckCircle,
   Circle
 } from '@phosphor-icons/react';
-import { GlobalAudio } from '@/lib/audioManager';
 
 interface PackVisualTheme {
   gradient: string;
@@ -134,7 +133,6 @@ export default function StoreClient({
       const res = await fetch('/api/store/daily', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        GlobalAudio.play('shop/currency_gain');
         setCurrency(data.newCurrency);
         setDailyCooldown(24 * 60 * 60 * 1000);
         router.refresh();
@@ -150,7 +148,6 @@ export default function StoreClient({
 
   const handlePurchasePack = async (pack: PackInfo) => {
     if (currency < pack.cost) {
-      GlobalAudio.play('shop/insufficient_funds');
       alert("Not enough Bits!");
       return;
     }
@@ -165,7 +162,6 @@ export default function StoreClient({
       const data = await res.json();
       
       if (data.success) {
-        GlobalAudio.play('shop/currency_spend');
         setCurrency(data.newCurrency);
         setPurchaseNotification({ packName: data.packName });
         
