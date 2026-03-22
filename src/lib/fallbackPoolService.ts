@@ -1,9 +1,12 @@
+import { randomInt } from 'node:crypto';
 import { prisma } from './prisma';
 import { fetchGitHubUserStats, cache } from './githubService';
 import { ALL_PACKS } from './packDefinitions';
 import axios from 'axios';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 const API_BASE = 'https://api.github.com';
 
 const headers = {
@@ -22,7 +25,7 @@ function getRandomDateSlice(): string {
   const start = new Date('2008-04-01').getTime();
   const end = new Date().getTime() - (30 * 24 * 60 * 60 * 1000);
 
-  const randomStartMs = start + Math.random() * (end - start);
+  const randomStartMs = start + secureMathRandom() * (end - start);
   const randomEndMs = randomStartMs + (30 * 24 * 60 * 60 * 1000);
 
   const formatDate = (ms: number) => {
@@ -76,7 +79,7 @@ export async function rebuildFallbackPools(): Promise<Record<string, number>> {
         searchQuery += ` ${getRandomDateSlice()}`;
       }
 
-      const page = Math.floor(Math.random() * 30) + 1;
+      const page = Math.floor(secureMathRandom() * 30) + 1;
       const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(searchQuery)}&per_page=30&page=${page}`;
 
       try {
@@ -84,7 +87,7 @@ export async function rebuildFallbackPools(): Promise<Record<string, number>> {
         const users = res.data.items || [];
 
         // Shuffle for randomness
-        const shuffled = users.sort(() => 0.5 - Math.random());
+        const shuffled = users.sort(() => 0.5 - secureMathRandom());
 
         for (const u of shuffled) {
           if (added >= needed) break;

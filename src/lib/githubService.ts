@@ -1,6 +1,9 @@
+import { randomInt } from 'node:crypto';
 import axios from 'axios';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 const API_BASE = 'https://api.github.com';
 
 const headers = {
@@ -21,7 +24,7 @@ const CACHE_TTL_DEFAULT = 86400;   // 24 hours
 const CACHE_TTL_NICHE   = 7200;    // 2 hours — used when qualified pool is small
 
 function getRandomUserId(maxId: number = 150000000) {
-  return Math.floor(Math.random() * maxId) + 1;
+  return Math.floor(secureMathRandom() * maxId) + 1;
 }
 
 export async function fetchGitHubUserStats(username: string, expectedRarity?: string) {
@@ -123,7 +126,7 @@ function getRandomDateSlice(): string {
   const start = new Date('2008-04-01').getTime();
   const end = new Date().getTime() - (30 * 24 * 60 * 60 * 1000); // Up to 30 days ago
   
-  const randomStartMs = start + Math.random() * (end - start);
+  const randomStartMs = start + secureMathRandom() * (end - start);
   const randomEndMs = randomStartMs + (30 * 24 * 60 * 60 * 1000);
   
   const formatDate = (ms: number) => {
@@ -159,7 +162,7 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
     // Increase maxPage on niche pools or retry attempts to sample different subsets
     const baseMaxPage = targetRarity === 'Legendary' ? 5 : targetRarity === 'Epic' ? 10 : 30;
     const maxPage = detectedNichePool ? Math.min(baseMaxPage * 2, 50) : baseMaxPage;
-    const page = Math.floor(Math.random() * maxPage) + 1;
+    const page = Math.floor(secureMathRandom() * maxPage) + 1;
     
     const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(searchQuery)}&per_page=30&page=${page}`;
 
@@ -175,7 +178,7 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
         eligibleUsers = users;
       }
       
-      const shuffled = eligibleUsers.sort(() => 0.5 - Math.random());
+      const shuffled = eligibleUsers.sort(() => 0.5 - secureMathRandom());
 
       // Extract required languages from the base query once per attempt
       const langRegex = /language:([^\s]+)/ig;
@@ -275,7 +278,7 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
           }
 
           if (validPoolDevs.length > 0) {
-            const shuffledPool = validPoolDevs.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
+            const shuffledPool = validPoolDevs.sort(() => 0.5 - secureMathRandom()).slice(0, count - results.length);
             results.push(...shuffledPool);
             fallbackFilled = results.length >= count;
           }
@@ -303,7 +306,7 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
           validFallbacks = dbFallbacks.filter((c: any) => !results.some(r => r.githubUsername === c.githubUsername));
         }
         
-        const shuffledFallbacks = validFallbacks.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
+        const shuffledFallbacks = validFallbacks.sort(() => 0.5 - secureMathRandom()).slice(0, count - results.length);
         results.push(...shuffledFallbacks);
       }
     } catch (e) {

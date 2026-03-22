@@ -1,7 +1,10 @@
+import { randomInt } from 'node:crypto';
 import { prisma } from './prisma';
 import { resolve3v3Battle, BattleCard, getCardType } from './battleResolver';
 import { syncCardStamina } from './staminaService';
 import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
+
+const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 
 const RARITY_ORDER: Record<string, number> = {
   Common: 1,
@@ -90,11 +93,11 @@ export async function resolveRandomBattle(
   if (allCardsCount < 3) throw new Error('Not enough cards available for battle');
 
   // Fetch 3 random unique cards
-  const randomSkip1 = Math.floor(Math.random() * (allCardsCount - 2));
+  const randomSkip1 = Math.floor(secureMathRandom() * (allCardsCount - 2));
   const dCardsRaw = await prisma.card.findMany({ skip: randomSkip1, take: 3 });
   
   // Sort them randomly
-  const shuffledDCards = dCardsRaw.sort(() => 0.5 - Math.random());
+  const shuffledDCards = dCardsRaw.sort(() => 0.5 - secureMathRandom());
 
   const dTeam: BattleCard[] = shuffledDCards.map(c => ({
     id: c.id,
