@@ -102,7 +102,7 @@ export async function openBoosterPack(userId: string, packId?: string) {
     }
   }
 
-  let newCards = [];
+  const newCards = [];
 
     const rarityCounts = pickedRarities.reduce((acc, curr) => {
       acc[curr] = (acc[curr] || 0) + 1;
