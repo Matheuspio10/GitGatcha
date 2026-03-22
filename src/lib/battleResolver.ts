@@ -307,8 +307,8 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // --- Damage Calculation ---
     // Type Multipliers
-    let cTypeMult = getTypeMultiplier(cCard.type, dCard.type);
-    let dTypeMult = getTypeMultiplier(dCard.type, cCard.type);
+    const cTypeMult = getTypeMultiplier(cCard.type, dCard.type);
+    const dTypeMult = getTypeMultiplier(dCard.type, cCard.type);
 
     if (cTypeMult > 1) turnEvents.push({ type: 'type_advantage', cardId: cCard.id, message: `${cCard.name} has Type Advantage!` });
     if (dTypeMult > 1) turnEvents.push({ type: 'type_advantage', cardId: dCard.id, message: `${dCard.name} has Type Advantage!` });
@@ -369,12 +369,12 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     if ((dCard as any).rustSynergy) dDmgReceivedMult -= (dCard as any).rustSynergy;
 
     // Base damage formula with Momentum
-    let cBaseAtk = cCard.atk * cAtkBonus * cTypeMult * (1 + (cCard.momentumStacks || 0) * 0.1);
-    let dBaseAtk = dCard.atk * dAtkBonus * dTypeMult * (1 + (dCard.momentumStacks || 0) * 0.1);
+    const cBaseAtk = cCard.atk * cAtkBonus * cTypeMult * (1 + (cCard.momentumStacks || 0) * 0.1);
+    const dBaseAtk = dCard.atk * dAtkBonus * dTypeMult * (1 + (dCard.momentumStacks || 0) * 0.1);
     
     // Effective DEF with Momentum
-    let cDefMom = cDefEffective * (1 + (cCard.momentumStacks || 0) * 0.1);
-    let dDefMom = dDefEffective * (1 + (dCard.momentumStacks || 0) * 0.1);
+    const cDefMom = cDefEffective * (1 + (cCard.momentumStacks || 0) * 0.1);
+    const dDefMom = dDefEffective * (1 + (dCard.momentumStacks || 0) * 0.1);
 
     let cDmgToD = Math.floor(Math.max(cBaseAtk * 0.15, cBaseAtk - (dDefMom * 0.25)));
     let dDmgToC = Math.floor(Math.max(dBaseAtk * 0.15, dBaseAtk - (cDefMom * 0.25)));
@@ -502,7 +502,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         const cPct = cCard.hp / cCard.maxHp;
         const dPct = dCard.hp / dCard.maxHp;
         
-        let tiebreakerEvents: BattleLogEvent[] = [
+        const tiebreakerEvents: BattleLogEvent[] = [
             { type: 'passive', message: `Turn cap reached! Resolving matchup by HP%...` }
         ];
 
