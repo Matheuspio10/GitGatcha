@@ -5,6 +5,7 @@ import { Card, CardProps } from '@/components/Card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkle, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import clsx from 'clsx';
+import { GlobalAudio } from '@/lib/audioManager';
 
 interface BoosterRevealProps {
   cards: (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[];
@@ -104,6 +105,7 @@ function FlippableCard({
 
     setTimeout(() => {
       setIsFlipped(true);
+      GlobalAudio.play(`booster/card_${rarity.toLowerCase()}`);
       if (rarity === 'Legendary') {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([100, 50, 100, 50, 200]);

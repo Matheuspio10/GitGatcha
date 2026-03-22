@@ -187,38 +187,50 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
 
       let qualifiedCount = 0;
 
-      // Fetch full stats and enforce exact targetRarity AND top-3 language requirement
-      for (const u of shuffled) {
+      // Parallelize fetching to prevent Vercel/NextJS Timeout
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < shuffled.length; i += BATCH_SIZE) {
         if (results.length >= count) break;
         
-        // Ensure not querying duplicates already found
-        if (results.some(r => r.githubUsername === u.login)) continue;
+        const batch = shuffled.slice(i, i + BATCH_SIZE);
+        const statsPromises = batch.map(async (u: any) => {
+          // Ensure not querying duplicates already found
+          if (results.some(r => r.githubUsername === u.login)) return null;
+          
+          const stats = await fetchGitHubUserStats(u.login);
+          if (!stats) return null;
+
+          // Override cache TTL for this user if we're in a niche pool
+          if (detectedNichePool) {
+            const cacheKey = `user_stats_${u.login}`;
+            cache.ttl(cacheKey, CACHE_TTL_NICHE);
+          }
+
+          if (stats.rarity !== targetRarity) return null;
+
+          // Top-3 Language Qualification
+          if (requiredLangs.length > 0) {
+            const userTop3 = (stats.topLanguages || [stats.primaryLanguage]).map((l: string) => l.toLowerCase());
+            if (!requiredLangs.some(lang => userTop3.includes(lang))) {
+              return null; // Target language not in developer's top 3
+            }
+          }
+
+          return stats;
+        });
+
+        const batchResults = await Promise.all(statsPromises);
         
-        // Use niche-aware cache TTL
-        const cacheTtl = detectedNichePool ? CACHE_TTL_NICHE : CACHE_TTL_DEFAULT;
-        const stats = await fetchGitHubUserStats(u.login);
-        if (!stats) continue;
-
-        // Override cache TTL for this user if we're in a niche pool
-        if (detectedNichePool) {
-          const cacheKey = `user_stats_${u.login}`;
-          cache.ttl(cacheKey, CACHE_TTL_NICHE);
-        }
-
-        if (stats.rarity !== targetRarity) continue;
-
-        // Top-3 Language Qualification:
-        // A developer qualifies if the target language appears in their top 3
-        // languages by total bytes of code across all public repos.
-        if (requiredLangs.length > 0) {
-          const userTop3 = (stats.topLanguages || [stats.primaryLanguage]).map((l: string) => l.toLowerCase());
-          if (!requiredLangs.some(lang => userTop3.includes(lang))) {
-            continue; // Target language not in developer's top 3
+        for (const stats of batchResults) {
+          if (stats && results.length < count) {
+            // Check again here to avoid duplicates within the concurrent batch if possible, 
+            // though login IDs are unique in a single Github page anyway.
+            if (!results.some(r => r.githubUsername === stats.githubUsername)) {
+              qualifiedCount++;
+              results.push(stats);
+            }
           }
         }
-
-        qualifiedCount++;
-        results.push(stats);
       }
 
       // If very few users qualified from a full page, flag as niche pool

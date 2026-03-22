@@ -6,6 +6,7 @@ import { CardProps } from '@/components/Card';
 import { BoosterReveal } from '@/components/BoosterReveal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
+import { GlobalAudio } from '@/lib/audioManager';
 
 interface PackVisualTheme {
   gradient: string;
@@ -114,7 +115,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
     })
     .then(async res => {
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.cards && data.cards.length > 0) {
         setCards(data.cards);
         if (data.packDropFragments) {
           setPackDropFragments(data.packDropFragments);
@@ -126,7 +127,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
         router.refresh();
         setApiState('SUCCESS');
       } else {
-        setErrorMessage(data.error || 'Failed to open pack');
+        setErrorMessage(data.error || 'Failed to locate enough developers. The API might rate-limited or the pool is empty.');
         setApiState('ERROR');
       }
     })
@@ -170,9 +171,24 @@ export default function InventoryClient({ userId }: { userId: string }) {
           />
         )}
 
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="z-30 text-center bg-red-900/50 border border-red-500 rounded-2xl p-8 max-w-lg mt-20 backdrop-blur-md">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Network Intrusion Failed</h2>
+            <p className="text-red-200 mb-6">{errorMessage}</p>
+            <button 
+              onClick={resetView}
+              className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors"
+            >
+              Return to Inventory
+            </button>
+          </div>
+        )}
+
         {/* Card Reveal */}
         <AnimatePresence mode="wait">
-          {packState === 'CARDS_REVEALED' && cards.length > 0 && (
+          {packState === 'CARDS_REVEALED' && cards.length > 0 && !errorMessage && (
             <motion.div key="cards" className="w-full z-20 relative">
               <BoosterReveal 
                 cards={cards as (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[]} 
@@ -222,6 +238,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
               className="group cursor-pointer relative mx-auto w-full max-w-[280px]"
               onClick={() => {
                 if (opening) return;
+                GlobalAudio.play('booster/pack_select');
                 // If it's a click without dragging, we'll just open the modal or start the flow
                 setSelectedPack(pack);
               }}

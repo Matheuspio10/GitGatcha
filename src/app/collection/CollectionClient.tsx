@@ -5,6 +5,7 @@ import { CardProps, Card } from '@/components/Card';
 import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText } from '@phosphor-icons/react';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import clsx from 'clsx';
+import { GlobalAudio } from '@/lib/audioManager';
 
 type ExtendedCard = CardProps & {
   shards?: number;
@@ -234,8 +235,10 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       });
       const data = await res.json();
       if (!res.ok) {
+        GlobalAudio.play('shop/insufficient_funds');
         alert(data.error || 'Failed to recover stamina');
       } else {
+        GlobalAudio.play('notification/success');
         // Optimistically update the local state to 100 stamina
         setLocalCards(prev => prev.map(c => 
           c.userCardId === card.userCardId 
@@ -414,7 +417,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                     return (
                       <tr 
                         key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
-                        onClick={() => setSelectedCard(card)} 
+                        onClick={() => { GlobalAudio.play('general/panel_slide'); setSelectedCard(card); }} 
                         className="hover:bg-slate-900/50 transition-colors group cursor-pointer"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -488,7 +491,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
             paginatedData.map(card => (
               <div 
                 key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
-                onClick={() => setSelectedCard(card)} 
+                onClick={() => { GlobalAudio.play('general/panel_slide'); setSelectedCard(card); }} 
                 className="cursor-pointer flex justify-center w-full"
               >
                  <Card
