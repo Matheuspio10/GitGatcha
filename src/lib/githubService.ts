@@ -15,7 +15,10 @@ if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
 
 // Caching to memory to avoid ratelimits during local dev
 import NodeCache from 'node-cache';
-export const cache = new NodeCache({ stdTTL: 86400 });
+export const cache = new NodeCache({ stdTTL: 86400, useClones: false });
+
+const CACHE_TTL_DEFAULT = 86400;   // 24 hours
+const CACHE_TTL_NICHE   = 7200;    // 2 hours — used when qualified pool is small
 
 function getRandomUserId(maxId: number = 150000000) {
   return Math.floor(Math.random() * maxId) + 1;
@@ -48,7 +51,9 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
       }
     }
 
-    const primaryLanguage = Object.keys(languages).sort((a, b) => languages[b] - languages[a])[0] || 'Unknown';
+    const sortedLangs = Object.keys(languages).sort((a, b) => languages[b] - languages[a]);
+    const primaryLanguage = sortedLangs[0] || 'Unknown';
+    const topLanguages = sortedLangs.slice(0, 3);
     
     const accountAgeMs = new Date().getTime() - new Date(user.created_at).getTime();
     const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
@@ -97,7 +102,8 @@ export async function fetchGitHubUserStats(username: string, expectedRarity?: st
       def,
       hp,
       rarity,
-      primaryLanguage
+      primaryLanguage,
+      topLanguages,
     };
 
     cache.set(cacheKey, stats);
@@ -131,8 +137,9 @@ function getRandomDateSlice(): string {
 export async function searchUsersForPackWithRarity(baseQuery: string, targetRarity: string, count: number, ignoreSessionUsernames: string[] = []): Promise<any[]> {
   const results: any[] = [];
   let attempts = 0;
+  let detectedNichePool = false;
   
-  while (results.length < count && attempts < 3) {
+  while (results.length < count && attempts < 5) {
     attempts++;
     let searchQuery = baseQuery;
     
@@ -149,8 +156,9 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
     }
 
     // Randomize page offset for un-biased genuine randomness
-    // High rarities have fewer pages on GitHub
-    const maxPage = targetRarity === 'Legendary' ? 5 : targetRarity === 'Epic' ? 10 : 30; 
+    // Increase maxPage on niche pools or retry attempts to sample different subsets
+    const baseMaxPage = targetRarity === 'Legendary' ? 5 : targetRarity === 'Epic' ? 10 : 30;
+    const maxPage = detectedNichePool ? Math.min(baseMaxPage * 2, 50) : baseMaxPage;
     const page = Math.floor(Math.random() * maxPage) + 1;
     
     const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(searchQuery)}&per_page=30&page=${page}`;
@@ -169,36 +177,53 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
       
       const shuffled = eligibleUsers.sort(() => 0.5 - Math.random());
 
-      // Fetch full stats and enforce exact targetRarity AND strict primary language requirement
+      // Extract required languages from the base query once per attempt
+      const langRegex = /language:([^\s]+)/ig;
+      let match;
+      const requiredLangs: string[] = [];
+      while ((match = langRegex.exec(baseQuery)) !== null) {
+        requiredLangs.push(match[1].toLowerCase());
+      }
+
+      let qualifiedCount = 0;
+
+      // Fetch full stats and enforce exact targetRarity AND top-3 language requirement
       for (const u of shuffled) {
         if (results.length >= count) break;
         
         // Ensure not querying duplicates already found
         if (results.some(r => r.githubUsername === u.login)) continue;
         
+        // Use niche-aware cache TTL
+        const cacheTtl = detectedNichePool ? CACHE_TTL_NICHE : CACHE_TTL_DEFAULT;
         const stats = await fetchGitHubUserStats(u.login);
         if (!stats) continue;
 
-        if (stats.rarity !== targetRarity) continue;
-
-        // Strict Primary Language Validation: 
-        // GitHub search returns anyone who has even 1 repo in that language, but we only 
-        // want them if it's their DOMINANT language.
-        const langRegex = /language:([^\s]+)/ig;
-        let match;
-        const requiredLangs: string[] = [];
-        while ((match = langRegex.exec(baseQuery)) !== null) {
-          requiredLangs.push(match[1].toLowerCase());
+        // Override cache TTL for this user if we're in a niche pool
+        if (detectedNichePool) {
+          const cacheKey = `user_stats_${u.login}`;
+          cache.ttl(cacheKey, CACHE_TTL_NICHE);
         }
 
+        if (stats.rarity !== targetRarity) continue;
+
+        // Top-3 Language Qualification:
+        // A developer qualifies if the target language appears in their top 3
+        // languages by total bytes of code across all public repos.
         if (requiredLangs.length > 0) {
-          const userPrimary = stats.primaryLanguage.toLowerCase();
-          if (!requiredLangs.includes(userPrimary)) {
-            continue; // Does not qualify for this language booster
+          const userTop3 = (stats.topLanguages || [stats.primaryLanguage]).map((l: string) => l.toLowerCase());
+          if (!requiredLangs.some(lang => userTop3.includes(lang))) {
+            continue; // Target language not in developer's top 3
           }
         }
 
+        qualifiedCount++;
         results.push(stats);
+      }
+
+      // If very few users qualified from a full page, flag as niche pool
+      if (qualifiedCount === 0 && shuffled.length > 0) {
+        detectedNichePool = true;
       }
     } catch (err) {
       console.error('Error in search API for themed pack', err);
@@ -212,26 +237,63 @@ export async function searchUsersForPackWithRarity(baseQuery: string, targetRari
       // Basic language matching if base query has language
       const langMatch = baseQuery.match(/language:([^\s]+)/i);
       const languageFilter = langMatch ? langMatch[1] : undefined;
-      
-      const dbFallbacks = await prisma.card.findMany({
-        where: { 
-          rarity: targetRarity,
-          ...(languageFilter ? { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } } : {})
-        },
-      });
-      
-      let validFallbacks = dbFallbacks.filter((c: any) => 
-        !ignoreSessionUsernames.includes(c.githubUsername) && 
-        !results.some(r => r.githubUsername === c.githubUsername)
-      );
 
-      // Relax cache constraints if strict fallback yields nothing
-      if (validFallbacks.length === 0) {
-        validFallbacks = dbFallbacks.filter((c: any) => !results.some(r => r.githubUsername === c.githubUsername));
+      // 1. Try the dedicated BoosterFallbackDev table first (populated by cron)
+      let fallbackFilled = false;
+      if (languageFilter) {
+        try {
+          // Extract packId concept from base query — match any pack whose language filter matches
+          const fallbackDevs = await prisma.boosterFallbackDev.findMany({
+            where: {
+              rarity: targetRarity,
+              OR: [
+                { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } },
+                { topLanguages: { array_contains: [languageFilter] } },
+              ],
+            },
+          });
+
+          let validPoolDevs = fallbackDevs.filter((d: any) =>
+            !ignoreSessionUsernames.includes(d.githubUsername) &&
+            !results.some(r => r.githubUsername === d.githubUsername)
+          );
+
+          if (validPoolDevs.length === 0) {
+            validPoolDevs = fallbackDevs.filter((d: any) => !results.some(r => r.githubUsername === d.githubUsername));
+          }
+
+          if (validPoolDevs.length > 0) {
+            const shuffledPool = validPoolDevs.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
+            results.push(...shuffledPool);
+            fallbackFilled = results.length >= count;
+          }
+        } catch {
+          // BoosterFallbackDev table may not exist yet (pre-migration) — gracefully skip
+        }
       }
-      
-      const shuffledFallbacks = validFallbacks.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
-      results.push(...shuffledFallbacks);
+
+      // 2. Fall through to generic Card table if still short
+      if (!fallbackFilled && results.length < count) {
+        const dbFallbacks = await prisma.card.findMany({
+          where: { 
+            rarity: targetRarity,
+            ...(languageFilter ? { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } } : {})
+          },
+        });
+        
+        let validFallbacks = dbFallbacks.filter((c: any) => 
+          !ignoreSessionUsernames.includes(c.githubUsername) && 
+          !results.some(r => r.githubUsername === c.githubUsername)
+        );
+
+        // Relax cache constraints if strict fallback yields nothing
+        if (validFallbacks.length === 0) {
+          validFallbacks = dbFallbacks.filter((c: any) => !results.some(r => r.githubUsername === c.githubUsername));
+        }
+        
+        const shuffledFallbacks = validFallbacks.sort(() => 0.5 - Math.random()).slice(0, count - results.length);
+        results.push(...shuffledFallbacks);
+      }
     } catch (e) {
       console.error('Failed fetching fallback developers from DB', e);
     }

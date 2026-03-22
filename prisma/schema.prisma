@@ -199,3 +199,22 @@ model ChangelogEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model BoosterFallbackDev {
+  id              String   @id @default(uuid())
+  packId          String
+  githubUsername   String
+  avatarUrl       String?
+  name            String
+  flavorText      String   @default("")
+  atk             Int      @default(10)
+  def             Int      @default(10)
+  hp              Int      @default(50)
+  rarity          String
+  primaryLanguage String?
+  topLanguages    Json     @default("[]")
+  createdAt       DateTime @default(now())
+
+  @@unique([packId, githubUsername])
+  @@index([packId, rarity])
+}

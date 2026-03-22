@@ -252,11 +252,7 @@ export function HackingMiniGame({
   }, [puzzleCount, isMobile]);
 
   // ── Firewall BFS across raw grid coordinates (ignoring edge connections) ──
-  const firewallBFS = useCallback((gridData: GridData, startId: number, endId: number, excludeTargetNode: boolean): number[] | null => {
-    const targetNode = gridData.nodes.find(n => n.type === 'target');
-    const blocked = new Set<number>();
-    if (excludeTargetNode && targetNode) blocked.add(targetNode.id);
-
+  const firewallBFS = useCallback((gridData: GridData, startId: number, endId: number): number[] | null => {
     const visited = new Set<number>();
     const queue: number[][] = [[startId]];
     visited.add(startId);
@@ -277,7 +273,7 @@ export function HackingMiniGame({
         const nc = node.col + dc;
         if (nr < 0 || nr >= gridData.rows || nc < 0 || nc >= gridData.cols) continue;
         const nid = nr * gridData.cols + nc;
-        if (visited.has(nid) || blocked.has(nid)) continue;
+        if (visited.has(nid)) continue; // Removed blocked node logic to focus entirely on catching the player
         visited.add(nid);
         queue.push([...path, nid]);
       }
@@ -298,9 +294,10 @@ export function HackingMiniGame({
 
   // ── Compute Firewall interval based on puzzle count ──
   const getFirewallInterval = useCallback((count: number, isMob: boolean, isSecondary: boolean): number => {
-    const base = Math.max(600, 1200 - count * 40);
-    const mobileBuffer = isMob ? 200 : 0;
-    const secondaryPenalty = isSecondary ? 200 : 0;
+    // Significantly faster base speed and scaling to achieve the "catch player" objective effectively
+    const base = Math.max(350, 800 - count * 50);
+    const mobileBuffer = isMob ? 100 : 0;
+    const secondaryPenalty = isSecondary ? 100 : 0;
     return base + mobileBuffer + secondaryPenalty;
   }, []);
 
@@ -441,7 +438,7 @@ export function HackingMiniGame({
         if (!currentFw) return;
 
         const playerTarget = playerPosRef.current;
-        const path = firewallBFS(g, currentFw.nodeId, playerTarget, true);
+        const path = firewallBFS(g, currentFw.nodeId, playerTarget);
 
         if (path && path.length > 1) {
           const nextNode = path[1];
@@ -469,7 +466,7 @@ export function HackingMiniGame({
           firewallsRef.current = updated;
 
           // Prediction: show where it will go NEXT (after this move)
-          const nextPath = firewallBFS(g, nextNode, playerTarget, true);
+          const nextPath = firewallBFS(g, nextNode, playerTarget);
           if (nextPath && nextPath.length > 1) {
             setFirewallPredictions(prev => {
               const next = [...prev];

@@ -4,8 +4,41 @@ import { getPackById } from './packDefinitions';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
-// In-memory LRU for short-term duplicate prevention across packs
-const sessionCaches: Record<string, string[]> = {};
+// ─── Per-User Per-Pack-Type Exclusion System ────────────────────────────
+// Prevents the same developer from appearing in consecutive openings of the
+// same booster type by the same player. Entries expire after 6 hours.
+
+interface ExclusionEntry {
+  username: string;
+  expiresAt: number;
+}
+
+const boosterExclusions: Record<string, ExclusionEntry[]> = {};
+const EXCLUSION_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function getExclusionKey(userId: string, packId: string): string {
+  return `${userId}:${packId}`;
+}
+
+function getActiveExclusions(userId: string, packId: string): string[] {
+  const key = getExclusionKey(userId, packId);
+  const entries = boosterExclusions[key] || [];
+  const now = Date.now();
+  // Prune expired entries
+  boosterExclusions[key] = entries.filter(e => e.expiresAt > now);
+  return boosterExclusions[key].map(e => e.username);
+}
+
+function addExclusion(userId: string, packId: string, username: string) {
+  const key = getExclusionKey(userId, packId);
+  if (!boosterExclusions[key]) boosterExclusions[key] = [];
+  boosterExclusions[key].push({
+    username,
+    expiresAt: Date.now() + EXCLUSION_TTL_MS,
+  });
+}
+
+// ─── Rarity Slot Generation ─────────────────────────────────────────────
 
 function getRaritiesForSlots(count: number): string[] {
   const rarities: string[] = [];
@@ -55,6 +88,7 @@ const FRAGMENTS_PER_RARITY: Record<string, number> = {
 
 export async function openBoosterPack(userId: string, packId?: string) {
   const pack = packId ? getPackById(packId) : null;
+  const effectivePackId = packId || '_generic';
   const cardsToPull = pack?.cardCount ?? 5;
 
   let pickedRarities: string[] = [];
@@ -75,8 +109,8 @@ export async function openBoosterPack(userId: string, packId?: string) {
       return acc;
     }, {} as Record<string, number>);
 
-    if (!sessionCaches[userId]) sessionCaches[userId] = [];
-    const ignoreList = sessionCaches[userId];
+    // Build ignore list from per-pack-type exclusions (6h expiry)
+    const ignoreList = getActiveExclusions(userId, effectivePackId);
 
     for (const [rarity, count] of Object.entries(rarityCounts)) {
       const query = pack ? pack.buildQuery() : "type:user";
@@ -84,8 +118,9 @@ export async function openBoosterPack(userId: string, packId?: string) {
       
       for (const dev of devs) {
         if (dev) {
+          // Add to exclusion list (6h expiry) and ignore list for this session
+          addExclusion(userId, effectivePackId, dev.githubUsername);
           ignoreList.push(dev.githubUsername);
-          if (ignoreList.length > 15) ignoreList.shift(); // Keep last 15 elements (3 packs)
 
           const card = await upsertCard(dev);
           const userCardResult = await addCardToUser(userId, card);
