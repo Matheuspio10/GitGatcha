@@ -148,7 +148,7 @@ export interface GrantXPResult {
 
 import { v4 as uuidv4 } from 'uuid';
 
-export async function grantXP(userId: string, amount: number): Promise<GrantXPResult> {
+export async function grantXP(userId: string, amount: number, additionalCurrency: number = 0): Promise<GrantXPResult> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { 
@@ -170,14 +170,14 @@ export async function grantXP(userId: string, amount: number): Promise<GrantXPRe
 
   const levelUps: LevelUpReward[] = [];
   const newInventoryItems: InventoryItem[] = [];
-  let totalCoinsGained = 0;
+  let levelUpCoins = 0;
 
   // Check for level-ups
   if (newLevel > previousLevel) {
     for (let lvl = previousLevel + 1; lvl <= newLevel; lvl++) {
       const reward = getRewardsForLevel(lvl);
       levelUps.push(reward);
-      totalCoinsGained += reward.coins;
+      levelUpCoins += reward.coins;
       
       reward.packIds.forEach((packId, index) => {
         newInventoryItems.push({
@@ -210,7 +210,7 @@ export async function grantXP(userId: string, amount: number): Promise<GrantXPRe
       payload: {
         levelsCrossed: levelUps.map(r => r.level),
         packNames: combinedPacks,
-        totalCoins: totalCoinsGained
+        totalCoins: levelUpCoins
       }
     });
   }
@@ -221,7 +221,7 @@ export async function grantXP(userId: string, amount: number): Promise<GrantXPRe
     data: {
       xp: newXP,
       level: newLevel,
-      currency: user.currency + totalCoinsGained,
+      currency: user.currency + levelUpCoins + additionalCurrency,
       inventory: updatedInventory as any,
       pendingRewards: updatedPendingRewards as any,
       notifications: updatedNotifications as any
