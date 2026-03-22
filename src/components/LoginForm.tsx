@@ -5,19 +5,20 @@ import { useRouter } from 'next/navigation';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
+    if (!username.trim() || !password.trim()) return;
     
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim() }),
+        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
       });
       if (res.ok) {
         router.refresh(); // To update the layout with session
@@ -40,6 +41,14 @@ export function LoginForm() {
         placeholder="Enter your username to play..."
         value={username}
         onChange={(e) => setUsername(e.target.value)}
+        className="px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+        required
+      />
+      <input
+        type="password"
+        placeholder="Enter your password..."
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         className="px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
         required
       />
