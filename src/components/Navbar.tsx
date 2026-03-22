@@ -8,6 +8,7 @@ import { Coin, X, List } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
 import { UserAvatar } from './UserAvatar';
+import { AudioSettingsPanel } from './AudioSettingsPanel';
 
 export function Navbar({ username, currency: initialCurrency, userImage }: { username: string, currency: number, userImage?: string | null }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
@@ -91,6 +92,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             </button>
             <ChangelogFeature username={username} />
             <NotificationBell />
+            <AudioSettingsPanel />
             
             {/* Desktop Profile */}
             <div className="hidden lg:flex items-center gap-2">
