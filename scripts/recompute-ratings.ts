@@ -1,8 +1,8 @@
 /**
  * Rebuilds every player's rating from PvP history only (PvE used to overwrite it).
  *
- *   node --env-file=.env.local --import tsx scripts/recompute-ratings.ts           # dry run: report only
- *   node --env-file=.env.local --import tsx scripts/recompute-ratings.ts --apply   # write to the database
+ *   node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts           # dry run: report only
+ *   node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts --apply   # write to the database
  */
 import { PrismaClient } from '@prisma/client';
 import { replayPvpRatings } from '../src/lib/ratings';
