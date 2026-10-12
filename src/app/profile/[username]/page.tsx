@@ -495,6 +495,7 @@ export default function ProfilePage() {
                     quantity={card.quantity}
                     disableLink={false}
                     isShiny={card.isShiny}
+                    edition={card.edition}
                     loyaltyTier={card.loyaltyTier}
                     loyaltyCount={card.loyaltyCount}
                   />

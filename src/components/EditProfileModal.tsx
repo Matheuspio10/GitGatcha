@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Camera, Image as ImageIcon, Palette, Check, CaretDown } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserAvatar } from './UserAvatar';
+import { GitHubConnect } from './GitHubConnect';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -422,6 +423,9 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                 )}
               </div>
             </div>
+
+            {/* GitHub connection */}
+            <GitHubConnect />
 
             {/* Error */}
             {error && (

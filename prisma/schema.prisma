@@ -31,6 +31,8 @@ model User {
   bannerImage       String?   @db.Text
   preferredLanguage String?
   hasSetupProfile Boolean @default(false)
+  // One-time reward for connecting GitHub (BITS + the player's own Signature card)
+  githubBonusGranted Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -106,6 +108,8 @@ model UserCard {
   quantity  Int      @default(1)
   shards    Int      @default(0)
   isShiny   Boolean  @default(false)
+  // "standard" (boosters, forge) or "signature": the player's own card, granted only by connecting GitHub
+  edition   String   @default("standard")
   stamina   Int      @default(100)
   lastUsedAt DateTime @default(now()) @map("last_used_at")
   inActiveTeam Boolean @default(false) @map("in_active_team")
@@ -200,6 +204,7 @@ model ChangelogEntry {
   updatedAt DateTime @updatedAt
 }
 
+// Legacy fallback pool, no longer used (replaced by BoosterReserve); drop in a later migration
 model BoosterFallbackDev {
   id              String   @id @default(uuid())
   packId          String
@@ -217,6 +222,20 @@ model BoosterFallbackDev {
 
   @@unique([packId, githubUsername])
   @@index([packId, rarity])
+}
+
+// Consumable reserve of pre-drawn developers per booster and rarity slot. Every row is an
+// independent uniform draw and is used exactly once (oldest first), so boosters served from
+// the reserve are as random as live draws — just instant and immune to GitHub rate limits.
+model BoosterReserve {
+  id             String   @id @default(uuid())
+  packId         String
+  rarity         String   // follower band of the slot it was drawn for
+  githubUsername String
+  stats          Json     // DevStats at draw time
+  createdAt      DateTime @default(now())
+
+  @@index([packId, rarity, createdAt])
 }
 
 // ─── Booster sampler state ──────────────────────────────────────────────

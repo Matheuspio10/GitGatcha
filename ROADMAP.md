@@ -45,6 +45,11 @@ Esforço: **P** = horas a 1 dia · **M** = alguns dias · **G** = 1 semana ou ma
 - ✅ Wiki: seção de raridades gerada a partir das constantes do código (faixas, multiplicadores, chances reais).
 - ✅ Testes: runner trocado para `tsx` (30 testes passando); `tsc` sem erros; lint 182 → 171 erros.
 
+**Feito em seguida (13/10/2026)**
+- ✅ **Reserva consumível** (`src/lib/boosterReserve.ts`): devs pré-sorteados pelo mesmo método justo, cada um usado uma única vez (o mais antigo primeiro) e reposto em segundo plano após cada abertura. Boosters ficam instantâneos e aguentam picos sem perder a aleatoriedade.
+- ✅ **Conectar GitHub** (perfil → Edit Profile): buscas do booster usam a cota do próprio jogador; +300 BITS na primeira conexão; o jogador ganha **a própria carta na edição Signature** (moldura foil exclusiva, nunca sai em booster nem na forja).
+- ✅ Cron com 300 s (Fluid compute) e carregamento das orgs retomável.
+
 **Pendente de ação sua**
 - 🟡 Aplicar as migrações no banco de produção (`prisma migrate resolve --applied 0_init` e `prisma migrate deploy`) — cria 3 tabelas novas (`GithubCache`, `OrgMember`, `RecentPull`), sem tocar nas existentes. **O código novo precisa delas.**
 - 🟡 Criar `CRON_SECRET` nas variáveis de ambiente da Vercel (sem ele o cron não roda).

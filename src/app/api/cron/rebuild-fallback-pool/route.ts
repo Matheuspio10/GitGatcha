@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 
-export const maxDuration = 60;
+// Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
+export const maxDuration = 300;
 
 /**
  * Daily maintenance of the booster sampler (see fallbackPoolService.ts),

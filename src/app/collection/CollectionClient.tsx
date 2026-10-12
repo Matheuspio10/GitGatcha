@@ -10,6 +10,7 @@ type ExtendedCard = CardProps & {
   shards?: number;
   userCardId?: string;
   isShiny?: boolean;
+  edition?: string;
   loyaltyCount?: number;
   loyaltyTier?: string;
   loyaltyMilestones?: any[];

@@ -5,6 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { grantGithubLinkRewards } from '@/lib/githubLink';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -117,6 +118,17 @@ export const authOptions: NextAuthOptions = {
         currency: token.currency,
       };
     }
+  },
+  events: {
+    // Fires when a GitHub account gets attached to a player (sign-up with GitHub or "Connect GitHub")
+    async linkAccount({ user, account }) {
+      if (account.provider !== 'github') return;
+      try {
+        await grantGithubLinkRewards(user.id, account.access_token);
+      } catch (err) {
+        console.error('[Auth] GitHub link rewards failed:', (err as Error).message);
+      }
+    },
   },
   pages: {
     signIn: '/login', // Custom login page we will build
