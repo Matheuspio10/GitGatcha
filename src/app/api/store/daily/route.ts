@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { claimDailyReward } from '@/lib/economyService';
-import { prisma } from '@/lib/prisma';
+import { claimDailyReward, getDailyStatus } from '@/lib/economyService';
 import { enforceRateLimit } from '@/lib/rateLimit';
-
-const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+import { syncAchievementsSafe } from '@/lib/achievementService';
 
 export async function GET() {
   try {
@@ -13,25 +11,11 @@ export async function GET() {
     const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { lastDailyClaimAt: true }
-    });
+    const status = await getDailyStatus(userId);
+    if (!status) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-
-    const now = Date.now();
-    if (user.lastDailyClaimAt) {
-      const timeSinceLast = now - user.lastDailyClaimAt.getTime();
-      if (timeSinceLast < DAILY_COOLDOWN_MS) {
-        return NextResponse.json({
-          canClaim: false,
-          remainingMs: DAILY_COOLDOWN_MS - timeSinceLast,
-        });
-      }
-    }
-
-    return NextResponse.json({ canClaim: true, remainingMs: 0 });
+    // canClaim / remainingMs kept at the top level for older clients; `streak` drives the 7-day calendar
+    return NextResponse.json({ canClaim: status.canClaim, remainingMs: status.remainingMs, streak: status });
   } catch (error) {
     console.error('Daily status error:', error);
     return NextResponse.json({ error: 'Failed to check daily status' }, { status: 500 });
@@ -49,7 +33,9 @@ export async function POST(req: Request) {
     if (limited) return limited;
 
     const result = await claimDailyReward(userId);
-    return NextResponse.json(result);
+    // The claim's XP can level the player up (Veteran achievement)
+    const achievementsUnlocked = result.success ? await syncAchievementsSafe(userId) : [];
+    return NextResponse.json({ ...result, achievementsUnlocked });
 
   } catch (error) {
     console.error('Daily reward error:', error);

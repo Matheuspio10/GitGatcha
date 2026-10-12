@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveRandomBattle, getBalancedPowerCap, NoOpponentError } from '@/lib/battleService';
 import { LEAGUES, isLeagueMode } from '@/lib/battleConfig';
 import { advanceMissionProgress } from '@/lib/economyService';
+import { syncAchievementsSafe } from '@/lib/achievementService';
 import { getServerSession } from 'next-auth';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { authOptions } from '@/lib/auth';
@@ -139,6 +140,9 @@ export async function POST(req: Request) {
       }
     }
 
+    // Wins, XP (level) and loyalty can reach achievement tiers; never throws
+    const achievementsUnlocked = await syncAchievementsSafe(userId);
+
     return NextResponse.json({
       success: true,
       battleId: result.battle.id,
@@ -149,6 +153,7 @@ export async function POST(req: Request) {
       log: result.log,
       battleStats: result.battleStats || [],
       loyaltyUnlocks: result.loyaltyUnlocks || [],
+      achievementsUnlocked,
     });
 
   } catch (error) {

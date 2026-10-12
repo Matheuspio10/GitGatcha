@@ -148,3 +148,84 @@ export function useAudioMuted() {
   const isMuted = useSyncExternalStore(subscribeMute, isAudioMuted, () => false);
   return { isMuted, setMuted: setAudioMuted, toggleMuted: toggleAudioMuted };
 }
+
+// ─── Sample playback (files under /public/sounds) ─────────────────────────
+
+const sampleCache = new Map<string, Promise<AudioBuffer | null>>();
+let preferredExt: 'webm' | 'mp3' | null = null;
+
+/** Opus-in-WebM where supported (smaller), MP3 elsewhere (older Safari). */
+function sampleExtension(): 'webm' | 'mp3' {
+  if (preferredExt) return preferredExt;
+  try {
+    const probe = document.createElement('audio');
+    preferredExt = probe.canPlayType('audio/webm; codecs="opus"') ? 'webm' : 'mp3';
+  } catch {
+    preferredExt = 'mp3';
+  }
+  return preferredExt;
+}
+
+function loadSample(name: string): Promise<AudioBuffer | null> {
+  const cached = sampleCache.get(name);
+  if (cached) return cached;
+  const c = createContext();
+  if (!c) return Promise.resolve(null);
+  const ext = sampleExtension();
+  const decode = (url: string) =>
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(buf => c.decodeAudioData(buf));
+  const promise = decode(`/sounds/${name}.${ext}`)
+    .catch(() => (ext === 'webm' ? decode(`/sounds/${name}.mp3`) : Promise.reject()))
+    .catch(() => {
+      sampleCache.delete(name); // allow a retry later
+      return null;
+    });
+  sampleCache.set(name, promise);
+  return promise;
+}
+
+/** Fetches and decodes samples ahead of time, e.g. `preloadSamples(['booster/card_rare'])`. */
+export function preloadSamples(names: string[]) {
+  if (typeof window === 'undefined') return;
+  names.forEach(n => void loadSample(n));
+}
+
+export interface SampleOptions {
+  /** 0..1+ gain for this one-shot (default 1) */
+  volume?: number;
+  /** Playback speed / pitch (default 1) */
+  rate?: number;
+  /** Seconds from now (default 0) */
+  delay?: number;
+}
+
+/**
+ * Plays a sample from `/public/sounds/<name>.(webm|mp3)` through the master
+ * gain (so the global mute applies). Silently does nothing when muted or when
+ * audio is unavailable. `name` is relative, e.g. `booster/card_common`.
+ */
+export function playSample(name: string, { volume = 1, rate = 1, delay = 0 }: SampleOptions = {}) {
+  if (typeof window === 'undefined' || isAudioMuted()) return;
+  const audio = getAudioOutput();
+  if (!audio) return;
+  const requestedAt = audio.ctx.currentTime;
+  void loadSample(name).then(buffer => {
+    if (!buffer || isAudioMuted()) return;
+    const { ctx: c, out } = audio;
+    // Too late (first load took long): drop it rather than play out of sync
+    if (c.currentTime - requestedAt > 0.6) return;
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = rate;
+    const gain = c.createGain();
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(out);
+    src.start(c.currentTime + delay);
+  });
+}

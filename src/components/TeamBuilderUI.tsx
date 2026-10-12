@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sword, Shield, Heart, Lightning, Users, Star, Funnel,
   X, CheckCircle, ArrowsVertical, GameController, MagnifyingGlass,
@@ -10,7 +10,17 @@ import {
 import { CardProps } from '@/components/Card';
 import clsx from 'clsx';
 import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
-import { LEAGUES, type LeagueMode } from '@/lib/battleConfig';
+import {
+  LEAGUES,
+  COMBAT_LANGUAGES,
+  PASSIVE,
+  SYNERGY,
+  TYPE_ADVANTAGE_MULTIPLIER,
+  TYPE_DISADVANTAGE_MULTIPLIER,
+  type LeagueMode,
+} from '@/lib/battleConfig';
+// battleResolver only imports battleConfig (no prisma / server code), so it is client-safe.
+import { getCardType, getTypeMultiplier, type CardType } from '@/lib/battleResolver';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -102,19 +112,12 @@ const LANG_COLOR: Record<string, string> = {
   PHP: 'text-indigo-300',
   HTML: 'text-orange-500',
   CSS: 'text-blue-500',
+  Kotlin: 'text-violet-400',
+  Swift: 'text-orange-400',
+  Dart: 'text-teal-400',
+  Shell: 'text-lime-400',
+  'Jupyter Notebook': 'text-orange-300',
   Unknown: 'text-slate-400',
-};
-
-const TYPE_ADVANTAGES: Record<string, string[]> = {
-  Python: ['JavaScript'],
-  JavaScript: ['Ruby'],
-  Ruby: ['PHP'],
-  PHP: ['Python'],
-  Rust: ['C', 'C++'],
-  C: ['Go'],
-  'C++': ['Go'],
-  Go: ['Rust'],
-  TypeScript: ['JavaScript'],
 };
 
 const SLOT_LABELS = ['Opener', 'Mid', 'Closer'];
@@ -135,6 +138,16 @@ interface SynergyInfo {
   active: boolean;
 }
 
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+/** Combat type the server will give this card (same helper the battle routes call). */
+function cardType(card: TeamBuilderCard): CardType {
+  // The server builds battle cards from the Card row, which has no pack column,
+  // so the pack is deliberately not passed here (keeps the UI identical to the resolver).
+  return getCardType({ primaryLanguage: card.primaryLanguage, rarity: card.rarity });
+}
+
+/** Mirrors applySynergies() in battleResolver.ts; numbers come from SYNERGY / PASSIVE. */
 function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
   const filled = cards.filter(Boolean) as TeamBuilderCard[];
   if (filled.length === 0) return [];
@@ -142,68 +155,65 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
   const results: SynergyInfo[] = [];
   const typeCounts: Record<string, number> = {};
   filled.forEach(c => {
-    const t = c.primaryLanguage || 'Unknown';
+    const t = cardType(c);
     typeCounts[t] = (typeCounts[t] || 0) + 1;
   });
 
   const uniqueCount = Object.keys(typeCounts).length;
 
-  const CORE_LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Rust', 'Go', 'Ruby', 'C', 'C++', 'CSS', 'PHP'];
+  // Jupyter Notebook runs a Python kernel: it counts as Python for the Python Synergy
+  const pythonCount = (typeCounts['Python'] || 0) + (typeCounts['Jupyter Notebook'] || 0);
+  const synergyCounts: [string, number][] = [
+    ['Python', pythonCount],
+    ['Rust', typeCounts['Rust'] || 0],
+    ['JavaScript', typeCounts['JavaScript'] || 0],
+    ['Go', typeCounts['Go'] || 0],
+  ];
 
-  // Pair/Triple synergies
-  Object.keys(typeCounts).forEach(type => {
-    const count = typeCounts[type];
-    if (count >= 2 && CORE_LANGUAGES.includes(type)) {
-      const mult = count === 3 ? 2 : 1;
-      if (type === 'Python') {
-        results.push({
-          label: `${count}× Python`,
-          description: `All cards regenerate ${(3 * mult)}% HP per turn`,
-          color: 'text-cyan-400',
-          icon: '🐍',
-          active: true,
-        });
-      } else if (type === 'JavaScript') {
-        results.push({
-          label: `${count}× JavaScript`,
-          description: `${(10 * mult)}% chance of double callback damage`,
-          color: 'text-yellow-400',
-          icon: '⚡',
-          active: true,
-        });
-      } else if (type === 'Rust') {
-        results.push({
-          label: `${count}× Rust`,
-          description: `All cards take ${(10 * mult)}% less damage`,
-          color: 'text-orange-400',
-          icon: '🛡️',
-          active: true,
-        });
-      } else if (type === 'Go') {
-        results.push({
-          label: `${count}× Go`,
-          description: `All Go cards gain First Strike on entry`,
-          color: 'text-cyan-300',
-          icon: '⚡',
-          active: true,
-        });
-      } else {
-        results.push({
-          label: `${count}× ${type}`,
-          description: `${type} team synergy active`,
-          color: 'text-purple-400',
-          icon: '✨',
-          active: true,
-        });
-      }
+  // Pair/Triple synergies (a triple doubles the effect)
+  synergyCounts.forEach(([type, count]) => {
+    if (count < 2) return;
+    const mult = count === 3 ? 2 : 1;
+    if (type === 'Python') {
+      results.push({
+        label: `${count}× Python`,
+        description: `Non-Python teammates heal ${pct(SYNERGY.pythonRegenAtkPct * mult)} of their ATK per turn (Python cards keep their own ${pct(PASSIVE.python.regenAtkPct)}; Jupyter counts as Python)`,
+        color: 'text-cyan-400',
+        icon: '🐍',
+        active: true,
+      });
+    } else if (type === 'JavaScript') {
+      results.push({
+        label: `${count}× JavaScript`,
+        description: `Non-JS teammates get a ${pct(SYNERGY.jsCallbackChance * mult)} Double Callback chance (+${pct(PASSIVE.javascript.bonus)} damage)`,
+        color: 'text-yellow-400',
+        icon: '⚡',
+        active: true,
+      });
+    } else if (type === 'Rust') {
+      results.push({
+        label: `${count}× Rust`,
+        description: `All cards take ${pct(SYNERGY.rustDamageReduction * mult)} less damage`,
+        color: 'text-orange-400',
+        icon: '🛡️',
+        active: true,
+      });
+    } else if (type === 'Go') {
+      results.push({
+        label: `${count}× Go`,
+        description: 'All cards gain First Strike on entry',
+        color: 'text-cyan-300',
+        icon: '⚡',
+        active: true,
+      });
     }
   });
 
-  // Mixed team bonus when all 3 filled and all unique
+  // Mixed team bonus when all 3 filled and all combat types differ (Neutral counts as one type)
   if (filled.length === 3 && uniqueCount === 3) {
     results.push({
       label: 'Mixed Team',
-      description: '+8% ATK for all cards',
+      description: `+${pct(SYNERGY.mixedTeamAtk)} ATK for all cards`,
       color: 'text-emerald-400',
       icon: '🌈',
       active: true,
@@ -221,15 +231,14 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     });
   }
 
-  // Default mixed team info when 3 cards but no pair
-  if (results.length === 0 && filled.length === 3 && uniqueCount < 3) {
-    // This covers pairs not matching above (e.g. Java)
+  // Full team with a repeated type that has no synergy (e.g. 2× Java, 2× Neutral)
+  if (results.length === 0 && filled.length === 3) {
     results.push({
       label: 'No synergy',
-      description: 'Mixed team: +8% ATK for all cards',
+      description: `Use 3 different types for Mixed Team (+${pct(SYNERGY.mixedTeamAtk)} ATK), or pair Python, Rust, JavaScript or Go`,
       color: 'text-slate-400',
       icon: '⚔️',
-      active: true,
+      active: false,
     });
   }
 
@@ -505,11 +514,11 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
   useEffect(() => {
     const activeCount = activeSynergies.length;
     if (activeCount > prevSynergyCountRef.current) {
-      setPulsing(true);
+      setTimeout(() => setPulsing(true), 0);
       setTimeout(() => setPulsing(false), 1500);
     }
     prevSynergyCountRef.current = activeCount;
-  }, [activeSynergies.length]);
+  }, [activeSynergies.length, prevSynergyCountRef]);
 
   return (
     <motion.div
@@ -565,19 +574,11 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
 
 // ─── Type Chart Panel (Pokémon-style matrix) ─────────────────────────────────
 
-const ALL_TYPES = ['Python', 'JavaScript', 'Ruby', 'PHP', 'TypeScript', 'Rust', 'C', 'C++', 'Go', 'CSS'];
+// Every combat language from battleConfig; multipliers come from the resolver itself.
+const ALL_TYPES: readonly CardType[] = COMBAT_LANGUAGES;
 
-function getMatchupMultiplier(attacker: string, defender: string): number {
-  // CSS loses to every type
-  if (attacker === 'CSS') {
-    return defender === 'CSS' ? 1 : 0.75;
-  }
-  // Check advantage
-  if (TYPE_ADVANTAGES[attacker]?.includes(defender)) return 1.5;
-  // Check disadvantage (defender has advantage over attacker)
-  if (TYPE_ADVANTAGES[defender]?.includes(attacker)) return 0.75;
-  return 1;
-}
+/** Light badge colours that need dark text. */
+const DARK_TEXT_TYPES = new Set<string>(['JavaScript', 'Shell']);
 
 const LANG_BG_HEX: Record<string, string> = {
   Python:     '#3572A5',
@@ -590,6 +591,14 @@ const LANG_BG_HEX: Record<string, string> = {
   'C++':      '#6866fb',
   Go:         '#00ADD8',
   CSS:        '#563d7c',
+  Java:       '#b07219',
+  'C#':       '#178600',
+  Kotlin:     '#A97BFF',
+  Swift:      '#F05138',
+  Dart:       '#00B4AB',
+  Shell:      '#89e051',
+  HTML:       '#e34c26',
+  'Jupyter Notebook': '#DA5B0B',
 };
 
 function TypeChartPanel({ onClose }: { onClose: () => void }) {
@@ -642,7 +651,7 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
                         className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded"
                         style={{
                           backgroundColor: LANG_BG_HEX[t] || '#475569',
-                          color: t === 'JavaScript' ? '#1a1a1a' : '#fff',
+                          color: DARK_TEXT_TYPES.has(t) ? '#1a1a1a' : '#fff',
                         }}
                       >
                         {t}
@@ -662,14 +671,14 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
                     className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
                     style={{
                       backgroundColor: LANG_BG_HEX[attacker] || '#475569',
-                      color: attacker === 'JavaScript' ? '#1a1a1a' : '#fff',
+                      color: DARK_TEXT_TYPES.has(attacker) ? '#1a1a1a' : '#fff',
                     }}
                   >
                     {attacker}
                   </span>
                 </td>
                 {ALL_TYPES.map(defender => {
-                  const mult = getMatchupMultiplier(attacker, defender);
+                  const mult = getTypeMultiplier(attacker, defender);
                   const isSelf = attacker === defender;
                   let bgClass = '';
                   let textClass = '';
@@ -677,14 +686,14 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
 
                   if (isSelf) {
                     bgClass = 'bg-slate-800/40';
-                  } else if (mult === 1.5) {
+                  } else if (mult === TYPE_ADVANTAGE_MULTIPLIER) {
                     bgClass = 'bg-green-600/70';
                     textClass = 'text-white font-black';
-                    label = '1.5×';
-                  } else if (mult === 0.75) {
+                    label = `${TYPE_ADVANTAGE_MULTIPLIER}×`;
+                  } else if (mult === TYPE_DISADVANTAGE_MULTIPLIER) {
                     bgClass = 'bg-red-600/70';
                     textClass = 'text-white font-black';
-                    label = '0.75×';
+                    label = `${TYPE_DISADVANTAGE_MULTIPLIER}×`;
                   } else {
                     bgClass = 'bg-slate-800/20';
                   }
@@ -718,18 +727,18 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
       <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-green-600/70 border border-green-500/40" />
-          <span>1.5× (super effective)</span>
+          <span>{TYPE_ADVANTAGE_MULTIPLIER}× (super effective)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-red-600/70 border border-red-500/40" />
-          <span>0.75× (not very effective)</span>
+          <span>{TYPE_DISADVANTAGE_MULTIPLIER}× (not very effective)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-slate-800/40 border border-slate-700/40" />
           <span>1× (neutral)</span>
         </div>
       </div>
-      <p className="text-[9px] text-slate-500 mt-1.5">CSS deals 0.75× against all types (chaotic wildcard).</p>
+      <p className="text-[9px] text-slate-500 mt-1.5">CSS deals {TYPE_DISADVANTAGE_MULTIPLIER}× against every typed language (chaotic wildcard). Languages outside the chart are Neutral: 1× against everything.</p>
     </motion.div>
   );
 }

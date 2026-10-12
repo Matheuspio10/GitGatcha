@@ -26,13 +26,23 @@ export const STAR_BONUS_THRESHOLD: Partial<Record<Rarity, number>> = {
   Epic: 30_000,
 };
 
-/** Stat multiplier applied on top of the raw GitHub-derived stats. */
+/**
+ * Stat multiplier of the 'impact' stat formula (src/lib/cardStats.ts). The
+ * live 'fame' formula uses FAME_RARITY_MULTIPLIER there; use
+ * `rarityMultipliers()` / `ACTIVE_RARITY_MULTIPLIER` from cardStats.ts for the
+ * multiplier actually applied to cards.
+ *
+ * Deliberately small: higher follower bands already come with more repos,
+ * older accounts and more stars, so the profile itself carries most of the
+ * rarity gap (tuned with src/lib/balanceSim.ts — the old 0.5→2.5, and even
+ * 0.85→1.35, made rarity decide ~99% of battles).
+ */
 export const RARITY_STAT_MULTIPLIER: Record<Rarity, number> = {
-  Common: 0.5,
-  Uncommon: 0.8,
-  Rare: 1.2,
-  Epic: 1.8,
-  Legendary: 2.5,
+  Common: 1.0,
+  Uncommon: 1.0,
+  Rare: 1.0,
+  Epic: 1.02,
+  Legendary: 1.03,
 };
 
 /**

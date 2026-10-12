@@ -16,6 +16,8 @@ import { Card } from '@/components/Card';
 import { UserAvatar } from '@/components/UserAvatar';
 import { EditProfileModal } from '@/components/EditProfileModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { AchievementView } from '@/lib/achievementUtils';
+import { notifyAchievements } from '@/lib/achievementToast';
 
 interface FriendInfo {
   id: string;
@@ -24,13 +26,14 @@ interface FriendInfo {
   image?: string | null;
 }
 
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-}
+type Achievement = AchievementView;
+
+const TIER_STYLES: Record<number, { label: string; text: string; ring: string; bg: string; bar: string }> = {
+  0: { label: 'Locked', text: 'text-slate-500', ring: 'border-slate-800/80', bg: 'bg-slate-900/40', bar: 'from-slate-600 to-slate-400' },
+  1: { label: 'Bronze', text: 'text-orange-300', ring: 'border-orange-700/60', bg: 'bg-orange-900/10', bar: 'from-orange-700 to-orange-400' },
+  2: { label: 'Silver', text: 'text-slate-200', ring: 'border-slate-400/60', bg: 'bg-slate-500/10', bar: 'from-slate-400 to-slate-100' },
+  3: { label: 'Gold', text: 'text-yellow-300', ring: 'border-yellow-500/60', bg: 'bg-yellow-500/10', bar: 'from-yellow-600 to-yellow-300' },
+};
 
 interface RecentBattle {
   id: string;
@@ -146,7 +149,11 @@ export default function ProfilePage() {
     try {
       const res = await fetch(`/api/profile/${profileUsername}`);
       const data = await res.json();
-      if (res.ok) setProfile(data);
+      if (res.ok) {
+        setProfile(data);
+        // Own profile: tiers reached since the last sync were just persisted and paid
+        notifyAchievements(data.achievementsUnlocked);
+      }
       else setError(data.error);
     } catch { setError('Failed to load profile'); }
     finally { setLoading(false); }
@@ -394,11 +401,14 @@ export default function ProfilePage() {
             <Medal size={28} weight="duotone" className="text-yellow-400" />
             Achievements
           </h2>
-          <p className="text-slate-500 text-xs font-medium mb-6">{profile.achievements.filter(a => a.unlocked).length} / {profile.achievements.length} unlocked</p>
+          <p className="text-slate-500 text-xs font-medium mb-6">
+            {profile.achievements.reduce((n, a) => n + a.tier, 0)} / {profile.achievements.reduce((n, a) => n + a.maxTier, 0)} tiers unlocked
+          </p>
 
           <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
             {profile.achievements.map(achievement => {
               const isActive = achievementPopover === achievement.id;
+              const style = TIER_STYLES[achievement.tier] ?? TIER_STYLES[0];
               return (
                 <div
                   key={achievement.id}
@@ -406,17 +416,22 @@ export default function ProfilePage() {
                 >
                   <button
                     onClick={() => setAchievementPopover(isActive ? null : achievement.id)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all min-w-[80px] hover:-translate-y-1 cursor-pointer ${
-                      achievement.unlocked
-                        ? 'bg-slate-800/60 border-slate-700 hover:border-indigo-500/50'
-                        : 'bg-slate-900/40 border-slate-800/50 opacity-50 grayscale'
-                    } ${isActive ? 'ring-2 ring-indigo-500 bg-slate-800/80 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : ''}`}
+                    aria-label={`${achievement.name}: ${achievement.unlocked ? style.label : 'locked'}`}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all w-[104px] hover:-translate-y-1 cursor-pointer ${style.ring} ${style.bg} ${
+                      achievement.unlocked ? 'hover:border-indigo-500/50' : 'opacity-70'
+                    } ${isActive ? 'ring-2 ring-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : ''}`}
                   >
-                    <span className="text-2xl">{achievement.icon}</span>
-                    <span className={`text-[10px] font-bold text-center leading-tight ${achievement.unlocked ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {achievement.unlocked ? achievement.name : '???'}
+                    <span className={`text-2xl ${achievement.unlocked ? '' : 'grayscale'}`}>{achievement.icon}</span>
+                    <span className={`text-[10px] font-bold text-center leading-tight ${achievement.unlocked ? 'text-slate-200' : 'text-slate-400'}`}>
+                      {achievement.name}
                     </span>
-                    {!achievement.unlocked && <Lock size={10} className="text-slate-600" />}
+                    <span className={`text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${style.text}`}>
+                      {!achievement.unlocked && <Lock size={9} />}
+                      {style.label}
+                    </span>
+                    <div className="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
+                      <div className={`h-full bg-gradient-to-r ${style.bar}`} style={{ width: `${achievement.progressPercent}%` }} />
+                    </div>
                   </button>
                 </div>
               );
@@ -436,27 +451,48 @@ export default function ProfilePage() {
                 {(() => {
                   const achievement = profile.achievements.find(a => a.id === achievementPopover);
                   if (!achievement) return null;
+                  const maxed = achievement.nextThreshold === null;
                   return (
-                    <div className="mt-2 bg-slate-800/60 border border-slate-700 rounded-2xl p-4 flex items-center gap-4 shadow-inner">
-                      <div className="text-4xl bg-slate-900/50 w-16 h-16 shrink-0 flex items-center justify-center rounded-xl border border-slate-700/50 shadow-md">
+                    <div className="mt-2 bg-slate-800/60 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 shadow-inner">
+                      <div className={`text-4xl bg-slate-900/50 w-16 h-16 shrink-0 flex items-center justify-center rounded-xl border border-slate-700/50 shadow-md ${achievement.unlocked ? '' : 'grayscale'}`}>
                         {achievement.icon}
                       </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-bold text-white mb-1">
-                          {achievement.unlocked ? achievement.name : 'Unknown Achievement'}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white mb-1">{achievement.name}</div>
                         <div className="text-xs text-slate-400 leading-relaxed">
-                          {achievement.unlocked ? achievement.description : 'Keep playing and exploring to discover how to unlock this hidden achievement.'}
+                          {maxed ? `Completed: ${achievement.description}` : `Next: ${achievement.description}`}
+                          {!maxed && achievement.nextReward !== null && (
+                            <span className="text-yellow-400 font-bold"> · +{achievement.nextReward} Bits</span>
+                          )}
                         </div>
-                        {achievement.unlocked ? (
-                          <div className="text-xs text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
-                            <Check size={14} weight="bold" /> Unlocked
-                          </div>
-                        ) : (
-                          <div className="text-xs text-slate-500 font-bold mt-2 flex items-center gap-1.5">
-                            <Lock size={14} weight="bold" /> Locked
+                        {!maxed && (
+                          <div className="mt-2">
+                            <div className="flex justify-between text-[10px] text-slate-500 font-mono mb-1">
+                              <span>Progress</span>
+                              <span>{Math.min(achievement.value, achievement.nextThreshold ?? 0)} / {achievement.nextThreshold}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-slate-900 overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-300" style={{ width: `${achievement.progressPercent}%` }} />
+                            </div>
                           </div>
                         )}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {achievement.tiers.map(t => {
+                            const ts = TIER_STYLES[t.tier] ?? TIER_STYLES[0];
+                            return (
+                              <span
+                                key={t.tier}
+                                title={t.unlockedAt ? `Unlocked ${new Date(t.unlockedAt).toLocaleDateString()}` : 'Locked'}
+                                className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
+                                  t.unlocked ? `${ts.ring} ${ts.bg} ${ts.text}` : 'border-slate-700 bg-slate-900/50 text-slate-500'
+                                }`}
+                              >
+                                {t.unlocked ? <Check size={10} weight="bold" /> : <Lock size={10} weight="bold" />}
+                                {t.name}: {t.threshold} · {t.reward} Bits
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );

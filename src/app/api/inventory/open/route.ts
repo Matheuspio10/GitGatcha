@@ -6,6 +6,7 @@ import { withUserLock, asArray } from '@/lib/userLock';
 import { openBoosterPack, refillBoosterReserve } from '@/lib/boosterService';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { grantXP, InventoryItem, XP_AMOUNTS } from '@/lib/xpService';
+import { syncAchievementsSafe } from '@/lib/achievementService';
 
 // Covers the opening plus the reserve refill that runs after the response
 export const maxDuration = 120;
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
       });
       throw err;
     }
-    const { newCards, packDropFragments } = opened;
+    const { newCards, packDropFragments, pity } = opened;
 
     // Grant XP for opening a booster
     const xpResult = await grantXP(userId, XP_AMOUNTS.OPEN_BOOSTER);
@@ -65,6 +66,9 @@ export async function POST(req: Request) {
       console.error('Mission progress error:', err);
     }
 
+    // New cards (and the XP) can reach achievement tiers; pays them once, never throws
+    const achievementsUnlocked = await syncAchievementsSafe(userId);
+
     // Top the booster's reserve back up once the player already has their cards
     after(() => refillBoosterReserve(userId, packId));
 
@@ -74,6 +78,8 @@ export async function POST(req: Request) {
       packDropFragments,
       xpGained: XP_AMOUNTS.OPEN_BOOSTER,
       xpResult,
+      pity,
+      achievementsUnlocked,
     });
   } catch (error) {
     console.error('Open pack error:', error);

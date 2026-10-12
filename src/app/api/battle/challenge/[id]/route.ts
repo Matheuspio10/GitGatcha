@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveFriendBattle } from '@/lib/battleService';
 import { advanceMissionProgress } from '@/lib/economyService';
+import { syncAchievementsSafe } from '@/lib/achievementService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
@@ -105,6 +106,13 @@ export async function POST(
       console.error('Mission progress error:', err);
     }
 
+    // Both players may reach achievement tiers; the defender (this request) gets the toasts,
+    // the challenger's are paid now and shown on their profile. Never throws.
+    const [achievementsUnlocked] = await Promise.all([
+      syncAchievementsSafe(userId),
+      syncAchievementsSafe(battle.challengerId),
+    ]);
+
     return NextResponse.json({
       success: true,
       battleId: result.battle.id,
@@ -117,6 +125,7 @@ export async function POST(
       defenderTeam: result.defenderTeam,
       battleStats: result.battle.battleStats,
       loyaltyUnlocks: result.loyaltyUnlocks,
+      achievementsUnlocked,
     });
 
   } catch (error: any) {

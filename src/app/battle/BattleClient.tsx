@@ -12,6 +12,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
+import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
 
 // Types
 interface TurnEvent {
@@ -328,6 +329,7 @@ function BattleReplay({
   leagueMode,
   battleStats,
   loyaltyUnlocks,
+  achievementsUnlocked,
 }: {
   log: TurnLog[];
   challengerTeam: TeamCard[];
@@ -339,6 +341,7 @@ function BattleReplay({
   leagueMode?: string;
   battleStats?: any[];
   loyaltyUnlocks?: { cardId: string; cardName: string; milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[] }[];
+  achievementsUnlocked?: AchievementUnlockNotice[];
 }) {
   const [currentTurn, setCurrentTurn] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -395,6 +398,8 @@ function BattleReplay({
   const [activePassiveMsg, setActivePassiveMsg] = useState<string | null>(null);
   const [isLogOpenMobile, setIsLogOpenMobile] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  // Achievement toasts wait for the results too (they'd spoil the outcome), shown once
+  const achievementsRef = useRef(achievementsUnlocked);
 
   // Trigger end state hold
   useEffect(() => {
@@ -405,6 +410,8 @@ function BattleReplay({
         // Rewards were granted server-side; resync Navbar BITS / LevelUpModal now
         // (not at battle start, so the replay doesn't spoil the result).
         window.dispatchEvent(new Event('bits:refresh'));
+        notifyAchievements(achievementsRef.current);
+        achievementsRef.current = undefined;
       }, 2500);
       return () => clearTimeout(timer);
     }
@@ -1006,6 +1013,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     rewards: { bits: number; xp: number };
     battleStats?: any[];
     loyaltyUnlocks?: any[];
+    achievementsUnlocked?: AchievementUnlockNotice[];
   } | null>(null);
 
   // Challenge state
@@ -1077,6 +1085,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           rewards: data.rewards,
           battleStats: data.battleStats,
           loyaltyUnlocks: data.loyaltyUnlocks,
+          achievementsUnlocked: data.achievementsUnlocked,
         });
       } else {
         toast.error(data.error || 'Battle failed to initiate.');
@@ -1147,6 +1156,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           rewards: data.defenderRewards,
           battleStats: data.battleStats,
           loyaltyUnlocks: data.loyaltyUnlocks,
+          achievementsUnlocked: data.achievementsUnlocked,
         });
         setRespondingToId(null);
         setRespondingToChallenger('');
@@ -1180,6 +1190,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           leagueMode={leagueMode}
           battleStats={replayData.battleStats}
           loyaltyUnlocks={replayData.loyaltyUnlocks}
+          achievementsUnlocked={replayData.achievementsUnlocked}
         />
       </div>
     );

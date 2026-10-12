@@ -11,7 +11,7 @@ import {
   stopAmbientDrone,
 } from '@/lib/hackingAudio';
 import { useAudioMuted } from '@/lib/audioManager';
-import { SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react';
+import { SpeakerHigh, SpeakerSlash, FastForward } from '@phosphor-icons/react';
 import './HackingMiniGame.css';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -220,6 +220,19 @@ export function HackingMiniGame({
     `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`
   );
 
+  // Skip: the player can leave at any time; if the API is still pending we
+  // finish as soon as it resolves.
+  const [skipRequested, setSkipRequested] = useState(false);
+  const doneRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+  const finish = useCallback(() => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    stopAmbientDrone();
+    onCompleteRef.current();
+  }, []);
+
   const apiResolvedRef = useRef(apiResolved);
   const hintTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hintGivenRef = useRef(false);
@@ -391,6 +404,28 @@ export function HackingMiniGame({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Skip ──
+  useEffect(() => {
+    if (skipRequested && apiResolved && !apiError) finish();
+  }, [skipRequested, apiResolved, apiError, finish]);
+
+  const requestSkip = useCallback(() => {
+    if (apiResolvedRef.current) finish();
+    else setSkipRequested(true);
+  }, [finish]);
+
+  // Esc skips too
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        requestSkip();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [requestSkip]);
 
   // ── Handle API error ──
   useEffect(() => {
@@ -619,7 +654,7 @@ export function HackingMiniGame({
         }, 600);
 
         setTimeout(() => {
-          onComplete();
+          finish();
         }, 2200);
       } else {
         setGridAnimClass('hacking-grid-dissolve');
@@ -630,7 +665,7 @@ export function HackingMiniGame({
         }, 350);
       }
     }, completionDelay);
-  }, [puzzleCount, onComplete, initPuzzle]);
+  }, [puzzleCount, finish, initPuzzle]);
 
   // ── Movement handler ──
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
@@ -1089,6 +1124,21 @@ export function HackingMiniGame({
           <div className="hacking-hud-label">
             Nodes: {puzzleCount}
           </div>
+
+          {/* Skip straight to the reveal */}
+          <button
+            type="button"
+            className={`hacking-skip${skipRequested ? ' waiting' : ''}`}
+            onClick={requestSkip}
+            onTouchStart={e => e.stopPropagation()}
+            onTouchEnd={e => e.stopPropagation()}
+            disabled={skipRequested}
+            aria-label={skipRequested ? 'Skipping, waiting for the pack data' : 'Skip the mini-game and reveal the cards'}
+            title="Skip (Esc)"
+          >
+            {skipRequested ? 'Loading…' : 'Skip'}
+            <FastForward size={14} weight="bold" />
+          </button>
 
           {/* Mute toggle */}
           <button

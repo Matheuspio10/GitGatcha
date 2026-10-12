@@ -1,7 +1,10 @@
 import { prisma } from './prisma';
 import { randomInt } from 'node:crypto';
-import { withUserLock, Tx } from './userLock';
-import { grantXP, XP_AMOUNTS } from './xpService';
+import { Prisma } from '@prisma/client';
+import { withUserLock, Tx, asArray } from './userLock';
+import { grantXP, InventoryItem, XP_AMOUNTS } from './xpService';
+import { getPackById } from './packDefinitions';
+import { DAILY_COOLDOWN_MS, loginCalendarState, nextStreakDay, rewardForDay } from './loginCalendar';
 import {
   DAILY_MISSION_COUNT,
   MISSION_POOL,
@@ -107,47 +110,78 @@ export async function grantCurrency(userId: string, amount: number) {
   });
 }
 
-const DAILY_REWARD_AMOUNT = 100;
-const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+/** Login-calendar status of the player (for the store's 7-day calendar). Null when the user doesn't exist. */
+export async function getDailyStatus(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastDailyClaimAt: true, loginStreak: true },
+  });
+  if (!user) return null;
+  return loginCalendarState(user.loginStreak, user.lastDailyClaimAt, new Date());
+}
 
+/**
+ * Daily reward with a 7-day login calendar: one claim every 24h; claiming within
+ * 48h of the previous claim moves the streak forward (1 → 7, then a new cycle),
+ * otherwise it restarts at day 1. Day 7 also adds a booster to the inventory.
+ */
 export async function claimDailyReward(userId: string) {
   return withUserLock(userId, async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { lastDailyClaimAt: true }
+      select: { lastDailyClaimAt: true, loginStreak: true }
     });
 
     if (!user) return { success: false as const, error: 'User not found' };
 
     const now = new Date();
+    const status = loginCalendarState(user.loginStreak, user.lastDailyClaimAt, now);
 
-    if (user.lastDailyClaimAt) {
-      const timeSinceLast = now.getTime() - user.lastDailyClaimAt.getTime();
-      if (timeSinceLast < DAILY_COOLDOWN_MS) {
-        const nextClaimAt = new Date(user.lastDailyClaimAt.getTime() + DAILY_COOLDOWN_MS);
-        return {
-          success: false as const,
-          error: 'Daily reward already claimed',
-          nextClaimAt: nextClaimAt.toISOString(),
-          remainingMs: DAILY_COOLDOWN_MS - timeSinceLast,
-        };
-      }
+    if (!status.canClaim && user.lastDailyClaimAt) {
+      return {
+        success: false as const,
+        error: 'Daily reward already claimed',
+        nextClaimAt: new Date(user.lastDailyClaimAt.getTime() + DAILY_COOLDOWN_MS).toISOString(),
+        remainingMs: status.remainingMs,
+        streak: status,
+      };
     }
 
-    const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK, DAILY_REWARD_AMOUNT, tx);
+    const day = nextStreakDay(user.loginStreak, user.lastDailyClaimAt, now);
+    const reward = rewardForDay(day);
+
+    // XP (and the BITS) first: a level-up may add boosters to the inventory, read it afterwards
+    const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK, reward.bits, tx);
+
+    let packGranted: InventoryItem | null = null;
+    const data: Prisma.UserUpdateInput = { lastDailyClaimAt: now, loginStreak: day };
+    if (reward.packId) {
+      const pack = getPackById(reward.packId);
+      const after = await tx.user.findUnique({ where: { id: userId }, select: { inventory: true } });
+      packGranted = {
+        packId: reward.packId,
+        packName: pack?.name ?? reward.packName ?? reward.packId,
+        acquiredAt: now.toISOString(),
+        source: 'login_streak',
+      };
+      data.inventory = [...asArray<InventoryItem>(after?.inventory), packGranted] as unknown as Prisma.InputJsonValue;
+    }
 
     const updated = await tx.user.update({
       where: { id: userId },
-      data: { lastDailyClaimAt: now },
+      data,
       select: { currency: true },
     });
 
     return {
       success: true as const,
-      amount: DAILY_REWARD_AMOUNT,
+      amount: reward.bits,
       newCurrency: updated.currency,
       xpResult,
       nextClaimAt: new Date(now.getTime() + DAILY_COOLDOWN_MS).toISOString(),
+      day,
+      packGranted,
+      streak: loginCalendarState(day, now, now),
     };
   });
 }

@@ -1,6 +1,20 @@
-import { getLoyaltyBonuses, PASSIVE_RARITY_MULTIPLIER } from './battleConfig';
+import {
+  COMBAT_LANGUAGES,
+  defMitigation,
+  getLoyaltyBonuses,
+  isCombatLanguage,
+  MATCHUP_TURN_CAP,
+  MOMENTUM_BONUS_PER_STACK,
+  PASSIVE,
+  PASSIVE_RARITY_MULTIPLIER,
+  SYNERGY,
+  TYPE_ADVANTAGE_MULTIPLIER,
+  TYPE_ADVANTAGES,
+  TYPE_DISADVANTAGE_MULTIPLIER,
+} from './battleConfig';
 
-export type CardType = 'Python' | 'JavaScript' | 'Ruby' | 'PHP' | 'Rust' | 'C' | 'C++' | 'Go' | 'TypeScript' | 'CSS' | 'Neutral' | 'Legendary';
+/** A combat language (see COMBAT_LANGUAGES), 'Neutral', or the special 'Legendary' pack type. */
+export type CardType = (typeof COMBAT_LANGUAGES)[number] | 'Neutral' | 'Legendary';
 export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 
 export interface BattleCard {
@@ -53,21 +67,21 @@ export interface BattleResult {
   defenderTeamState: BattleCard[];
 }
 
+export interface ResolveOptions {
+  /** Random source in [0, 1). Defaults to Math.random; the balance simulator passes a seeded one. */
+  rng?: () => number;
+}
+
 // ---------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------
 
-export function getCardType(card: any): CardType {
+export function getCardType(card: { primaryLanguage?: string | null; rarity?: string; pack?: string }): CardType {
+  // 'Legendary' type is reserved for a future "GitHub OGs" pack (Card has no pack column yet).
   if (card.rarity === 'Legendary' && card.pack === 'GitHub OGs') {
     return 'Legendary';
   }
-  const lang = card.primaryLanguage;
-  if (!lang) return 'Neutral';
-  
-  if (lang === 'Python' || lang === 'JavaScript' || lang === 'Ruby' || lang === 'PHP' || lang === 'Rust' || lang === 'C' || lang === 'C++' || lang === 'Go' || lang === 'TypeScript' || lang === 'CSS') {
-    return lang as CardType;
-  }
-  return 'Neutral';
+  return isCombatLanguage(card.primaryLanguage) ? card.primaryLanguage : 'Neutral';
 }
 
 function getRarityMultiplier(rarity: string): number {
@@ -104,53 +118,56 @@ export function decideBattleWinner(
 }
 
 // ---------------------------------------------------------
-// Type Matchups (1.5x / 0.75x)
+// Type Matchups (1.5x / 0.75x) — chart in battleConfig.TYPE_ADVANTAGES
 // ---------------------------------------------------------
-function getTypeMultiplier(attackerType: CardType, defenderType: CardType): number {
-  const advantages: Record<string, string[]> = {
-    'Python': ['JavaScript'],
-    'JavaScript': ['Ruby'],
-    'Ruby': ['PHP'],
-    'PHP': ['Python'],
-    'Rust': ['C', 'C++'],
-    'C': ['Go'],
-    'C++': ['Go'],
-    'Go': ['Rust'],
-    'TypeScript': ['JavaScript']
-  };
-
+export function getTypeMultiplier(attackerType: CardType, defenderType: CardType): number {
   // CSS loses to every type (deals 0.75x except vs CSS/Legendary/Neutral)
   if (attackerType === 'CSS') {
     if (defenderType !== 'CSS' && defenderType !== 'Legendary' && defenderType !== 'Neutral') {
-      return 0.75;
+      return TYPE_DISADVANTAGE_MULTIPLIER;
     }
     return 1.0;
   }
-
-  if (advantages[attackerType] && advantages[attackerType].includes(defenderType)) {
-    return 1.5;
+  if (attackerType === 'Neutral' || attackerType === 'Legendary' || defenderType === 'Neutral' || defenderType === 'Legendary') {
+    return 1.0;
   }
-
-  // Reverse: check if attacker is at a type disadvantage
-  let isDisadvantage = false;
-  Object.keys(advantages).forEach(t => {
-    if (advantages[t].includes(attackerType as string) && t === (defenderType as string)) {
-      isDisadvantage = true;
-    }
-  });
-
-  if (isDisadvantage) return 0.75;
-
+  if (TYPE_ADVANTAGES[attackerType]?.includes(defenderType)) return TYPE_ADVANTAGE_MULTIPLIER;
+  if (TYPE_ADVANTAGES[defenderType]?.includes(attackerType)) return TYPE_DISADVANTAGE_MULTIPLIER;
   return 1.0;
+}
+
+/** Raw hit before passives: ATK × K / (K + DEF), never below 1. */
+function mitigatedDamage(atk: number, def: number): number {
+  return Math.max(1, Math.floor(atk * (1 - defMitigation(def))));
+}
+
+/** Per-card battle state that must not leak into the returned team state. */
+interface CardState {
+  pySynergy: number;
+  rustSynergy: number;
+  jsSynergy: number;
+  goSynergy: boolean;
+  ironShield: boolean;
+  phpSuppressUsed: boolean;
+  dartReloadUsed: boolean;
 }
 
 // ---------------------------------------------------------
 // Core Resolver Function
 // ---------------------------------------------------------
-export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: BattleCard[]): BattleResult {
+export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: BattleCard[], options: ResolveOptions = {}): BattleResult {
+  const rng = options.rng ?? Math.random;
+
   // Deep copy teams
   const cTeam = JSON.parse(JSON.stringify(cTeamInitial)) as BattleCard[];
   const dTeam = JSON.parse(JSON.stringify(dTeamInitial)) as BattleCard[];
+
+  const state = new Map<BattleCard, CardState>();
+  [...cTeam, ...dTeam].forEach(c => state.set(c, {
+    pySynergy: 0, rustSynergy: 0, jsSynergy: 0, goSynergy: false,
+    ironShield: false, phpSuppressUsed: false, dartReloadUsed: false,
+  }));
+  const st = (c: BattleCard) => state.get(c)!;
 
   // Apply loyalty bonuses FIRST (permanent multiplier on base stats)
   const applyLoyaltyBonuses = (team: BattleCard[]) => {
@@ -192,6 +209,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   // Synergies initialization
   const applySynergies = (team: BattleCard[], isChallenger: boolean) => {
     const events: BattleLogEvent[] = [];
+    const side = isChallenger ? 'Challenger' : 'Defender';
     const typeCounts: Record<string, number> = {};
     team.forEach(c => {
       typeCounts[c.type] = (typeCounts[c.type] || 0) + 1;
@@ -199,32 +217,28 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // Check mixed team (all 3 unique)
     if (Object.keys(typeCounts).length === 3) {
-      team.forEach(c => c.atk = Math.floor(c.atk * 1.08));
-      events.push({ type: 'synergy', message: `${isChallenger ? 'Challenger' : 'Defender'} Mixed Team synergy! +8% ATK to all.` });
+      team.forEach(c => c.atk = Math.floor(c.atk * (1 + SYNERGY.mixedTeamAtk)));
+      events.push({ type: 'synergy', message: `${side} Mixed Team synergy! +${Math.round(SYNERGY.mixedTeamAtk * 100)}% ATK to all.` });
     }
 
+    // Jupyter Notebook runs a Python kernel: it counts as Python for the Python Synergy
+    const pythonCount = (typeCounts['Python'] || 0) + (typeCounts['Jupyter Notebook'] || 0);
+
     // Check pairs/triples
-    Object.keys(typeCounts).forEach(type => {
-      if (typeCounts[type] >= 2) {
-        const mult = typeCounts[type] === 3 ? 2 : 1;
-        events.push({ type: 'synergy', message: `${isChallenger ? 'Challenger' : 'Defender'} ${type} Synergy (x${typeCounts[type]}) activated!` });
-        // Specific synergy effects will be handled during turns, but we can store markers on the cards
-        if (type === 'Python') {
-            team.forEach(c => (c as any).pySynergy = 0.03 * mult);
-        }
-        if (type === 'Rust') {
-            team.forEach(c => (c as any).rustSynergy = 0.10 * mult);
-        }
-        if (type === 'JavaScript') {
-            team.forEach(c => (c as any).jsSynergy = 0.10 * mult);
-        }
-        if (type === 'Go') {
-            team.forEach(c => (c as any).goSynergy = true); // Handled on Enter
-        }
-      }
+    const synergyCounts: Record<string, number> = { Python: pythonCount, Rust: typeCounts['Rust'] || 0, JavaScript: typeCounts['JavaScript'] || 0, Go: typeCounts['Go'] || 0 };
+    Object.keys(synergyCounts).forEach(type => {
+      const count = synergyCounts[type];
+      if (count < 2) return;
+      const mult = count === 3 ? 2 : 1;
+      events.push({ type: 'synergy', message: `${side} ${type} Synergy (x${count}) activated!` });
+      if (type === 'Python') team.forEach(c => st(c).pySynergy = SYNERGY.pythonRegenAtkPct * mult);
+      if (type === 'Rust') team.forEach(c => st(c).rustSynergy = SYNERGY.rustDamageReduction * mult);
+      if (type === 'JavaScript') team.forEach(c => st(c).jsSynergy = SYNERGY.jsCallbackChance * mult);
+      if (type === 'Go') team.forEach(c => st(c).goSynergy = true); // Handled on Enter
     });
 
-    // Big Tech + Indie Hacker synergy - skip for now or implement if you add "pack" to card model.
+    // (The old "Big Tech + Indie Hacker" synergy stub was removed: cards don't
+    // store which booster they came from, so it could never trigger.)
 
     return events;
   };
@@ -241,30 +255,192 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       events: startEvents
   });
 
+  const momentum = (c: BattleCard) => 1 + (c.momentumStacks || 0) * MOMENTUM_BONUS_PER_STACK;
+
+  /** PHP @ Error Suppression: a knockout blow leaves it at 1 HP, once per battle. */
+  const trySuppress = (card: BattleCard, logEvents: BattleLogEvent[]) => {
+    if (card.type !== 'PHP' || card.hp > 0 || st(card).phpSuppressUsed) return;
+    st(card).phpSuppressUsed = true;
+    card.hp = PASSIVE.php.survivesAt;
+    card.statsPassivesTriggered = (card.statsPassivesTriggered || 0) + 1;
+    logEvents.push({ type: 'passive', cardId: card.id, message: `[PHP] ${card.name} @-suppressed a fatal error and survives with ${card.hp} HP!` });
+  };
+
   const enterField = (card: BattleCard, opponent: BattleCard, logEvents: BattleLogEvent[]) => {
       logEvents.push({ type: 'enter_field', cardId: card.id, message: `${card.name} enters the field!` });
-      
+
       // Rust Iron Shield
       if (card.type === 'Rust') {
-          (card as any).ironShieldActive = true;
+          st(card).ironShield = true;
           logEvents.push({ type: 'passive', cardId: card.id, message: `[Rust] ${card.name} gained Iron Shield (blocks first turn damage).` });
       }
 
       // Go First Strike OR Go Synergy First Strike
-      if (card.type === 'Go' || (card as any).goSynergy) {
+      if (card.type === 'Go' || st(card).goSynergy) {
           logEvents.push({ type: 'passive', cardId: card.id, message: `${card.name} strikes first on entry!` });
-          let dmg = Math.floor(Math.max(card.atk * 0.15, card.atk - opponent.def * 0.25));
-          if (dmg < 1) dmg = 1;
+          const dmg = mitigatedDamage(card.atk * momentum(card), opponent.def * momentum(opponent));
 
-          if ((opponent as any).ironShieldActive) {
-            dmg = 0;
-            (opponent as any).ironShieldActive = false; // consume it? Or does it block the whole FIRST TURN? "absorbs the first full turn of damage completely, taking zero damage that turn only." 
+          if (st(opponent).ironShield) {
+            st(opponent).ironShield = false; // the shield is spent on the First Strike
             logEvents.push({ type: 'passive', cardId: opponent.id, message: `Iron Shield blocked First Strike!` });
           } else {
              opponent.hp -= dmg;
-             logEvents.push({ type: 'damage', cardId: card.id, targetId: opponent.id, value: dmg, message: `${card.name} dealt ${dmg} first strike damage.` })
+             card.statsDealtDamage = (card.statsDealtDamage || 0) + dmg;
+             opponent.statsTakenDamage = (opponent.statsTakenDamage || 0) + dmg;
+             logEvents.push({ type: 'damage', cardId: card.id, targetId: opponent.id, value: dmg, message: `${card.name} dealt ${dmg} first strike damage.` });
+             trySuppress(opponent, logEvents);
           }
       }
+  };
+
+  /**
+   * Damage `att` deals to `def` this turn (before the defender's shields and
+   * caps), with the attacker's passives. `matchupTurn` starts at 0.
+   */
+  const attack = (att: BattleCard, def: BattleCard, matchupTurn: number, events: BattleLogEvent[]) => {
+    const typeMult = getTypeMultiplier(att.type, def.type);
+    if (typeMult > 1) events.push({ type: 'type_advantage', cardId: att.id, message: `${att.name} has Type Advantage!` });
+
+    const rarityMult = getRarityMultiplier(att.rarity);
+    let atkBonus = 1;
+    let zeroDmg = false;
+    let passive = false;
+    let crit = false;
+
+    // CSS Undefined Behavior (bad luck gets rarer on rarer cards)
+    if (att.type === 'CSS') {
+      if (rng() < PASSIVE.css.doubleChance * rarityMult) {
+        atkBonus = 2; passive = true;
+        events.push({ type: 'passive', cardId: att.id, message: `[CSS] ${att.name} double damage!` });
+      } else if (rng() < PASSIVE.css.zeroChance / rarityMult) {
+        zeroDmg = true;
+        events.push({ type: 'passive', cardId: att.id, message: `[CSS] ${att.name} undefined behavior (0 damage)!` });
+      }
+    }
+
+    // Ruby Last Stand
+    if (att.type === 'Ruby' && att.hp < att.maxHp * PASSIVE.ruby.hpThreshold) {
+      atkBonus *= PASSIVE.ruby.atkMult; passive = true;
+      events.push({ type: 'passive', cardId: att.id, message: `[Ruby] Last stand active!` });
+    }
+
+    // Java JIT Warm-up: slow first turn, then ramps up during the matchup
+    if (att.type === 'Java') {
+      const ramp = matchupTurn === 0
+        ? PASSIVE.java.firstTurnMult
+        : 1 + Math.min(PASSIVE.java.maxBonus, PASSIVE.java.perTurn * matchupTurn);
+      atkBonus *= ramp;
+      if (matchupTurn === 1) events.push({ type: 'passive', cardId: att.id, message: `[Java] ${att.name}'s JIT is warming up...` });
+      if (PASSIVE.java.perTurn * matchupTurn === PASSIVE.java.maxBonus) {
+        passive = true;
+        events.push({ type: 'passive', cardId: att.id, message: `[Java] ${att.name} is fully JIT-compiled! (+${Math.round(PASSIVE.java.maxBonus * 100)}% damage)` });
+      }
+    }
+
+    // Shell Cron Job: every Nth turn of the matchup the attack runs twice
+    if (att.type === 'Shell' && (matchupTurn + 1) % PASSIVE.shell.every === 0) {
+      atkBonus *= PASSIVE.shell.mult; passive = true;
+      events.push({ type: 'passive', cardId: att.id, message: `[Shell] ${att.name}'s cron job fired — the attack runs twice!` });
+    }
+
+    // C# Critical Hit
+    if (att.type === 'C#' && rng() < PASSIVE.csharp.chance * rarityMult) {
+      atkBonus *= PASSIVE.csharp.critMult; crit = true;
+    }
+
+    // C/C++ Raw Power (ignores part of the DEF)
+    const rawPower = att.type === 'C' || att.type === 'C++';
+    const defEffective = def.def * (rawPower ? 1 - PASSIVE.rawPower.defIgnored : 1) * momentum(def);
+    const atkEffective = att.atk * atkBonus * typeMult * momentum(att);
+
+    let dmg = zeroDmg ? 0 : mitigatedDamage(atkEffective, defEffective);
+
+    // JS double callback
+    if (!zeroDmg && (att.type === 'JavaScript' || st(att).jsSynergy)) {
+      const chance = att.type === 'JavaScript' ? PASSIVE.javascript.chance * rarityMult : st(att).jsSynergy;
+      if (rng() < chance) {
+        passive = true;
+        events.push({ type: 'passive', cardId: att.id, message: `[JS] Double Callback!` });
+        dmg += Math.floor(dmg * PASSIVE.javascript.bonus);
+      }
+    }
+
+    if (passive) att.statsPassivesTriggered = (att.statsPassivesTriggered || 0) + 1;
+    return { dmg, crit };
+  };
+
+  /** Defender-side reductions, shields and caps on an incoming hit. */
+  const receive = (def: BattleCard, att: BattleCard, rawDmg: number, events: BattleLogEvent[]) => {
+    let mult = 1;
+    // TypeScript Type Safety
+    if (def.type === 'TypeScript') mult *= PASSIVE.typescript.damageTaken;
+    // HTML Graceful Degradation
+    if (def.type === 'HTML' && def.hp < def.maxHp * PASSIVE.html.hpThreshold) mult *= PASSIVE.html.damageTaken;
+    // Rust Synergy
+    mult -= st(def).rustSynergy;
+    let dmg = Math.floor(rawDmg * Math.max(0, mult));
+
+    // Swift Dodge
+    if (dmg > 0 && def.type === 'Swift' && rng() < PASSIVE.swift.dodgeChance * getRarityMultiplier(def.rarity)) {
+      def.statsPassivesTriggered = (def.statsPassivesTriggered || 0) + 1;
+      events.push({ type: 'passive', cardId: def.id, message: `[Swift] ${def.name} dodged ${att.name}'s attack!` });
+      return 0;
+    }
+
+    // Rust Iron Shield turn 1 block
+    if (st(def).ironShield) {
+      st(def).ironShield = false; // consumed
+      events.push({ type: 'passive', cardId: def.id, message: `Iron Shield blocked all damage!` });
+      return 0;
+    }
+
+    // Kotlin Null Safety: no single turn takes more than X% of max HP
+    const cap = Math.max(1, Math.floor(def.maxHp * PASSIVE.kotlin.maxHpPctPerTurn));
+    if (def.type === 'Kotlin' && dmg > cap) {
+      def.statsPassivesTriggered = (def.statsPassivesTriggered || 0) + 1;
+      events.push({ type: 'passive', cardId: def.id, message: `[Kotlin] Null Safety! ${def.name} only takes ${cap} damage.` });
+      dmg = cap;
+    }
+    return dmg;
+  };
+
+  /** Healing at the end of a turn the card survived. */
+  const endOfTurn = (card: BattleCard, events: BattleLogEvent[]) => {
+    if (card.hp <= 0) return;
+
+    // Dart Hot Reload (once per battle)
+    if (card.type === 'Dart' && !st(card).dartReloadUsed && card.hp < card.maxHp * PASSIVE.dart.hpThreshold) {
+      st(card).dartReloadUsed = true;
+      const heal = Math.floor(card.maxHp * PASSIVE.dart.healMaxHpPct);
+      card.hp = Math.min(card.maxHp, card.hp + heal);
+      card.statsPassivesTriggered = (card.statsPassivesTriggered || 0) + 1;
+      events.push({ type: 'passive', cardId: card.id, message: `[Dart] Hot Reload! ${card.name} restored ${heal} HP.` });
+    }
+
+    // Regen: Python, Jupyter Notebook, Python Synergy
+    // (Python cards keep their own rate; teammates use the synergy rate)
+    const healPct = card.type === 'Python'
+      ? PASSIVE.python.regenAtkPct
+      : Math.max(card.type === 'Jupyter Notebook' ? PASSIVE.jupyter.regenAtkPct : 0, st(card).pySynergy);
+    if (healPct > 0) {
+      const heal = Math.floor(card.atk * healPct);
+      card.hp = Math.min(card.maxHp, card.hp + heal);
+      const tag = card.type === 'Jupyter Notebook' ? 'Jupyter' : 'Python';
+      events.push({ type: 'passive', cardId: card.id, message: `[${tag}] Regenerated ${heal} HP.` });
+    }
+  };
+
+  /** The card that stays on the field after a knockout builds Momentum. */
+  const recordKnockout = (winner: BattleCard, events: BattleLogEvent[]) => {
+    winner.consecutiveWins = (winner.consecutiveWins || 0) + 1;
+    if (winner.consecutiveWins >= 2) {
+      const newStacks = Math.min(3, winner.consecutiveWins - 1);
+      if ((winner.momentumStacks || 0) < newStacks) {
+        winner.momentumStacks = newStacks;
+        winner.statsMomentumAchieved = true;
+        events.push({ type: 'passive', cardId: winner.id, message: `${winner.name} is On Fire! (+${Math.round(newStacks * MOMENTUM_BONUS_PER_STACK * 100)}% Stats)` });
+      }
+    }
   };
 
   let cJustEntered = true;
@@ -276,7 +452,9 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     const dCard = dTeam[dIdx];
 
     const turnEvents: BattleLogEvent[] = [];
-    
+    const cHpStart = cCard.hp;
+    const dHpStart = dCard.hp;
+
     if (cJustEntered) enterField(cCard, dCard, turnEvents);
     if (dJustEntered && dCard.hp > 0) enterField(dCard, cCard, turnEvents); // Only if dCard didn't die from cCard's first strike
 
@@ -288,157 +466,28 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         if (cCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
             cIdx++; cJustEntered = true; turnsInMatchup = 0;
-            
-            dCard.consecutiveWins = (dCard.consecutiveWins || 0) + 1;
-            if (dCard.consecutiveWins >= 2) {
-               const newStacks = Math.min(3, dCard.consecutiveWins - 1);
-               if ((dCard.momentumStacks || 0) < newStacks) {
-                   dCard.momentumStacks = newStacks;
-                   dCard.statsMomentumAchieved = true;
-                   turnEvents.push({ type: 'passive', cardId: dCard.id, message: `${dCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
-               }
-            }
+            recordKnockout(dCard, turnEvents);
         }
         if (dCard.hp <= 0) {
             turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
             dIdx++; dJustEntered = true; turnsInMatchup = 0;
-
-            if (cCard.hp > 0) {
-                cCard.consecutiveWins = (cCard.consecutiveWins || 0) + 1;
-                if (cCard.consecutiveWins >= 2) {
-                   const newStacks = Math.min(3, cCard.consecutiveWins - 1);
-                   if ((cCard.momentumStacks || 0) < newStacks) {
-                       cCard.momentumStacks = newStacks;
-                       cCard.statsMomentumAchieved = true;
-                       turnEvents.push({ type: 'passive', cardId: cCard.id, message: `${cCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
-                   }
-                }
-            }
+            if (cCard.hp > 0) recordKnockout(cCard, turnEvents);
         }
         log.push({
             turnNumber, cCardId: cCard.id, dCardId: dCard.id,
-            cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp),
+            cHpStart, dHpStart, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp),
             events: turnEvents
         });
         turnNumber++;
         continue;
     }
 
-    const cHpStart = cCard.hp;
-    const dHpStart = dCard.hp;
+    // --- Damage Calculation (both cards attack at the same time) ---
+    const cHit = attack(cCard, dCard, turnsInMatchup, turnEvents);
+    const dHit = attack(dCard, cCard, turnsInMatchup, turnEvents);
 
-    // --- Damage Calculation ---
-    // Type Multipliers
-    const cTypeMult = getTypeMultiplier(cCard.type, dCard.type);
-    const dTypeMult = getTypeMultiplier(dCard.type, cCard.type);
-
-    if (cTypeMult > 1) turnEvents.push({ type: 'type_advantage', cardId: cCard.id, message: `${cCard.name} has Type Advantage!` });
-    if (dTypeMult > 1) turnEvents.push({ type: 'type_advantage', cardId: dCard.id, message: `${dCard.name} has Type Advantage!` });
-
-    // CSS Passive (20% Double Damage, or Undefined Behavior)
-    const cRarityMult = getRarityMultiplier(cCard.rarity);
-    const dRarityMult = getRarityMultiplier(dCard.rarity);
-
-    let cAtkBonus = 1;
-    let dAtkBonus = 1;
-
-    let cZeroDmg = false;
-    let dZeroDmg = false;
-
-    // CSS Undefined Behavior
-    if (cCard.type === 'CSS') {
-        if (Math.random() < 0.25 * cRarityMult) {
-            cAtkBonus = 2;
-            turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[CSS] ${cCard.name} double damage!` });
-        } else if (Math.random() < 0.15 * cRarityMult) {
-            cZeroDmg = true;
-            turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[CSS] ${cCard.name} undefined behavior (0 damage)!` });
-        }
-    }
-    if (dCard.type === 'CSS') {
-        if (Math.random() < 0.25 * dRarityMult) {
-            dAtkBonus = 2;
-            turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[CSS] ${dCard.name} double damage!` });
-        } else if (Math.random() < 0.15 * dRarityMult) {
-            dZeroDmg = true;
-            turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[CSS] ${dCard.name} undefined behavior (0 damage)!` });
-        }
-    }
-
-    // Ruby Last Stand
-    if (cCard.type === 'Ruby' && cCard.hp < cCard.maxHp * 0.3) {
-        cAtkBonus *= 1.35;
-        turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[Ruby] Last stand active!` });
-    }
-    if (dCard.type === 'Ruby' && dCard.hp < dCard.maxHp * 0.3) {
-        dAtkBonus *= 1.35;
-        turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[Ruby] Last stand active!` });
-    }
-
-    // C/C++ Raw Power (Ignore 50% DEF)
-    let dDefEffective = dCard.def;
-    let cDefEffective = cCard.def;
-
-    if (cCard.type === 'C' || cCard.type === 'C++') dDefEffective *= 0.5;
-    if (dCard.type === 'C' || dCard.type === 'C++') cDefEffective *= 0.5;
-
-    // TypeScript Type Safety (-15% damage taken)
-    let cDmgReceivedMult = cCard.type === 'TypeScript' ? 0.85 : 1;
-    let dDmgReceivedMult = dCard.type === 'TypeScript' ? 0.85 : 1;
-
-    // Rust Synergy (-10% damage taken)
-    if ((cCard as any).rustSynergy) cDmgReceivedMult -= (cCard as any).rustSynergy;
-    if ((dCard as any).rustSynergy) dDmgReceivedMult -= (dCard as any).rustSynergy;
-
-    // Base damage formula with Momentum
-    const cBaseAtk = cCard.atk * cAtkBonus * cTypeMult * (1 + (cCard.momentumStacks || 0) * 0.1);
-    const dBaseAtk = dCard.atk * dAtkBonus * dTypeMult * (1 + (dCard.momentumStacks || 0) * 0.1);
-    
-    // Effective DEF with Momentum
-    const cDefMom = cDefEffective * (1 + (cCard.momentumStacks || 0) * 0.1);
-    const dDefMom = dDefEffective * (1 + (dCard.momentumStacks || 0) * 0.1);
-
-    let cDmgToD = Math.floor(Math.max(cBaseAtk * 0.15, cBaseAtk - (dDefMom * 0.25)));
-    let dDmgToC = Math.floor(Math.max(dBaseAtk * 0.15, dBaseAtk - (cDefMom * 0.25)));
-
-    if (cDmgToD < 1) cDmgToD = 1;
-    if (dDmgToC < 1) dDmgToC = 1;
-
-    if (cZeroDmg) cDmgToD = 0;
-    if (dZeroDmg) dDmgToC = 0;
-
-    // JS double callback
-    if (cCard.type === 'JavaScript' || (cCard as any).jsSynergy) {
-        const chance = cCard.type === 'JavaScript' ? 0.25 * cRarityMult : (cCard as any).jsSynergy;
-        if (Math.random() < chance) {
-            turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[JS] Double Callback!` });
-            cDmgToD += Math.floor(cDmgToD * 0.5);
-        }
-    }
-    if (dCard.type === 'JavaScript' || (dCard as any).jsSynergy) {
-        const chance = dCard.type === 'JavaScript' ? 0.25 * dRarityMult : (dCard as any).jsSynergy;
-        if (Math.random() < chance) {
-            turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[JS] Double Callback!` });
-            dDmgToC += Math.floor(dDmgToC * 0.5);
-        }
-    }
-
-    // Apply Damage reduction multipliers
-    cDmgToD = Math.floor(cDmgToD * dDmgReceivedMult);
-    dDmgToC = Math.floor(dDmgToC * cDmgReceivedMult);
-
-    // Rust Iron Shield turn 1 block
-    if ((cCard as any).ironShieldActive) {
-        dDmgToC = 0;
-        (cCard as any).ironShieldActive = false; // consumed
-        turnEvents.push({ type: 'passive', cardId: cCard.id, message: `Iron Shield blocked all damage!` });
-    }
-    if ((dCard as any).ironShieldActive) {
-        cDmgToD = 0;
-        (dCard as any).ironShieldActive = false; // consumed
-        turnEvents.push({ type: 'passive', cardId: dCard.id, message: `Iron Shield blocked all damage!` });
-    }
-
+    const cDmgToD = receive(dCard, cCard, cHit.dmg, turnEvents);
+    const dDmgToC = receive(cCard, dCard, dHit.dmg, turnEvents);
 
     cCard.hp -= dDmgToC;
     dCard.hp -= cDmgToD;
@@ -449,57 +498,40 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     cCard.statsDealtDamage = (cCard.statsDealtDamage || 0) + cDmgToD;
     dCard.statsDealtDamage = (dCard.statsDealtDamage || 0) + dDmgToC;
 
-    if (cAtkBonus > 1) cCard.statsPassivesTriggered = (cCard.statsPassivesTriggered || 0) + 1;
-    if (dAtkBonus > 1) dCard.statsPassivesTriggered = (dCard.statsPassivesTriggered || 0) + 1;
+    const damageEvent = (att: BattleCard, target: BattleCard, dmg: number, crit: boolean) => {
+      if (dmg <= 0) return;
+      if (crit) att.statsCritsLanded = (att.statsCritsLanded || 0) + 1;
+      turnEvents.push({
+        type: 'damage', cardId: att.id, targetId: target.id, value: dmg,
+        message: crit ? `[C#] ${att.name} landed a Critical Hit for ${dmg} damage!` : `${att.name} dealt ${dmg} damage.`,
+      });
+    };
+    damageEvent(cCard, dCard, cDmgToD, cHit.crit);
+    damageEvent(dCard, cCard, dDmgToC, dHit.crit);
 
-    if (cDmgToD > 0) turnEvents.push({ type: 'damage', cardId: cCard.id, targetId: dCard.id, value: cDmgToD, message: `${cCard.name} dealt ${cDmgToD} damage.` });
-    if (dDmgToC > 0) turnEvents.push({ type: 'damage', cardId: dCard.id, targetId: cCard.id, value: dDmgToC, message: `${dCard.name} dealt ${dDmgToC} damage.` });
+    trySuppress(cCard, turnEvents);
+    trySuppress(dCard, turnEvents);
 
-    // End of Turn Effects (Regen)
-    if (cCard.hp > 0 && (cCard.type === 'Python' || (cCard as any).pySynergy)) {
-        const healPct = cCard.type === 'Python' ? 0.1 : ((cCard as any).pySynergy * 2);
-        const heal = Math.floor(cCard.atk * healPct);
-        cCard.hp = Math.min(cCard.maxHp, cCard.hp + heal);
-        turnEvents.push({ type: 'passive', cardId: cCard.id, message: `[Python] Regenerated ${heal} HP.` });
-    }
-    if (dCard.hp > 0 && (dCard.type === 'Python' || (dCard as any).pySynergy)) {
-        const healPct = dCard.type === 'Python' ? 0.1 : ((dCard as any).pySynergy * 2);
-        const heal = Math.floor(dCard.atk * healPct);
-        dCard.hp = Math.min(dCard.maxHp, dCard.hp + heal);
-        turnEvents.push({ type: 'passive', cardId: dCard.id, message: `[Python] Regenerated ${heal} HP.` });
-    }
+    // End of Turn Effects (Hot Reload, Regen)
+    endOfTurn(cCard, turnEvents);
+    endOfTurn(dCard, turnEvents);
 
     // Defeats
     if (cCard.hp <= 0 && dCard.hp <= 0) {
         turnEvents.push({ type: 'draw', message: `Both ${cCard.name} and ${dCard.name} go down!` });
-        cIdx++; cJustEntered = true; turnsInMatchup = 0;
-        dIdx++; dJustEntered = true; turnsInMatchup = 0;
+        cIdx++; cJustEntered = true;
+        dIdx++; dJustEntered = true;
+        turnsInMatchup = 0;
     } else if (cCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
         cIdx++; cJustEntered = true; turnsInMatchup = 0;
-        
-        dCard.consecutiveWins = (dCard.consecutiveWins || 0) + 1;
-        if (dCard.consecutiveWins >= 2) {
-           const newStacks = Math.min(3, dCard.consecutiveWins - 1);
-           if ((dCard.momentumStacks || 0) < newStacks) {
-               dCard.momentumStacks = newStacks;
-               dCard.statsMomentumAchieved = true;
-               turnEvents.push({ type: 'passive', cardId: dCard.id, message: `${dCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
-           }
-        }
+        recordKnockout(dCard, turnEvents);
     } else if (dCard.hp <= 0) {
         turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
         dIdx++; dJustEntered = true; turnsInMatchup = 0;
-
-        cCard.consecutiveWins = (cCard.consecutiveWins || 0) + 1;
-        if (cCard.consecutiveWins >= 2) {
-           const newStacks = Math.min(3, cCard.consecutiveWins - 1);
-           if ((cCard.momentumStacks || 0) < newStacks) {
-               cCard.momentumStacks = newStacks;
-               cCard.statsMomentumAchieved = true;
-               turnEvents.push({ type: 'passive', cardId: cCard.id, message: `${cCard.name} is On Fire! (+${newStacks * 10}% Stats)` });
-           }
-        }
+        recordKnockout(cCard, turnEvents);
+    } else {
+        turnsInMatchup++;
     }
 
     log.push({
@@ -514,16 +546,12 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     });
 
     turnNumber++;
-    turnsInMatchup++;
 
-    // 50-turn cap per matchup ties breaker
-    if (turnsInMatchup >= 50) {
-        console.warn(`[BattleResolver] 50-turn cap reached between ${cCard.name} and ${dCard.name}!`);
-        
-        // Resolve by remaining HP percentage
+    // Per-matchup turn cap: resolved by remaining HP %
+    if (turnsInMatchup >= MATCHUP_TURN_CAP) {
         const cPct = cCard.hp / cCard.maxHp;
         const dPct = dCard.hp / dCard.maxHp;
-        
+
         const tiebreakerEvents: BattleLogEvent[] = [
             { type: 'passive', message: `Turn cap reached! Resolving matchup by HP%...` }
         ];
@@ -541,8 +569,9 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
             cCard.hp = 0;
             dCard.hp = 0;
             tiebreakerEvents.push({ type: 'draw', message: `Exact HP% draw! Both go down!` });
-            cIdx++; cJustEntered = true; turnsInMatchup = 0;
-            dIdx++; dJustEntered = true; turnsInMatchup = 0;
+            cIdx++; cJustEntered = true;
+            dIdx++; dJustEntered = true;
+            turnsInMatchup = 0;
         }
 
         log.push({

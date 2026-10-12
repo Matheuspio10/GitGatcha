@@ -88,19 +88,157 @@ export const STAMINA_COST_PER_BATTLE = 20;
 export const STARTING_RATING = 1000;
 export const RATING_K_FACTOR = 32;
 
+// ─── Damage ───────────────────────────────────────────────────────────────────
+
+/**
+ * Percent mitigation: damage = ATK × K / (K + DEF). DEF = K halves the damage,
+ * DEF = 3K blocks 75%. Diminishing returns, so stacking DEF never makes a card
+ * immune — and DEF always matters, not only for repo spammers.
+ */
+export const DEF_MITIGATION_K = 100;
+/** DEF never blocks more than this share of a hit (the damage floor). */
+export const MAX_DEF_MITIGATION = 0.75;
+
+export function defMitigation(def: number): number {
+  const d = Math.max(0, def);
+  return Math.min(MAX_DEF_MITIGATION, d / (DEF_MITIGATION_K + d));
+}
+
+/** Momentum: +10% ATK and DEF per stack (max 2 stacks reachable, capped at 3). */
+export const MOMENTUM_BONUS_PER_STACK = 0.1;
+
+/** A single matchup that lasts this many turns is decided by remaining HP %. */
+export const MATCHUP_TURN_CAP = 50;
+
+// ─── Language types ───────────────────────────────────────────────────────────
+
+/** Languages with a combat type, a passive and type matchups. Everything else is Neutral. */
+export const COMBAT_LANGUAGES = [
+  'Python', 'JavaScript', 'TypeScript', 'Ruby', 'PHP',
+  'Rust', 'C', 'C++', 'Go',
+  'Java', 'C#', 'Kotlin', 'Swift', 'Dart',
+  'Shell', 'HTML', 'CSS', 'Jupyter Notebook',
+] as const;
+export type CombatLanguage = (typeof COMBAT_LANGUAGES)[number];
+
+export function isCombatLanguage(lang: unknown): lang is CombatLanguage {
+  return typeof lang === 'string' && (COMBAT_LANGUAGES as readonly string[]).includes(lang);
+}
+
+export const TYPE_ADVANTAGE_MULTIPLIER = 1.5;
+export const TYPE_DISADVANTAGE_MULTIPLIER = 0.75;
+
+/**
+ * Who deals 1.5× damage to whom (the target deals 0.75× back). Every typed
+ * language beats something and (except TypeScript) loses to something:
+ *
+ * - Web cycle:     Python → JavaScript → Ruby → PHP → Python; TypeScript → JavaScript
+ * - Systems:       Rust → C / C++ → Go → Rust
+ * - JVM / .NET:    Kotlin → Java → C# → Kotlin
+ * - Mobile:        Swift → Kotlin → Dart → Swift
+ * - Scripting:     Python → Shell → Java → Jupyter Notebook → Shell
+ * - Markup:        JavaScript / PHP → HTML → CSS (CSS also deals 0.75× to every typed language)
+ */
+export const TYPE_ADVANTAGES: Partial<Record<CombatLanguage, readonly CombatLanguage[]>> = {
+  Python: ['JavaScript', 'Shell'],
+  JavaScript: ['Ruby', 'HTML'],
+  Ruby: ['PHP'],
+  PHP: ['Python', 'HTML'],
+  TypeScript: ['JavaScript'],
+  Rust: ['C', 'C++'],
+  C: ['Go'],
+  'C++': ['Go'],
+  Go: ['Rust'],
+  Java: ['C#', 'Jupyter Notebook'],
+  'C#': ['Kotlin'],
+  Kotlin: ['Java', 'Dart'],
+  Swift: ['Kotlin'],
+  Dart: ['Swift'],
+  Shell: ['Java'],
+  'Jupyter Notebook': ['Shell'],
+  HTML: ['CSS'],
+};
+
+/** Languages that `lang` is weak against (derived from TYPE_ADVANTAGES). */
+export function typeWeaknesses(lang: CombatLanguage): CombatLanguage[] {
+  return COMBAT_LANGUAGES.filter(other => TYPE_ADVANTAGES[other]?.includes(lang));
+}
+
 // ─── Passives ─────────────────────────────────────────────────────────────────
 
 /**
- * Scales the trigger chance of random passives (CSS Undefined Behavior, JS
- * Double Callback) by card rarity. Rare is the baseline.
+ * Scales the trigger chance of random passives (CSS double damage, JS Double
+ * Callback, C# Critical Hit, Swift Dodge) by card rarity. Rare is the baseline.
+ * Kept narrow so passives add surprise without becoming another rarity multiplier.
+ * Bad luck (CSS zero damage) is DIVIDED by it, so it gets rarer on rarer cards.
  */
 export const PASSIVE_RARITY_MULTIPLIER: Record<string, number> = {
-  Common: 0.6,
-  Uncommon: 0.8,
+  Common: 0.9,
+  Uncommon: 0.95,
   Rare: 1.0,
-  Epic: 1.2,
-  Legendary: 1.4,
+  Epic: 1.05,
+  Legendary: 1.1,
 };
+
+/** Numbers behind every passive and synergy (the Wiki renders its texts from these). */
+export const PASSIVE = {
+  python: { regenAtkPct: 0.10 },
+  jupyter: { regenAtkPct: 0.08 },
+  javascript: { chance: 0.3, bonus: 0.5 },
+  typescript: { damageTaken: 0.88 },
+  ruby: { hpThreshold: 0.3, atkMult: 1.5 },
+  php: { survivesAt: 1 },
+  rawPower: { defIgnored: 0.4 },
+  css: { doubleChance: 0.3, zeroChance: 0.1 },
+  java: { firstTurnMult: 0.9, perTurn: 0.05, maxBonus: 0.25 },
+  csharp: { chance: 0.15, critMult: 1.75 },
+  kotlin: { maxHpPctPerTurn: 0.3 },
+  swift: { dodgeChance: 0.12 },
+  shell: { every: 3, mult: 2 },
+  html: { hpThreshold: 0.5, damageTaken: 0.75 },
+  dart: { hpThreshold: 0.3, healMaxHpPct: 0.2 },
+} as const;
+
+export const SYNERGY = {
+  mixedTeamAtk: 0.08,
+  pythonRegenAtkPct: 0.06, // non-Python teammates (12% with 3 Python cards)
+  rustDamageReduction: 0.10, // 20% with 3 Rust cards
+  jsCallbackChance: 0.10, // non-JS teammates (20% with 3 JS cards)
+} as const;
+
+const pctText = (x: number) => `${Math.round(x * 100)}%`;
+/** "20% (Common) to 30% (Legendary)" */
+export function rarityScaledChance(base: number, inverse = false): string {
+  const at = (r: string) => (inverse ? base / PASSIVE_RARITY_MULTIPLIER[r] : base * PASSIVE_RARITY_MULTIPLIER[r]);
+  return `${pctText(at('Common'))} (Common) to ${pctText(at('Legendary'))} (Legendary)`;
+}
+
+export interface PassiveInfo {
+  lang: string;
+  name: string;
+  desc: string;
+}
+
+/** Player-facing passive descriptions, one per combat language (C and C++ share Raw Power). */
+export const PASSIVE_INFO: PassiveInfo[] = [
+  { lang: 'C / C++', name: 'Raw Power', desc: `Attacks ignore ${pctText(PASSIVE.rawPower.defIgnored)} of the opponent's DEF.` },
+  { lang: 'C#', name: 'Critical Hit', desc: `Each turn: ${rarityScaledChance(PASSIVE.csharp.chance)} chance to land a Critical Hit for ${PASSIVE.csharp.critMult}x damage.` },
+  { lang: 'CSS', name: 'Undefined Behavior', desc: `Each turn: ${rarityScaledChance(PASSIVE.css.doubleChance)} chance to deal Double Damage; otherwise ${rarityScaledChance(PASSIVE.css.zeroChance, true)} chance to deal exactly 0 damage (rarer cards misbehave less).` },
+  { lang: 'Dart', name: 'Hot Reload', desc: `Once per battle, when its HP drops below ${pctText(PASSIVE.dart.hpThreshold)}, instantly restores ${pctText(PASSIVE.dart.healMaxHpPct)} of its max HP.` },
+  { lang: 'Go', name: 'First Strike', desc: 'Deals one hit to the opposing card as soon as it enters the field (blocked by Iron Shield).' },
+  { lang: 'HTML', name: 'Graceful Degradation', desc: `While below ${pctText(PASSIVE.html.hpThreshold)} HP, takes ${pctText(1 - PASSIVE.html.damageTaken)} less damage. Browsers render it anyway.` },
+  { lang: 'Java', name: 'JIT Warm-up', desc: `Slow start: deals ${pctText(1 - PASSIVE.java.firstTurnMult)} less damage on its first turn of each matchup, then +${pctText(PASSIVE.java.perTurn)} per turn, up to +${pctText(PASSIVE.java.maxBonus)}.` },
+  { lang: 'JavaScript', name: 'Double Callback', desc: `Each turn: ${rarityScaledChance(PASSIVE.javascript.chance)} chance to hit again, dealing ${1 + PASSIVE.javascript.bonus}x damage that turn.` },
+  { lang: 'Jupyter Notebook', name: 'Interactive Kernel', desc: `Heals ${pctText(PASSIVE.jupyter.regenAtkPct)} of its ATK at the end of every turn it survives, and counts as a Python card for the Python Synergy.` },
+  { lang: 'Kotlin', name: 'Null Safety', desc: `Never loses more than ${pctText(PASSIVE.kotlin.maxHpPctPerTurn)} of its max HP in a single turn.` },
+  { lang: 'PHP', name: '@ Error Suppression', desc: `Once per battle, a hit that would knock it out leaves it at ${PASSIVE.php.survivesAt} HP instead.` },
+  { lang: 'Python', name: 'Regeneration', desc: `At the end of every turn it survives, heals for HP equal to ${pctText(PASSIVE.python.regenAtkPct)} of its ATK.` },
+  { lang: 'Ruby', name: 'Last Stand', desc: `While its HP is below ${pctText(PASSIVE.ruby.hpThreshold)}, deals ${PASSIVE.ruby.atkMult}x damage.` },
+  { lang: 'Rust', name: 'Iron Shield', desc: 'Enters the field with a shield that blocks all damage of its first turn (including a Go First Strike).' },
+  { lang: 'Shell', name: 'Cron Job', desc: `Every ${PASSIVE.shell.every}rd turn of a matchup its attack runs twice (${PASSIVE.shell.mult}x damage).` },
+  { lang: 'Swift', name: 'Dodge', desc: `Each turn: ${rarityScaledChance(PASSIVE.swift.dodgeChance)} chance to dodge the opponent's attack completely.` },
+  { lang: 'TypeScript', name: 'Type Safety', desc: `Passively reduces all incoming damage by ${pctText(1 - PASSIVE.typescript.damageTaken)}.` },
+];
 
 // ─── Loyalty ──────────────────────────────────────────────────────────────────
 
