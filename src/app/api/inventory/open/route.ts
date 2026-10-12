@@ -1,13 +1,14 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { withUserLock, asArray } from '@/lib/userLock';
-import { openBoosterPack } from '@/lib/boosterService';
+import { openBoosterPack, refillBoosterReserve } from '@/lib/boosterService';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { grantXP, InventoryItem, XP_AMOUNTS } from '@/lib/xpService';
 
-export const maxDuration = 60;
+// Covers the opening plus the reserve refill that runs after the response
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
@@ -63,6 +64,9 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error('Mission progress error:', err);
     }
+
+    // Top the booster's reserve back up once the player already has their cards
+    after(() => refillBoosterReserve(userId, packId));
 
     return NextResponse.json({
       success: true,

@@ -5,10 +5,18 @@ import { computeRarity, RARITY_STAT_MULTIPLIER } from './rarity';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const API_BASE = 'https://api.github.com';
 
-const headers: Record<string, string> = {
-  Accept: 'application/vnd.github.v3+json',
-  ...(GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {}),
-};
+/**
+ * Every call can run on the server token (default) or on a player's own GitHub
+ * OAuth token: each token has its own rate limits, so players who connected
+ * GitHub don't compete with everyone else for the server's search quota.
+ */
+function headersFor(token?: string): Record<string, string> {
+  const auth = token ?? GITHUB_TOKEN;
+  return {
+    Accept: 'application/vnd.github.v3+json',
+    ...(auth ? { Authorization: `token ${auth}` } : {}),
+  };
+}
 
 // Check if token is missing in production to prevent silent rate-limit bans
 if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
@@ -53,12 +61,34 @@ export class GitHubUnavailableError extends Error {
   }
 }
 
-// Search API: 30 requests/min and a secondary limit on bursts. Calls are
-// spaced out per instance, and once GitHub says stop we stop until it resets.
+/** A player's token was revoked or expired (401): callers fall back to the server token. */
+export class GitHubAuthError extends Error {}
+
+// Search API: 30 requests/min per token and a secondary limit on bursts. Calls are
+// spaced out per token and instance, and once GitHub says stop we stop until it resets.
 const SEARCH_MIN_INTERVAL_MS = 350;
-let searchChain: Promise<void> = Promise.resolve();
-let searchBlockedUntil = 0;
-let coreBlockedUntil = 0;
+
+interface TokenState {
+  searchChain: Promise<void>;
+  searchBlockedUntil: number;
+  coreBlockedUntil: number;
+}
+const tokenStates = new Map<string, TokenState>();
+
+function stateFor(token?: string): TokenState {
+  const key = token ?? '';
+  let state = tokenStates.get(key);
+  if (!state) {
+    if (tokenStates.size > 1000) tokenStates.clear();
+    state = { searchChain: Promise.resolve(), searchBlockedUntil: 0, coreBlockedUntil: 0 };
+    tokenStates.set(key, state);
+  }
+  return state;
+}
+
+function authFailure(err: unknown, token?: string): boolean {
+  return !!token && (err as AxiosError)?.response?.status === 401;
+}
 
 function blockedUntilFrom(err: AxiosError): number {
   const h = err.response?.headers ?? {};
@@ -74,15 +104,17 @@ function isRateLimit(err: unknown): err is AxiosError {
   return status === 429 || (status === 403 && /rate limit/i.test(JSON.stringify((err as AxiosError).response?.data ?? '')));
 }
 
-async function coreGet<T>(path: string): Promise<{ data: T; headers: Record<string, unknown> }> {
-  if (Date.now() < coreBlockedUntil) throw new GitHubUnavailableError('GitHub core API rate limited', coreBlockedUntil);
+async function coreGet<T>(path: string, token?: string): Promise<{ data: T; headers: Record<string, unknown> }> {
+  const state = stateFor(token);
+  if (Date.now() < state.coreBlockedUntil) throw new GitHubUnavailableError('GitHub core API rate limited', state.coreBlockedUntil);
   try {
-    const res = await axios.get<T>(`${API_BASE}${path}`, { headers, timeout: 10_000 });
+    const res = await axios.get<T>(`${API_BASE}${path}`, { headers: headersFor(token), timeout: 10_000 });
     return { data: res.data, headers: res.headers as Record<string, unknown> };
   } catch (err) {
+    if (authFailure(err, token)) throw new GitHubAuthError('GitHub token rejected');
     if (isRateLimit(err)) {
-      coreBlockedUntil = blockedUntilFrom(err);
-      throw new GitHubUnavailableError('GitHub core API rate limited', coreBlockedUntil);
+      state.coreBlockedUntil = blockedUntilFrom(err);
+      throw new GitHubUnavailableError('GitHub core API rate limited', state.coreBlockedUntil);
     }
     throw err;
   }
@@ -95,24 +127,26 @@ export interface SearchUsersPage {
 }
 
 /** One GitHub user search call (users sorted by join date, so positions are stable). */
-export async function searchUsers(query: string, page: number, perPage: number, order: 'asc' | 'desc' = 'asc'): Promise<SearchUsersPage> {
-  const turn = searchChain.then(() => new Promise<void>(r => setTimeout(r, SEARCH_MIN_INTERVAL_MS)));
-  searchChain = turn.catch(() => undefined);
+export async function searchUsers(query: string, page: number, perPage: number, order: 'asc' | 'desc' = 'asc', token?: string): Promise<SearchUsersPage> {
+  const state = stateFor(token);
+  const turn = state.searchChain.then(() => new Promise<void>(r => setTimeout(r, SEARCH_MIN_INTERVAL_MS)));
+  state.searchChain = turn.catch(() => undefined);
   await turn;
 
-  if (Date.now() < searchBlockedUntil) throw new GitHubUnavailableError('GitHub search rate limited', searchBlockedUntil);
+  if (Date.now() < state.searchBlockedUntil) throw new GitHubUnavailableError('GitHub search rate limited', state.searchBlockedUntil);
   try {
     const res = await axios.get(`${API_BASE}/search/users`, {
-      headers,
+      headers: headersFor(token),
       timeout: 15_000,
       params: { q: query, page, per_page: perPage, sort: 'joined', order },
     });
     const items: { login: string; id: number }[] = res.data.items ?? [];
     return { totalCount: res.data.total_count ?? 0, logins: items.map(u => u.login), ids: items.map(u => u.id) };
   } catch (err) {
+    if (authFailure(err, token)) throw new GitHubAuthError('GitHub token rejected');
     if (isRateLimit(err)) {
-      searchBlockedUntil = blockedUntilFrom(err);
-      throw new GitHubUnavailableError('GitHub search rate limited', searchBlockedUntil);
+      state.searchBlockedUntil = blockedUntilFrom(err);
+      throw new GitHubUnavailableError('GitHub search rate limited', state.searchBlockedUntil);
     }
     throw err;
   }
@@ -128,9 +162,9 @@ export interface GitHubAccount {
 }
 
 /** Account by numeric id (`null` when it doesn't exist / was deleted). */
-export async function getAccountById(id: number): Promise<GitHubAccount | null> {
+export async function getAccountById(id: number, token?: string): Promise<GitHubAccount | null> {
   try {
-    const { data } = await coreGet<RestUser>(`/user/${id}`);
+    const { data } = await coreGet<RestUser>(`/user/${id}`, token);
     return { id: data.id, login: data.login, type: data.type, followers: data.followers, publicRepos: data.public_repos, createdAt: data.created_at };
   } catch (err) {
     if ((err as AxiosError)?.response?.status === 404) return null;
@@ -143,8 +177,8 @@ export async function getAccountById(id: number): Promise<GitHubAccount | null> 
  * Caveat: GitHub answers `[]` when a long run of ids after `sinceId` was deleted,
  * so `null` does NOT mean there are no newer accounts.
  */
-export async function getFirstAccountAfter(sinceId: number): Promise<{ id: number; login: string } | null> {
-  const { data } = await coreGet<{ id: number; login: string }[]>(`/users?since=${sinceId}&per_page=1`);
+export async function getFirstAccountAfter(sinceId: number, token?: string): Promise<{ id: number; login: string } | null> {
+  const { data } = await coreGet<{ id: number; login: string }[]>(`/users?since=${sinceId}&per_page=1`, token);
   return data.length > 0 ? { id: data[0].id, login: data[0].login } : null;
 }
 
@@ -238,8 +272,19 @@ export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
   };
 }
 
+/** Login of the account that owns `token`, or `null` if GitHub rejects it. */
+export async function getTokenOwnerLogin(token: string): Promise<string | null> {
+  try {
+    const { data } = await coreGet<RestUser>('/user', token);
+    return data.login;
+  } catch (err) {
+    if (err instanceof GitHubAuthError) return null;
+    throw err;
+  }
+}
+
 /** Full card stats for a developer, or `null` if the account doesn't exist / isn't a user. */
-export async function fetchGitHubUserStats(username: string): Promise<DevStats | null> {
+export async function fetchGitHubUserStats(username: string, token?: string): Promise<DevStats | null> {
   if (!isValidGitHubLogin(username)) return null;
 
   const cacheKey = `user_stats_${username.toLowerCase()}`;
@@ -247,13 +292,13 @@ export async function fetchGitHubUserStats(username: string): Promise<DevStats |
   if (cached) return cached;
 
   try {
-    const { data: user } = await coreGet<RestUser>(`/users/${username}`);
+    const { data: user } = await coreGet<RestUser>(`/users/${username}`, token);
     if (user.type !== 'User') return null;
 
     const repos: RestRepo[] = [];
     const pages = Math.min(MAX_REPO_PAGES, Math.max(1, Math.ceil(user.public_repos / 100)));
     for (let page = 1; page <= pages; page++) {
-      const { data } = await coreGet<RestRepo[]>(`/users/${username}/repos?per_page=100&page=${page}`);
+      const { data } = await coreGet<RestRepo[]>(`/users/${username}/repos?per_page=100&page=${page}`, token);
       repos.push(...data);
       if (data.length < 100) break;
     }
@@ -263,7 +308,7 @@ export async function fetchGitHubUserStats(username: string): Promise<DevStats |
     return stats;
   } catch (err) {
     if ((err as AxiosError)?.response?.status === 404) return null;
-    if (err instanceof GitHubUnavailableError) throw err;
+    if (err instanceof GitHubUnavailableError || err instanceof GitHubAuthError) throw err;
     console.error(`Error fetching user ${username}`, (err as Error).message);
     return null;
   }

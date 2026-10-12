@@ -11,6 +11,11 @@ function LoginContent() {
   const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(searchParams?.get('register') === 'true');
   const [loading, setLoading] = useState(false);
+  const authError = searchParams?.get('error');
+  const AUTH_ERRORS: Record<string, string> = {
+    OAuthAccountNotLinked: 'This account is already linked to another player, or its e-mail belongs to an existing account. Sign in the way you usually do, then connect GitHub from your profile.',
+    CredentialsSignin: 'Wrong e-mail or password.',
+  };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +51,12 @@ function LoginContent() {
           Access the Repository
         </h2>
 
+        {authError && (
+          <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-300">
+            {AUTH_ERRORS[authError] ?? 'Sign-in failed. Please try again.'}
+          </div>
+        )}
+
         <div className="space-y-4 mb-8">
           <button
             type="button"
@@ -55,6 +66,7 @@ function LoginContent() {
             <GithubLogo size={20} weight="fill" />
             Continue with GitHub
           </button>
+          <p className="-mt-2 text-center text-xs text-slate-500">GitHub players get their own card in the exclusive Signature edition.</p>
           
           <button
             type="button"

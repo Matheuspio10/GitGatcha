@@ -24,6 +24,8 @@ export type CardProps = {
   inActiveTeam?: boolean;
   loyaltyTier?: string;
   loyaltyCount?: number;
+  /** "signature": the player's own card, granted only by connecting GitHub */
+  edition?: string;
 };
 
 const RARITY_COLORS: Record<string, string> = {
@@ -84,7 +86,9 @@ export function Card({
   inActiveTeam,
   loyaltyTier,
   loyaltyCount,
+  edition,
 }: CardProps) {
+  const isSignature = edition === 'signature';
   
   const tier = loyaltyTier || 'none';
   const loyaltyVisual = LOYALTY_VISUALS[tier] || {};
@@ -106,8 +110,18 @@ export function Card({
     "relative w-64 h-[410px] rounded-xl border-4 overflow-hidden bg-slate-900 text-white flex flex-col font-sans transition-shadow duration-300 group flex-shrink-0",
     multiplier < 1 ? (currentStamina === 0 ? "border-red-900 shadow-red-900/50" : "border-yellow-600 shadow-yellow-600/50") : (loyaltyBorder || borderGlow),
     isShiny && multiplier === 1 ? "shadow-[0_0_30px_rgba(255,255,255,0.8)] border-white/80" : "shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]",
-    currentStamina === 0 && "opacity-80 grayscale-[50%]"
+    currentStamina === 0 && "opacity-80 grayscale-[50%]",
+    isSignature && multiplier === 1 && "border-transparent shadow-[0_0_28px_rgba(240,171,252,0.55)]"
   );
+
+  // Signature edition: animated foil frame (gradient painted under a transparent border)
+  const cardStyle: React.CSSProperties | undefined = isSignature && multiplier === 1
+    ? {
+        background: 'linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(115deg, #f0abfc, #67e8f9, #fde68a, #86efac, #a78bfa, #f0abfc) border-box',
+        backgroundSize: '100% 100%, 300% 300%',
+        animation: 'signatureFoil 5s ease infinite',
+      }
+    : undefined;
 
   const cardContent = (
     <>
@@ -151,6 +165,18 @@ export function Card({
         />
       )}
 
+      {/* Signature edition foil */}
+      {isSignature && (
+        <div
+          className="absolute inset-0 pointer-events-none z-[6] mix-blend-color-dodge opacity-40"
+          style={{
+            background: 'linear-gradient(115deg, transparent 20%, rgba(240,171,252,0.6) 35%, rgba(103,232,249,0.6) 50%, rgba(253,230,138,0.6) 65%, transparent 80%)',
+            backgroundSize: '250% 250%',
+            animation: 'signatureFoil 4s ease infinite',
+          }}
+        />
+      )}
+
       {isShiny && (
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-60 mix-blend-color-dodge animate-pulse pointer-events-none z-20" />
       )}
@@ -181,6 +207,19 @@ export function Card({
             <img src={avatarUrl} alt={githubUsername} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">No Image</div>
+          )}
+          {isSignature && (
+            <>
+              <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-[0.2em] text-slate-900 bg-gradient-to-r from-fuchsia-300 via-cyan-200 to-amber-200 shadow">
+                Signature
+              </div>
+              <div
+                className="absolute bottom-1 right-2 text-xl text-white/90 -rotate-6 pointer-events-none"
+                style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive', textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}
+              >
+                {githubUsername}
+              </div>
+            </>
           )}
           {quantity !== undefined && quantity > 1 && (
             <div className="absolute top-1 right-1 bg-blue-600 text-white text-xs font-bold px-1.5 py-0.5 rounded-full border border-blue-400">
@@ -263,6 +302,7 @@ export function Card({
       <motion.div
         whileHover={{ scale: 1.05, translateY: -2 }}
         className={cardClasses}
+        style={cardStyle}
       >
         {cardContent}
       </motion.div>
@@ -273,6 +313,7 @@ export function Card({
         rel="noopener noreferrer"
         whileHover={{ scale: 1.05, translateY: -2 }}
         className={cardClasses}
+        style={cardStyle}
       >
         {cardContent}
       </motion.a>

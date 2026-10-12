@@ -3,7 +3,8 @@ import { prisma } from './prisma';
 import { DevStats, GitHubUnavailableError, toCardData } from './githubService';
 import { getPackById } from './packDefinitions';
 import type { PoolFilter } from './devSampler';
-import { devSampler, getRecentPulls, recordPulls } from './samplerStore';
+import { getPlayerGithubToken, getRecentPulls, recordPulls, samplerForToken } from './samplerStore';
+import { refillReserve, reserveDeficit, takeFromReserve } from './boosterReserve';
 import { isRarity, Rarity, rarityForSlot } from './rarity';
 import { asArray, asRecord, withUserLock } from './userLock';
 
@@ -65,27 +66,36 @@ export async function openBoosterPack(userId: string, packId?: string) {
 
   // Devs this player pulled from this booster type in the last 6h, plus the ones drawn in this pack
   const exclude = await getRecentPulls(userId, effectivePackId);
+  // Live draws spend the player's own GitHub quota when they connected GitHub
+  const sampler = samplerForToken(await getPlayerGithubToken(userId));
   let githubDown = false;
 
-  const drawSlot = async (slotRarity: string): Promise<{ dev: DevStats | null; source: 'github' | 'fallback' }> => {
+  // 1. reserve (pre-drawn, instant)  2. live uniform draw  3. last resort: an existing card
+  const drawSlot = async (slotRarity: string): Promise<{ dev: DevStats | null; source: CardSource }> => {
     const rarity: Rarity = isRarity(slotRarity) ? slotRarity : 'Common';
+    try {
+      const reserved = await takeFromReserve(effectivePackId, rarity, exclude);
+      if (reserved) return { dev: reserved, source: 'reserve' };
+    } catch (err) {
+      console.error(`[Booster] Reserve unavailable (${effectivePackId}/${rarity}):`, (err as Error).message);
+    }
     if (!githubDown) {
       try {
-        const dev = await devSampler.drawDev(pool, rarity, exclude);
+        const dev = await sampler.drawDev(pool, rarity, exclude);
         if (dev) return { dev, source: 'github' };
       } catch (err) {
         if (err instanceof GitHubUnavailableError) githubDown = true;
         console.error(`[Booster] GitHub draw failed (${effectivePackId}/${rarity}):`, (err as Error).message);
       }
     }
-    return { dev: await drawFromFallback(effectivePackId, pool, rarity, exclude), source: 'fallback' };
+    return { dev: await drawFromExistingCards(pool, rarity, exclude), source: 'fallback' };
   };
 
   // Slots are drawn in parallel (GitHub search calls are still queued and spaced in githubService)
   const slots = await Promise.all(pickedRarities.map(drawSlot));
 
   const drawn: DevStats[] = [];
-  const sources: ('github' | 'fallback')[] = [];
+  const sources: CardSource[] = [];
   for (const [i, slot] of slots.entries()) {
     let { dev, source } = slot;
     // Parallel draws can't see each other: redraw the rare same-dev collision
@@ -101,7 +111,7 @@ export async function openBoosterPack(userId: string, packId?: string) {
 
   const fallbackCount = sources.filter(s => s === 'fallback').length;
   if (fallbackCount > 0) {
-    console.warn(`[Booster] ${fallbackCount}/${pickedRarities.length} cards of ${effectivePackId} came from the DB fallback pool`);
+    console.warn(`[Booster] ${fallbackCount}/${pickedRarities.length} cards of ${effectivePackId} were reused existing cards (GitHub unavailable, reserve empty)`);
   }
 
   // From here on the player is receiving cards: errors are logged, never thrown, so the
@@ -109,7 +119,7 @@ export async function openBoosterPack(userId: string, packId?: string) {
   const newCards = [];
   for (const [i, dev] of drawn.entries()) {
     try {
-      const card = await upsertCard(dev, sources[i] === 'github');
+      const card = await upsertCard(dev, sources[i] !== 'fallback');
       const userCardResult = await addCardToUser(userId, card);
       newCards.push({
         ...dev,
@@ -166,38 +176,24 @@ export async function openBoosterPack(userId: string, packId?: string) {
   return { newCards, packDropFragments };
 }
 
+type CardSource = 'reserve' | 'github' | 'fallback';
+
 /**
- * Used only when GitHub can't answer (rate limit, outage). Prefers the pool
- * pre-filled by the cron for this booster, which respects its filter.
+ * Last resort when the reserve is empty and GitHub can't answer (rate limit,
+ * outage): an existing card of that rarity (and language, for language packs).
  */
-async function drawFromFallback(packId: string, pool: PoolFilter, rarity: Rarity, exclude: Set<string>): Promise<DevStats | null> {
-  const pick = <T extends { githubUsername: string }>(rows: T[]): T | null => {
-    const fresh = rows.filter(r => !exclude.has(r.githubUsername.toLowerCase()));
-    const from = fresh.length > 0 ? fresh : rows;
-    return from.length > 0 ? from[randomInt(0, from.length)] : null;
-  };
-
-  const pooled = pick(await prisma.boosterFallbackDev.findMany({ where: { packId, rarity } }));
-  if (pooled) {
-    return {
-      ...pooled,
-      avatarUrl: pooled.avatarUrl ?? '',
-      primaryLanguage: pooled.primaryLanguage ?? 'Unknown',
-      topLanguages: asArray<string>(pooled.topLanguages),
-      followers: 0,
-      totalStars: 0,
-      starBonus: false,
-    };
-  }
-
+async function drawFromExistingCards(pool: PoolFilter, rarity: Rarity, exclude: Set<string>): Promise<DevStats | null> {
   const languages = pool.languages ?? [];
-  const card = pick(await prisma.card.findMany({
+  const cards = await prisma.card.findMany({
     where: {
       rarity,
       ...(languages.length ? { OR: languages.map(l => ({ primaryLanguage: { equals: l, mode: 'insensitive' as const } })) } : {}),
     },
-  }));
-  if (!card) return null;
+  });
+  const fresh = cards.filter(c => !exclude.has(c.githubUsername.toLowerCase()));
+  const from = fresh.length > 0 ? fresh : cards;
+  if (from.length === 0) return null;
+  const card = from[randomInt(0, from.length)];
   return {
     ...card,
     avatarUrl: card.avatarUrl ?? '',
@@ -207,6 +203,30 @@ async function drawFromFallback(packId: string, pool: PoolFilter, rarity: Rarity
     totalStars: 0,
     starBonus: false,
   };
+}
+
+/** Max reserve rows drawn per rarity after one opening (keeps the background job short). */
+const REFILL_PER_RARITY = 4;
+
+/**
+ * Tops the reserve of this booster back up after an opening. Meant to run after
+ * the response is sent; spends the player's own GitHub quota when connected.
+ */
+export async function refillBoosterReserve(userId: string, packId: string | undefined, budgetMs = 40_000) {
+  const pack = packId ? getPackById(packId) : null;
+  if (!pack) return;
+  const deadline = Date.now() + budgetMs;
+  const sampler = samplerForToken(await getPlayerGithubToken(userId));
+  const rarities: Rarity[] = pack.allCommon ? ['Common'] : ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+  try {
+    for (const rarity of rarities) {
+      const deficit = Math.min(REFILL_PER_RARITY, await reserveDeficit(pack.id, rarity));
+      if (deficit > 0) await refillReserve(sampler, pack.id, pack.pool, rarity, deficit, deadline);
+      if (Date.now() > deadline) break;
+    }
+  } catch (err) {
+    console.error(`[Booster] Reserve refill for ${pack.id} stopped:`, (err as Error).message);
+  }
 }
 
 async function addFragments(userId: string, language: string, amount: number, source: string) {

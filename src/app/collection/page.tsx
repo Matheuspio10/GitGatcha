@@ -30,6 +30,7 @@ export default async function CollectionPage() {
     quantity: uc.quantity,
     shards: uc.shards,
     isShiny: uc.isShiny,
+    edition: uc.edition,
     stamina: uc.stamina,
     lastUsedAt: uc.lastUsedAt,
     inActiveTeam: uc.inActiveTeam,

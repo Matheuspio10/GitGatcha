@@ -36,3 +36,14 @@ body {
     font-size: max(13px, 0.75rem) !important;
   }
 }
+
+/* Signature edition foil (Card.tsx); global so inline styles can reference it */
+@keyframes signatureFoil {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="signatureFoil"] { animation: none !important; }
+}

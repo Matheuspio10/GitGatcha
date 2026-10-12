@@ -148,9 +148,10 @@ export async function GET(
     const friendsCount = friendsList.length;
 
     // Get top cards (highest stats or rarity)
+    // The player's own Signature card (from connecting GitHub) always leads
     const topCards = userProfile.cards
-        .map((uc: any) => ({ ...uc.card, quantity: uc.quantity, isShiny: uc.isShiny, loyaltyTier: uc.loyaltyTier, loyaltyCount: uc.loyaltyCount }))
-        .sort((a: any, b: any) => (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
+        .map((uc: any) => ({ ...uc.card, quantity: uc.quantity, isShiny: uc.isShiny, edition: uc.edition, loyaltyTier: uc.loyaltyTier, loyaltyCount: uc.loyaltyCount }))
+        .sort((a: any, b: any) => Number(b.edition === 'signature') - Number(a.edition === 'signature') || (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
         .slice(0, 5);
 
     // Get showcase cards (loyalty system Hall of Fame)
@@ -167,6 +168,7 @@ export async function GET(
             ...uc.card,
             quantity: uc.quantity,
             isShiny: uc.isShiny,
+            edition: uc.edition,
             loyaltyTier: uc.loyaltyTier,
             loyaltyCount: Math.max(0, uc.loyaltyCount),
         }));
