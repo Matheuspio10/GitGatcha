@@ -2,6 +2,7 @@
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
 > Atualizado em 16/10/2026, ao fim das rodadas Fase 0, Fase 1 e Fase 2 (PRs #19–#26).
+> Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
 **Esforço:** P = horas a 1 dia · M = alguns dias · G = 1 semana ou mais
@@ -44,11 +45,13 @@
 | `node --env-file=.env.prod scripts/seed-changelog.js` | Seed do changelog (cria entradas novas) |
 
 ### Próximos passos sugeridos (em ordem)
-1. **Onboarding para jogador novo (2.5):** pack inicial e tour de 4 passos ligado às primeiras missões. Com o dev branch dá para testar no navegador, logado.
-2. **Sistema de elos com temporadas (3.1)**, junto com o **PvP assíncrono "fantasma" (3.1)**, que dá sentido ao rating.
-3. **Torre estilo Mortal Kombat (3.2):** reaproveita `resolve3v3Battle`.
-4. **CI no GitHub Actions (2.8)**, para os PRs rodarem `tsc`, lint, testes e build sozinhos.
-5. **Tradução para português (2.5)**, a liga estilo Cartola (3.2) e o resto das Fases 3 e 4.
+1. **Onboarding para jogador novo (2.5):** pack inicial, tour de 4 passos ligado às primeiras missões, **pack de visitante sem cadastro** e tela de boas-vindas 🅶. Com o dev branch dá para testar no navegador, logado.
+2. **Rodada de crescimento 🅶:** carta compartilhável com imagem de preview, "Copiar para o README" da carta Signature (3.4) e indicação de amigos (3.4).
+3. **Missões de dev pelo GitHub (2.4)** e **títulos nas cartas (3.3)** 🅶: pequenos, cabem numa rodada.
+4. **Sistema de elos com temporadas (3.1)**, junto com o **PvP assíncrono "fantasma" (3.1)**, que dá sentido ao rating.
+5. **Torre estilo Mortal Kombat (3.2):** reaproveita `resolve3v3Battle`.
+6. **CI no GitHub Actions (2.8)** junto com o **backup diário do banco** 🅶, para os PRs rodarem `tsc`, lint, testes e build sozinhos.
+7. **Tradução para português (2.5)**, a liga estilo Cartola (3.2) e o resto das Fases 3 e 4.
 
 ---
 
@@ -134,6 +137,8 @@
 |---|---|
 | Missões semanais, botão de resgatar e 1 troca por dia | M |
 | **Alívio de fragmentos:** fragmento coringa (troca 3:1), escolher a linguagem do drop, wishlist aumenta chance. Resolve "usuário sem fragmentos (caso Keslley)" | P |
+| **Comprar carta da wishlist 🅶** ("cherry-pick"): fragmentos compram um dev **específico**, a ~5× o valor de reciclagem. Só devs que já existem em `Card` ou que já saíram para o jogador (evita "compre o Torvalds"). É compra, não sorteio, então não fere a regra 1. Depende de "Contar duplicatas" | P |
+| **Missões de dev 🅶:** grupo de missões diárias para quem conectou o GitHub — commit, abrir PR/issue, revisar PR ou comentar hoje. Uma chamada a `GET /users/{login}/events/public`; **verificar de novo no resgate** (anti-trapaça). Só eventos públicos, a API pode atrasar algumas horas. Protótipo dos dados da liga estilo Cartola | P |
 | Shiny também pode sair em duplicatas | P |
 | Contar duplicatas (`UserCard.quantity` nunca incrementa; "Total Pulls" = cartas únicas) | P |
 | Níveis desbloqueiam algo além de packs (modos, molduras, títulos) | M |
@@ -143,7 +148,9 @@
 | Item | Esforço |
 |---|---|
 | **Onboarding:** pack inicial + tour de 4 passos (abrir pack → coleção → time → primeira batalha), ligado às primeiras missões | M |
-| Confirmação de compra com odds e "Abrir agora" direto do toast | P |
+| **Pack de visitante 🅶:** 1 booster sem cadastro (cookie + limite por IP com `RateLimitHit`); ao se cadastrar, as cartas vão para a conta. Consome a reserva do booster | P |
+| **Tela de boas-vindas 🅶:** no primeiro login, lista todas as formas de ganhar BITS e packs (daily, missões, calendário, conquistas, indicação, compartilhar) | P |
+| Confirmação de compra com odds e "Abrir agora" direto do toast (o CDC exige transparência das odds) | P |
 | Estados vazios com ação (Coleção, Forja sem fragmentos, Amigos, Histórico) | P |
 | Skeleton de carregamento na loja | P |
 | Notificações: limitar e limpar a lista, que cresce sem fim | P |
@@ -168,6 +175,7 @@
 | Item | Esforço |
 |---|---|
 | **CI no GitHub Actions:** `tsc`, `eslint`, testes e `next build` | P |
+| **Backup diário do banco 🅶:** workflow com `pg_dump` + gzip, retenção de 30 dias. A janela de restauração do Neon no plano grátis é curta. ⚠️ Não usar *artifacts* do Actions se o repo for público (o dump tem e-mails e hashes): mandar para armazenamento privado ou criptografar com chave em secret | P |
 | Testes de concorrência (compra, abertura, daily, desafio) contra a branch dev | M |
 | Mover JSON (inventário, notificações, fragmentos) para tabelas próprias | G |
 | Índices restantes: `Battle(defenderId,status)`, `Battle(challengerId)`, `Friendship(friendId,status)`, `Card(rarity,primaryLanguage)` | P |
@@ -190,6 +198,7 @@
 | **PvP assíncrono "fantasma"** | Batalhar contra o time ativo salvo de outros jogadores com rating parecido (±100) | M |
 | **Desafios melhores** | Só entre amigos, revanche/melhor de 3, aposta de BITS combinada, link compartilhável | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
+| **Ranking Colecionador 🅶** | Segunda aba do ranking por pontos de coleção (cartas únicas ponderadas por raridade, bônus por set). Dá lugar a quem não joga PvP | P |
 
 ### 3.2 Modos de jogo
 | Feature | Descrição | Esforço |
@@ -197,6 +206,7 @@
 | **Torre (estilo Mortal Kombat)** | ~10 andares de oponentes temáticos cada vez mais fortes ("Rust Gauntlet", chefe = Legendary famoso), recompensas por marco, ranking semanal | M |
 | **Liga pessoal estilo Cartola** | Elenco de 5 devs com orçamento; pontos semanais vêm da atividade **real** no GitHub (commits, estrelas, PRs); ligas privadas com amigos | G |
 | **Eventos semanais** | Rate-up temático, "Dev da Semana", boosters por tempo limitado | M |
+| **Sprints 🅶** | Competição diária e semanal com tema (linguagem, org, "Dev da Semana") escolhido pelo cron. O jogador não monta nada: no fim, todo mundo é pontuado pelo poder das melhores cartas do tema, **calculado na hora** (não salvar escalação). Empates dividem a posição (1, 1, 3). Topo ganha BITS | M |
 
 ### 3.3 Cartas e coleção
 | Feature | Descrição | Esforço |
@@ -204,14 +214,17 @@
 | **Treinar cartas** | BITS + duplicatas/fragmentos sobem níveis (+2% por nível, teto por raridade) | M |
 | **Coleções/sets** | Completar o elenco de um pack dá título, moldura ou banner; mostrar % por pack | M |
 | **Wishlist ativa** | Itens da wishlist com chance levemente maior (cuidado com a regra de ouro 1: seria um viés explícito e anunciado) | P |
-| **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui | M |
+| **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui. Padrão do GitPacks 🅶: a cada requisição, tentar pegar uma vaga global (`UPDATE … WHERE updated_at < agora-5min RETURNING`) e atualizar **a carta mais desatualizada**, em rodízio, sem cron. Respeitar a regra 4 (`STAT_VERSION`) | M |
+| **Títulos e habilidades 🅶** | Título e frase por status dominante e raridade, com os dados que já temos (muitas estrelas → "Star Magnet", conta antiga → "Veterano", muitos repos → "Prolífico", linguagem). Só cosmético, não sobe `STAT_VERSION` | P |
 
 ### 3.4 Social
 | Feature | Descrição | Esforço |
 |---|---|---|
 | Presentear cartas | Só cartas ganhas, com taxa em BITS | M |
 | Trocas entre jogadores | Depois do presente; sem valor em dinheiro | G |
-| Perfil compartilhável | Página pública com vitrine e preview para redes sociais | P |
+| **Carta e perfil compartilháveis 🅶** | Página pública por carta e por perfil com `og:image` (PNG gerado com `ImageResponse` de `next/og`), botões Compartilhar no X / Copiar link. **"Copiar para o README"** da carta Signature: markdown `[![card](png)](link)` para o README do perfil do GitHub — divulgação grátis. Recompensa única por compartilhar | P |
+| **Indicação de amigos 🅶** | Código = username; os dois ganham; teto de 10 por pessoa; sem autoindicação; indicado só uma vez (chave única). Pagar só quando o indicado **conectar o GitHub** (contas por e-mail facilitam fraude). Dentro de `withUserLock` | P |
+| **Comparar coleção 🅶** | Em Amigos: "cartas que ele tem e você não" — prepara presentes e trocas | P |
 | Feed de atividade de amigos | "Fulano tirou uma Legendary" | M |
 
 ### 3.5 Visual de batalha
