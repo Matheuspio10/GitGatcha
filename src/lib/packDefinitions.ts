@@ -1,3 +1,8 @@
+import type { PoolFilter } from './devSampler';
+
+/** Public members of these GitHub orgs make up the Big Tech booster. */
+export const BIG_TECH_ORGS = ['google', 'microsoft', 'facebook', 'aws', 'apple', 'netflix', 'github', 'vercel', 'shopify', 'stripe', 'openai'];
+
 export interface PackVisualTheme {
   gradient: string;       // CSS gradient for the pack card
   border: string;         // CSS border color
@@ -18,7 +23,7 @@ export interface PackDefinition {
   allCommon?: boolean;       // Junk Drawer
   noPreview?: boolean;       // Mystery Box
   themeLanguage?: string;    // Fragment drop language
-  buildQuery: () => string;  // Returns GitHub Search API query string
+  pool: PoolFilter;          // Which developers can drop (see devSampler.ts)
   activeFilters?: string;    // UI transparency summary
 }
 
@@ -39,7 +44,7 @@ const theJavaScriptCoven: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Languages: JavaScript, TypeScript',
-  buildQuery: () => 'type:user language:JavaScript language:TypeScript',
+  pool: { languages: ['JavaScript', 'TypeScript'] },
 };
 
 const pythonistas: PackDefinition = {
@@ -57,7 +62,7 @@ const pythonistas: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Primary Language: Python',
-  buildQuery: () => 'type:user language:Python',
+  pool: { languages: ['Python'] },
 };
 
 const rustOrBust: PackDefinition = {
@@ -75,7 +80,7 @@ const rustOrBust: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Primary Language: Rust',
-  buildQuery: () => 'type:user language:Rust',
+  pool: { languages: ['Rust'] },
 };
 
 const cssWizards: PackDefinition = {
@@ -93,7 +98,7 @@ const cssWizards: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Primary Language: CSS',
-  buildQuery: () => 'type:user language:CSS',
+  pool: { languages: ['CSS'] },
 };
 
 const goGophers: PackDefinition = {
@@ -111,7 +116,7 @@ const goGophers: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Primary Language: Go',
-  buildQuery: () => 'type:user language:Go',
+  pool: { languages: ['Go'] },
 };
 
 const rubyRelics: PackDefinition = {
@@ -129,7 +134,7 @@ const rubyRelics: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Primary Language: Ruby',
-  buildQuery: () => 'type:user language:Ruby',
+  pool: { languages: ['Ruby'] },
 };
 
 const cppAncients: PackDefinition = {
@@ -147,7 +152,7 @@ const cppAncients: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Languages: C, C++',
-  buildQuery: () => 'type:user language:C language:C++',
+  pool: { languages: ['C', 'C++'] },
 };
 
 // ─── CONTRIBUTOR TYPE PACKS ──────────────────────────────────────────────
@@ -167,7 +172,7 @@ const openSourceHeroes: PackDefinition = {
   },
   guaranteedMinRarity: 'Rare',
   activeFilters: 'Stats: >50 Repos, >100 Followers',
-  buildQuery: () => 'type:user repos:>50',
+  pool: { reposMoreThan: 50 },
 };
 
 const soloArchitects: PackDefinition = {
@@ -185,7 +190,7 @@ const soloArchitects: PackDefinition = {
   },
   guaranteedMinRarity: 'Rare',
   activeFilters: 'Stats: >30 Repos',
-  buildQuery: () => 'type:user repos:>30',
+  pool: { reposMoreThan: 30 },
 };
 
 const silentGiants: PackDefinition = {
@@ -203,7 +208,7 @@ const silentGiants: PackDefinition = {
   },
   guaranteedMinRarity: 'Epic',
   activeFilters: 'Stats: >20 Repos',
-  buildQuery: () => 'type:user repos:>20',
+  pool: { reposMoreThan: 20 },
 };
 
 const maintainers: PackDefinition = {
@@ -221,7 +226,7 @@ const maintainers: PackDefinition = {
   },
   guaranteedMinRarity: 'Rare',
   activeFilters: 'Stats: >50 Repos',
-  buildQuery: () => 'type:user repos:>50',
+  pool: { reposMoreThan: 50 },
 };
 
 // ─── ERA PACKS ───────────────────────────────────────────────────────────
@@ -241,7 +246,7 @@ const githubOGs: PackDefinition = {
   },
   guaranteedMinRarity: 'Epic',
   activeFilters: 'Era: Created < 2010',
-  buildQuery: () => 'type:user created:<2010-01-01',
+  pool: { createdBefore: '2010-01-01' },
 };
 
 const newBlood: PackDefinition = {
@@ -259,7 +264,7 @@ const newBlood: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Era: Created > 2022',
-  buildQuery: () => 'type:user created:>2022-01-01',
+  pool: { createdAfter: '2022-01-01' },
 };
 
 const fossils: PackDefinition = {
@@ -277,7 +282,7 @@ const fossils: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Era: Created < 2015, >10 Repos',
-  buildQuery: () => 'type:user created:<2015-01-01 repos:>10',
+  pool: { createdBefore: '2015-01-01', reposMoreThan: 10 },
 };
 
 // ─── COMPANY & ORIGIN PACKS ─────────────────────────────────────────────
@@ -296,8 +301,8 @@ const bigTechPack: PackDefinition = {
     accentColor: '#ffffff',
   },
   guaranteedMinRarity: 'Epic',
-  activeFilters: 'Any Account',
-  buildQuery: () => 'type:user',
+  activeFilters: 'Public members of Google, Microsoft, Meta, AWS, Apple, Netflix, GitHub…',
+  pool: { orgs: BIG_TECH_ORGS },
 };
 
 const indieHackers: PackDefinition = {
@@ -315,7 +320,7 @@ const indieHackers: PackDefinition = {
   },
   guaranteedMinRarity: null,
   activeFilters: 'Stats: >20 Repos',
-  buildQuery: () => 'type:user repos:>20',
+  pool: { reposMoreThan: 20 },
 };
 
 // ─── REGIONAL PACKS ─────────────────────────────────────────────────────
@@ -340,10 +345,8 @@ function buildRegionalPack(
     visualTheme: { gradient, border, textColor, accentColor },
     guaranteedMinRarity: null,
     activeFilters: `Region: ${locations.slice(0, 3).join(', ')}`,
-    buildQuery: () => {
-      const randomLoc = locations[Math.floor(Math.random() * locations.length)];
-      return `type:user location:"${randomLoc}"`;
-    },
+    // GitHub ORs repeated location qualifiers: one exact query over the union of all spellings
+    pool: { locations },
   };
 }
 
@@ -464,7 +467,7 @@ const legendaryDrop: PackDefinition = {
   },
   guaranteedMinRarity: 'Legendary',
   activeFilters: 'Any Account',
-  buildQuery: () => 'type:user',
+  pool: {},
 };
 
 const junkDrawer: PackDefinition = {
@@ -483,7 +486,7 @@ const junkDrawer: PackDefinition = {
   guaranteedMinRarity: null,
   allCommon: true,
   activeFilters: 'Any Account (>0 Repos)',
-  buildQuery: () => 'type:user repos:>0',
+  pool: { reposMoreThan: 0 },
 };
 
 const mysteryBox: PackDefinition = {
@@ -503,7 +506,7 @@ const mysteryBox: PackDefinition = {
   guaranteedMinRarity: null,
   noPreview: true,
   activeFilters: 'Mystery',
-  buildQuery: () => 'type:user',
+  pool: {},
 };
 
 // ─── ALL PACKS REGISTRY ─────────────────────────────────────────────────
@@ -562,7 +565,7 @@ export const PACK_CATEGORIES: { key: PackCategory; label: string }[] = [
   { key: 'rarity', label: 'Rarity-Focused' },
 ];
 
-/** Serializable pack info for the frontend (strips buildQuery function) */
+/** Serializable pack info for the frontend (strips the sampler pool definition) */
 export function getSerializablePacks() {
-  return ALL_PACKS.map(({ buildQuery, ...rest }) => rest);
+  return ALL_PACKS.map(({ pool, ...rest }) => rest);
 }

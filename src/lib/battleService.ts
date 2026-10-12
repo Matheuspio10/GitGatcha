@@ -249,20 +249,45 @@ export async function resolveRandomBattle(
 }
 
 // Resolve a friend challenge
-export async function resolveFriendBattle(
-  battleId: string,
-  defenderTeamCards: any[]
-) {
-  const battle = await prisma.battle.findUnique({
+function findBattleWithPlayers(battleId: string) {
+  return prisma.battle.findUnique({
     where: { id: battleId },
     include: {
       challenger: true,
       defender: true,
     },
   });
+}
+
+export async function resolveFriendBattle(
+  battleId: string,
+  defenderTeamCards: any[]
+) {
+  const battle = await findBattleWithPlayers(battleId);
 
   if (!battle) throw new Error('Battle not found');
   if (battle.status !== 'PENDING') throw new Error('Battle is not pending');
+
+  // Claim the battle atomically: two parallel accepts must not both resolve it and pay rewards twice
+  const claimed = await prisma.battle.updateMany({
+    where: { id: battleId, status: 'PENDING' },
+    data: { status: 'RESOLVING' },
+  });
+  if (claimed.count === 0) throw new Error('Battle is not pending');
+
+  try {
+    return await finishFriendBattle(battle, defenderTeamCards);
+  } catch (err) {
+    await prisma.battle.updateMany({ where: { id: battleId, status: 'RESOLVING' }, data: { status: 'PENDING' } });
+    throw err;
+  }
+}
+
+async function finishFriendBattle(
+  battle: NonNullable<Awaited<ReturnType<typeof findBattleWithPlayers>>>,
+  defenderTeamCards: any[],
+) {
+  const battleId = battle.id;
 
   const cTeamRaw = battle.challengerTeam as any as BattleCard[];
   const cTeam: BattleCard[] = cTeamRaw.map((c: any) => ({

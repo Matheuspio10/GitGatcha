@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { lockUser, withUserLock, Tx } from './userLock';
 
 // ─── Level Progression ──────────────────────────────────────────────────
 // XP required to reach level N: 100 * N^1.5 (rounded down)
@@ -148,14 +148,20 @@ export interface GrantXPResult {
 
 import { v4 as uuidv4 } from 'uuid';
 
-export async function grantXP(userId: string, amount: number, additionalCurrency: number = 0): Promise<GrantXPResult> {
-  const user = await prisma.user.findUnique({
+/**
+ * Adds XP (and optionally BITS) and hands out level-up rewards.
+ * Pass `tx` when the caller is already inside `withUserLock`; otherwise it takes the lock itself.
+ */
+export async function grantXP(userId: string, amount: number, additionalCurrency: number = 0, tx?: Tx): Promise<GrantXPResult> {
+  if (!tx) return withUserLock(userId, (t) => grantXP(userId, amount, additionalCurrency, t));
+  await lockUser(tx, userId);
+
+  const user = await tx.user.findUnique({
     where: { id: userId },
     select: { 
       xp: true, 
       level: true, 
       inventory: true, 
-      currency: true,
       pendingRewards: true,
       notifications: true
     },
@@ -190,43 +196,33 @@ export async function grantXP(userId: string, amount: number, additionalCurrency
     }
   }
 
-  // Build updated items
-  const currentInventory: InventoryItem[] = Array.isArray(user.inventory) ? (user.inventory as unknown as InventoryItem[]) : [];
-  const updatedInventory = addToInventory(currentInventory, newInventoryItems);
-  
-  const currentPendingRewards: LevelUpReward[] = Array.isArray(user.pendingRewards) ? (user.pendingRewards as unknown as LevelUpReward[]) : [];
-  const updatedPendingRewards = [...currentPendingRewards, ...levelUps];
-  
-  const currentNotifications: any[] = Array.isArray(user.notifications) ? (user.notifications as any[]) : [];
-  const updatedNotifications = [...currentNotifications];
+  const data: Record<string, unknown> = {
+    xp: newXP,
+    level: newLevel,
+    currency: { increment: levelUpCoins + additionalCurrency },
+  };
 
   if (levelUps.length > 0) {
-    const combinedPacks = levelUps.flatMap(reward => reward.packNames);
-    updatedNotifications.push({
+    const currentInventory: InventoryItem[] = Array.isArray(user.inventory) ? (user.inventory as unknown as InventoryItem[]) : [];
+    const currentPendingRewards: LevelUpReward[] = Array.isArray(user.pendingRewards) ? (user.pendingRewards as unknown as LevelUpReward[]) : [];
+    const currentNotifications: any[] = Array.isArray(user.notifications) ? (user.notifications as any[]) : [];
+
+    data.inventory = addToInventory(currentInventory, newInventoryItems);
+    data.pendingRewards = [...currentPendingRewards, ...levelUps];
+    data.notifications = [...currentNotifications, {
       id: uuidv4(),
       type: 'LEVEL_UP',
       timestamp: new Date().toISOString(),
       read: false,
       payload: {
         levelsCrossed: levelUps.map(r => r.level),
-        packNames: combinedPacks,
+        packNames: levelUps.flatMap(reward => reward.packNames),
         totalCoins: levelUpCoins
       }
-    });
+    }];
   }
 
-  // Update user in database
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      xp: newXP,
-      level: newLevel,
-      currency: user.currency + levelUpCoins + additionalCurrency,
-      inventory: updatedInventory as any,
-      pendingRewards: updatedPendingRewards as any,
-      notifications: updatedNotifications as any
-    },
-  });
+  await tx.user.update({ where: { id: userId }, data: data as any });
 
   return {
     previousXP,

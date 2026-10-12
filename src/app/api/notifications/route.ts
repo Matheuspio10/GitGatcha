@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { withUserLock } from '@/lib/userLock';
 
 export async function GET() {
   try {
@@ -100,27 +101,31 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { notificationId, markAll } = body;
 
-    const dbUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { notifications: true }
+    // Locked: grantXP may be appending a LEVEL_UP notification at the same time
+    const updatedNotifications = await withUserLock(userId, async (tx) => {
+      const dbUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { notifications: true }
+      });
+      if (!dbUser) return null;
+
+      let notifications = Array.isArray(dbUser.notifications) ? [...(dbUser.notifications as any[])] : [];
+      if (markAll) {
+        notifications = notifications.map(n => ({ ...n, read: true }));
+      } else if (notificationId) {
+        notifications = notifications.map(n =>
+          n.id === notificationId ? { ...n, read: true } : n
+        );
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { notifications: notifications as any }
+      });
+      return notifications;
     });
 
-    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-
-    let updatedNotifications = Array.isArray(dbUser.notifications) ? [...(dbUser.notifications as any[])] : [];
-
-    if (markAll) {
-      updatedNotifications = updatedNotifications.map(n => ({ ...n, read: true }));
-    } else if (notificationId) {
-      updatedNotifications = updatedNotifications.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      );
-    }
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { notifications: updatedNotifications as any }
-    });
+    if (!updatedNotifications) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     return NextResponse.json({ success: true, count: updatedNotifications.filter(n => !n.read).length });
 

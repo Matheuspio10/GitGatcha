@@ -102,10 +102,14 @@ export async function POST(req: Request) {
     }
 
     if (leagueMode === 'LEGENDARY') {
-      await prisma.user.update({
-        where: { id: userId },
+      // Conditional decrement: parallel requests can't push the balance below zero
+      const charged = await prisma.user.updateMany({
+        where: { id: userId, currency: { gte: 500 } },
         data: { currency: { decrement: 500 } }
       });
+      if (charged.count === 0) {
+        return NextResponse.json({ error: 'Insufficient BITS for Legendary League entry fee (500 required)' }, { status: 400 });
+      }
     }
 
     const result = await resolveRandomBattle(userId, cTeamCards, leagueMode);

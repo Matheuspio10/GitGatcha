@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { withUserLock } from '@/lib/userLock';
 import { getCardStamina, STAMINA_RECOVERY_RATE_PER_HOUR, MAX_STAMINA } from '@/lib/staminaService';
 
 export async function POST(req: Request) {
@@ -26,28 +27,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Card not found or unowned' }, { status: 403 });
     }
 
-    // Check if player has enough BITS (100)
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.currency < 100) {
+    const updatedUserCard = await withUserLock(userId, async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId }, select: { currency: true } });
+      if (!user || user.currency < 100) return null;
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { currency: { decrement: 100 } }
+      });
+
+      return tx.userCard.update({
+        where: { id: userCardId },
+        data: {
+          stamina: 100,
+          lastUsedAt: new Date()
+        }
+      });
+    });
+
+    if (!updatedUserCard) {
       return NextResponse.json({ error: 'Insufficient BITS' }, { status: 400 });
     }
-
-    // Deduct exact amount
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        currency: { decrement: 100 }
-      }
-    });
-
-    // Update stamina and reset lastUsedAt
-    const updatedUserCard = await prisma.userCard.update({
-      where: { id: userCardId },
-      data: {
-        stamina: 100,
-        lastUsedAt: new Date()
-      }
-    });
 
     return NextResponse.json({ success: true, updatedUserCard });
   } catch (error) {
