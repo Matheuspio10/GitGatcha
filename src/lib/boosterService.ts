@@ -275,8 +275,15 @@ async function drawFromExistingCards(pool: PoolFilter, rarity: Rarity, exclude: 
   const from = fresh.length > 0 ? fresh : cards;
   if (from.length === 0) return null;
   const card = from[randomInt(0, from.length)];
+  // Not fetched live, so no profile snapshot: upsertCard keeps the stored one
   return {
-    ...card,
+    githubUsername: card.githubUsername,
+    name: card.name,
+    flavorText: card.flavorText,
+    atk: card.atk,
+    def: card.def,
+    hp: card.hp,
+    rarity: card.rarity,
     avatarUrl: card.avatarUrl ?? '',
     primaryLanguage: card.primaryLanguage ?? 'Unknown',
     topLanguages: card.primaryLanguage ? [card.primaryLanguage] : [],

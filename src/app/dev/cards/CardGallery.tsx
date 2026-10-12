@@ -10,12 +10,14 @@ const base = (login: string, name: string, rarity: string, primaryLanguage: stri
   name, githubUsername: login, avatarUrl: avatar(login), rarity, primaryLanguage, atk, def, hp, flavorText, disableLink: true,
 });
 
+// Illustrative GitHub profile snapshots (they drive the card title)
+const since = (year: number) => new Date(Date.UTC(year, 0, 1));
 const RARITIES: CardProps[] = [
-  base('octocat', 'The Octocat', 'Common', 'Ruby', 38, 31, 120, 'Hello World, again and forever.'),
-  base('mitchellh', 'Mitchell Hashimoto', 'Uncommon', 'Go', 54, 44, 150, 'Provisioned the server before coffee.'),
-  base('yyx990803', 'Evan You', 'Rare', 'TypeScript', 72, 58, 190, 'Reactive even when resting.'),
-  base('gaearon', 'Dan Abramov', 'Epic', 'JavaScript', 95, 70, 240, 'Dispatch, reduce, repeat.'),
-  base('torvalds', 'Linus Torvalds', 'Legendary', 'C', 131, 96, 320, 'Talk is cheap. Show me the code.'),
+  { ...base('octocat', 'The Octocat', 'Common', 'Ruby', 38, 31, 120, 'Hello World, again and forever.'), followers: 40, totalStars: 30, totalForks: 5, topRepoStars: 20, publicRepos: 8, publicGists: 8, languageCount: 3, githubCreatedAt: since(2011) },
+  { ...base('mitchellh', 'Mitchell Hashimoto', 'Uncommon', 'Go', 54, 44, 150, 'Provisioned the server before coffee.'), followers: 160, totalStars: 90, totalForks: 20, topRepoStars: 40, publicRepos: 120, publicGists: 4, languageCount: 5, githubCreatedAt: since(2019) },
+  { ...base('yyx990803', 'Evan You', 'Rare', 'TypeScript', 72, 58, 190, 'Reactive even when resting.'), followers: 600, totalStars: 2_600, totalForks: 300, topRepoStars: 2_400, publicRepos: 30, publicGists: 2, languageCount: 4, githubCreatedAt: since(2017) },
+  { ...base('gaearon', 'Dan Abramov', 'Epic', 'JavaScript', 95, 70, 240, 'Dispatch, reduce, repeat.'), followers: 3_200, totalStars: 14_000, totalForks: 1_800, topRepoStars: 6_000, publicRepos: 90, publicGists: 20, languageCount: 6, githubCreatedAt: since(2013) },
+  { ...base('torvalds', 'Linus Torvalds', 'Legendary', 'C', 131, 96, 320, 'Talk is cheap. Show me the code.'), followers: 280_000, totalStars: 210_000, totalForks: 60_000, topRepoStars: 190_000, publicRepos: 8, publicGists: 0, languageCount: 3, githubCreatedAt: since(2011) },
 ];
 
 const EDITIONS: CardProps[] = [

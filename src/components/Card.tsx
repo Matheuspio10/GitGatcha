@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
 import { useHoloGyro } from '@/lib/holoTilt';
 import { cardPassive } from '@/lib/battleConfig';
-import { cardTitle, languageStyle, rarityLevel, serialHash, RARITY_ORDER } from '@/lib/cardVisuals';
+import { cardTitle, languageStyle, rarityLevel, serialHash, RARITY_ORDER, type DevProfile } from '@/lib/cardVisuals';
 
 export type CardProps = {
   id?: string;
@@ -29,7 +29,7 @@ export type CardProps = {
   loyaltyCount?: number;
   /** "signature": the player's own card, granted only by connecting GitHub */
   edition?: string;
-};
+} & DevProfile; // GitHub profile snapshot (Card columns) behind the title
 
 const LOYALTY_VISUALS: Record<string, { ringColor?: string; glowColor?: string; badgeIcon?: string }> = {
   none: {},
@@ -81,6 +81,7 @@ export function Card({
   inActiveTeam,
   loyaltyTier,
   edition,
+  ...profile
 }: CardProps) {
   const isSignature = edition === 'signature';
   const tier = loyaltyTier || 'none';
@@ -93,6 +94,7 @@ export function Card({
   const lang = languageStyle(primaryLanguage);
   const passive = cardPassive(primaryLanguage, rarityKey);
   const hash = serialHash(githubUsername);
+  const title = cardTitle(profile, primaryLanguage, rarityKey, githubUsername);
 
   const currentStamina = stamina !== undefined ? calculateCurrentStamina(stamina, lastUsedAt || new Date(), inActiveTeam || false) : undefined;
   const multiplier = currentStamina !== undefined ? getStaminaMultiplier(currentStamina) : 1;
@@ -164,8 +166,8 @@ export function Card({
                   )}
                   <h3 className="gg-name">{name}</h3>
                 </div>
-                <div className="gg-sub">
-                  @{githubUsername} · <em>{isSignature ? 'Signature' : cardTitle(primaryLanguage, rarityKey)}</em>
+                <div className="gg-sub" title={title.reason ? `${title.title}: ${title.reason}` : undefined}>
+                  @{githubUsername} · <em>{title.title}</em>
                 </div>
               </div>
               <div className="gg-serial" title="Card serial">{isSignature ? '1/1' : `#${hash}`}</div>

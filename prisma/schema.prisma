@@ -99,6 +99,17 @@ model Card {
   primaryLanguage String?
   createdAt      DateTime @default(now())
 
+  // GitHub profile snapshot behind the card title (cardVisuals.ts); null on cards not refreshed since
+  followers       Int?
+  totalStars      Int?
+  totalForks      Int?
+  topRepoStars    Int?
+  publicRepos     Int?
+  publicGists     Int?
+  languageCount   Int?
+  githubCreatedAt DateTime?
+  profileUpdatedAt DateTime?
+
   owners         UserCard[]
   battlesAsChallenger Battle[] @relation("ChallengerCard")
   battlesAsDefender   Battle[] @relation("DefenderCard")
