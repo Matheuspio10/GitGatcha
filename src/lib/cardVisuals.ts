@@ -95,6 +95,8 @@ const TRAITS: {
   titles: [string, string, string, string];
   reason: (v: number) => string;
   bias?: number;
+  /** Lowest tier that names a card; below it the trait is ignored. */
+  minLevel?: number;
 }[] = [
   {
     // One repository (1k+ stars) carries the account: >= 80% of all stars. Same scale as
@@ -152,10 +154,12 @@ const TRAITS: {
   {
     key: 'age',
     value: (_p, ageYears) => ageYears,
+    // Only a really old account is a story (14+ years); younger quiet profiles get a joke instead
     steps: [5, 10, 14, 17],
-    titles: ['Seasoned', 'Veteran', 'Pre-Cloud Elder', 'Remembers SVN'],
+    titles: ['', '', 'Pre-Cloud Elder', 'Remembers SVN'],
     reason: v => `on GitHub for ${Math.floor(v)} years`,
     bias: 0.5,
+    minLevel: 3,
   },
 ];
 
@@ -194,6 +198,8 @@ const LANGUAGE_JOKES: Record<string, string[]> = {
 const GENERIC_JOKES = [
   'Works On My Machine', 'Hello World Survivor', 'Stack Overflow Tourist', 'Professional Googler',
   'Commit Message: fix', 'console.log Debugger', 'README Skimmer', 'Tab Hoarder',
+  'Friday Deployer', 'Merge Conflict Magnet', 'TODO: Write Bio', 'It Compiled Once',
+  'git push --force', 'Dark Mode Purist',
 ];
 
 /** Tier reached (0–4) plus the log-scale progress towards the next one, so ties break on how far past the threshold a dev is. */
@@ -235,7 +241,7 @@ export function cardTitle(
   for (const t of TRAITS) {
     const v = t.value(p, ageYears);
     const raw = traitScore(v, t.steps);
-    if (raw === 0) continue;
+    if (raw === 0 || Math.floor(raw) < (t.minLevel ?? 1)) continue;
     const score = raw - (t.bias ?? 0);
     if (!best || score > best.score) {
       best = { score, title: t.titles[Math.floor(raw) - 1], reason: t.reason(v) };
