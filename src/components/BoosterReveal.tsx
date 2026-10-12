@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useSyncExtern
 import { Card, CardProps } from '@/components/Card';
 import { RarityGem } from '@/components/RarityGem';
 import { Logo, LogoMark } from '@/components/Logo';
-import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, animate, useReducedMotion, useMotionValue, useTransform } from 'framer-motion';
 import { Sparkle, CaretLeft, CaretRight, FastForward } from '@phosphor-icons/react';
 import clsx from 'clsx';
 import {
@@ -113,7 +113,6 @@ function tearLine(): Pt[] {
 
 const STRIP_CLIP = toPolygon([...crimpTop(), ...tearLine().reverse()]);
 const BODY_CLIP = toPolygon([...tearLine(), ...crimpBottomReversed()]);
-const WHOLE_CLIP = toPolygon([...crimpTop(), ...crimpBottomReversed()]);
 
 export function PackArt({ name, theme, cardCount }: { name: string; theme?: BoosterPackTheme | null; cardCount: number }) {
   const textColor = theme?.textColor || '#fff';
@@ -152,70 +151,289 @@ export function PackArt({ name, theme, cardCount }: { name: string; theme?: Boos
   );
 }
 
+/** Colour of the light leaking from the pack: a hint of the best card inside. */
+const SPILL_RGB: Record<string, string> = {
+  Common: '255,255,255',
+  Uncommon: '134,239,172',
+  Rare: '96,165,250',
+  Epic: '197,107,255',
+  Legendary: '255,200,61',
+};
+
+/** How far the torn flap of the strip lifts (deg) once the tear is complete. */
+const FLAP_LIFT = 16;
+/** Tear progress past which letting go finishes the rip on its own. */
+const AUTO_FINISH_AT = 0.8;
+
+type Spark = { id: number; at: number; dx: number; dy: number };
+
+/**
+ * The sealed pack. Tear it like a real one: drag across the top strip and the
+ * rip follows the pointer, the flap lifts and light leaks out (tinted by the
+ * best card inside). A tap, Enter or Space rips it in one go. Once torn, the
+ * card stack slides up out of the pack and the empty wrapper falls away.
+ */
 function BoosterPack({
   name,
   theme,
   cardCount,
+  bestRarity,
   tearing,
-  onTear,
+  tearSignal,
+  onTorn,
+  onOpened,
 }: {
   name: string;
   theme?: BoosterPackTheme | null;
   cardCount: number;
+  bestRarity: string;
   tearing: boolean;
-  onTear: () => void;
+  /** Bumped by the parent (Space / Enter) to rip the pack open in one go. */
+  tearSignal: number;
+  onTorn: () => void;
+  onOpened: () => void;
 }) {
   const reduceMotion = useReducedMotion();
   const glowColor = theme?.accentColor || theme?.border || '#a78bfa';
-  return (
-    <div
-      className={clsx('relative w-[17rem] h-[27rem] select-none', !tearing && !reduceMotion && 'pack-float')}
-      style={{ filter: `drop-shadow(0 18px 30px rgba(0,0,0,0.6)) drop-shadow(0 0 22px ${glowColor}55)` }}
-    >
-      {!tearing ? (
-        <motion.button
-          type="button"
-          onClick={onTear}
-          aria-label={`Tear open ${name}`}
-          whileHover={reduceMotion ? undefined : { scale: 1.03, rotate: -1 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-          className="absolute inset-0 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400/70 rounded-md"
-          style={{ clipPath: WHOLE_CLIP }}
+  const spill = SPILL_RGB[bestRarity] ?? SPILL_RGB.Common;
+
+  const progress = useMotionValue(0);
+  const [dir, setDir] = useState<1 | -1>(1); // 1: rip from the left edge towards the right
+  const tornRef = useRef(false);
+  const drag = useRef<{ startX: number; moved: boolean; active: boolean }>({ startX: 0, moved: false, active: false });
+  const [sparks, setSparks] = useState<Spark[]>([]);
+  const sparkId = useRef(0);
+  const lastSparkAt = useRef(0);
+
+  // Holding the pack: it tilts towards the pointer
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+
+  const flapRotate = useTransform(progress, v => v * FLAP_LIFT * dir);
+  const flapLift = useTransform(progress, v => -v * 7);
+  const flapOrigin = dir === 1 ? `100% ${TEAR_Y}%` : `0% ${TEAR_Y}%`;
+  const seamWidth = useTransform(progress, v => `${v * 100}%`);
+  const seamOpacity = useTransform(progress, [0, 0.04, 1], [0, 0.7, 1]);
+
+  const finish = useCallback(() => {
+    if (tornRef.current) return;
+    tornRef.current = true;
+    progress.set(1);
+    onTorn();
+    vibrate(30);
+    try {
+      playPackTear();
+    } catch {
+      // No audio output (blocked or unavailable): the rip goes on silently
+    }
+  }, [onTorn, progress]);
+
+  const ripAll = useCallback(() => {
+    if (tornRef.current) return;
+    if (reduceMotion) return finish();
+    animate(progress, 1, { duration: 0.5 * (1 - progress.get()) + 0.12, ease: [0.4, 0, 0.2, 1], onComplete: finish });
+  }, [finish, progress, reduceMotion]);
+
+  // Keyboard rip from the parent
+  const lastSignal = useRef(tearSignal);
+  useEffect(() => {
+    if (tearSignal !== lastSignal.current) {
+      lastSignal.current = tearSignal;
+      ripAll();
+    }
+  }, [tearSignal, ripAll]);
+
+  // Foil sparks fly off the tear point as it advances
+  useEffect(() => {
+    if (reduceMotion) return;
+    return progress.on('change', v => {
+      if (tornRef.current && v >= 1) return;
+      if (v - lastSparkAt.current < 0.07) return;
+      lastSparkAt.current = v;
+      const id = ++sparkId.current;
+      const at = dir === 1 ? v * 100 : 100 - v * 100;
+      setSparks(s => [...s.slice(-10), { id, at, dx: (Math.random() - 0.5) * 70 + dir * 25, dy: -30 - Math.random() * 50 }]);
+      if (navigator.vibrate) navigator.vibrate(4);
+    });
+  }, [progress, dir, reduceMotion]);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (tornRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    // Start a fresh rip from the nearer edge; a rip already under way keeps its side
+    if (progress.get() === 0) setDir(x < 0.5 ? 1 : -1);
+    drag.current = { startX: e.clientX, moved: false, active: true };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+    if (!drag.current.active) {
+      if (e.pointerType !== 'touch' && !reduceMotion) {
+        tiltY.set((x - 0.5) * 14);
+        tiltX.set((0.5 - (e.clientY - rect.top) / rect.height) * 10);
+      }
+      return;
+    }
+    if (Math.abs(e.clientX - drag.current.startX) > 6) drag.current.moved = true;
+    if (!drag.current.moved || tornRef.current) return;
+    const reach = dir === 1 ? x : 1 - x;
+    // A rip only grows; it never closes again
+    if (reach > progress.get()) progress.set(reach);
+    if (reach >= 0.98) finish();
+  };
+
+  const onPointerUp = () => {
+    if (!drag.current.active) return;
+    const { moved } = drag.current;
+    drag.current.active = false;
+    if (tornRef.current) return;
+    if (!moved || progress.get() >= AUTO_FINISH_AT) ripAll();
+  };
+
+  const resetTilt = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
+
+  const shadow = `drop-shadow(0 18px 30px rgba(0,0,0,0.6)) drop-shadow(0 0 22px ${glowColor}55)`;
+
+  // ── Sealed (and being torn) ──
+  if (!tearing) {
+    return (
+      <div className={clsx('relative w-[17rem] h-[27rem]', !reduceMotion && 'pack-float')} style={{ perspective: 900 }}>
+        <motion.div
+          className="relative w-full h-full select-none"
+          style={{ filter: shadow, rotateX: tiltX, rotateY: tiltY }}
         >
-          <PackArt name={name} theme={theme} cardCount={cardCount} />
-        </motion.button>
-      ) : (
-        <>
-          {/* Light spilling out of the rip */}
-          <motion.div
-            className="absolute inset-x-0 h-16 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.95),rgba(255,255,255,0)_70%)] pointer-events-none z-20"
-            style={{ top: `${TEAR_Y}%` }}
-            initial={{ opacity: 0, scaleX: 0.3 }}
-            animate={{ opacity: [0, 1, 0], scaleX: [0.3, 1.2, 1.4] }}
-            transition={{ duration: reduceMotion ? 0.2 : 0.7, ease: 'easeOut' }}
-          />
-          {/* Torn-off strip */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none z-10"
-            style={{ clipPath: STRIP_CLIP, transformOrigin: '0% 10%' }}
-            initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-            animate={reduceMotion ? { opacity: 0 } : { x: 150, y: -110, rotate: 32, opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0.15 : 0.6, ease: [0.3, 0.6, 0.4, 1] }}
+          <motion.button
+            type="button"
+            aria-label={`Tear open ${name}`}
+            onClick={e => { if (e.detail === 0) ripAll(); }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onPointerLeave={resetTilt}
+            className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400/70"
           >
-            <PackArt name={name} theme={theme} cardCount={cardCount} />
-          </motion.div>
-          {/* Pack body slides away */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{ clipPath: BODY_CLIP }}
-            initial={{ y: 0, opacity: 1, scale: 1 }}
-            animate={reduceMotion ? { opacity: 0 } : { y: [0, -6, 70], opacity: [1, 1, 0], scale: [1, 1.01, 0.94] }}
-            transition={{ duration: reduceMotion ? 0.15 : 0.7, delay: reduceMotion ? 0 : 0.2, ease: 'easeIn' }}
-          >
-            <PackArt name={name} theme={theme} cardCount={cardCount} />
-          </motion.div>
-        </>
-      )}
+            {/* Body */}
+            <div className="absolute inset-0 pointer-events-none" style={{ clipPath: BODY_CLIP }}>
+              <PackArt name={name} theme={theme} cardCount={cardCount} />
+            </div>
+            {/* Light leaking through the open part of the seam */}
+            <motion.div
+              aria-hidden
+              className="absolute h-10 -translate-y-1/2 pointer-events-none z-20"
+              style={{
+                top: `${TEAR_Y}%`,
+                width: seamWidth,
+                opacity: seamOpacity,
+                ...(dir === 1 ? { left: 0 } : { right: 0 }),
+                background: `radial-gradient(ellipse at ${dir === 1 ? '100%' : '0%'} 50%, rgba(255,255,255,0.95), rgba(${spill},0.75) 30%, rgba(${spill},0) 70%), linear-gradient(180deg, transparent 35%, rgba(${spill},0.9) 50%, transparent 65%)`,
+                filter: 'blur(1px)',
+              }}
+            />
+            {/* Top strip: the torn part lifts, hinged on the side still sealed */}
+            <motion.div
+              className="absolute inset-0 pointer-events-none z-10"
+              style={{ clipPath: STRIP_CLIP, transformOrigin: flapOrigin, rotate: flapRotate, y: flapLift }}
+            >
+              <PackArt name={name} theme={theme} cardCount={cardCount} />
+            </motion.div>
+            {/* Foil sparks */}
+            {sparks.map(s => (
+              <motion.span
+                key={s.id}
+                aria-hidden
+                className="absolute w-1.5 h-1.5 rounded-[1px] pointer-events-none z-30"
+                style={{ left: `${s.at}%`, top: `${TEAR_Y}%`, background: `rgb(${spill})`, boxShadow: `0 0 8px rgb(${spill})` }}
+                initial={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 1 }}
+                animate={{ x: s.dx, y: s.dy, opacity: 0, rotate: 200, scale: 0.4 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                onAnimationComplete={() => setSparks(list => list.filter(x => x.id !== s.id))}
+              />
+            ))}
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Torn: the flap flies off, the cards come out, the wrapper drops ──
+  const stackCount = Math.min(cardCount, DEPTH_POSE.length);
+  const T = reduceMotion ? 0.35 : 1.45;
+  return (
+    <div className="relative w-[17rem] h-[27rem] select-none" style={{ filter: shadow }}>
+      {/* Light pouring out of the mouth */}
+      <motion.div
+        aria-hidden
+        className="absolute -inset-x-16 pointer-events-none"
+        style={{
+          top: `calc(${TEAR_Y}% - 220px)`,
+          height: 260,
+          background: `radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.9), rgba(${spill},0.55) 25%, rgba(${spill},0) 65%), repeating-conic-gradient(from 180deg at 50% 100%, rgba(${spill},0) 0deg 7deg, rgba(${spill},0.35) 9deg 11deg, rgba(${spill},0) 13deg 20deg)`,
+          maskImage: 'linear-gradient(0deg, #000 10%, transparent 90%)',
+          WebkitMaskImage: 'linear-gradient(0deg, #000 10%, transparent 90%)',
+        }}
+        initial={{ opacity: 0, scaleY: 0.4 }}
+        animate={{ opacity: [0, 1, 0.8, 0], scaleY: [0.4, 1.1, 1.2, 1.3] }}
+        transition={{ duration: T, times: [0, 0.2, 0.55, 1], ease: 'easeOut' }}
+      />
+
+      {/* The cards, pulled up out of the pack (hidden below the pack's bottom edge until it drops) */}
+      <motion.div
+        className="absolute inset-0 z-10"
+        initial={{ clipPath: 'inset(-150% -40% 4% -40%)' }}
+        animate={{ clipPath: ['inset(-150% -40% 4% -40%)', 'inset(-150% -40% 4% -40%)', 'inset(-150% -40% -150% -40%)', 'inset(-150% -40% -150% -40%)'] }}
+        transition={{ duration: T, times: [0, 0.48, 0.5, 1] }} // opens up only as the wrapper starts to drop
+      >
+        <motion.div
+          className="absolute left-2 top-[11px] w-64 h-[410px]"
+          initial={{ y: 70 }}
+          animate={reduceMotion ? { y: 0 } : { y: [70, 70, -250, 0] }}
+          transition={reduceMotion ? { duration: T } : { duration: T, times: [0, 0.15, 0.58, 1], ease: ['linear', [0.3, 0, 0.2, 1], [0.5, 0, 0.3, 1.15]] }}
+          onAnimationComplete={onOpened}
+        >
+          {Array.from({ length: stackCount }, (_, i) => stackCount - 1 - i).map(depth => (
+            <motion.div
+              key={depth}
+              className="absolute inset-0"
+              style={{ zIndex: 10 - depth }}
+              initial={{ x: 0, y: 0, rotate: 0, scale: 1 }}
+              animate={DEPTH_POSE[depth]}
+              transition={{ delay: T * 0.62, type: 'spring', stiffness: 260, damping: 26 }}
+            >
+              <CardBack suspense={null} />
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
+
+      {/* Front of the wrapper, with a shadow inside the mouth; drops away once the cards are out */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none z-20"
+        style={{ clipPath: BODY_CLIP }}
+        initial={{ y: 0, opacity: 1, rotate: 0 }}
+        animate={reduceMotion ? { opacity: [1, 0] } : { y: [0, 4, 4, 460], opacity: [1, 1, 1, 0], rotate: [0, 0, 0, dir * 8] }}
+        transition={{ duration: T, times: reduceMotion ? [0, 1] : [0, 0.12, 0.5, 0.95], ease: 'easeIn' }}
+      >
+        <PackArt name={name} theme={theme} cardCount={cardCount} />
+        <div className="absolute inset-x-0 h-[9%] bg-gradient-to-b from-black/60 to-transparent" style={{ top: `${TEAR_Y}%` }} />
+      </motion.div>
+
+      {/* The torn strip flies off */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none z-30"
+        style={{ clipPath: STRIP_CLIP, transformOrigin: flapOrigin }}
+        initial={{ rotate: FLAP_LIFT * dir, y: -7, x: 0, opacity: 1 }}
+        animate={reduceMotion ? { opacity: 0 } : { rotate: dir * 48, y: -150, x: dir * -40, opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0.15 : 0.55, ease: [0.3, 0.6, 0.4, 1] }}
+      >
+        <PackArt name={name} theme={theme} cardCount={cardCount} />
+      </motion.div>
     </div>
   );
 }
@@ -310,7 +528,7 @@ const DEPTH_POSE = [
   { x: 4, y: 22, rotate: 1.5, scale: 0.91 },
 ];
 
-type EnterMode = 'deal' | 'forward' | 'back';
+type EnterMode = 'deal' | 'forward' | 'back' | 'emerge';
 
 function StackCard({
   card,
@@ -345,7 +563,9 @@ function StackCard({
       ? { x: -420, y: -40, rotate: -25, scale: 1, opacity: 0 }
       : enterMode === 'deal'
         ? { x: pose.x, y: pose.y + 90, rotate: pose.rotate, scale: pose.scale, opacity: 0 }
-        : { ...pose, opacity: 0 };
+        : enterMode === 'emerge'
+          ? { ...pose, opacity: depth < DEPTH_POSE.length ? 1 : 0 } // already in place: it came out of the pack
+          : { ...pose, opacity: 0 };
 
   const shaking = isTop && !isRevealed && !reduceMotion && (suspense === 'Epic' || suspense === 'Legendary');
 
@@ -524,6 +744,7 @@ export function BoosterReveal({
   const [flingDir, setFlingDir] = useState<1 | -1>(-1);
   const [enterMode, setEnterMode] = useState<EnterMode>('deal');
   const [flashKey, setFlashKey] = useState(0);
+  const [tearSignal, setTearSignal] = useState(0);
 
   const [revealedFor, setRevealedFor] = useState(sortedCards);
   if (revealedFor !== sortedCards) {
@@ -556,16 +777,16 @@ export function BoosterReveal({
 
   // ── Actions ──
 
+  // Space / Enter on the sealed pack: rip it in one go (BoosterPack plays the tear)
   const tearPack = useCallback(() => {
-    if (stage !== 'pack') return;
-    playPackTear();
-    vibrate(30);
-    setStage('tearing');
-    later(() => {
-      setEnterMode('deal');
-      setStage('cards');
-    }, reduceMotion ? 150 : 800);
-  }, [stage, later, reduceMotion]);
+    if (stage === 'pack') setTearSignal(n => n + 1);
+  }, [stage]);
+
+  const onPackTorn = useCallback(() => setStage('tearing'), []);
+  const onPackOpened = useCallback(() => {
+    setEnterMode('emerge');
+    setStage(s => (s === 'tearing' ? 'cards' : s));
+  }, []);
 
   const skipIntro = useCallback(() => {
     clearTimers();
@@ -755,7 +976,8 @@ export function BoosterReveal({
     .reverse(); // deepest first in the DOM, top card painted last
 
   let hint: string;
-  if (inPack) hint = isTouch ? 'Tap the pack to tear it open' : 'Click the pack or press Space to tear it open';
+  if (stage === 'tearing') hint = 'Pulling the cards out…';
+  else if (inPack) hint = isTouch ? 'Swipe across the top to tear it open, or tap' : 'Drag across the top to tear it open, or click';
   else if (busy) hint = suspense?.rarity === 'Legendary' ? 'Something big is coming…' : suspense?.rarity === 'Epic' ? 'Feels special…' : '…';
   else if (!isCurrentRevealed) hint = isTouch ? 'Tap the card to flip it' : 'Click or press Space to flip';
   else hint = isTouch ? 'Tap or swipe to throw it aside' : 'Click, Space or → for the next card';
@@ -817,8 +1039,11 @@ export function BoosterReveal({
             name={packName}
             theme={packTheme}
             cardCount={total}
+            bestRarity={sortedCards[total - 1]?.rarity ?? 'Common'}
             tearing={stage === 'tearing'}
-            onTear={tearPack}
+            tearSignal={tearSignal}
+            onTorn={onPackTorn}
+            onOpened={onPackOpened}
           />
         ) : (
           <>
