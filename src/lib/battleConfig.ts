@@ -240,6 +240,36 @@ export const PASSIVE_INFO: PassiveInfo[] = [
   { lang: 'TypeScript', name: 'Type Safety', desc: `Passively reduces all incoming damage by ${pctText(1 - PASSIVE.typescript.damageTaken)}.` },
 ];
 
+/**
+ * Short passive text printed on a card (two lines max), with the chances of
+ * random passives already scaled to the card's rarity. Same numbers as PASSIVE_INFO.
+ */
+export function cardPassive(lang: string | null | undefined, rarity: string): { name: string; desc: string } {
+  const m = PASSIVE_RARITY_MULTIPLIER[rarity] ?? 1;
+  const chance = (base: number) => pctText(base * m);
+  switch (lang) {
+    case 'C':
+    case 'C++': return { name: 'Raw Power', desc: `Attacks ignore ${pctText(PASSIVE.rawPower.defIgnored)} of the opponent's DEF.` };
+    case 'C#': return { name: 'Critical Hit', desc: `${chance(PASSIVE.csharp.chance)} chance per turn to crit for ${PASSIVE.csharp.critMult}x damage.` };
+    case 'CSS': return { name: 'Undefined Behavior', desc: `Each turn: ${chance(PASSIVE.css.doubleChance)} to deal 2x, ${pctText(PASSIVE.css.zeroChance / m)} to deal 0.` };
+    case 'Dart': return { name: 'Hot Reload', desc: `Once, below ${pctText(PASSIVE.dart.hpThreshold)} HP: restores ${pctText(PASSIVE.dart.healMaxHpPct)} of max HP.` };
+    case 'Go': return { name: 'First Strike', desc: 'Hits the opposing card as soon as it enters the field.' };
+    case 'HTML': return { name: 'Graceful Degradation', desc: `Below ${pctText(PASSIVE.html.hpThreshold)} HP: takes ${pctText(1 - PASSIVE.html.damageTaken)} less damage.` };
+    case 'Java': return { name: 'JIT Warm-up', desc: `${pctText(1 - PASSIVE.java.firstTurnMult)} less damage on turn 1, then +${pctText(PASSIVE.java.perTurn)}/turn (max +${pctText(PASSIVE.java.maxBonus)}).` };
+    case 'JavaScript': return { name: 'Double Callback', desc: `${chance(PASSIVE.javascript.chance)} chance per turn to hit again for ${1 + PASSIVE.javascript.bonus}x damage.` };
+    case 'Jupyter Notebook': return { name: 'Interactive Kernel', desc: `Heals ${pctText(PASSIVE.jupyter.regenAtkPct)} of its ATK every turn. Counts as Python.` };
+    case 'Kotlin': return { name: 'Null Safety', desc: `Never loses more than ${pctText(PASSIVE.kotlin.maxHpPctPerTurn)} of its max HP in one turn.` };
+    case 'PHP': return { name: '@ Error Suppression', desc: `Once per battle, survives a knockout at ${PASSIVE.php.survivesAt} HP.` };
+    case 'Python': return { name: 'Regeneration', desc: `Heals ${pctText(PASSIVE.python.regenAtkPct)} of its ATK at the end of every turn.` };
+    case 'Ruby': return { name: 'Last Stand', desc: `While below ${pctText(PASSIVE.ruby.hpThreshold)} HP, deals ${PASSIVE.ruby.atkMult}x damage.` };
+    case 'Rust': return { name: 'Iron Shield', desc: 'Enters with a shield that blocks all damage of its first turn.' };
+    case 'Shell': return { name: 'Cron Job', desc: `Every ${PASSIVE.shell.every}rd turn its attack runs twice (${PASSIVE.shell.mult}x damage).` };
+    case 'Swift': return { name: 'Dodge', desc: `${chance(PASSIVE.swift.dodgeChance)} chance per turn to dodge an attack completely.` };
+    case 'TypeScript': return { name: 'Type Safety', desc: `Takes ${pctText(1 - PASSIVE.typescript.damageTaken)} less damage from every hit.` };
+    default: return { name: 'Neutral', desc: 'No combat passive and no type matchups.' };
+  }
+}
+
 // ─── Loyalty ──────────────────────────────────────────────────────────────────
 
 export interface LoyaltyMilestone {

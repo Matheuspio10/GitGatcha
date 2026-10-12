@@ -5,6 +5,7 @@ import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { GithubLogo } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
+import { Logo } from '@/components/Logo';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -49,7 +50,8 @@ function LoginContent() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
-        <h2 className="text-3xl font-black mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+        <div className="flex justify-center mb-5"><Logo size={26} /></div>
+        <h2 className="font-display text-2xl font-extrabold mb-8 text-center text-slate-100">
           Access the Repository
         </h2>
 

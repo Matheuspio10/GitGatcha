@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { LEAGUES, LEAGUE_MODES, getLeagueRewards } from './battleConfig';
+import { LEAGUES, LEAGUE_MODES, getLeagueRewards, COMBAT_LANGUAGES, cardPassive } from './battleConfig';
 
 test('every league pays more on a win than it costs to enter', () => {
   for (const mode of LEAGUE_MODES) {
@@ -40,4 +40,19 @@ test('combat languages: required passives exist and the type chart is coherent',
   assert.strictEqual(defMitigation(0), 0);
   assert.strictEqual(defMitigation(100), 0.5);
   assert.strictEqual(defMitigation(1e9), MAX_DEF_MITIGATION);
+});
+
+test('every combat language prints a short passive on the card', () => {
+  for (const lang of COMBAT_LANGUAGES) {
+    const p = cardPassive(lang, 'Rare');
+    assert.notStrictEqual(p.name, 'Neutral', `${lang} has no card passive`);
+    assert.ok(p.desc.length <= 72, `${lang} passive text is too long for two lines: ${p.desc}`);
+  }
+  assert.strictEqual(cardPassive('Haskell', 'Rare').name, 'Neutral');
+  assert.strictEqual(cardPassive(undefined, 'Rare').name, 'Neutral');
+});
+
+test('card passive chances follow the rarity multiplier', () => {
+  assert.match(cardPassive('JavaScript', 'Common').desc, /^27% /);
+  assert.match(cardPassive('JavaScript', 'Legendary').desc, /^33% /);
 });
