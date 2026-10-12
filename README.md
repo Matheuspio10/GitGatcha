@@ -45,7 +45,7 @@ Na Vercel o build usa `vercel-build`, que roda `prisma migrate deploy` antes do 
 
 ## Como o sorteio dos boosters funciona
 
-O núcleo do jogo: **dentro do filtro de um booster, todo dev do GitHub da raridade sorteada tem a mesma chance de sair** — famoso ou conta nova.
+O núcleo do jogo: **dentro do filtro de um booster, todo dev do GitHub da raridade sorteada (com pelo menos 1 repositório público) tem a mesma chance de sair** — famoso ou conta nova.
 
 - `src/lib/rarity.ts` — faixas de seguidores, bônus por estrelas, chances por slot.
 - `src/lib/devSampler.ts` — sorteio uniforme (por ID de conta, por janelas de busca sobre a curva de cadastro do GitHub, ou por membros de organizações). Coberto por testes estatísticos em `devSampler.test.ts`.
