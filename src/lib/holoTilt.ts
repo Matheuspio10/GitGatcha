@@ -8,7 +8,7 @@
  * Skipped entirely with prefers-reduced-motion or on non-touch devices.
  */
 
-import { useEffect, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect } from 'react';
 
 let subscribers = 0;
 let frame = 0;
@@ -57,19 +57,4 @@ export function useHoloGyro(enabled: boolean) {
       }
     };
   }, [enabled]);
-}
-
-/** Pointer handler for a holo card: maps the pointer to `--mx` / `--my` on the element. */
-export function trackHoloPointer(e: ReactPointerEvent<HTMLElement>) {
-  if (e.pointerType === 'touch') return;
-  const el = e.currentTarget;
-  const rect = el.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  el.style.setProperty('--mx', `${(((e.clientX - rect.left) / rect.width) * 100).toFixed(1)}%`);
-  el.style.setProperty('--my', `${(((e.clientY - rect.top) / rect.height) * 100).toFixed(1)}%`);
-}
-
-export function resetHoloPointer(e: ReactPointerEvent<HTMLElement>) {
-  e.currentTarget.style.removeProperty('--mx');
-  e.currentTarget.style.removeProperty('--my');
 }

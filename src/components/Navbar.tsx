@@ -8,6 +8,7 @@ import { Coin, X, List, CalendarCheck, Target, Sword, TrendUp, ShoppingCart } fr
 import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
 import { UserAvatar } from './UserAvatar';
+import { Logo, LogoMark } from './Logo';
 
 export function Navbar({ username, currency: initialCurrency, userImage }: { username: string, currency: number, userImage?: string | null }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
@@ -74,22 +75,23 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-slate-900/60 border-b border-slate-800">
+      <header className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-ink-0/80 border-b border-white/[0.08]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between relative">
-        <Link href="/" className="font-bold text-2xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-          GitGacha
+        <Link href="/" aria-label="GitGacha home" className="flex items-center">
+          <span className="hidden sm:inline-flex"><Logo size={20} /></span>
+          <LogoMark size={32} className="sm:hidden" />
         </Link>
 
         {username && (
           <nav className="hidden lg:flex flex-1 justify-center items-center gap-4 xl:gap-6 text-sm xl:text-base font-bold text-slate-400 mx-4">
-            <Link href="/store" className={`transition-all ${pathname === '/store' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Gacha</Link>
-            <Link href="/inventory" className={`transition-all ${pathname === '/inventory' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Inventory</Link>
-            <Link href="/collection" className={`transition-all ${pathname === '/collection' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Collection</Link>
-            <Link href="/forge" className={`transition-all ${pathname === '/forge' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Forge</Link>
-            <Link href="/battle" className={`transition-all ${pathname === '/battle' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Battle</Link>
-            <Link href="/leaderboard" className={`transition-all ${pathname === '/leaderboard' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Rankings</Link>
-            <Link href="/friends" className={`transition-all ${pathname === '/friends' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Friends</Link>
-            <Link href="/wiki" className={`transition-all ${pathname === '/wiki' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Wiki</Link>
+            <Link href="/store" className={`transition-all ${pathname === '/store' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Gacha</Link>
+            <Link href="/inventory" className={`transition-all ${pathname === '/inventory' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Inventory</Link>
+            <Link href="/collection" className={`transition-all ${pathname === '/collection' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Collection</Link>
+            <Link href="/forge" className={`transition-all ${pathname === '/forge' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Forge</Link>
+            <Link href="/battle" className={`transition-all ${pathname === '/battle' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Battle</Link>
+            <Link href="/leaderboard" className={`transition-all ${pathname === '/leaderboard' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Rankings</Link>
+            <Link href="/friends" className={`transition-all ${pathname === '/friends' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Friends</Link>
+            <Link href="/wiki" className={`transition-all ${pathname === '/wiki' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Wiki</Link>
           </nav>
         )}
 

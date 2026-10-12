@@ -482,7 +482,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(256px,1fr))] justify-items-center gap-x-5 gap-y-8">
           {paginatedData.length === 0 ? (
             <div className="col-span-full py-12 text-center text-slate-500 bg-black border border-slate-800 rounded-xl">
               No records found in the database.

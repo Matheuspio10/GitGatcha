@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import { Card, CardProps } from '@/components/Card';
 import { RarityGem } from '@/components/RarityGem';
+import { Logo, LogoMark } from '@/components/Logo';
 import { motion, AnimatePresence, useReducedMotion, useMotionValue, useTransform } from 'framer-motion';
 import { Sparkle, CaretLeft, CaretRight, FastForward } from '@phosphor-icons/react';
 import clsx from 'clsx';
@@ -45,7 +46,7 @@ function sortCards(cards: RevealCard[]) {
   return [...cards].sort((a, b) => (RARITY_VALUES[a.rarity] || 0) - (RARITY_VALUES[b.rarity] || 0));
 }
 
-type Suspense = 'Rare' | 'Epic' | 'Legendary';
+export type Suspense = 'Rare' | 'Epic' | 'Legendary';
 
 /** Glow time on the card back before it turns (ms). */
 const SUSPENSE_MS: Record<Suspense, number> = { Rare: 450, Epic: 1300, Legendary: 1900 };
@@ -114,7 +115,7 @@ const STRIP_CLIP = toPolygon([...crimpTop(), ...tearLine().reverse()]);
 const BODY_CLIP = toPolygon([...tearLine(), ...crimpBottomReversed()]);
 const WHOLE_CLIP = toPolygon([...crimpTop(), ...crimpBottomReversed()]);
 
-function PackArt({ name, theme, cardCount }: { name: string; theme?: BoosterPackTheme | null; cardCount: number }) {
+export function PackArt({ name, theme, cardCount }: { name: string; theme?: BoosterPackTheme | null; cardCount: number }) {
   const textColor = theme?.textColor || '#fff';
   return (
     <div
@@ -135,11 +136,9 @@ function PackArt({ name, theme, cardCount }: { name: string; theme?: BoosterPack
       </div>
 
       <div className="absolute inset-x-0 top-[24%] flex flex-col items-center text-center px-5">
-        <div className="text-[11px] font-black tracking-[0.45em] text-white/70 uppercase mb-4">GitGacha</div>
-        <div className="w-20 h-20 rounded-2xl rotate-45 bg-white/10 border-2 border-white/40 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.25)] mb-6">
-          <span className="-rotate-45 font-mono font-black text-2xl text-white drop-shadow">{'</>'}</span>
-        </div>
-        <h3 className="text-3xl font-black tracking-tighter leading-none drop-shadow-lg" style={{ color: textColor }}>
+        <div className="text-[11px] font-display font-extrabold tracking-[0.35em] text-white/75 uppercase mb-4">GitGacha</div>
+        <LogoMark size={92} className="mb-5 drop-shadow-[0_0_24px_rgba(255,255,255,0.3)]" />
+        <h3 className="font-display text-[26px] font-extrabold tracking-tight leading-none drop-shadow-lg" style={{ color: textColor }}>
           {name}
         </h3>
         <div className="mt-3 text-[10px] font-bold uppercase tracking-[0.3em] bg-black/25 px-3 py-1 rounded-full" style={{ color: textColor }}>
@@ -223,67 +222,64 @@ function BoosterPack({
 
 // ─── Card back ──────────────────────────────────────────────────────────
 
-const STEEL_FRAME = 'linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(160deg, #94a3b8, #334155 30%, #64748b 55%, #1e293b 80%, #64748b) border-box';
+const BACK_FRAME: Record<string, string> = {
+  none: 'conic-gradient(from var(--gg-spin), #7c4dff, #ff4fa3, #ffb86b, #ff4fa3, #7c4dff)',
+  Rare: 'linear-gradient(150deg, #e3eeff, #1d4fd8 30%, #9cc6ff 55%, #13307a 80%, #cfe2ff)',
+  Epic: 'conic-gradient(from var(--gg-spin), #5b1a9a, #e48bff, #7b5cff, #ff7ad1, #5b1a9a)',
+  Legendary: 'conic-gradient(from var(--gg-spin), #fff3c4, #c98a12, #ffe27a, #8a5208, #fff3c4)',
+};
+const BACK_GLOW: Record<string, string> = {
+  none: '0 12px 26px rgba(0,0,0,0.6), 0 0 18px rgba(124,77,255,0.45)',
+  Rare: '0 0 30px rgba(79,157,255,0.75)',
+  Epic: '0 0 45px rgba(197,107,255,0.9)',
+  Legendary: '0 0 60px rgba(255,200,61,1)',
+};
 
-function CardBack({ suspense }: { suspense: Suspense | null }) {
+export function CardBack({ suspense }: { suspense: Suspense | null }) {
+  const key = suspense ?? 'none';
   return (
-    <div
-      className={clsx(
-        'w-full h-full rounded-xl border-[5px] border-transparent flex items-center justify-center relative overflow-hidden transition-shadow duration-500',
-        !suspense && 'shadow-[0_8px_24px_rgba(0,0,0,0.6)]',
-        suspense === 'Rare' && 'shadow-[0_0_30px_rgba(59,130,246,0.7)]',
-        suspense === 'Epic' && 'shadow-[0_0_45px_rgba(168,85,247,0.9)]',
-        suspense === 'Legendary' && 'shadow-[0_0_60px_rgba(250,204,21,1)]'
-      )}
-      style={{
-        background:
-          suspense === 'Rare' ? 'linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(160deg, #bfdbfe, #2563eb, #1e3a8a) border-box'
-          : suspense === 'Epic' ? 'linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(160deg, #f0abfc, #9333ea, #4c1d95) border-box'
-          : suspense === 'Legendary' ? 'linear-gradient(#0f172a, #0f172a) padding-box, linear-gradient(160deg, #fef9c3, #f59e0b, #92400e) border-box'
-          : STEEL_FRAME,
-      }}
-    >
-      <div className="absolute inset-0 tex-cubes opacity-[0.12] pointer-events-none" />
-      <div className="absolute inset-0 tex-noise opacity-20 mix-blend-overlay pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(99,102,241,0.3),transparent_62%)] pointer-events-none" />
-      <div className="absolute inset-2 border-2 border-dashed border-slate-600/80 rounded-lg pointer-events-none" />
-
-      {/* Suspense inner glow */}
-      {suspense && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
+    <div className="gg-card relative w-full h-full">
+      <div aria-hidden className="gg-shadow transition-shadow duration-500" style={{ boxShadow: BACK_GLOW[key] }} />
+      <div className="gg-frame gg-chamfer animate-[ggSpin_7s_linear_infinite]" style={{ background: BACK_FRAME[key] }}>
+        <div
+          className="gg-chamfer relative h-full overflow-hidden flex flex-col items-center justify-center gap-3"
           style={{
+            ['--c' as string]: '13px',
             background:
-              suspense === 'Legendary' ? 'radial-gradient(circle at 50% 45%, rgba(250,204,21,0.55), transparent 65%)'
-              : suspense === 'Epic' ? 'radial-gradient(circle at 50% 45%, rgba(192,132,252,0.5), transparent 65%)'
-              : 'radial-gradient(circle at 50% 45%, rgba(96,165,250,0.4), transparent 65%)',
+              'radial-gradient(60% 40% at 50% 45%, rgba(124,77,255,0.35), transparent 70%), repeating-linear-gradient(90deg, transparent 0 27px, rgba(255,255,255,0.05) 27px 28px), #0d0d16',
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0.3, 1, 0.5, 1] }}
-          transition={{ duration: 1.2, repeat: Infinity, repeatType: 'mirror' }}
-        />
-      )}
+        >
+          {/* Commit lanes */}
+          <svg aria-hidden className="absolute inset-0 w-full h-full opacity-50" viewBox="0 0 244 398" preserveAspectRatio="none">
+            <g fill="none" stroke="#7c4dff" strokeOpacity=".55" strokeWidth="2">
+              <path d="M40 0V398" /><path d="M122 0V140" /><path d="M122 258V398" /><path d="M204 0V398" />
+              <path d="M40 90C40 120 122 110 122 140" /><path d="M204 300C204 270 122 280 122 258" />
+            </g>
+            <g fill="#06060b" stroke="#3ddc97" strokeWidth="2">
+              <circle cx="40" cy="40" r="5" /><circle cx="40" cy="330" r="5" /><circle cx="204" cy="70" r="5" />
+              <circle cx="204" cy="350" r="5" /><circle cx="122" cy="40" r="5" /><circle cx="122" cy="360" r="5" />
+            </g>
+          </svg>
 
-      <div className="relative z-10 flex flex-col items-center gap-5">
-        <div
-          className={clsx(
-            'w-16 h-16 rounded-xl rotate-45 border-2 flex items-center justify-center',
-            suspense === 'Legendary' ? 'border-yellow-300 bg-yellow-400/20' : 'border-slate-500 bg-slate-800/80'
+          {/* Suspense inner glow */}
+          {suspense && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  suspense === 'Legendary' ? 'radial-gradient(circle at 50% 45%, rgba(255,200,61,0.55), transparent 65%)'
+                  : suspense === 'Epic' ? 'radial-gradient(circle at 50% 45%, rgba(197,107,255,0.5), transparent 65%)'
+                  : 'radial-gradient(circle at 50% 45%, rgba(79,157,255,0.4), transparent 65%)',
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.3, 1, 0.5, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity, repeatType: 'mirror' }}
+            />
           )}
-        >
-          <span className={clsx('-rotate-45 font-mono font-black text-xl', suspense === 'Legendary' ? 'text-yellow-200' : 'text-slate-300')}>
-            {'</>'}
-          </span>
-        </div>
-        <div
-          className={clsx(
-            'font-black text-4xl -rotate-12 italic tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] text-transparent bg-clip-text',
-            suspense === 'Legendary'
-              ? 'bg-gradient-to-b from-yellow-200 to-yellow-600 drop-shadow-[0_0_20px_rgba(250,204,21,1)]'
-              : 'bg-gradient-to-b from-slate-200 to-slate-500'
-          )}
-        >
-          GITGACHA
+
+          <LogoMark size={112} className="relative drop-shadow-[0_0_22px_rgba(255,79,163,0.5)]" />
+          <Logo size={20} showMark={false} className="relative" />
+          <div className="relative font-mono text-[10px] tracking-[0.2em] text-slate-400">git pull --rarity</div>
         </div>
       </div>
     </div>

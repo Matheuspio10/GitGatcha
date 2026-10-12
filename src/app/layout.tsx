@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Unbounded, Chakra_Petch, JetBrains_Mono, Caveat } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { getCurrentUser } from "@/lib/session";
@@ -7,8 +7,11 @@ import { NextAuthProvider } from "@/components/Providers";
 import { LevelUpModal } from "@/components/LevelUpModal";
 import { SetupProfileModal } from "@/components/SetupProfileModal";
 
-const inter = Inter({ subsets: ["latin"] });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-mono' });
+// Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
+const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
+const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: '--font-chakra' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-jetbrains' });
+const caveat = Caveat({ subsets: ["latin"], weight: ["700"], variable: '--font-caveat' });
 
 export const metadata: Metadata = {
   title: "GitGacha - Dev Card Game",
@@ -30,7 +33,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} ${jetbrainsMono.variable} bg-slate-950 text-slate-50 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black overflow-x-hidden`}>
+      <body className={`${unbounded.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${caveat.variable} font-sans app-bg text-slate-50 min-h-screen overflow-x-hidden`}>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
