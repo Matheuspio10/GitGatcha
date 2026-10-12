@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { CardProps, Card } from '@/components/Card';
 import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText } from '@phosphor-icons/react';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
@@ -235,8 +236,9 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Failed to recover stamina');
+        toast.error(data.error || 'Failed to recover stamina');
       } else {
+        window.dispatchEvent(new Event('bits:refresh'));
         // Optimistically update the local state to 100 stamina
         setLocalCards(prev => prev.map(c => 
           c.userCardId === card.userCardId 
@@ -249,7 +251,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred');
+      toast.error('An error occurred');
     } finally {
       setRecovering(false);
     }
@@ -262,7 +264,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-2">
             <h1 className="text-2xl font-black text-white">Collection Stats</h1>
-            <a href="/wiki#cards-rarities" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 font-medium">
+            <a href="/wiki#cards-and-rarities" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 font-medium">
               <BookOpenText size={18} weight="bold" /> Learn more in the Wiki
             </a>
           </div>

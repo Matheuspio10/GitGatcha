@@ -1,85 +1,82 @@
 import { prisma } from './prisma';
 import { randomInt } from 'node:crypto';
-import { withUserLock } from './userLock';
+import { withUserLock, Tx } from './userLock';
+import { grantXP, XP_AMOUNTS } from './xpService';
+import {
+  DAILY_MISSION_COUNT,
+  MISSION_POOL,
+  missionMatchesEvent,
+  missionRequiredCount,
+  needsNewMissions,
+  pickDailyMissions,
+} from './missionUtils';
 
-const POSSIBLE_MISSIONS = [
-  { description: "Open 3 Boosters", type: "OPEN_BOOSTER", reward: 300, targetValue: "3" },
-  { description: "Win 2 Battles", type: "WIN_BATTLE", reward: 200, targetValue: "2" },
-  { description: "Collect a Rare Card", type: "COLLECT_RARITY", reward: 100, targetValue: "Rare" },
-  { description: "Get a Python Dev", type: "COLLECT_LANGUAGE", reward: 150, targetValue: "Python" },
-  { description: "Get a HTML Dev", type: "COLLECT_LANGUAGE", reward: 150, targetValue: "HTML" },
-];
+export { nextMissionReset } from './missionUtils';
 
-function shuffleMissions<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = randomInt(0, i + 1);
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+const userMissionInclude = { mission: true } as const;
+
+/**
+ * Makes sure the player holds today's missions (UTC day), replacing a previous
+ * day's set with DAILY_MISSION_COUNT new random ones. Must run under the user lock
+ * so two parallel calls can't both assign a set.
+ */
+async function ensureDailyMissions(tx: Tx, userId: string, now = new Date()) {
+  const current = await tx.userMission.findMany({ where: { userId }, include: userMissionInclude });
+  if (!needsNewMissions(current.map(um => um.createdAt), now)) return current;
+
+  const picked = pickDailyMissions(MISSION_POOL, DAILY_MISSION_COUNT, n => randomInt(0, n));
+
+  // Mission rows are shared templates, matched by their full definition
+  const existing = await tx.mission.findMany({ where: { description: { in: picked.map(p => p.description) } } });
+  const missionIds: string[] = [];
+  for (const def of picked) {
+    const match = existing.find(m =>
+      m.description === def.description && m.type === def.type &&
+      m.targetValue === def.targetValue && m.reward === def.reward,
+    );
+    missionIds.push(match ? match.id : (await tx.mission.create({ data: def })).id);
   }
-  return shuffled;
-}
 
-export async function getUserMissions(userId: string) {
-  let m = await prisma.userMission.findMany({
-    where: { userId },
-    include: { mission: true }
+  await tx.userMission.deleteMany({ where: { userId } });
+  await tx.userMission.createMany({
+    data: missionIds.map(missionId => ({ userId, missionId, createdAt: now })),
   });
 
-  if (m.length === 0) {
-    const picked = shuffleMissions(POSSIBLE_MISSIONS).slice(0, 3);
-    const pickedDescriptions = picked.map(p => p.description);
+  return tx.userMission.findMany({ where: { userId }, include: userMissionInclude });
+}
 
-    const existingMissions = await prisma.mission.findMany({
-      where: { description: { in: pickedDescriptions } }
-    });
+/** Today's missions of the player, each with the `required` count to complete it. */
+export async function getUserMissions(userId: string) {
+  const now = new Date();
+  let missions = await prisma.userMission.findMany({ where: { userId }, include: userMissionInclude });
 
-    const existingMissionsMap = new Map(existingMissions.map(m => [m.description, m]));
-    const missingMissions = picked.filter(p => !existingMissionsMap.has(p.description));
-
-    const newlyCreatedMissions = await Promise.all(
-      missingMissions.map(p => prisma.mission.create({ data: p }))
-    );
-
-    const allMissions = [...existingMissions, ...newlyCreatedMissions];
-
-    await prisma.userMission.createMany({
-      data: allMissions.map(mission => ({
-        userId,
-        missionId: mission.id
-      }))
-    });
-
-    m = await prisma.userMission.findMany({
-      where: { userId },
-      include: { mission: true }
-    });
+  // Only take the lock when a new set is needed (first visit of the day)
+  if (needsNewMissions(missions.map(um => um.createdAt), now)) {
+    missions = await withUserLock(userId, tx => ensureDailyMissions(tx, userId, now));
   }
-  return m;
+
+  return missions.map(um => ({
+    ...um,
+    required: missionRequiredCount(um.mission.type, um.mission.targetValue),
+  }));
 }
 
 export async function advanceMissionProgress(userId: string, type: string, targetValue?: string) {
   // Locked so two parallel progress events can't both complete (and pay) the same mission.
   return withUserLock(userId, async (tx) => {
-    const activeMissions = await tx.userMission.findMany({
-      where: {
-        userId,
-        completed: false,
-        mission: { type }
-      },
-      include: { mission: true }
-    });
+    // Progress always goes to today's missions, even if the player hasn't opened the store yet
+    const missions = await ensureDailyMissions(tx, userId);
+    const activeMissions = missions.filter(um => !um.completed && um.mission.type === type);
 
     let totalCurrencyGained = 0;
     let totalXPGained = 0;
 
     for (const um of activeMissions) {
-      if (um.mission.targetValue && targetValue && um.mission.targetValue !== targetValue) {
-        continue; // e.g. looking for "Python" but we opened "JavaScript"
-      }
+      // e.g. looking for "Python" but we opened "JavaScript", or a Common for "Collect a Rare"
+      if (!missionMatchesEvent(um.mission.type, um.mission.targetValue, targetValue)) continue;
 
-      const newProgress = um.progress + 1;
-      let required = parseInt(um.mission.targetValue || "1", 10);
-      if (isNaN(required)) required = 1;
+      const required = missionRequiredCount(um.mission.type, um.mission.targetValue);
+      const newProgress = Math.min(um.progress + 1, required);
       const isComplete = newProgress >= required;
 
       await tx.userMission.update({
@@ -102,7 +99,6 @@ export async function advanceMissionProgress(userId: string, type: string, targe
   });
 }
 
-import { grantXP, XP_AMOUNTS } from './xpService';
 
 export async function grantCurrency(userId: string, amount: number) {
   return prisma.user.update({

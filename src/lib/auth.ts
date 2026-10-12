@@ -6,6 +6,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { grantGithubLinkRewards } from '@/lib/githubLink';
+import { getClientIp, rateLimit } from '@/lib/rateLimit';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -27,8 +28,18 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email", placeholder: "dev@example.com" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // Slow down password guessing (15-minute windows). Keyed by e-mail + IP rather than
+        // e-mail alone, so nobody can lock a player out just by knowing their address.
+        const headers = new Headers(req?.headers as Record<string, string> | undefined);
+        const ip = getClientIp(headers) ?? 'unknown';
+        const [byEmailAndIp, byIp] = await Promise.all([
+          rateLimit(`login:email-ip:${credentials.email.toLowerCase()}:${ip}`, 10, 900),
+          rateLimit(`login:ip:${ip}`, 30, 900),
+        ]);
+        if (!byEmailAndIp.ok || !byIp.ok) throw new Error('TooManyAttempts');
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
@@ -132,5 +143,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login', // Custom login page we will build
+    error: '/login', // the login page shows ?error= codes (e.g. TooManyAttempts) instead of next-auth's default page
   }
 };

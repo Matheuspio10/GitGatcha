@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
+    // Mass sign-ups farm the starting BITS: a handful of accounts per IP per hour
+    const limited = await enforceRateLimit(req, 'register', 5, 60 * 60);
+    if (limited) return limited;
+
     const { email, password } = await req.json();
 
     if (!email || !password || password.length < 6) {

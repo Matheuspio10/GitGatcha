@@ -1,74 +1,12 @@
 import { prisma } from './prisma';
 
-// ─── Loyalty Milestone Definitions ───────────────────────────────────────────
+import { LOYALTY_MILESTONES, getLoyaltyBonuses, getMilestoneForTier, type LoyaltyMilestone } from './battleConfig';
 
-export interface LoyaltyMilestone {
-  tier: string;
-  title: string;
-  threshold: number;
-  atkDefBonus: number; // multiplier, e.g. 0.03 = 3%
-  hpBonus: number;
-  cosmetics: string[];
-}
-
-export const LOYALTY_MILESTONES: LoyaltyMilestone[] = [
-  {
-    tier: 'veteran',
-    title: 'Veteran',
-    threshold: 10,
-    atkDefBonus: 0.03,
-    hpBonus: 0,
-    cosmetics: ['veteran_badge'],
-  },
-  {
-    tier: 'trusted',
-    title: 'Trusted',
-    threshold: 25,
-    atkDefBonus: 0.07,
-    hpBonus: 0,
-    cosmetics: ['trusted_badge', 'gold_border'],
-  },
-  {
-    tier: 'reliable',
-    title: 'Reliable',
-    threshold: 50,
-    atkDefBonus: 0.12,
-    hpBonus: 0,
-    cosmetics: ['reliable_badge', 'alt_color_scheme'],
-  },
-  {
-    tier: 'legendary_bond',
-    title: 'Legendary Bond',
-    threshold: 100,
-    atkDefBonus: 0.18,
-    hpBonus: 0.05,
-    cosmetics: ['legendary_bond_badge', 'particle_effect', 'profile_prestige'],
-  },
-  {
-    tier: 'eternal',
-    title: 'Eternal',
-    threshold: 200,
-    atkDefBonus: 0.25,
-    hpBonus: 0.10,
-    cosmetics: ['eternal_badge', 'holographic_frame', 'distinct_power_color', 'unique_damage_style'],
-  },
-];
+// Milestone definitions and stat bonuses live in battleConfig (shared with the wiki).
+export { LOYALTY_MILESTONES, getLoyaltyBonuses, getMilestoneForTier };
+export type { LoyaltyMilestone };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-export function getMilestoneForTier(tier: string): LoyaltyMilestone | undefined {
-  return LOYALTY_MILESTONES.find(m => m.tier === tier);
-}
-
-export function getLoyaltyBonuses(tier: string): { atkMult: number; defMult: number; hpMult: number } {
-  const milestone = getMilestoneForTier(tier);
-  if (!milestone) return { atkMult: 1, defMult: 1, hpMult: 1 };
-  return {
-    atkMult: 1 + milestone.atkDefBonus,
-    defMult: 1 + milestone.atkDefBonus,
-    hpMult: 1 + milestone.hpBonus,
-  };
-}
 
 export function getNextMilestone(currentCount: number): LoyaltyMilestone | null {
   for (const m of LOYALTY_MILESTONES) {

@@ -6,6 +6,7 @@ import { CardProps } from '@/components/Card';
 import { BoosterReveal } from '@/components/BoosterReveal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
+import { toast } from 'react-hot-toast';
 
 interface PackVisualTheme {
   gradient: string;
@@ -86,11 +87,9 @@ export default function InventoryClient({ userId }: { userId: string }) {
         const wItem = wishlist.find((w: { primaryLanguage: string, fragmentsRequired: number, name: string }) => w.primaryLanguage === lang);
         if (wItem) {
           const current = fragments[lang] || 0;
-          import('react-hot-toast').then(mod => {
-            mod.toast(`🌟 ${lang} fragment earned — ${Math.min(current, wItem.fragmentsRequired)} of ${wItem.fragmentsRequired} toward ${wItem.name}!`, { 
-              duration: 6000,
-              style: { background: '#1e1b4b', color: '#fff', border: '1px solid #4f46e5' }
-            });
+          toast(`🌟 ${lang} fragment earned — ${Math.min(current, wItem.fragmentsRequired)} of ${wItem.fragmentsRequired} toward ${wItem.name}!`, {
+            duration: 6000,
+            style: { background: '#1e1b4b', color: '#fff', border: '1px solid #4f46e5' }
           });
         }
       });
@@ -148,6 +147,9 @@ export default function InventoryClient({ userId }: { userId: string }) {
   };
 
   const resetView = () => {
+    // Opening grants XP (possible level-up rewards). Resync Navbar BITS / LevelUpModal
+    // only once the reveal is finished, so the level-up modal never covers the reveal.
+    window.dispatchEvent(new Event('bits:refresh'));
     setPackState('IDLE');
     setApiState('IDLE');
     setSelectedPack(null);

@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { getUserMissions } from '@/lib/economyService';
+import { getUserMissions, nextMissionReset } from '@/lib/economyService';
 import StoreClient from './StoreClient';
 
 export default async function StorePage() {
@@ -11,5 +11,11 @@ export default async function StorePage() {
 
   const missions = await getUserMissions(user.id);
 
-  return <StoreClient userCurrency={user.currency} initialMissions={missions} />;
+  return (
+    <StoreClient
+      userCurrency={user.currency}
+      initialMissions={missions}
+      missionsResetAt={nextMissionReset().toISOString()}
+    />
+  );
 }

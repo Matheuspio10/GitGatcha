@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
 import { useBattleAudio } from './useBattleAudio';
+import { toast } from 'react-hot-toast';
 
 // Types
 interface TurnEvent {
@@ -345,7 +346,7 @@ function BattleReplay({
   const [floatingDmg, setFloatingDmg] = useState<{ id: number; value: number; side: 'top' | 'bottom'; isCrit?: boolean }[]>([]);
   
   // Audio system
-  const { initAudio, playSound, isMuted, setIsMuted, isInitialized } = useBattleAudio();
+  const { playSound, isMuted, toggleMuted } = useBattleAudio();
   const logEndRef = useRef<HTMLDivElement>(null);
   const dmgIdRef = useRef(0);
 
@@ -399,7 +400,12 @@ function BattleReplay({
   useEffect(() => {
     if (done) {
       playSound(winnerSide === 'CHALLENGER' ? 'victory' : 'defeat');
-      const timer = setTimeout(() => setShowResults(true), 2500);
+      const timer = setTimeout(() => {
+        setShowResults(true);
+        // Rewards were granted server-side; resync Navbar BITS / LevelUpModal now
+        // (not at battle start, so the replay doesn't spoil the result).
+        window.dispatchEvent(new Event('bits:refresh'));
+      }, 2500);
       return () => clearTimeout(timer);
     }
   }, [done, playSound, winnerSide]);
@@ -937,15 +943,17 @@ function BattleReplay({
             <Clock size={18} />
           </button>
           <button
-            onClick={() => { setIsMuted(!isMuted); if (!isInitialized) initAudio(); }}
+            onClick={toggleMuted}
             className={clsx('p-2 rounded-lg transition-all', isMuted ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-orange-400 hover:bg-orange-500/10')}
             title={isMuted ? 'Unmute' : 'Mute'}
+            aria-label={isMuted ? 'Unmute battle sounds' : 'Mute battle sounds'}
+            aria-pressed={isMuted}
           >
             {isMuted ? '🔇' : '🔊'}
           </button>
           <div className="w-px h-6 bg-slate-700" />
           <button
-            onClick={() => { setPlaying(p => !p); if (!isInitialized) initAudio(); }}
+            onClick={() => setPlaying(p => !p)}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all"
             title={playing ? 'Pause' : 'Play'}
           >
@@ -1071,10 +1079,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           loyaltyUnlocks: data.loyaltyUnlocks,
         });
       } else {
-        alert(data.error);
+        toast.error(data.error || 'Battle failed to initiate.');
       }
     } catch {
-      alert('Battle failed to initiate.');
+      toast.error('Battle failed to initiate.');
     } finally {
       setLoading(false);
     }
@@ -1092,12 +1100,13 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       const data = await res.json();
       if (data.success) {
         fetchChallenges();
-        alert('Challenge sent! The opponent has 24 hours to respond.');
+        window.dispatchEvent(new Event('bits:refresh'));
+        toast.success('Challenge sent! The opponent has 24 hours to respond.');
       } else {
-        alert(data.error);
+        toast.error(data.error || 'Failed to send challenge.');
       }
     } catch {
-      alert('Failed to send challenge.');
+      toast.error('Failed to send challenge.');
     } finally {
       setLoading(false);
     }
@@ -1144,10 +1153,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
         setTab('Quick Battle');
         fetchChallenges();
       } else {
-        alert(data.error);
+        toast.error(data.error || 'Failed to respond to challenge.');
       }
     } catch {
-      alert('Failed to respond to challenge.');
+      toast.error('Failed to respond to challenge.');
     } finally {
       setLoading(false);
     }

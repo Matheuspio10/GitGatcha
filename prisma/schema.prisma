@@ -119,6 +119,8 @@ model UserCard {
   lifetimeStats     Json     @default("{}")
   showcaseOrder     Int?
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Mission {
@@ -141,6 +143,8 @@ model UserMission {
   progress  Int      @default(0)
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Battle {
@@ -270,4 +274,14 @@ model RecentPull {
 
   @@index([userId, packId, createdAt])
   @@index([createdAt])
+}
+
+// Fixed-window request counters for rate limiting (key = action + client), shared by all instances
+model RateLimitHit {
+  key         String
+  windowStart DateTime
+  count       Int      @default(1)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
 }

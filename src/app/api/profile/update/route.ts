@@ -1,11 +1,11 @@
-import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { validateProfileImage } from '@/lib/profileImage';
 
 const MAX_BIO_LENGTH = 160;
-const MAX_IMAGE_SIZE = 300 * 1024; // 300KB in base64
 
 // Allow larger JSON payloads for base64 images
 export const maxDuration = 10;
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { image, bannerImage, bio, displayName, preferredLanguage } = body;
 
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
 
     // Validate and set bio
     if (bio !== undefined) {
@@ -32,29 +32,35 @@ export async function POST(req: Request) {
       }
     }
 
-    // Validate and set avatar image (base64)
-    if (image !== undefined) {
-      if (image === null) {
-        updateData.image = null;
-      } else if (typeof image === 'string') {
-        if (image.length > MAX_IMAGE_SIZE) {
-          return NextResponse.json({ error: 'Avatar image is too large. Please use a smaller image.' }, { status: 400 });
-        }
-        updateData.image = image;
-      }
-    }
+    // Validate avatar and banner. A value the profile already has (e.g. a GitHub
+    // avatar URL from before this check) is sent back unchanged by the edit modal:
+    // keep it instead of failing the whole save.
+    const userId = session.user.id;
+    let current: { image: string | null; bannerImage: string | null } | null = null;
+    const loadCurrent = async () =>
+      (current ??= await prisma.user.findUnique({
+        where: { id: userId },
+        select: { image: true, bannerImage: true },
+      }));
 
-    // Validate and set banner image (base64 or preset key)
-    if (bannerImage !== undefined) {
-      if (bannerImage === null) {
-        updateData.bannerImage = null;
-      } else if (typeof bannerImage === 'string') {
-        // Allow presets (short strings like "preset:cyber") or base64
-        if (!bannerImage.startsWith('preset:') && !bannerImage.startsWith('color:') && bannerImage.length > MAX_IMAGE_SIZE * 2) {
-          return NextResponse.json({ error: 'Banner image is too large.' }, { status: 400 });
-        }
-        updateData.bannerImage = bannerImage;
+    const imageFields = [
+      { field: 'image', value: image, kind: 'avatar' },
+      { field: 'bannerImage', value: bannerImage, kind: 'banner' },
+    ] as const;
+
+    for (const { field, value, kind } of imageFields) {
+      if (value === undefined) continue;
+      if (value === null) {
+        updateData[field] = null;
+        continue;
       }
+      const check = validateProfileImage(value, kind);
+      if (check.ok) {
+        updateData[field] = value;
+        continue;
+      }
+      if ((await loadCurrent())?.[field] === value) continue; // unchanged legacy value
+      return NextResponse.json({ error: check.error }, { status: 400 });
     }
 
     // Validate and set display name
@@ -82,7 +88,7 @@ export async function POST(req: Request) {
     }
 
     const updated = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: updateData,
       select: {
         id: true,

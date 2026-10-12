@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Coin, X, List } from '@phosphor-icons/react';
+import { Coin, X, List, CalendarCheck, Target, Sword, TrendUp, ShoppingCart } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
 import { UserAvatar } from './UserAvatar';
@@ -15,7 +15,8 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
   const [currency, setCurrency] = useState(initialCurrency);
   const pathname = usePathname();
 
-  // Live BITS sync: poll every 10s when tab is visible
+  // Live BITS sync: refetch on the global 'bits:refresh' event (dispatched after
+  // any action that changes BITS), on tab focus, and poll every 30s as a fallback.
   useEffect(() => {
     if (!username) return;
 
@@ -23,10 +24,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
 
     const fetchCurrency = async () => {
       try {
-        const res = await fetch('/api/user/currency');
+        const res = await fetch('/api/user/currency', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          setCurrency(data.currency);
+          if (typeof data.currency === 'number') setCurrency(data.currency);
         }
       } catch {
         // silent
@@ -34,12 +35,14 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
     };
 
     const startPolling = () => {
+      if (interval) clearInterval(interval);
       fetchCurrency(); // fetch immediately on visibility
-      interval = setInterval(fetchCurrency, 10000);
+      interval = setInterval(fetchCurrency, 30000);
     };
 
     const stopPolling = () => {
       if (interval) clearInterval(interval);
+      interval = null;
     };
 
     const handleVisibility = () => {
@@ -52,12 +55,22 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
 
     startPolling();
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('bits:refresh', fetchCurrency);
 
     return () => {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('bits:refresh', fetchCurrency);
     };
   }, [username]);
+
+  // Close the BITS panel with Escape
+  useEffect(() => {
+    if (!showBitsModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowBitsModal(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showBitsModal]);
 
   return (
     <>
@@ -75,6 +88,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             <Link href="/forge" className={`transition-all ${pathname === '/forge' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Forge</Link>
             <Link href="/battle" className={`transition-all ${pathname === '/battle' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Battle</Link>
             <Link href="/leaderboard" className={`transition-all ${pathname === '/leaderboard' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Rankings</Link>
+            <Link href="/friends" className={`transition-all ${pathname === '/friends' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Friends</Link>
             <Link href="/wiki" className={`transition-all ${pathname === '/wiki' ? 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.8)] scale-110' : 'hover:text-white hover:scale-105'}`}>Wiki</Link>
           </nav>
         )}
@@ -83,6 +97,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowBitsModal(true)}
+              aria-label={`${currency} BITS: how to earn more`}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors"
             >
               <Coin size={16} weight="fill" />
@@ -167,6 +182,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 { name: 'Forge', path: '/forge' },
                 { name: 'Battle', path: '/battle' },
                 { name: 'Rankings', path: '/leaderboard' },
+                { name: 'Friends', path: '/friends' },
                 { name: 'Wiki', path: '/wiki' },
               ].map(link => (
                 <Link
@@ -192,67 +208,105 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
         </div>
       )}
 
-      {/* Buy Bits Modal (Visual Only) */}
+      {/* BITS panel: balance + how to earn (no real-money purchases) */}
       {showBitsModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-2xl w-full shadow-2xl relative overflow-hidden">
-            <button 
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+          onClick={() => setShowBitsModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bits-panel-title"
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
               onClick={() => setShowBitsModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1"
+              className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Close"
             >
               <X size={24} />
             </button>
 
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">
-                Aquire Bits
-              </h2>
-              <p className="text-slate-400 mt-2">Power up your account with premium currency to summon legendary developers.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Package 1 */}
-              <div className="bg-slate-800/50 border border-slate-700 hover:border-yellow-500/50 rounded-xl p-5 flex flex-col items-center text-center transition-all cursor-pointer group">
-                <Coin size={48} weight="duotone" className="text-yellow-500 mb-3 group-hover:scale-110 transition-transform" />
-                <div className="text-xl font-bold text-white mb-1">500 Bits</div>
-                <div className="text-slate-400 text-sm mb-4">Starter Pack</div>
-                <div className="mt-auto w-full py-2 bg-slate-700 group-hover:bg-yellow-600 rounded-lg text-white font-bold transition-colors">
-                  $4.99
-                </div>
-              </div>
-
-              {/* Package 2 */}
-              <div className="bg-slate-800/50 border border-yellow-500/30 hover:border-yellow-400 rounded-xl p-5 flex flex-col items-center text-center transition-all cursor-pointer group relative overflow-hidden">
-                <div className="absolute top-0 w-full bg-yellow-500 text-black text-[10px] font-black uppercase tracking-widest py-0.5">Most Popular</div>
-                <div className="flex -space-x-3 mb-3 mt-3 group-hover:scale-110 transition-transform">
-                  <Coin size={48} weight="fill" className="text-yellow-500 relative z-10" />
-                  <Coin size={48} weight="fill" className="text-amber-600" />
-                </div>
-                <div className="text-xl font-bold text-white mb-1">1,200 Bits</div>
-                <div className="text-yellow-400 text-sm mb-4">+20% Bonus</div>
-                <div className="mt-auto w-full py-2 bg-yellow-600 group-hover:bg-yellow-500 rounded-lg text-white font-bold transition-colors shadow-[0_0_15px_rgba(202,138,4,0.3)]">
-                  $9.99
-                </div>
-              </div>
-
-              {/* Package 3 */}
-              <div className="bg-slate-800/50 border border-slate-700 hover:border-purple-500/50 rounded-xl p-5 flex flex-col items-center text-center transition-all cursor-pointer group hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                <div className="flex -space-x-2 mb-3 group-hover:scale-110 transition-transform">
-                  <Coin size={48} weight="fill" className="text-purple-400" />
-                  <Coin size={48} weight="fill" className="text-yellow-500 relative z-10 -translate-y-2" />
-                  <Coin size={48} weight="fill" className="text-indigo-400" />
-                </div>
-                <div className="text-xl font-bold text-white mb-1">5,000 Bits</div>
-                <div className="text-purple-400 text-sm mb-4">Whale Tier</div>
-                <div className="mt-auto w-full py-2 bg-slate-700 group-hover:bg-purple-600 rounded-lg text-white font-bold transition-colors">
-                  $39.99
-                </div>
+            <h2 id="bits-panel-title" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">
+              Your BITS
+            </h2>
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
+              <Coin size={32} weight="fill" className="text-yellow-500 shrink-0" />
+              <div>
+                <div className="text-2xl font-black text-white leading-none">{currency.toLocaleString('en-US')}</div>
+                <div className="text-xs uppercase tracking-wider text-yellow-500/80 mt-1">Current balance</div>
               </div>
             </div>
 
-            <p className="text-center text-xs text-slate-500 mt-6">
-              Visual mockup only. Purchasing is currently disabled in this environment.
-            </p>
+            <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">How to earn BITS</h3>
+            <ul className="flex flex-col gap-2">
+              <li>
+                <Link
+                  href="/store"
+                  onClick={() => setShowBitsModal(false)}
+                  className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3 hover:border-yellow-500/40 hover:bg-slate-800 transition-colors group"
+                >
+                  <CalendarCheck size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    <span className="block font-bold text-white text-sm">Daily reward</span>
+                    <span className="block text-xs text-slate-400">Claim free BITS once a day in the Gacha shop.</span>
+                  </span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Go to Gacha &rarr;</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/store"
+                  onClick={() => setShowBitsModal(false)}
+                  className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3 hover:border-yellow-500/40 hover:bg-slate-800 transition-colors group"
+                >
+                  <Target size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    <span className="block font-bold text-white text-sm">Daily missions</span>
+                    <span className="block text-xs text-slate-400">Finish missions for bonus BITS. They refresh every day.</span>
+                  </span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">See missions &rarr;</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/battle"
+                  onClick={() => setShowBitsModal(false)}
+                  className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3 hover:border-yellow-500/40 hover:bg-slate-800 transition-colors group"
+                >
+                  <Sword size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    <span className="block font-bold text-white text-sm">Battles</span>
+                    <span className="block text-xs text-slate-400">Win battles and league matches to earn BITS.</span>
+                  </span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Start a battle &rarr;</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/wiki"
+                  onClick={() => setShowBitsModal(false)}
+                  className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-3 hover:border-yellow-500/40 hover:bg-slate-800 transition-colors group"
+                >
+                  <TrendUp size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
+                  <span className="flex-1">
+                    <span className="block font-bold text-white text-sm">Level-ups</span>
+                    <span className="block text-xs text-slate-400">Leveling up grants rewards, including BITS and boosters.</span>
+                  </span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Read the wiki &rarr;</span>
+                </Link>
+              </li>
+            </ul>
+
+            <div className="mt-6 flex items-center gap-3 rounded-xl border border-dashed border-slate-700 p-3 text-slate-500" aria-disabled="true">
+              <ShoppingCart size={20} className="shrink-0" />
+              <div className="text-sm">
+                <span className="font-bold">Buy BITS — coming soon.</span>{' '}
+                <span className="text-xs">BITS can&apos;t be bought with real money yet.</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

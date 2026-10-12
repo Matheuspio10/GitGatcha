@@ -365,6 +365,33 @@
   text-transform: uppercase;
 }
 
+/* ── Mute toggle ───────────────────────────────────────── */
+.hacking-mute {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  margin-left: 12px;
+  background: rgba(0, 255, 200, 0.08);
+  border: 1px solid rgba(0, 255, 200, 0.25);
+  border-radius: 6px;
+  color: rgba(0, 255, 200, 0.7);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hacking-mute:hover,
+.hacking-mute:focus-visible {
+  background: rgba(0, 255, 200, 0.18);
+  color: #00ffc8;
+  outline: none;
+}
+
+.hacking-mute.muted {
+  color: rgba(0, 255, 200, 0.35);
+}
+
 /* ── Data Collected Bar ────────────────────────────────── */
 .hacking-data-bar-container {
   display: flex;

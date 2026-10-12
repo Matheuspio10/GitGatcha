@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { claimDailyReward } from '@/lib/economyService';
 import { prisma } from '@/lib/prisma';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
@@ -37,12 +38,15 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await enforceRateLimit(req, 'store-daily', 10, 60, userId);
+    if (limited) return limited;
 
     const result = await claimDailyReward(userId);
     return NextResponse.json(result);

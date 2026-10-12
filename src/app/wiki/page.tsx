@@ -3,6 +3,19 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, RARITY_STAT_MULTIPLIER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
+import {
+  BALANCED_POWER_CAP_MULTIPLIER,
+  FRIEND_BATTLE_LEAGUE,
+  LEAGUES,
+  LEAGUE_MODES,
+  LOYALTY_MILESTONES,
+  PASSIVE_RARITY_MULTIPLIER,
+  RATING_K_FACTOR,
+  STAMINA_COST_PER_BATTLE,
+  STARTING_RATING,
+} from '@/lib/battleConfig';
+import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils';
+import { INVOCATION_COSTS } from '@/lib/forgeService';
 import { 
   MagnifyingGlass, 
   List, 
@@ -16,6 +29,22 @@ import {
   CaretRight
 } from '@phosphor-icons/react';
 
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+/** Chance range of a rarity-scaled passive, e.g. "15% (Common) to 35% (Legendary)". */
+const passiveChance = (base: number) =>
+  `${pct(base * PASSIVE_RARITY_MULTIPLIER.Common)} (Common) to ${pct(base * PASSIVE_RARITY_MULTIPLIER.Legendary)} (Legendary)`;
+
+const LEAGUE_TITLE_COLOR: Record<string, string> = {
+  OPEN: 'text-white',
+  COMMON: 'text-green-400',
+  BALANCED: 'text-blue-400',
+  DIVERSITY: 'text-purple-400',
+  LEGENDARY: 'text-yellow-500',
+};
+
+const COSMETIC_LABEL = (id: string) => id.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+
 const SECTIONS = [
   { id: 'getting-started', title: 'Getting Started' },
   { id: 'cards-and-rarities', title: 'Cards and Rarities' },
@@ -23,7 +52,7 @@ const SECTIONS = [
   { id: 'language-types', title: 'Language Types and Advantages' },
   { id: 'passive-abilities', title: 'Passive Abilities' },
   { id: 'battle-system', title: 'Battle System' },
-  { id: 'critical-hits-momentum', title: 'Critical Hits and Momentum' },
+  { id: 'critical-hits-momentum', title: 'Momentum' },
   { id: 'leagues-tournaments', title: 'Leagues and Tournaments' },
   { id: 'stamina-system', title: 'Stamina System' },
   { id: 'loyalty-system', title: 'Loyalty Contract System' },
@@ -203,8 +232,8 @@ export default function WikiPage() {
                   <h3 className="text-xl font-bold text-white mb-4">The Core Gameplay Loop</h3>
                   <ol className="list-decimal pl-5 space-y-3 text-slate-300">
                     <li><strong className="text-orange-400">Open Packs:</strong> Spend BITS to open Gacha packs in the <Link href="/store" className="text-indigo-400 hover:underline">Store</Link> to acquire developer cards.</li>
-                    <li><strong className="text-orange-400">Build a Team:</strong> Assemble a team of 3 developers in the <Link href="/collection" className="text-indigo-400 hover:underline">Collection</Link>. Factor in their Languages, Stats, and Synergies.</li>
-                    <li><strong className="text-orange-400">Battle:</strong> Take your team to the <Link href="/battle" className="text-indigo-400 hover:underline">Arena</Link> to fight other players&apos; teams, climb leagues, and earn more BITS & XP.</li>
+                    <li><strong className="text-orange-400">Build a Team:</strong> Pick 3 developers from your collection in the <Link href="/battle" className="text-indigo-400 hover:underline">Arena</Link>. Factor in their Languages, Stats, and Synergies.</li>
+                    <li><strong className="text-orange-400">Battle:</strong> Fight computer teams in the leagues to earn BITS & XP, or challenge friends in PvP to climb the <Link href="/leaderboard" className="text-indigo-400 hover:underline">rating ladder</Link>.</li>
                   </ol>
                 </div>
               </div>
@@ -212,6 +241,7 @@ export default function WikiPage() {
 
             {/* Section 2: Cards and Rarities */}
             <section id="cards-and-rarities" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
+              <span id="cards-rarities" className="block -mt-32 pt-32" aria-hidden="true" />
               <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">02</span>
                 Cards and Rarities
@@ -268,7 +298,7 @@ export default function WikiPage() {
                     <Sword size={24} weight="fill" className="text-red-400" />
                     <h3 className="text-xl font-bold text-white">Attack (ATK)</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Determines Base Damage. The damage dealt is calculated as <code>Damage = ATK - (DEF * 0.25)</code>. ATK also determines how much HP Python cards regen.</p>
+                  <p className="text-sm text-slate-300">Determines Base Damage. The damage dealt is calculated as <code>Damage = ATK - (DEF * 0.25)</code>, never less than 15% of ATK (minimum 1). ATK also determines how much HP Python cards regen.</p>
                 </div>
                 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
@@ -284,7 +314,7 @@ export default function WikiPage() {
                     <Heart size={24} weight="fill" className="text-green-400" />
                     <h3 className="text-xl font-bold text-white">Health (HP)</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Determines how much damage a card can take before being defeated. If a battle hits the 50-turn cap, the card with the highest remaining HP % wins.</p>
+                  <p className="text-sm text-slate-300">Determines how much damage a card can take before being defeated. If a single matchup lasts 50 turns, the card with the higher remaining HP % wins it (an exact tie knocks out both).</p>
                 </div>
 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
@@ -292,7 +322,7 @@ export default function WikiPage() {
                     <Lightning size={24} weight="fill" className="text-yellow-400" />
                     <h3 className="text-xl font-bold text-white">Power</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Composite score used to measure overall card strength. Used for Sorting in the collection and restricting entry to the Balanced League.</p>
+                  <p className="text-sm text-slate-300"><code>ATK + DEF + HP</code>. Used for sorting in the collection and for the Balanced League team cap.</p>
                 </div>
               </div>
             </section>
@@ -374,18 +404,18 @@ export default function WikiPage() {
                 Passive Abilities
               </h2>
               <p className="mb-8 text-slate-300">
-                Most languages have unique passive mechanics that activate during battle. Understanding these is key to mastering GitGacha.
+                Most languages have unique passive mechanics that activate during battle. Chance-based passives scale with rarity (Rare is the baseline). Cards without one of these languages are Neutral.
               </p>
 
               <div className="space-y-4">
                 {[
-                  { lang: 'C / C++', name: 'Raw Power', desc: 'Attacks inherently ignore 50% of the opponent&apos;s DEF stat.' },
-                  { lang: 'CSS', name: 'Undefined Behavior', desc: 'Attacks have a 25% chance to deal Double Damage, but a 15% chance to hit for exactly 0 damage.' },
-                  { lang: 'Go', name: 'First Strike', desc: 'Instantly deals damage to the opposing card immediately upon entering the field.' },
-                  { lang: 'JavaScript', name: 'Double Callback', desc: 'Attacks have a 25% chance to trigger an additional hit, dealing 1.5x total damage that turn.' },
+                  { lang: 'C / C++', name: 'Raw Power', desc: 'Attacks ignore 50% of the opponent\'s DEF stat.' },
+                  { lang: 'CSS', name: 'Undefined Behavior', desc: `Each turn: ${passiveChance(0.25)} chance to deal Double Damage; otherwise ${passiveChance(0.15)} chance to deal exactly 0 damage.` },
+                  { lang: 'Go', name: 'First Strike', desc: 'Deals one hit to the opposing card as soon as it enters the field (blocked by Iron Shield).' },
+                  { lang: 'JavaScript', name: 'Double Callback', desc: `Each turn: ${passiveChance(0.25)} chance to hit again, dealing 1.5x damage that turn.` },
                   { lang: 'Python', name: 'Regeneration', desc: 'At the end of every turn it survives, heals for HP equal to 10% of its ATK stat.' },
-                  { lang: 'Ruby', name: 'Last Stand', desc: 'When HP drops below 30%, ATK stat is permanently multiplied by 1.35x.' },
-                  { lang: 'Rust', name: 'Iron Shield', desc: 'Enters the battlefield with an active shield that absorbs 100% of the first incoming instance of damage.' },
+                  { lang: 'Ruby', name: 'Last Stand', desc: 'While its HP is below 30%, deals 1.35x damage.' },
+                  { lang: 'Rust', name: 'Iron Shield', desc: 'Enters the field with a shield that blocks all damage of its first turn (including a Go First Strike).' },
                   { lang: 'TypeScript', name: 'Type Safety', desc: 'Passively reduces all incoming damage received by 15%.' }
                 ].map((p) => (
                   <div key={p.name} className="flex flex-col sm:flex-row gap-4 bg-slate-800/20 p-5 rounded-xl border border-slate-700/30">
@@ -419,15 +449,21 @@ export default function WikiPage() {
                   <li><strong>Closer (Slot 3):</strong> Your strongest card. Enters last to win the match.</li>
                 </ul>
 
-                <h4 className="text-white font-bold mt-6 mb-2">Round Order of Operations</h4>
+                <h4 className="text-white font-bold mt-6 mb-2">Order of Operations</h4>
                 <ol>
-                  <li><strong>Entry Checks:</strong> Synergies are applied. First Strike (Go) and Iron Shield (Rust) activate immediately.</li>
-                  <li><strong>Modifiers Applied:</strong> Stamina fatigue penalties, Loyalty bonuses, and Momentum bonuses modify base stats.</li>
+                  <li><strong>Before the battle:</strong> Loyalty bonuses, then Stamina fatigue penalties, modify base stats. Team Synergies are applied.</li>
+                  <li><strong>On entry:</strong> First Strike (Go) and Iron Shield (Rust) activate when a card enters the field.</li>
                   <li><strong>Type Advantages:</strong> Multipliers are checked between active combatants.</li>
-                  <li><strong>Damage Calculation:</strong> Standard damage is evaluated simultaneously. Both cards attack each other at the same time.</li>
+                  <li><strong>Damage Calculation:</strong> Both cards attack each other at the same time. Momentum, Raw Power, Type Safety and Rust Synergy modify the numbers.</li>
                   <li><strong>Passive Checks:</strong> Passives like Double Callback or Undefined Behavior alter the final damage.</li>
-                  <li><strong>Resolution:</strong> HP is reduced. If Python survived, it heals. If a card hits 0 HP, it is defeated.</li>
+                  <li><strong>Resolution:</strong> HP is reduced. If a Python card survived, it heals. A card at 0 HP is defeated and the next one enters.</li>
                 </ol>
+
+                <h4 className="text-white font-bold mt-6 mb-2">How a Battle is Decided</h4>
+                <ul>
+                  <li>The team that still has a card standing when the other runs out wins.</li>
+                  <li>If both last cards go down on the same turn, or the global turn limit stops the fight, the team with the higher remaining HP % wins. An exact tie goes to the <strong>defender</strong>.</li>
+                </ul>
               </div>
             </section>
 
@@ -435,7 +471,7 @@ export default function WikiPage() {
             <section id="critical-hits-momentum" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
               <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">07</span>
-                Critical Hits & Momentum
+                Momentum
               </h2>
               <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 p-6 rounded-xl border border-orange-500/30 mb-6">
                 <h3 className="text-xl font-bold text-orange-400 mb-2 flex items-center gap-2">
@@ -443,12 +479,12 @@ export default function WikiPage() {
                   Momentum System
                 </h3>
                 <p className="text-sm text-slate-300 mb-4">
-                  If a single card manages to defeat <strong>2 consecutive opponents</strong> without dying, it achieves <strong className="text-orange-400">Momentum</strong>.
+                  If a single card defeats <strong>2 opponents in a row</strong> without dying, it achieves <strong className="text-orange-400">Momentum</strong>.
                 </p>
                 <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
-                  <li>Displays an <strong>On Fire</strong> flame visual effect during battle.</li>
-                  <li>Grants a stacking <strong>+10% bonus</strong> to ALL stats (ATK and DEF).</li>
-                  <li>Can stack up to a maximum of <strong>+30%</strong> (though highly unlikely in a standard 3v3).</li>
+                  <li>Displays an <strong>On Fire</strong> effect during battle.</li>
+                  <li>Grants <strong>+10% ATK and DEF</strong> after the 2nd consecutive knockout and <strong>+20%</strong> after the 3rd (a full sweep).</li>
+                  <li>There are no critical hits in GitGacha: damage only varies through types, passives and Momentum.</li>
                 </ul>
               </div>
             </section>
@@ -460,37 +496,38 @@ export default function WikiPage() {
                 Leagues and Tournaments
               </h2>
               
+              <p className="mb-6 text-slate-300">
+                League battles are against a computer team that follows the same restrictions as yours. They pay BITS and XP but never change your rating.
+              </p>
               <div className="space-y-4">
-                <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-white mb-2">Open League</h3>
-                  <p className="text-sm text-slate-300 mb-2">No restrictions. Bring your absolute strongest 3 cards. Lowest rewards but reliable.</p>
-                  <p className="text-xs font-mono text-orange-400">Rewards: Win 15 BITS, Loss 5 BITS | 20 XP</p>
-                </div>
-                
-                <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-slate-400 mb-2">Common League</h3>
-                  <p className="text-sm text-slate-300 mb-2">Requires all 3 cards to be <strong>Common</strong> rarity. Tests your foundational cards.</p>
-                  <p className="text-xs font-mono text-orange-400">Rewards: Win 25 BITS, Loss 8 BITS | 35 XP</p>
-                </div>
+                {LEAGUE_MODES.map((mode) => {
+                  const l = LEAGUES[mode];
+                  return (
+                    <div key={mode} className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
+                      <h3 className={`text-lg font-bold mb-2 ${LEAGUE_TITLE_COLOR[mode]}`}>{l.label}</h3>
+                      <p className="text-sm text-slate-300 mb-2">{l.rules}</p>
+                      <p className="text-xs font-mono text-orange-400">
+                        Win: {l.winBits} BITS + {l.winXp} XP | Loss: {l.lossBits} BITS + {l.lossXp} XP
+                        {l.entryFee > 0 && <> | Entry fee: {l.entryFee} BITS (net {l.winBits - l.entryFee >= 0 ? '+' : ''}{l.winBits - l.entryFee} on a win, -{l.entryFee - l.lossBits} on a loss)</>}
+                      </p>
+                    </div>
+                  );
+                })}
 
-                <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-blue-400 mb-2">Balanced League</h3>
-                  <p className="text-sm text-slate-300 mb-2">Team Total Power must be below 60,000. Prevents sweeping with full Legendaries.</p>
-                  <p className="text-xs font-mono text-orange-400">Rewards: Win 35 BITS, Loss 10 BITS | 50 XP</p>
-                </div>
-
-                <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-green-400 mb-2">Diversity League</h3>
-                  <p className="text-sm text-slate-300 mb-2">Requires 3 cards of entirely different languages. Promotes mixed Synergy usage.</p>
-                  <p className="text-xs font-mono text-orange-400">Rewards: Win 45 BITS, Loss 12 BITS | 60 XP</p>
-                </div>
-
-                <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-yellow-500 mb-2">Legendary Only League</h3>
-                  <p className="text-sm text-slate-300 mb-2">Must field at least one Legendary tier card. High risk, highest reward.</p>
-                  <p className="text-xs font-mono text-orange-400">Rewards: Win 60 BITS, Loss 15 BITS | 100 XP</p>
+                <div className="bg-slate-800/30 p-5 rounded-xl border border-orange-500/30">
+                  <h3 className="text-lg font-bold text-orange-400 mb-2">Friend Challenges (PvP)</h3>
+                  <p className="text-sm text-slate-300 mb-2">
+                    Challenge a friend with any 3 cards; they have 24 hours to answer with their own team, and only see how many cards and which rarities you sent.
+                    A card can only be in one pending challenge at a time. PvP is the only way to change your <strong>rating</strong> (ELO, everyone starts at {STARTING_RATING}, K = {RATING_K_FACTOR}).
+                  </p>
+                  <p className="text-xs font-mono text-orange-400">
+                    Win: {LEAGUES[FRIEND_BATTLE_LEAGUE].winBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].winXp} XP | Loss: {LEAGUES[FRIEND_BATTLE_LEAGUE].lossBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].lossXp} XP (both players)
+                  </p>
                 </div>
               </div>
+              <p className="mt-4 text-xs text-slate-500">
+                Balanced League cap: {BALANCED_POWER_CAP_MULTIPLIER}× the average power of every card in the game; the Arena shows the current value.
+              </p>
             </section>
 
              {/* Sections 9: Stamina */}
@@ -500,8 +537,8 @@ export default function WikiPage() {
                 Stamina System
               </h2>
               <div className="prose prose-invert prose-orange max-w-none text-slate-300 mb-6">
-                <p>Developers get tired! Every battle drains <strong className="text-red-400">20 Stamina</strong> from the cards used. As stamina drops, cards suffer severe penalties to their ATK and DEF output in battles. At 0 stamina, they are Exhausted and cannot be placed in a team.</p>
-                <p>Cards automatically recover <strong>10 Stamina per hour</strong> but <strong>ONLY when they are NOT in your active team slot!</strong> Resting your best cards is required. Alternatively, restore Stamina instantly in the Collection view for 100 BITS per card.</p>
+                <p>Developers get tired! Every battle (league or PvP) drains <strong className="text-red-400">{STAMINA_COST_PER_BATTLE} Stamina</strong> from each card used. As stamina drops, cards suffer penalties to their ATK and DEF in battles. At 0 stamina, they are Exhausted and cannot battle.</p>
+                <p>Every card automatically recovers <strong>{STAMINA_RECOVERY_RATE_PER_HOUR} Stamina per hour</strong> (up to {MAX_STAMINA}), including the cards in your saved team. Alternatively, restore Stamina instantly in the Collection view for 100 BITS per card.</p>
               </div>
 
               <table className="w-full text-left text-sm whitespace-nowrap border border-slate-700 rounded-xl overflow-hidden">
@@ -530,17 +567,16 @@ export default function WikiPage() {
                 Loyalty Contract System
               </h2>
               <p className="mb-6 text-slate-300">
-                Fighting battles consecutively with the exact same card builds <strong>Loyalty</strong>. As a card reaches Loyalty Milestones, it permanently unlocks <strong>Stat Multipliers</strong> that stack multiplicatively with other bonuses, as well as unique cosmetic borders.
+                Every battle a card fights (win or loss) adds to its <strong>Loyalty</strong>. As a card reaches Loyalty Milestones, it permanently unlocks <strong>Stat Multipliers</strong> (applied before every other battle modifier) and cosmetics.
               </p>
 
               <div className="space-y-3">
-                {[
-                  { m: 10, t: 'Veteran ⭐', stat: '+5%', extra: 'Purple badge icon.' },
-                  { m: 25, t: 'Trusted 🛡️', stat: '+10%', extra: 'Golden card border. Eligible for Hall of Fame.' },
-                  { m: 50, t: 'Reliable 🔥', stat: '+15%', extra: 'Orange glowing aura.' },
-                  { m: 100, t: 'Legendary Bond 💎', stat: '+25%', extra: 'Pink floating particle effects.' },
-                  { m: 200, t: 'Eternal ♾️', stat: '+40%', extra: 'Animated holographic frame & cyan text.' }
-                ].map(l => (
+                {LOYALTY_MILESTONES.map(m => ({
+                  m: m.threshold,
+                  t: m.title,
+                  stat: `+${pct(m.atkDefBonus)} ATK & DEF${m.hpBonus > 0 ? `, +${pct(m.hpBonus)} HP` : ''}`,
+                  extra: m.cosmetics.map(COSMETIC_LABEL).join(', '),
+                })).map(l => (
                   <div key={l.t} className="flex flex-col sm:flex-row gap-4 bg-slate-800/10 p-4 rounded-xl border border-slate-700/50 items-center justify-between">
                     <div className="flex items-center gap-4 w-full sm:w-1/2">
                       <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center font-black text-slate-300">
@@ -552,7 +588,7 @@ export default function WikiPage() {
                       </div>
                     </div>
                     <div className="w-full sm:w-1/2 text-sm text-slate-300 flex items-center justify-between">
-                       <span className="font-bold text-green-400">{l.stat} Stats</span>
+                       <span className="font-bold text-green-400">{l.stat}</span>
                        <span className="text-xs italic text-slate-500 text-right">{l.extra}</span>
                     </div>
                   </div>
@@ -570,8 +606,8 @@ export default function WikiPage() {
                 <p>The <Link href="/forge" className="text-indigo-400 hover:underline">Forge</Link> allows you to bypass the Gacha randomness and directly craft the exact developer card you want.</p>
                 <ul>
                   <li><strong>Searching:</strong> Type any valid GitHub username to pull that developer&apos;s live stats into the app.</li>
-                  <li><strong>Fragments:</strong> Crafting requires Language Fragments matching the target developer&apos;s primary language. (e.g., 50 JavaScript Fragments for a JS developer).</li>
-                  <li><strong>Earning Fragments:</strong> You earn fragments by opening Gacha packs. Getting duplicate cards automatically converts them into fragments.</li>
+                  <li><strong>Fragments:</strong> Crafting requires Language Fragments matching the target developer&apos;s primary language, plus BITS. The cost depends on the card&apos;s rarity: {RARITY_ORDER.map(r => `${r} ${INVOCATION_COSTS[r].fragments} fragments + ${INVOCATION_COSTS[r].bits} BITS`).join(' · ')}.</li>
+                  <li><strong>Earning Fragments:</strong> Every booster you open drops Language Fragments for the most common language among its cards.</li>
                   <li><strong>Wishlist:</strong> Add developers to your Wishlist to easily track your fragment progress towards acquiring them.</li>
                 </ul>
               </div>
@@ -587,10 +623,10 @@ export default function WikiPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {[
-                  { name: 'Mixed Team Synergy', req: '3 different languages', effect: '+8% ATK to ALL cards on the team.' },
-                  { name: 'Python Synergy', req: '2 or 3 Python cards', effect: 'Grants all 3 cards 6% HP regeneration. (x2 strength if 3 cards)' },
-                  { name: 'Rust Synergy', req: '2 or 3 Rust cards', effect: 'Grants all 3 cards 10% damage reduction. (x2 strength if 3 cards)' },
-                  { name: 'JS Synergy', req: '2 or 3 JS cards', effect: 'Grants all 3 cards a 10% chance to Double Callback hit. (x2 chance if 3 cards)' },
+                  { name: 'Mixed Team Synergy', req: '3 different types', effect: '+8% ATK to ALL cards on the team.' },
+                  { name: 'Python Synergy', req: '2 or 3 Python cards', effect: 'Non-Python teammates also regenerate HP equal to 6% of their ATK each turn (Python cards keep their own 10%).' },
+                  { name: 'Rust Synergy', req: '2 or 3 Rust cards', effect: 'All 3 cards take 10% less damage (20% with 3 Rust cards).' },
+                  { name: 'JS Synergy', req: '2 or 3 JS cards', effect: 'Non-JS teammates get a 10% chance to Double Callback each turn (JS cards keep their own chance).' },
                   { name: 'Go Synergy', req: '2 or 3 Go cards', effect: 'All 3 cards gain the Go First Strike ability.' },
                  ].map(syn => (
                    <div key={syn.name} className="bg-slate-800/30 border border-slate-700 rounded-lg p-5">
@@ -612,25 +648,26 @@ export default function WikiPage() {
               <div className="columns-1 md:columns-2 gap-8 text-sm text-slate-300 space-y-4">
                 {[
                   { t: 'ATK', d: 'Base Attack stat. Determines damage dealt.' },
-                  { t: 'BITS', d: 'The primary premium currency used to buy packs and heal stamina.' },
+                  { t: 'BITS', d: 'The in-game currency used to buy packs, craft in the Forge, enter the Legendary League and restore stamina.' },
                   { t: 'Closer', d: 'The third and final card slot in a team.' },
                   { t: 'Common', d: `The lowest rarity tier (${RARITY_STAT_MULTIPLIER.Common}x stat multiplier).` },
                   { t: 'DEF', d: 'Base Defense stat. Reduces incoming physical damage.' },
-                  { t: 'Eternal', d: 'The maximum Loyalty rank achieved at 200 battles.' },
+                  { t: 'Eternal', d: `The maximum Loyalty rank, reached at ${LOYALTY_MILESTONES[LOYALTY_MILESTONES.length - 1].threshold} battles.` },
                   { t: 'Exhausted', d: 'A card at 0 Stamina. Cannot participate in battles.' },
                   { t: 'Fragment', d: 'Currency earned from dupes, used in the Forge to craft specific cards.' },
                   { t: 'HP', d: 'Health Points. Reaching 0 means defeat.' },
                   { t: 'Legendary', d: `The highest rarity tier (${RARITY_STAT_MULTIPLIER.Legendary}x stat multiplier). Very low pull rates.` },
-                  { t: 'Loyal', d: 'A card that has fought 10+ battles.' },
+                  { t: 'Rating', d: `PvP-only ELO score shown on the leaderboard. Starts at ${STARTING_RATING}.` },
                   { t: 'Mid', d: 'The second card slot in a team.' },
-                  { t: 'Momentum', d: 'Bonus activated after a single card defeats 2 enemies.' },
+                  { t: 'Momentum', d: 'ATK/DEF bonus activated after a single card defeats 2 enemies in a row.' },
                   { t: 'Opener', d: 'The first card slot. Enters battle first.' },
                   { t: 'Passive', d: 'An innate ability specific to a language type.' },
                   { t: 'Power', d: 'Composite strength score of ATK, DEF, and HP.' },
                   { t: 'Synergy', d: 'Team-wide bonus granted by stacking similar card types.' },
                   { t: 'Type Advantage', d: 'When a language beats another, granting 1.5x damage.' },
+                  { t: 'Veteran', d: `First Loyalty rank, reached at ${LOYALTY_MILESTONES[0].threshold} battles.` },
                   { t: 'Wishlist', d: 'Forge feature measuring fragment progress for a target card.' },
-                  { t: 'XP', d: 'Account experience earned from battles to unlock higher max stamina caps.' },
+                  { t: 'XP', d: 'Account experience earned from battles and other activities. Leveling up grants reward boosters.' },
                 ].map(term => (
                    <div key={term.t} className="break-inside-avoid bg-slate-800/20 p-3 rounded-lg border border-slate-700/30">
                      <span className="font-bold text-orange-300 block mb-1">{term.t}</span>

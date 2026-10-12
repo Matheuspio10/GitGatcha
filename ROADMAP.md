@@ -50,6 +50,17 @@ Esforço: **P** = horas a 1 dia · **M** = alguns dias · **G** = 1 semana ou ma
 - ✅ **Conectar GitHub** (perfil → Edit Profile): buscas do booster usam a cota do próprio jogador; +300 BITS na primeira conexão; o jogador ganha **a própria carta na edição Signature** (moldura foil exclusiva, nunca sai em booster nem na forja).
 - ✅ Cron com 300 s (Fluid compute) e carregamento das orgs retomável.
 
+**Rodada Fase 1 (14/10/2026)**
+- ✅ Login com GitHub corrigido (o GitHub passou a mandar o parâmetro `iss`, que o next-auth v4 recusava).
+- ✅ 0.7 rota de login legada removida · 0.10 limite de tentativas (cadastro, login, forja, loja, daily, batalha) · 0.11 validação das imagens de perfil · 0.13 `/inventory` e `/forge` protegidos.
+- ✅ 1.2 Ranking: rating só muda em PvP; desempate; só aparece quem já jogou; aba Rivais = amigos; avatares e celular. Script `scripts/recompute-ratings.ts` para refazer os ratings a partir do histórico PvP.
+- ✅ 1.3 Missões diárias (renovam à meia-noite UTC, pool de 16, "Collect Rare" conta raridades maiores, contagem regressiva).
+- ✅ 1.4 Batalha: stamina com piso 0 e sem "restaurar", stamina recupera para todas as cartas, desafio não expõe o time, carta não pode estar em dois desafios, oponente PvE aleatório de verdade, regra de empate única, liga Legendary paga 900 (taxa 500).
+- ✅ 1.5 Booster: dica não cobre mais os status, flip 3D, carta revelada continua revelada, só avança depois de revelar. Áudio desbloqueia no primeiro clique; mute real e salvo. Toasts globais. BITS sincronizados. Loja falsa de BITS trocada por "como ganhar BITS". Level up aparece sem recarregar. Link da forja abre o pack certo na loja. Amigos no menu.
+- ✅ 1.6 Wiki: ligas, recompensas, lealdade, stamina, rating e forja vêm do código (`src/lib/battleConfig.ts`); mecânicas inexistentes removidas.
+- ✅ 1.7 Limpeza: 20 arquivos de log/lixo removidos, dependências não usadas removidas, `@prisma/client` em dependências, README e `.env.example`.
+- Acessibilidade: respeita "reduzir movimento", zoom liberado no celular.
+
 **Pendente de ação sua**
 - 🟡 Aplicar as migrações no banco de produção (`prisma migrate resolve --applied 0_init` e `prisma migrate deploy`) — cria 3 tabelas novas (`GithubCache`, `OrgMember`, `RecentPull`), sem tocar nas existentes. **O código novo precisa delas.**
 - 🟡 Criar `CRON_SECRET` nas variáveis de ambiente da Vercel (sem ele o cron não roda).

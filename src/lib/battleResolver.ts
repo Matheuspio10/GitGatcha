@@ -1,4 +1,4 @@
-import { getLoyaltyBonuses } from './loyaltyService';
+import { getLoyaltyBonuses, PASSIVE_RARITY_MULTIPLIER } from './battleConfig';
 
 export type CardType = 'Python' | 'JavaScript' | 'Ruby' | 'PHP' | 'Rust' | 'C' | 'C++' | 'Go' | 'TypeScript' | 'CSS' | 'Neutral' | 'Legendary';
 export type Rarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
@@ -71,14 +71,36 @@ export function getCardType(card: any): CardType {
 }
 
 function getRarityMultiplier(rarity: string): number {
-  switch (rarity) {
-    case 'Common': return 0.6;   // -40%
-    case 'Uncommon': return 0.8; // -20%
-    case 'Rare': return 1.0;     // Base
-    case 'Epic': return 1.2;     // +20%
-    case 'Legendary': return 1.4;// +40%
-    default: return 1.0;
-  }
+  return PASSIVE_RARITY_MULTIPLIER[rarity] ?? 1.0;
+}
+
+/** Share of the team's total max HP still standing (cards at or below 0 HP count as 0). */
+export function remainingHpFraction(team: BattleCard[]): number {
+  const max = team.reduce((acc, c) => acc + Math.max(0, c.maxHp), 0);
+  if (max <= 0) return 0;
+  const left = team.reduce((acc, c) => acc + Math.max(0, Math.min(c.hp, c.maxHp)), 0);
+  return left / max;
+}
+
+/**
+ * The single tie rule for every way a battle can end.
+ *
+ * - One side still has cards and the other doesn't: the side with cards wins.
+ * - Otherwise (both last cards went down together, or the global turn limit
+ *   stopped the fight with both sides standing): the team with the higher
+ *   remaining HP % wins; an exact tie goes to the DEFENDER.
+ */
+export function decideBattleWinner(
+  cTeam: BattleCard[],
+  dTeam: BattleCard[],
+  cIdx: number,
+  dIdx: number
+): 'CHALLENGER' | 'DEFENDER' {
+  const cAlive = cIdx < cTeam.length;
+  const dAlive = dIdx < dTeam.length;
+  if (cAlive && !dAlive) return 'CHALLENGER';
+  if (dAlive && !cAlive) return 'DEFENDER';
+  return remainingHpFraction(cTeam) > remainingHpFraction(dTeam) ? 'CHALLENGER' : 'DEFENDER';
 }
 
 // ---------------------------------------------------------
@@ -538,12 +560,30 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // Failsafe wrapper to prevent infinite loops from 1 DMG minimums if HP gets incredibly high somehow (shouldn't realistically happen)
     if (turnNumber > 200) {
-        log.push({ turnNumber, cCardId: cCard.id, dCardId: dCard.id, cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: 0, dHpEnd: 0, events: [{type: 'battle_end', message:'Turn Limit Reached!'}] });
+        log.push({ turnNumber, cCardId: cCard.id, dCardId: dCard.id, cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp), events: [{type: 'battle_end', message:'Turn Limit Reached!'}] });
+        turnNumber++;
         break;
     }
   }
 
-  const winner = cIdx < 3 ? 'CHALLENGER' : 'DEFENDER';
+  const winner = decideBattleWinner(cTeam, dTeam, cIdx, dIdx);
+  const bothOut = cIdx >= cTeam.length && dIdx >= dTeam.length;
+  const bothStanding = cIdx < cTeam.length && dIdx < dTeam.length;
+  if (bothOut || bothStanding) {
+    const cPct = Math.floor(remainingHpFraction(cTeam) * 100);
+    const dPct = Math.floor(remainingHpFraction(dTeam) * 100);
+    log.push({
+      turnNumber,
+      cCardId: '', dCardId: '', cHpStart: 0, dHpStart: 0, cHpEnd: 0, dHpEnd: 0,
+      events: [{
+        type: 'draw',
+        message: bothOut
+          ? 'Double KO! Exact tie goes to the defender.'
+          : `Turn limit reached! Decided by remaining team HP (${cPct}% vs ${dPct}%, exact tie goes to the defender).`,
+      }],
+    });
+    turnNumber++;
+  }
 
   log.push({
       turnNumber: turnNumber,

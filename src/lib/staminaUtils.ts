@@ -2,23 +2,42 @@ export const STAMINA_RECOVERY_RATE_PER_HOUR = 10;
 export const MAX_STAMINA = 100;
 
 /**
- * Calculate the current stamina of a card based on its actual stored stamina,
- * the time it has been recovering since last used, and whether it is in the active team.
+ * Calculate the current stamina of a card from its stored stamina and the time
+ * it has been recovering since it was last used.
+ *
+ * Every card recovers over time, including the ones in the saved team: the
+ * team builder remembers the last team picked, so freezing those cards forced
+ * players to pay for stamina. `_inActiveTeam` is kept only so existing callers
+ * keep compiling; it no longer changes the result.
  */
 export function calculateCurrentStamina(
   storedStamina: number,
   lastUsedAt: Date | string,
-  inActiveTeam: boolean
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _inActiveTeam: boolean = false,
+  now: Date = new Date()
 ): number {
   if (storedStamina >= MAX_STAMINA) return MAX_STAMINA;
-  if (inActiveTeam) return storedStamina; // Recovery is paused while in the active team
+  const base = Math.max(0, storedStamina);
 
-  const now = new Date();
   const lastUsed = typeof lastUsedAt === 'string' ? new Date(lastUsedAt) : lastUsedAt;
-  const hoursSinceLastUsed = (now.getTime() - lastUsed.getTime()) / (1000 * 60 * 60);
-  
+  const hoursSinceLastUsed = Math.max(0, (now.getTime() - lastUsed.getTime()) / (1000 * 60 * 60));
+
   const recoveredStamina = Math.floor(hoursSinceLastUsed * STAMINA_RECOVERY_RATE_PER_HOUR);
-  return Math.min(MAX_STAMINA, storedStamina + recoveredStamina);
+  return Math.min(MAX_STAMINA, base + recoveredStamina);
+}
+
+/**
+ * Stamina left after spending `cost`, starting from the card's *current*
+ * (recovered) stamina. Never negative.
+ */
+export function staminaAfterBattle(
+  storedStamina: number,
+  lastUsedAt: Date | string,
+  cost: number,
+  now: Date = new Date()
+): number {
+  return Math.max(0, calculateCurrentStamina(storedStamina, lastUsedAt, false, now) - cost);
 }
 
 /**

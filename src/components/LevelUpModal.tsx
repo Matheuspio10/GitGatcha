@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Sparkle, Star, Coins, Checks } from '@phosphor-icons/react';
 
 interface PackReward {
@@ -20,27 +22,46 @@ export function LevelUpModal() {
   const [showSummary, setShowSummary] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Fetch pending rewards on mount
-  useEffect(() => {
-    const fetchPending = async () => {
-      try {
-        const res = await fetch('/api/notifications');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.pendingRewards && data.pendingRewards.length > 0) {
-            // Sort by level ascending so they see progression
-            const sorted = data.pendingRewards.sort((a: LevelUpReward, b: LevelUpReward) => a.level - b.level);
-            setPendingRewards(sorted);
-          }
+  const pathname = usePathname();
+  const { status } = useSession();
+  const isAuthenticated = status === 'authenticated';
+  // True while the modal is showing, so a refetch never resets an open modal
+  const isOpenRef = useRef(false);
+  useEffect(() => { isOpenRef.current = pendingRewards.length > 0; }, [pendingRewards]);
+
+  const fetchPending = useCallback(async () => {
+    if (isOpenRef.current) return;
+    try {
+      const res = await fetch('/api/notifications', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.pendingRewards && data.pendingRewards.length > 0 && !isOpenRef.current) {
+          // Sort by level ascending so they see progression
+          const sorted = [...data.pendingRewards].sort((a: LevelUpReward, b: LevelUpReward) => a.level - b.level);
+          setCurrentLevelIndex(0);
+          setShowSummary(false);
+          setPendingRewards(sorted);
         }
-      } catch (err) {
-        console.error('Failed to fetch pending rewards', err);
       }
-    };
-    
+    } catch (err) {
+      console.error('Failed to fetch pending rewards', err);
+    }
+  }, []);
+
+  // Fetch pending rewards on mount and after every client-side navigation
+  useEffect(() => {
+    if (!isAuthenticated) return;
     const timer = setTimeout(fetchPending, 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname, fetchPending, isAuthenticated]);
+
+  // ...and whenever an action signals that XP/BITS may have changed
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const onRefresh = () => { fetchPending(); };
+    window.addEventListener('bits:refresh', onRefresh);
+    return () => window.removeEventListener('bits:refresh', onRefresh);
+  }, [fetchPending, isAuthenticated]);
 
   if (pendingRewards.length === 0) return null;
 
@@ -56,6 +77,8 @@ export function LevelUpModal() {
     setIsClosing(true);
     try {
       await fetch('/api/rewards/claim', { method: 'POST' });
+      // Claimed rewards include BITS: resync the Navbar balance
+      window.dispatchEvent(new Event('bits:refresh'));
       
       // Give time for exit animation
       setTimeout(() => {

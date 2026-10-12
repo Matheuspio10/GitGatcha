@@ -3,30 +3,23 @@
  * No external audio files needed. Lightweight and performant.
  */
 
-let audioCtx: AudioContext | null = null;
+import { getAudioOutput, isAudioMuted } from './audioManager';
+
 let ambientOsc: OscillatorNode | null = null;
+let ambientLfo: OscillatorNode | null = null;
 let ambientGain: GainNode | null = null;
 
-function getCtx(): AudioContext | null {
-  try {
-    if (!audioCtx) {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return null;
-      audioCtx = new AC();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-    return audioCtx;
-  } catch {
-    return null;
-  }
+/** Shared context + master output; null when audio is unavailable or muted (one-shots only). */
+function getOneShot(): { ctx: AudioContext; out: AudioNode } | null {
+  if (isAudioMuted()) return null;
+  return getAudioOutput();
 }
 
 /** Short digital click when a valid node is selected */
 export function playNodeClick() {
-  const ctx = getCtx();
-  if (!ctx) return;
+  const audio = getOneShot();
+  if (!audio) return;
+  const { ctx, out } = audio;
 
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -39,15 +32,16 @@ export function playNodeClick() {
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
 
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(out);
   osc.start();
   osc.stop(ctx.currentTime + 0.06);
 }
 
 /** Subtle data blip when a pathway segment lights up */
 export function playPathSegment() {
-  const ctx = getCtx();
-  if (!ctx) return;
+  const audio = getOneShot();
+  if (!audio) return;
+  const { ctx, out } = audio;
 
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -60,15 +54,16 @@ export function playPathSegment() {
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
 
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(out);
   osc.start();
   osc.stop(ctx.currentTime + 0.08);
 }
 
 /** "Node Secured" chime — ascending two-tone chord */
 export function playPuzzleComplete() {
-  const ctx = getCtx();
-  if (!ctx) return;
+  const audio = getOneShot();
+  if (!audio) return;
+  const { ctx, out } = audio;
 
   // Two oscillators for a chord
   [880, 1320].forEach((freq, i) => {
@@ -83,7 +78,7 @@ export function playPuzzleComplete() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(out);
     osc.start(ctx.currentTime + i * 0.08);
     osc.stop(ctx.currentTime + 0.5);
   });
@@ -91,8 +86,9 @@ export function playPuzzleComplete() {
 
 /** Dramatic "ACCESS GRANTED" sound — deep sweep + chord */
 export function playAccessGranted() {
-  const ctx = getCtx();
-  if (!ctx) return;
+  const audio = getOneShot();
+  if (!audio) return;
+  const { ctx, out } = audio;
 
   // Low sweep
   const sweep = ctx.createOscillator();
@@ -104,7 +100,7 @@ export function playAccessGranted() {
   sweepGain.gain.setValueAtTime(0.15, ctx.currentTime);
   sweepGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
   sweep.connect(sweepGain);
-  sweepGain.connect(ctx.destination);
+  sweepGain.connect(out);
   sweep.start();
   sweep.stop(ctx.currentTime + 1.0);
 
@@ -118,7 +114,7 @@ export function playAccessGranted() {
     gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.2);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2 + i * 0.1);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(out);
     osc.start(ctx.currentTime + 0.15);
     osc.stop(ctx.currentTime + 1.2 + i * 0.1);
   });
@@ -126,8 +122,9 @@ export function playAccessGranted() {
 
 /** Short harsh digital alarm — security alert for firewall collision */
 export function playFirewallAlarm() {
-  const ctx = getCtx();
-  if (!ctx) return;
+  const audio = getOneShot();
+  if (!audio) return;
+  const { ctx, out } = audio;
 
   // Descending sawtooth burst
   const osc1 = ctx.createOscillator();
@@ -138,7 +135,7 @@ export function playFirewallAlarm() {
   gain1.gain.setValueAtTime(0.25, ctx.currentTime);
   gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
   osc1.connect(gain1);
-  gain1.connect(ctx.destination);
+  gain1.connect(out);
   osc1.start();
   osc1.stop(ctx.currentTime + 0.18);
 
@@ -152,15 +149,20 @@ export function playFirewallAlarm() {
   gain2.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.08);
   gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
   osc2.connect(gain2);
-  gain2.connect(ctx.destination);
+  gain2.connect(out);
   osc2.start(ctx.currentTime + 0.08);
   osc2.stop(ctx.currentTime + 0.22);
 }
 
-/** Start the ambient server-room drone (loops until stopped) */
+/**
+ * Start the ambient server-room drone (loops until stopped).
+ * Runs through the shared master gain, so the global mute silences it
+ * (and un-muting brings it back) without restarting it.
+ */
 export function startAmbientDrone() {
-  const ctx = getCtx();
-  if (!ctx || ambientOsc) return;
+  const audio = getAudioOutput();
+  if (!audio || ambientOsc) return;
+  const { ctx, out } = audio;
 
   ambientOsc = ctx.createOscillator();
   ambientGain = ctx.createGain();
@@ -169,36 +171,39 @@ export function startAmbientDrone() {
   ambientOsc.frequency.setValueAtTime(55, ctx.currentTime);
 
   // Subtle LFO for rumble
-  const lfo = ctx.createOscillator();
+  ambientLfo = ctx.createOscillator();
   const lfoGain = ctx.createGain();
-  lfo.type = 'sine';
-  lfo.frequency.setValueAtTime(0.5, ctx.currentTime);
+  ambientLfo.type = 'sine';
+  ambientLfo.frequency.setValueAtTime(0.5, ctx.currentTime);
   lfoGain.gain.setValueAtTime(8, ctx.currentTime);
-  lfo.connect(lfoGain);
+  ambientLfo.connect(lfoGain);
   lfoGain.connect(ambientOsc.frequency);
-  lfo.start();
+  ambientLfo.start();
 
   ambientGain.gain.setValueAtTime(0, ctx.currentTime);
   ambientGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 1.0);
 
   ambientOsc.connect(ambientGain);
-  ambientGain.connect(ctx.destination);
+  ambientGain.connect(out);
   ambientOsc.start();
 }
 
 /** Fade out and stop the ambient drone */
 export function stopAmbientDrone() {
-  const ctx = getCtx();
-  if (!ctx || !ambientOsc || !ambientGain) return;
+  const audio = getAudioOutput();
+  if (!audio || !ambientOsc || !ambientGain) return;
+  const { ctx } = audio;
 
   try {
     ambientGain.gain.cancelScheduledValues(ctx.currentTime);
     ambientGain.gain.setValueAtTime(ambientGain.gain.value, ctx.currentTime);
     ambientGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.0);
     ambientOsc.stop(ctx.currentTime + 1.1);
+    ambientLfo?.stop(ctx.currentTime + 1.1);
   } catch {
     // Already stopped
   }
   ambientOsc = null;
+  ambientLfo = null;
   ambientGain = null;
 }

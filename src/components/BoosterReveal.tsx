@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react';
 import { Card, CardProps } from '@/components/Card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Sparkle, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import clsx from 'clsx';
 
@@ -37,14 +37,38 @@ const EPIC_PARTICLE_VALUES = Array.from({ length: 6 }, () => ({
   delay: Math.random(),
 }));
 
-// Subcomponent for each flippable card
+// Touch-first device (no hover, coarse pointer) — decides the hint copy.
+const COARSE_POINTER_QUERY = '(hover: none) and (pointer: coarse)';
+function subscribeCoarsePointer(onChange: () => void) {
+  const mql = window.matchMedia(COARSE_POINTER_QUERY);
+  mql.addEventListener('change', onChange);
+  return () => mql.removeEventListener('change', onChange);
+}
+function useIsTouchDevice() {
+  return useSyncExternalStore(
+    subscribeCoarsePointer,
+    () => window.matchMedia(COARSE_POINTER_QUERY).matches,
+    () => false
+  );
+}
+
+// Subcomponent for each flippable card. Revealed state lives in the parent so
+// navigating back to a card keeps it face-up.
 function FlippableCard({
   card,
+  isFlipped,
+  onReveal,
 }: {
   card: CardProps & { isDuplicate?: boolean; fragmentsEarned?: number };
+  isFlipped: boolean;
+  onReveal: () => void;
 }) {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const reduceMotion = useReducedMotion();
+  // True only when the flip happened in this mount (one-shot reveal effects)
+  const [justRevealed, setJustRevealed] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (revealTimer.current) clearTimeout(revealTimer.current); }, []);
   const [isPressing, setIsPressing] = useState(false);
   const [anticipationPhase, setAnticipationPhase] = useState<string | null>(null);
 
@@ -102,8 +126,10 @@ function FlippableCard({
       navigator.vibrate(20);
     }
 
-    setTimeout(() => {
-      setIsFlipped(true);
+    revealTimer.current = setTimeout(() => {
+      setJustRevealed(true);
+      setIsFlipping(false);
+      onReveal();
       if (rarity === 'Legendary') {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([100, 50, 100, 50, 200]);
@@ -242,12 +268,22 @@ function FlippableCard({
         )}
 
         <motion.div
-          className="relative w-full h-full cursor-pointer transform-gpu perspective-1000"
+          className={clsx("relative w-full h-full perspective-[1000px] rounded-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-400/70", !isFlipped && "cursor-pointer")}
           onClick={handleClick}
+          role={isFlipped ? undefined : 'button'}
+          tabIndex={isFlipped ? -1 : 0}
+          aria-label={isFlipped ? undefined : 'Reveal card'}
+          onKeyDown={e => {
+            if (!isFlipped && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
         >
           {/* Card Flop Container */}
           <motion.div
-            className="w-full h-full relative preserve-3d"
+            className="w-full h-full relative transform-3d"
+            initial={false}
             animate={{ rotateY: isFlipped ? 180 : 0 }}
             transition={{ 
               duration: 
@@ -324,7 +360,7 @@ function FlippableCard({
                 )}
 
                 {/* Epic Reveal Sweep Effect */}
-                {card.rarity === 'Epic' && isFlipped && (
+                {card.rarity === 'Epic' && justRevealed && (
                   <motion.div
                     initial={{ left: '-100%', opacity: 1 }}
                     animate={{ left: '200%', opacity: [1, 1, 0] }}
@@ -335,11 +371,11 @@ function FlippableCard({
 
                 {/* Legendary Reveal Screen Flash & Confetti */}
                 <AnimatePresence>
-                  {card.rarity === 'Legendary' && isFlipped && (
+                  {card.rarity === 'Legendary' && justRevealed && (
                     <motion.div
-                      initial={{ opacity: 1 }}
+                      initial={{ opacity: reduceMotion ? 0.25 : 1 }}
                       animate={{ opacity: 0 }}
-                      transition={{ duration: 0.8 }}
+                      transition={{ duration: reduceMotion ? 0.4 : 0.8 }}
                       className="fixed inset-[-200%] bg-yellow-100 z-[100] pointer-events-none"
                     />
                   )}
@@ -359,22 +395,55 @@ export function BoosterReveal({
   onComplete,
 }: BoosterRevealProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-
   // Sort cards once
   const sortedCards = useMemo(() => sortCards(cards), [cards]);
-  const isSummaryPhase = currentIndex === sortedCards.length;
+  // Which cards were flipped face-up (kept when navigating back and forth)
+  const [revealed, setRevealed] = useState<boolean[]>([]);
+  const [revealedFor, setRevealedFor] = useState(sortedCards);
+  if (revealedFor !== sortedCards) {
+    // New pack: reset progress (state adjustment during render, no effect needed)
+    setRevealedFor(sortedCards);
+    setRevealed([]);
+    setCurrentIndex(0);
+  }
+  const isTouch = useIsTouchDevice();
 
-  const handleNext = () => {
-    if (currentIndex < sortedCards.length) {
+  const isSummaryPhase = currentIndex === sortedCards.length;
+  const isCurrentRevealed = !!revealed[currentIndex];
+  const anyRevealed = revealed.some(Boolean);
+
+  const revealCard = useCallback((index: number) => {
+    setRevealed(prev => {
+      if (prev[index]) return prev;
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  }, []);
+
+  // Only move on once the current card has been revealed
+  const handleNext = useCallback(() => {
+    if (currentIndex < sortedCards.length && revealed[currentIndex]) {
       setCurrentIndex(prev => prev + 1);
     }
-  };
+  }, [currentIndex, sortedCards.length, revealed]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(prev => prev - 1);
     }
-  };
+  }, [currentIndex]);
+
+  // Keyboard: arrows navigate
+  useEffect(() => {
+    if (isSummaryPhase) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') handleNext();
+      else if (e.key === 'ArrowLeft') handlePrev();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isSummaryPhase, handleNext, handlePrev]);
 
   // Summary Screen rendering
   if (isSummaryPhase) {
@@ -452,28 +521,41 @@ export function BoosterReveal({
 
   // Single card reveal phase
   const currentCard = sortedCards[currentIndex];
+  const isLastCard = currentIndex === sortedCards.length - 1;
+  const hintText = isTouch ? 'Tap to reveal • Swipe to navigate' : 'Click to reveal • Use the arrows';
 
+  // Normal flex column (counter / card slot / hint) so nothing overlaps the card
+  // at any viewport height. The card slot reserves the card's full height.
   return (
-    <div className="relative w-full max-w-5xl mx-auto min-h-[60vh] flex flex-col items-center justify-center overscroll-none touch-none">
-      <div className="absolute top-4 w-full flex justify-between px-6 items-center z-50">
-        <div className="text-slate-400 font-bold tracking-widest text-sm bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700/50 backdrop-blur-md">
-          {currentIndex + 1} / {sortedCards.length}
-        </div>
+    <div className="relative w-full max-w-5xl mx-auto flex flex-col items-center gap-6 py-4 overscroll-none">
+      <div
+        className="text-slate-400 font-bold tracking-widest text-sm bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700/50 backdrop-blur-md"
+        aria-live="polite"
+      >
+        {currentIndex + 1} / {sortedCards.length}
       </div>
 
-      <div className="relative w-full flex-1 flex items-center justify-center">
+      <div className="relative w-full min-h-[410px] flex items-center justify-center">
         {/* Navigation Buttons (Desktop mainly) */}
-        <button 
-          onClick={handlePrev} 
+        <button
+          onClick={handlePrev}
           disabled={currentIndex === 0}
-          className="hidden md:flex absolute left-10 p-4 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors z-40 shadow-xl"
+          aria-label="Previous card"
+          className="hidden md:flex absolute left-10 top-1/2 -translate-y-1/2 p-4 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors z-40 shadow-xl"
         >
           <CaretLeft size={32} weight="bold" className="text-white" />
         </button>
 
-        <button 
-          onClick={handleNext} 
-          className="hidden md:flex absolute right-10 p-4 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors z-40 shadow-xl animate-pulse cursor-pointer group"
+        <button
+          onClick={handleNext}
+          disabled={!isCurrentRevealed}
+          aria-label={isLastCard ? 'View pack summary' : 'Next card'}
+          title={isCurrentRevealed ? undefined : 'Reveal this card first'}
+          className={clsx(
+            "hidden md:flex absolute right-10 top-1/2 -translate-y-1/2 p-4 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors z-40 shadow-xl group",
+            "disabled:opacity-30 disabled:hover:bg-slate-800 disabled:cursor-not-allowed",
+            isCurrentRevealed && "animate-pulse cursor-pointer"
+          )}
         >
           <CaretRight size={32} weight="bold" className="text-white group-hover:translate-x-1 transition-transform" />
         </button>
@@ -482,7 +564,7 @@ export function BoosterReveal({
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            className="w-full h-full flex items-center justify-center absolute inset-0 touch-none py-10"
+            className="flex items-center justify-center touch-pan-y"
             initial={{ opacity: 0, x: 100, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -100, scale: 0.9 }}
@@ -498,13 +580,31 @@ export function BoosterReveal({
               }
             }}
           >
-            <FlippableCard key={currentIndex} card={currentCard} />
+            <FlippableCard
+              key={currentIndex}
+              card={currentCard}
+              isFlipped={isCurrentRevealed}
+              onReveal={() => revealCard(currentIndex)}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="absolute bottom-8 text-slate-300 text-xs tracking-widest uppercase font-bold z-40 bg-slate-900/60 border border-white/10 px-6 py-3 rounded-full backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-        Tap to reveal • Swipe or click arrows to navigate
+      {/* Below the card: hint until the first flip, then a Next button on small screens (arrows are desktop-only) */}
+      <div className="min-h-[48px] flex items-center justify-center px-4">
+        {!anyRevealed ? (
+          <div className="text-slate-300 text-xs tracking-widest uppercase font-bold text-center bg-slate-900/60 border border-white/10 px-6 py-3 rounded-full backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+            {hintText}
+          </div>
+        ) : (
+          <button
+            onClick={handleNext}
+            disabled={!isCurrentRevealed}
+            className="md:hidden px-6 py-3 rounded-full bg-slate-800 border border-slate-600 text-white text-xs font-bold tracking-widest uppercase shadow-lg transition-opacity disabled:opacity-0 disabled:pointer-events-none"
+          >
+            {isLastCard ? 'View summary' : 'Next card'}
+          </button>
+        )}
       </div>
     </div>
   );

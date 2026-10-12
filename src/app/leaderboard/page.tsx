@@ -1,242 +1,240 @@
-import { Trophy, Medal, Sword, Shield, Star } from '@phosphor-icons/react/dist/ssr';
+import { Trophy, Medal, Sword, Shield, Star, Users, Globe } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
-import { UserAvatar } from '@/components/UserAvatar';
+import { sortLeaderboard } from '@/lib/leaderboard';
+import { STARTING_RATING } from '@/lib/battleConfig';
+import { LeaderboardAvatar } from './LeaderboardAvatar';
 
-async function getBattleStats(userId: string) {
-  try {
-    const totalBattles = await prisma.battle.count({
-      where: {
-        status: 'COMPLETED',
-        OR: [{ challengerId: userId }, { defenderId: userId }],
-      },
-    });
-    const totalWins = await prisma.battle.count({
-      where: {
-        status: 'COMPLETED',
-        winnerId: userId,
-      },
-    });
-    const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
-    return { totalBattles, totalWins, winRate };
-  } catch {
-    return { totalBattles: 0, totalWins: 0, winRate: 0 };
-  }
+const GLOBAL_LIMIT = 50;
+
+interface BattleCounts {
+  totalBattles: number;
+  totalWins: number;
+  pvpWins: number;
 }
 
-export default async function LeaderboardPage() {
-  const currentUser = await getCurrentUser();
+interface LeaderboardRow extends BattleCounts {
+  id: string;
+  displayName: string;
+  linkName: string;
+  image: string | null;
+  rating: number;
+  createdAt: Date;
+  cardCount: number;
+  winRate: number;
+}
 
-  // Try rating-based, fall back to xp-based if rating column doesn't exist yet
-  let users;
-  let hasRating = true;
-  try {
-    users = await prisma.user.findMany({
-      where: {
-        cards: {
-          some: {}
-        }
-      },
-      orderBy: { rating: 'desc' },
-      take: 50,
-      include: {
-        _count: { select: { cards: true } },
-      }
-    });
-  } catch {
-    hasRating = false;
-    users = await prisma.user.findMany({
-      where: {
-        cards: {
-          some: {}
-        }
-      },
-      orderBy: { xp: 'desc' },
-      take: 50,
-      include: {
-        _count: { select: { cards: true } },
-      }
-    });
-  }
+/** Completed-battle counts per player, in 4 grouped queries (no N+1). */
+async function getBattleCounts(): Promise<Map<string, BattleCounts>> {
+  const [asChallenger, asDefender, wins, pvpWins] = await Promise.all([
+    prisma.battle.groupBy({ by: ['challengerId'], where: { status: 'COMPLETED' }, _count: { _all: true } }),
+    prisma.battle.groupBy({ by: ['defenderId'], where: { status: 'COMPLETED', defenderId: { not: null } }, _count: { _all: true } }),
+    prisma.battle.groupBy({ by: ['winnerId'], where: { status: 'COMPLETED', winnerId: { not: null } }, _count: { _all: true } }),
+    prisma.battle.groupBy({ by: ['winnerId'], where: { status: 'COMPLETED', isRandom: false, winnerId: { not: null } }, _count: { _all: true } }),
+  ]);
 
-  // Calculate win stats for each user
-  const usersWithStats = await Promise.all(
-    users.map(async (u) => {
-      const stats = await getBattleStats(u.id);
+  const counts = new Map<string, BattleCounts>();
+  const get = (id: string) => {
+    let c = counts.get(id);
+    if (!c) {
+      c = { totalBattles: 0, totalWins: 0, pvpWins: 0 };
+      counts.set(id, c);
+    }
+    return c;
+  };
+  for (const r of asChallenger) get(r.challengerId).totalBattles += r._count._all;
+  for (const r of asDefender) if (r.defenderId) get(r.defenderId).totalBattles += r._count._all;
+  for (const r of wins) if (r.winnerId && counts.has(r.winnerId)) get(r.winnerId).totalWins += r._count._all;
+  for (const r of pvpWins) if (r.winnerId && counts.has(r.winnerId)) get(r.winnerId).pvpWins += r._count._all;
+  return counts;
+}
+
+/** Loads the players (without their avatar, which can be a large base64 string) and ranks them. */
+async function loadRows(ids: string[], counts: Map<string, BattleCounts>): Promise<LeaderboardRow[]> {
+  if (ids.length === 0) return [];
+  const users = await prisma.user.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, username: true, name: true, rating: true, createdAt: true, _count: { select: { cards: true } } },
+  });
+  return sortLeaderboard(
+    users.map(u => {
+      const c = counts.get(u.id) ?? { totalBattles: 0, totalWins: 0, pvpWins: 0 };
       return {
-        ...u,
-        rating: (u as Record<string, unknown>).rating as number ?? 1000,
-        ...stats,
+        id: u.id,
+        displayName: u.username || u.name || 'Anonymous',
+        linkName: u.username || u.name || 'Anonymous',
+        image: null,
+        rating: u.rating ?? STARTING_RATING,
+        createdAt: u.createdAt,
+        cardCount: u._count.cards,
+        ...c,
+        winRate: c.totalBattles > 0 ? Math.round((c.totalWins / c.totalBattles) * 100) : 0,
       };
     })
   );
+}
 
-  // Friends leaderboard
-  let friendsLeaderboard: typeof usersWithStats = [];
-  if (currentUser) {
-    try {
-      const friendBattles = await prisma.battle.findMany({
-        where: {
-          status: 'COMPLETED',
-          isRandom: false,
-          OR: [{ challengerId: currentUser.id }, { defenderId: currentUser.id }],
-        },
-        select: { challengerId: true, defenderId: true },
-      });
+async function attachImages(rows: LeaderboardRow[]) {
+  if (rows.length === 0) return;
+  const images = await prisma.user.findMany({
+    where: { id: { in: rows.map(r => r.id) } },
+    select: { id: true, image: true },
+  });
+  const byId = new Map(images.map(i => [i.id, i.image]));
+  for (const r of rows) r.image = byId.get(r.id) || null;
+}
 
-      const friendIds = new Set<string>();
-      friendBattles.forEach(b => {
-        if (b.challengerId !== currentUser.id) friendIds.add(b.challengerId);
-        if (b.defenderId && b.defenderId !== currentUser.id) friendIds.add(b.defenderId);
-      });
+function RankBadge({ index }: { index: number }) {
+  if (index === 0) return <Trophy className="text-yellow-400" size={24} weight="fill" />;
+  if (index === 1) return <Medal className="text-slate-300" size={24} weight="fill" />;
+  if (index === 2) return <Medal className="text-amber-600" size={24} weight="fill" />;
+  return <span className="text-slate-500 font-mono font-bold ml-1">{index + 1}</span>;
+}
 
-      if (friendIds.size > 0) {
-        const friends = await prisma.user.findMany({
-          where: { 
-             id: { in: Array.from(friendIds) },
-             cards: { some: {} }
-          },
-          orderBy: hasRating ? { rating: 'desc' } : { xp: 'desc' },
-          include: { _count: { select: { cards: true } } },
-        });
+function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRow[]; currentUserId?: string; accent: string }) {
+  return (
+    <div className={`bg-slate-900/60 border ${accent} rounded-2xl overflow-hidden backdrop-blur-md`}>
+      <table className="w-full table-fixed text-left">
+        <thead className="bg-black/50 border-b border-slate-800 text-slate-400">
+          <tr>
+            <th className="w-12 sm:w-20 px-3 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">
+              <span className="sr-only sm:not-sr-only">Rank</span>
+              <span className="sm:hidden" aria-hidden="true">#</span>
+            </th>
+            <th className="px-2 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">Player</th>
+            <th className="w-20 sm:w-28 px-3 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">
+              <span className="flex items-center gap-1"><Star size={14} weight="fill" /> Rating</span>
+            </th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
+              <span className="flex items-center gap-1"><Sword size={14} weight="fill" /> W/L</span>
+            </th>
+            <th className="w-36 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
+              <span className="flex items-center gap-1"><Shield size={14} weight="fill" /> Win Rate</span>
+            </th>
+            <th className="w-24 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden lg:table-cell">Cards</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/50">
+          {rows.map((u, i) => (
+            <tr key={u.id} className={`hover:bg-white/5 transition-colors ${currentUserId === u.id ? 'bg-indigo-500/5' : ''}`}>
+              <td className="px-3 sm:px-5 py-4">
+                <RankBadge index={i} />
+              </td>
+              <td className="px-2 sm:px-5 py-4 font-bold text-white">
+                <Link href={`/profile/${encodeURIComponent(u.linkName)}`} className="flex items-center gap-2 sm:gap-3 min-w-0 hover:text-indigo-400 transition-colors">
+                  <LeaderboardAvatar username={u.displayName} image={u.image} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate">{u.displayName}</span>
+                      {currentUserId === u.id && (
+                        <span className="shrink-0 text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
+                      )}
+                    </span>
+                    {/* Secondary stats move under the name on small screens */}
+                    <span className="md:hidden block text-[11px] font-normal text-slate-500 truncate">
+                      {u.totalWins}W / {u.totalBattles - u.totalWins}L · {u.winRate}%
+                    </span>
+                  </span>
+                </Link>
+              </td>
+              <td className="px-3 sm:px-5 py-4">
+                <span className="text-yellow-400 font-bold font-mono">{u.rating}</span>
+              </td>
+              <td className="px-5 py-4 hidden md:table-cell">
+                <span className="text-green-400 font-bold">{u.totalWins}</span>
+                <span className="text-slate-500">/</span>
+                <span className="text-red-400">{u.totalBattles - u.totalWins}</span>
+              </td>
+              <td className="px-5 py-4 hidden md:table-cell">
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1.5 rounded-full bg-slate-700 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400"
+                      style={{ width: `${u.winRate}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-slate-300">{u.winRate}%</span>
+                </div>
+              </td>
+              <td className="px-5 py-4 text-slate-300 hidden lg:table-cell">{u.cardCount}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-        friendsLeaderboard = await Promise.all(
-          friends.map(async (u) => {
-            const stats = await getBattleStats(u.id);
-            return {
-              ...u,
-              rating: (u as Record<string, unknown>).rating as number ?? 1000,
-              ...stats,
-            };
-          })
-        );
-      }
-    } catch {
-      // Battle table doesn't exist yet, skip friends leaderboard
-    }
+export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const currentUser = await getCurrentUser();
+  const { tab } = await searchParams;
+  const showRivals = tab === 'rivals' && !!currentUser;
+
+  const counts = await getBattleCounts();
+
+  let rows: LeaderboardRow[];
+  if (showRivals) {
+    // Rivals = accepted friends (either direction) + you
+    const friendships = await prisma.friendship.findMany({
+      where: { status: 'ACCEPTED', OR: [{ userId: currentUser.id }, { friendId: currentUser.id }] },
+      select: { userId: true, friendId: true },
+    });
+    const ids = new Set<string>([currentUser.id]);
+    for (const f of friendships) ids.add(f.userId === currentUser.id ? f.friendId : f.userId);
+    rows = await loadRows(Array.from(ids), counts);
+  } else {
+    // Only players who finished at least one battle (hides never-played and test accounts)
+    const ids = Array.from(counts.entries()).filter(([, c]) => c.totalBattles > 0).map(([id]) => id);
+    rows = (await loadRows(ids, counts)).slice(0, GLOBAL_LIMIT);
   }
+  await attachImages(rows);
+
+  const tabClass = (active: boolean) =>
+    `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors border ${
+      active
+        ? 'bg-yellow-500/10 border-yellow-500/40 text-yellow-300'
+        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-600'
+    }`;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-12">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div className="text-center">
-        <h1 className="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 mb-2 tracking-tighter">
+        <h1 className="text-4xl sm:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 mb-2 tracking-tighter">
           Global Rankings
         </h1>
-        <p className="text-slate-400 text-lg">The most legendary developers in the repository.</p>
+        <p className="text-slate-400 text-base sm:text-lg">The most legendary developers in the repository.</p>
+        <p className="text-slate-500 text-xs mt-2">
+          Rating only changes in friend challenges (PvP). Ties: PvP wins, then battles played, then oldest account.
+        </p>
       </div>
 
-      {/* Global Leaderboard */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-md">
-        <table className="w-full text-left">
-          <thead className="bg-black/50 border-b border-slate-800 text-slate-400">
-            <tr>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">Rank</th>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">Player</th>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">
-                <span className="flex items-center gap-1"><Star size={14} weight="fill" /> Rating</span>
-              </th>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
-                <span className="flex items-center gap-1"><Sword size={14} weight="fill" /> W/L</span>
-              </th>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
-                <span className="flex items-center gap-1"><Shield size={14} weight="fill" /> Win Rate</span>
-              </th>
-              <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider hidden lg:table-cell">Cards</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/50">
-            {usersWithStats.map((u, i) => {
-               const displayUsername = u.username || u.name || 'Anonymous';
-               const linkUsername = u.username ? u.username : (u.name ? u.name : 'Anonymous');
-               
-               return (
-              <tr key={u.id} className={`hover:bg-white/5 transition-colors ${currentUser?.id === u.id ? 'bg-indigo-500/5' : ''}`}>
-                <td className="px-5 py-4">
-                  {i === 0 ? <Trophy className="text-yellow-400" size={24} weight="fill" /> :
-                   i === 1 ? <Medal className="text-slate-300" size={24} weight="fill" /> :
-                   i === 2 ? <Medal className="text-amber-600" size={24} weight="fill" /> :
-                   <span className="text-slate-500 font-mono font-bold ml-1">{i + 1}</span>}
-                </td>
-                <td className="px-5 py-4 font-bold text-white">
-                  <Link href={`/profile/${encodeURIComponent(linkUsername)}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
-                    <UserAvatar username={displayUsername} image={u.image} size="sm" />
-                    <span>{displayUsername}</span>
-                    {currentUser?.id === u.id && (
-                      <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
-                    )}
-                  </Link>
-                </td>
-                <td className="px-5 py-4">
-                  <span className="text-yellow-400 font-bold font-mono">{u.rating}</span>
-                </td>
-                <td className="px-5 py-4 hidden md:table-cell">
-                  <span className="text-green-400 font-bold">{u.totalWins}</span>
-                  <span className="text-slate-500">/</span>
-                  <span className="text-red-400">{u.totalBattles - u.totalWins}</span>
-                </td>
-                <td className="px-5 py-4 hidden md:table-cell">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-slate-700 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400"
-                        style={{ width: `${u.winRate}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-bold text-slate-300">{u.winRate}%</span>
-                  </div>
-                </td>
-                <td className="px-5 py-4 text-slate-300 hidden lg:table-cell">{u._count.cards}</td>
-              </tr>
-            )})}
-          </tbody>
-        </table>
-        {usersWithStats.length === 0 && (
-          <div className="p-12 text-center text-slate-500">
-            No players found. Be the first to join the battle!
-          </div>
+      <div className="flex justify-center gap-2">
+        <Link href="/leaderboard" className={tabClass(!showRivals)}>
+          <Globe size={16} weight="fill" /> Global
+        </Link>
+        {currentUser && (
+          <Link href="/leaderboard?tab=rivals" className={tabClass(showRivals)}>
+            <Users size={16} weight="fill" /> Rivals
+          </Link>
         )}
       </div>
 
-      {/* Friends Leaderboard */}
-      {friendsLeaderboard.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-            <Trophy size={24} className="text-orange-400" />
-            Rivals Leaderboard
-          </h2>
-          <div className="bg-slate-900/60 border border-orange-500/20 rounded-2xl overflow-hidden backdrop-blur-md">
-            <table className="w-full text-left">
-              <thead className="bg-black/50 border-b border-slate-800 text-slate-400">
-                <tr>
-                  <th className="px-5 py-3 font-bold text-xs uppercase tracking-wider">Rank</th>
-                  <th className="px-5 py-3 font-bold text-xs uppercase tracking-wider">Player</th>
-                  <th className="px-5 py-3 font-bold text-xs uppercase tracking-wider">Rating</th>
-                  <th className="px-5 py-3 font-bold text-xs uppercase tracking-wider hidden md:table-cell">Win Rate</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/50">
-                {friendsLeaderboard.map((u, i) => {
-                   const uLinkUser = u.username ? u.username : (u.name ? u.name : 'Anonymous');
-                   return (
-                  <tr key={u.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-5 py-3 text-slate-400 font-mono font-bold">{i + 1}</td>
-                    <td className="px-5 py-3 font-bold text-white">
-                      <Link href={`/profile/${encodeURIComponent(uLinkUser)}`} className="flex items-center gap-3 hover:text-indigo-400 transition-colors group">
-                        <UserAvatar username={uLinkUser} image={u.image} size="sm" />
-                        <span>{u.username || u.name || 'Anonymous'}</span>
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3 text-yellow-400 font-bold font-mono">{u.rating}</td>
-                    <td className="px-5 py-3 hidden md:table-cell">
-                      <span className="text-sm font-bold text-slate-300">{u.winRate}%</span>
-                    </td>
-                  </tr>
-                )})}
-              </tbody>
-            </table>
-          </div>
+      <LeaderboardTable
+        rows={rows}
+        currentUserId={currentUser?.id}
+        accent={showRivals ? 'border-orange-500/20' : 'border-slate-800'}
+      />
+
+      {rows.length === 0 && (
+        <div className="p-12 text-center text-slate-500">
+          No players found. Be the first to join the battle!
         </div>
+      )}
+      {showRivals && rows.length <= 1 && (
+        <p className="text-center text-sm text-slate-500">
+          Add friends from their profiles to compare your rating with theirs.
+        </p>
       )}
     </div>
   );
