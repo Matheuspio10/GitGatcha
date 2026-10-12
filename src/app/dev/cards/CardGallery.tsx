@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import { Card, CardProps } from '@/components/Card';
-import { CardBack, PackArt } from '@/components/BoosterReveal';
+import { BoosterReveal, CardBack, PackArt } from '@/components/BoosterReveal';
 
 const avatar = (login: string) => `https://github.com/${login}.png?size=400`;
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000);
@@ -45,11 +47,54 @@ function Row({ title, cards }: { title: string; cards: CardProps[] }) {
   );
 }
 
+function TestBooster() {
+  const [run, setRun] = useState(0);
+  const [best, setBest] = useState<'Rare' | 'Epic' | 'Legendary'>('Legendary');
+
+  // ?autoplay=Epic opens a test pack and rips it after 600 ms (frame-by-frame checks with headless Chrome)
+  useEffect(() => {
+    const auto = new URLSearchParams(window.location.search).get('autoplay');
+    if (auto !== 'Rare' && auto !== 'Epic' && auto !== 'Legendary') return;
+    const open = setTimeout(() => {
+      setBest(auto);
+      setRun(1);
+    }, 0);
+    const rip = setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' })), 600);
+    return () => {
+      clearTimeout(open);
+      clearTimeout(rip);
+    };
+  }, []);
+  const cards = [...RARITIES.slice(0, 3), RARITIES.find(c => c.rarity === best) ?? RARITIES[4], RARITIES[1]];
+  return (
+    <section className="mb-14">
+      <h2 className="font-display text-xl font-extrabold mb-3">Test booster (no BITS, nothing saved)</h2>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {(['Rare', 'Epic', 'Legendary'] as const).map(r => (
+          <button key={r} onClick={() => { setBest(r); setRun(n => n + 1); }} className="px-4 py-2 rounded-full bg-slate-800 border border-slate-600 text-sm font-bold">
+            Open a pack with a {r}
+          </button>
+        ))}
+      </div>
+      {run > 0 && (
+        <BoosterReveal
+          key={run}
+          cards={cards.map(c => ({ ...c, isDuplicate: false }))}
+          packDropFragments={null}
+          packName="Test Pack"
+          onComplete={() => setRun(0)}
+        />
+      )}
+    </section>
+  );
+}
+
 export function CardGallery() {
   return (
     <div>
       <p className="font-mono text-xs text-commit mb-2">DEV ONLY · /dev/cards</p>
       <h1 className="font-display text-3xl font-extrabold mb-10">Card gallery</h1>
+      <TestBooster />
       <Row title="Rarities" cards={RARITIES} />
       <Row title="Shiny, Signature, Neutral without avatar" cards={EDITIONS} />
       <Row title="States: stamina, fatigue, exhausted, loyalty" cards={STATES} />
