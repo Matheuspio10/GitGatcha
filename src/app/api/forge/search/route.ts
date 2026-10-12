@@ -4,11 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { fetchGitHubUserStats, isValidGitHubLogin } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
 import { ALL_PACKS, getSerializablePacks } from '@/lib/packDefinitions';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function GET(req: Request) {
   // Each lookup spends the server's GitHub quota: logged-in players only
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const limited = await enforceRateLimit(req, 'forge-search', 30, 60, session.user.id);
+  if (limited) return limited;
 
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');

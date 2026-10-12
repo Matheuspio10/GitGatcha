@@ -3,7 +3,8 @@
 import { signIn } from 'next-auth/react';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { GithubLogo, Envelope } from '@phosphor-icons/react';
+import { GithubLogo } from '@phosphor-icons/react';
+import toast from 'react-hot-toast';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,7 @@ function LoginContent() {
   const AUTH_ERRORS: Record<string, string> = {
     OAuthAccountNotLinked: 'This account is already linked to another player, or its e-mail belongs to an existing account. Sign in the way you usually do, then connect GitHub from your profile.',
     CredentialsSignin: 'Wrong e-mail or password.',
+    TooManyAttempts: 'Too many sign-in attempts. Please wait a few minutes and try again.',
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -33,10 +35,10 @@ function LoginContent() {
           await signIn('credentials', { email, password, callbackUrl: '/store' });
         } else {
           const data = await res.json();
-          alert(data.error || 'Registration failed');
+          toast.error(data.error || 'Registration failed');
         }
-      } catch (e) {
-        alert('An error occurred');
+      } catch {
+        toast.error('An error occurred');
       }
     } else {
       await signIn('credentials', { email, password, callbackUrl: '/store' });
@@ -53,7 +55,7 @@ function LoginContent() {
 
         {authError && (
           <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-300">
-            {AUTH_ERRORS[authError] ?? 'Sign-in failed. Please try again.'}
+            {AUTH_ERRORS[authError] ?? `Sign-in failed (${authError}). Please try again.`}
           </div>
         )}
 

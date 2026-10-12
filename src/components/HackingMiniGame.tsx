@@ -10,6 +10,8 @@ import {
   startAmbientDrone,
   stopAmbientDrone,
 } from '@/lib/hackingAudio';
+import { useAudioMuted } from '@/lib/audioManager';
+import { SpeakerHigh, SpeakerSlash } from '@phosphor-icons/react';
 import './HackingMiniGame.css';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -202,6 +204,8 @@ export function HackingMiniGame({
   const [hintNodeId, setHintNodeId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [pressedKey, setPressedKey] = useState<string | null>(null);
+  // Global (persisted) mute shared with the rest of the app; silences the drone too
+  const { isMuted, toggleMuted } = useAudioMuted();
 
   // ── Firewall state ──
   const [firewalls, setFirewalls] = useState<FirewallState[]>([]);
@@ -1085,6 +1089,20 @@ export function HackingMiniGame({
           <div className="hacking-hud-label">
             Nodes: {puzzleCount}
           </div>
+
+          {/* Mute toggle */}
+          <button
+            type="button"
+            className={`hacking-mute${isMuted ? ' muted' : ''}`}
+            onClick={toggleMuted}
+            onTouchStart={e => e.stopPropagation()}
+            onTouchEnd={e => e.stopPropagation()}
+            aria-label={isMuted ? 'Unmute sound' : 'Mute sound'}
+            aria-pressed={isMuted}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? <SpeakerSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
+          </button>
         </div>
       </div>
     </div>

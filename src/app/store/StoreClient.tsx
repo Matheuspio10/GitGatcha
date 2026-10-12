@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { missionRequiredCount } from '@/lib/missionUtils';
 import { 
   Code, 
   Trophy, 
@@ -68,12 +70,36 @@ function formatCountdown(ms: number): string {
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
+/** Tells the Navbar (and anything else listening) to re-fetch the BITS balance. */
+function refreshBits() {
+  window.dispatchEvent(new Event('bits:refresh'));
+}
+
+interface UserMissionInfo {
+  id: string;
+  progress: number;
+  completed: boolean;
+  /** Progress needed to complete (added by getUserMissions). */
+  required?: number;
+  mission: { description: string; reward: number; type: string; targetValue: string | null };
+}
+
+/** Progress needed to finish a mission ("0 / 1" rather than "0 / Rare"). */
+function requiredFor(um: UserMissionInfo): number {
+  return typeof um.required === 'number'
+    ? um.required
+    : missionRequiredCount(um.mission?.type ?? '', um.mission?.targetValue);
+}
+
 export default function StoreClient({ 
   userCurrency,
-  initialMissions 
+  initialMissions,
+  missionsResetAt,
 }: { 
   userCurrency: number;
-  initialMissions: any[];
+  initialMissions: UserMissionInfo[];
+  /** ISO time of the next daily mission refresh (midnight UTC). */
+  missionsResetAt?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState(userCurrency);
@@ -82,6 +108,9 @@ export default function StoreClient({
   const [activeCategory, setActiveCategory] = useState<string>('language');
   const [dailyCooldown, setDailyCooldown] = useState<number>(-1);
   const [claimingDaily, setClaimingDaily] = useState(false);
+  const [missionResetMs, setMissionResetMs] = useState<number | null>(null);
+  // Pack targeted by a `/store#pack-<id>` link (e.g. the Forge recommendation)
+  const [highlightPackId, setHighlightPackId] = useState<string | null>(null);
   
   // Notification state
   const [purchaseNotification, setPurchaseNotification] = useState<{ packName: string } | null>(null);
@@ -97,6 +126,29 @@ export default function StoreClient({
       })
       .catch(console.error);
   }, []);
+
+  // Deep link: `#pack-<id>` opens the pack's category, scrolls to it and highlights it
+  useEffect(() => {
+    const readHash = () => {
+      const match = window.location.hash.match(/^#pack-(.+)$/);
+      setHighlightPackId(match ? decodeURIComponent(match[1]) : null);
+    };
+    readHash();
+    window.addEventListener('hashchange', readHash);
+    return () => window.removeEventListener('hashchange', readHash);
+  }, []);
+
+  useEffect(() => {
+    if (!highlightPackId) return;
+    const pack = packs.find(p => p.id === highlightPackId);
+    if (!pack) return; // catalog not loaded yet
+    setActiveCategory(pack.category);
+    const scroll = setTimeout(() => {
+      document.getElementById(`pack-${pack.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350); // after the category grid animates in
+    const clear = setTimeout(() => setHighlightPackId(null), 4000);
+    return () => { clearTimeout(scroll); clearTimeout(clear); };
+  }, [highlightPackId, packs]);
 
   // Check initial daily cooldown state
   useEffect(() => {
@@ -127,6 +179,24 @@ export default function StoreClient({
     return () => clearInterval(interval);
   }, [dailyCooldown]);
 
+  // Countdown to the next daily missions; reloads them once the day rolls over
+  useEffect(() => {
+    if (!missionsResetAt) return;
+    const resetAt = new Date(missionsResetAt).getTime();
+    let refreshed = false;
+    const tick = () => {
+      const remaining = resetAt - Date.now();
+      setMissionResetMs(Math.max(0, remaining));
+      if (remaining <= 0 && !refreshed) {
+        refreshed = true;
+        router.refresh();
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [missionsResetAt, router]);
+
   const handleClaimDaily = async () => {
     setClaimingDaily(true);
     try {
@@ -135,12 +205,17 @@ export default function StoreClient({
       if (data.success) {
         setCurrency(data.newCurrency);
         setDailyCooldown(24 * 60 * 60 * 1000);
+        toast.success(`+${data.amount ?? 100} Bits claimed!`);
+        refreshBits();
         router.refresh();
       } else if (data.remainingMs) {
         setDailyCooldown(data.remainingMs);
+      } else {
+        toast.error(data.error || 'Failed to claim daily reward');
       }
     } catch (e) {
       console.error(e);
+      toast.error('Network error');
     } finally {
       setClaimingDaily(false);
     }
@@ -148,7 +223,7 @@ export default function StoreClient({
 
   const handlePurchasePack = async (pack: PackInfo) => {
     if (currency < pack.cost) {
-      alert("Not enough Bits!");
+      toast.error('Not enough Bits!');
       return;
     }
     
@@ -164,6 +239,7 @@ export default function StoreClient({
       if (data.success) {
         setCurrency(data.newCurrency);
         setPurchaseNotification({ packName: data.packName });
+        refreshBits();
         
         // Auto hide notification
         setTimeout(() => {
@@ -172,11 +248,11 @@ export default function StoreClient({
         
         router.refresh();
       } else {
-        alert(data.error || 'Failed to purchase');
+        toast.error(data.error || 'Failed to purchase');
       }
     } catch(e) {
       console.error(e);
-      alert('Network error');
+      toast.error('Network error');
     } finally {
       setLoading(false);
     }
@@ -283,9 +359,10 @@ export default function StoreClient({
         {filteredPacks.map(pack => (
           <motion.div
             key={pack.id}
+            id={`pack-${pack.id}`}
             whileHover={{ scale: 1.05, y: -8 }}
             whileTap={{ scale: 0.98 }}
-            className="group cursor-pointer relative mx-auto w-full max-w-[280px]"
+            className={`group cursor-pointer relative mx-auto w-full max-w-[280px] rounded-2xl transition-shadow ${highlightPackId === pack.id ? 'ring-4 ring-indigo-400 ring-offset-4 ring-offset-slate-950 animate-pulse' : ''}`}
             onClick={() => {
               if (loading) return;
               handlePurchasePack(pack);
@@ -375,10 +452,15 @@ export default function StoreClient({
 
       {/* Daily Missions Section */}
       <section className="mt-12 mb-24 pt-12 border-t border-white/10">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
           <h2 className="text-3xl font-bold flex items-center gap-3">
             Daily Standup <span className="text-sm font-normal text-slate-400 px-3 py-1 bg-slate-800 rounded-full border border-slate-700">Missions</span>
           </h2>
+          {missionResetMs !== null && (
+            <span className="text-sm text-slate-400 font-mono">
+              New missions in {missionResetMs > 0 ? formatCountdown(missionResetMs) : 'a moment...'}
+            </span>
+          )}
         </div>
         
         {initialMissions.length === 0 ? (
@@ -418,7 +500,7 @@ export default function StoreClient({
                   <div className="text-right">
                     <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Progress</span>
                     <span className="font-mono text-sm bg-black/40 px-2 py-1 rounded text-slate-300">
-                      {um.progress} / {um.mission.targetValue || 1}
+                      {Math.min(um.progress, requiredFor(um))} / {requiredFor(um)}
                     </span>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
@@ -15,10 +15,10 @@ export const metadata: Metadata = {
   description: "Collect developers, build your deck, rule the repository.",
 };
 
-export const viewport = {
+// No maximumScale: users must be able to pinch-zoom (WCAG 1.4.4)
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default async function RootLayout({

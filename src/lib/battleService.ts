@@ -1,74 +1,136 @@
 import { randomInt } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
-import { resolve3v3Battle, BattleCard, getCardType } from './battleResolver';
-import { syncCardStamina } from './staminaService';
+import { resolve3v3Battle, BattleCard, BattleResult, getCardType } from './battleResolver';
+import { spendCardStamina } from './staminaService';
 import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
+import { grantXP } from './xpService';
+import { lockUser } from './userLock';
+import {
+  BALANCED_POWER_CAP_MULTIPLIER,
+  FRIEND_BATTLE_LEAGUE,
+  LEAGUES,
+  getLeagueRewards,
+  isLeagueMode,
+} from './battleConfig';
+import { calculateNewRatings } from './ratings';
+import { pickOpponentTeam, OpponentCandidate } from './opponentPicker';
+
+export { calculateNewRatings };
 
 const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 
-const RARITY_ORDER: Record<string, number> = {
-  Common: 1,
-  Uncommon: 2,
-  Rare: 3,
-  Epic: 4,
-  Legendary: 5,
-};
-
-// Calculate rewards based on win/loss, friend vs random, and rarity upset
-// We use the AVERAGE rarity of the team now.
-function getAverageRarityRank(team: BattleCard[]): number {
-  if (team.length === 0) return 1;
-  const sum = team.reduce((acc, card) => acc + (RARITY_ORDER[card.rarity] || 1), 0);
-  return sum / team.length;
+/**
+ * BITS and XP for one side of a battle. The amounts live in battleConfig
+ * (LEAGUES) so the wiki and the team builder show the same numbers.
+ */
+export function calculateRewards(didWin: boolean, leagueMode: string): { bits: number; xp: number } {
+  return getLeagueRewards(leagueMode, didWin);
 }
 
-import { grantXP, XP_AMOUNTS } from './xpService';
+/** Balanced League cap: average power (ATK + DEF + HP) of every card × BALANCED_POWER_CAP_MULTIPLIER. */
+export async function getBalancedPowerCap(): Promise<number> {
+  const agg = await prisma.card.aggregate({ _avg: { atk: true, def: true, hp: true } });
+  const avgPower = (agg._avg.atk ?? 0) + (agg._avg.def ?? 0) + (agg._avg.hp ?? 0);
+  return Math.floor(avgPower * BALANCED_POWER_CAP_MULTIPLIER);
+}
 
-export function calculateRewards(
-  didWin: boolean,
-  leagueMode: string,
-  winnerAvgRank: number,
-  loserAvgRank: number
-): { bits: number; xp: number } {
-  let bits: number;
-  let xp: number;
+// ─── Computer opponent ───────────────────────────────────────────────────────
 
-  if (didWin) {
-    switch (leagueMode) {
-      case 'COMMON': bits = 80; xp = 100; break;
-      case 'BALANCED': bits = 100; xp = 120; break;
-      case 'DIVERSITY': bits = 120; xp = 140; break;
-      case 'LEGENDARY': bits = 300; xp = 200; break;
-      case 'OPEN':
-      default: bits = 50; xp = 80; break;
-    }
-  } else {
-    bits = 10;
-    xp = 30; // 30 XP for loss regardless of league
+/** Thrown before anything is written when no valid computer team exists for the league. */
+export class NoOpponentError extends Error {
+  constructor() {
+    super('Not enough cards available for a battle in this league');
   }
-
-  return { bits, xp };
 }
 
-// Simple ELO rating update
-export function calculateNewRatings(
-  winnerRating: number,
-  loserRating: number,
-  K: number = 32
-): { newWinnerRating: number; newLoserRating: number } {
-  const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
-  const expectedLoser = 1 - expectedWinner;
+type OpponentRow = OpponentCandidate & { name: string; avatarUrl: string | null };
 
-  const newWinnerRating = Math.round(winnerRating + K * (1 - expectedWinner));
-  const newLoserRating = Math.max(0, Math.round(loserRating + K * (0 - expectedLoser)));
+const OPPONENT_SAMPLE_SIZE = 60;
 
-  return { newWinnerRating, newLoserRating };
+/** A uniform random sample of cards that individually satisfy the league's rules. */
+async function sampleOpponentCandidates(
+  leagueMode: string,
+  powerCap: number | undefined,
+  excludeOwnedBy: string | null
+): Promise<OpponentRow[]> {
+  const league = LEAGUES[isLeagueMode(leagueMode) ? leagueMode : 'OPEN'];
+  const conditions: Prisma.Sql[] = [Prisma.sql`TRUE`];
+  if (league.allowedRarities) {
+    conditions.push(Prisma.sql`c."rarity" IN (${Prisma.join([...league.allowedRarities])})`);
+  }
+  if (leagueMode === 'DIVERSITY') {
+    conditions.push(Prisma.sql`c."primaryLanguage" IS NOT NULL AND c."primaryLanguage" NOT IN ('', 'Unknown')`);
+  }
+  if (leagueMode === 'BALANCED' && powerCap !== undefined) {
+    conditions.push(Prisma.sql`(c."atk" + c."def" + c."hp") <= ${powerCap}`);
+  }
+  if (excludeOwnedBy) {
+    conditions.push(Prisma.sql`NOT EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c."id" AND uc."userId" = ${excludeOwnedBy})`);
+  }
+  return prisma.$queryRaw<OpponentRow[]>`
+    SELECT c."id", c."name", c."atk", c."def", c."hp", c."rarity", c."primaryLanguage", c."avatarUrl"
+    FROM "Card" c
+    WHERE ${Prisma.join(conditions, ' AND ')}
+    ORDER BY random()
+    LIMIT ${OPPONENT_SAMPLE_SIZE}
+  `;
 }
+
+/**
+ * The computer's team: 3 random cards that obey the same league restrictions
+ * as the player's team. Cards the player owns are only used when there aren't
+ * enough other cards to build a valid team.
+ */
+async function pickRandomOpponents(playerId: string, leagueMode: string, powerCap?: number): Promise<OpponentRow[]> {
+  for (const exclude of [playerId, null]) {
+    const sample = await sampleOpponentCandidates(leagueMode, powerCap, exclude);
+    const team = pickOpponentTeam(sample, leagueMode, { powerCap, random: secureMathRandom });
+    if (team) return team;
+  }
+  throw new NoOpponentError();
+}
+
+// ─── Shared helpers ──────────────────────────────────────────────────────────
+
+/** Applies a rated PvP result to both players, reading their current ratings under a lock. */
+async function applyPvpRating(winnerId: string, loserId: string) {
+  await prisma.$transaction(async (tx) => {
+    // Always lock in the same order so two simultaneous results can't deadlock
+    for (const id of [winnerId, loserId].sort()) await lockUser(tx, id);
+    const players = await tx.user.findMany({ where: { id: { in: [winnerId, loserId] } }, select: { id: true, rating: true } });
+    const winner = players.find(p => p.id === winnerId);
+    const loser = players.find(p => p.id === loserId);
+    if (!winner || !loser) return;
+    const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
+    await tx.user.update({ where: { id: winnerId }, data: { rating: newWinnerRating } });
+    await tx.user.update({ where: { id: loserId }, data: { rating: newLoserRating } });
+  });
+}
+
+function buildBattleStats(battleResult: BattleResult, cTeam: BattleCard[]) {
+  return [
+    ...battleResult.challengerTeamState,
+    ...battleResult.defenderTeamState,
+  ].map(c => ({
+    cardId: c.id,
+    name: c.name,
+    team: cTeam.some(ct => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
+    damageDealt: c.statsDealtDamage || 0,
+    damageReceived: c.statsTakenDamage || 0,
+    passivesTriggered: c.statsPassivesTriggered || 0,
+    critsLanded: c.statsCritsLanded || 0,
+    momentumAchieved: !!c.statsMomentumAchieved,
+  }));
+}
+
+// ─── PvE ─────────────────────────────────────────────────────────────────────
 
 export async function resolveRandomBattle(
   challengerId: string,
   challengerTeamCards: any[],
-  leagueMode: string = 'OPEN'
+  leagueMode: string = 'OPEN',
+  options: { powerCap?: number } = {}
 ) {
   // Map challenger info
   const cTeam: BattleCard[] = challengerTeamCards.map(c => ({
@@ -86,20 +148,11 @@ export async function resolveRandomBattle(
     loyaltyTier: c.loyaltyTier || 'none',
   }));
 
-  const challengerAvgRank = getAverageRarityRank(cTeam);
+  // The computer's team follows the same league rules as the player's
+  const powerCap = leagueMode === 'BALANCED' ? (options.powerCap ?? await getBalancedPowerCap()) : undefined;
+  const opponentCards = await pickRandomOpponents(challengerId, leagueMode, powerCap);
 
-  // Pick 3 random opponent cards from the DB, weighted somewhat by rarity (we can just fetch random from the pool for now, perhaps limiting top rarities if cTeam is weak, but for simplicity we fetch 3 random cards).
-  const allCardsCount = await prisma.card.count();
-  if (allCardsCount < 3) throw new Error('Not enough cards available for battle');
-
-  // Fetch 3 random unique cards
-  const randomSkip1 = Math.floor(secureMathRandom() * (allCardsCount - 2));
-  const dCardsRaw = await prisma.card.findMany({ skip: randomSkip1, take: 3 });
-  
-  // Sort them randomly
-  const shuffledDCards = dCardsRaw.sort(() => 0.5 - secureMathRandom());
-
-  const dTeam: BattleCard[] = shuffledDCards.map(c => ({
+  const dTeam: BattleCard[] = opponentCards.map(c => ({
     id: c.id,
     name: c.name,
     atk: c.atk,
@@ -113,18 +166,12 @@ export async function resolveRandomBattle(
     avatarUrl: c.avatarUrl,
   }));
 
-  const defenderAvgRank = getAverageRarityRank(dTeam);
-
   // Run the battle!
   const battleResult = resolve3v3Battle(cTeam, dTeam);
 
   const playerWon = battleResult.winner === 'CHALLENGER';
-  const rewards = calculateRewards(
-    playerWon,
-    leagueMode,
-    playerWon ? challengerAvgRank : defenderAvgRank,
-    playerWon ? defenderAvgRank : challengerAvgRank
-  );
+  const rewards = calculateRewards(playerWon, leagueMode);
+  const battleStats = buildBattleStats(battleResult, cTeam);
 
   // Create battle record
   const battle = await prisma.battle.create({
@@ -137,80 +184,26 @@ export async function resolveRandomBattle(
       status: 'COMPLETED',
       isRandom: true,
       leagueMode,
-      battleStats: [
-        ...battleResult.challengerTeamState,
-        ...battleResult.defenderTeamState
-      ].map(c => ({
-        cardId: c.id,
-        name: c.name,
-        team: cTeam.some(ct => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
-        damageDealt: c.statsDealtDamage || 0,
-        damageReceived: c.statsTakenDamage || 0,
-        passivesTriggered: c.statsPassivesTriggered || 0,
-        critsLanded: c.statsCritsLanded || 0,
-        momentumAchieved: !!c.statsMomentumAchieved
-      })) as any,
+      battleStats: battleStats as any,
       winnerId: playerWon ? challengerId : '__SYSTEM__',
       rewardBits: rewards.bits,
       completedAt: new Date(),
     }
   });
 
-  // Grant rewards
-  await prisma.user.update({
-    where: { id: challengerId },
-    data: {
-      currency: { increment: rewards.bits },
-      rating: {
-          // Increase/decrease rating against a "reference" 1000 rating sys
-          set: Math.max(0, calculateNewRatings(
-              playerWon ? 1000 : 1000, 
-              playerWon ? 1000 : 1000
-          ).newWinnerRating) // For random battle it's a bit simple, let's just do a +5 / -5 for simplicity or use the elo
-      }
-    },
-  });
-
-  const xpResult = await grantXP(challengerId, rewards.xp);
-  
-  const userTemp = await prisma.user.findUnique({where: {id: challengerId}});
-  if (userTemp) {
-      const eloRes = calculateNewRatings(userTemp.rating, 1000);
-      await prisma.user.update({
-        where: { id: challengerId },
-        data: {
-          rating: playerWon ? eloRes.newWinnerRating : eloRes.newLoserRating
-        }
+  // Grant rewards. Battles against the computer never change the rating:
+  // rating is a PvP-only ELO (see ratings.ts).
+  if (rewards.bits > 0) {
+    await prisma.user.update({
+      where: { id: challengerId },
+      data: { currency: { increment: rewards.bits } },
     });
   }
 
-  // Deduct 20 stamina from challenger cards
-  const now = new Date();
-  await Promise.all(
-    challengerTeamCards.map((c) =>
-      prisma.userCard.update({
-        where: { id: c.id },
-        data: {
-          stamina: Math.max(0, c.stamina - 20),
-          lastUsedAt: now,
-        },
-      })
-    )
-  );
+  const xpResult = await grantXP(challengerId, rewards.xp);
 
-  const battleStats = [
-    ...battleResult.challengerTeamState,
-    ...battleResult.defenderTeamState
-  ].map(c => ({
-    cardId: c.id,
-    name: c.name,
-    team: cTeam.some(ct => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
-    damageDealt: c.statsDealtDamage || 0,
-    damageReceived: c.statsTakenDamage || 0,
-    passivesTriggered: c.statsPassivesTriggered || 0,
-    critsLanded: c.statsCritsLanded || 0,
-    momentumAchieved: !!c.statsMomentumAchieved,
-  }));
+  // Spend stamina from the cards' current value (floor 0)
+  await spendCardStamina(challengerTeamCards.map((c) => c.id as string));
 
   // --- Loyalty Processing for challenger cards ---
   const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
@@ -248,7 +241,8 @@ export async function resolveRandomBattle(
   };
 }
 
-// Resolve a friend challenge
+// ─── PvP (friend challenge) ──────────────────────────────────────────────────
+
 function findBattleWithPlayers(battleId: string) {
   return prisma.battle.findUnique({
     where: { id: battleId },
@@ -304,7 +298,6 @@ async function finishFriendBattle(
     avatarUrl: c.avatarUrl,
     loyaltyTier: c.loyaltyTier || 'none',
   }));
-  const challengerAvgRank = getAverageRarityRank(cTeam);
 
   const dTeam: BattleCard[] = defenderTeamCards.map(c => ({
     id: c.id,
@@ -320,7 +313,6 @@ async function finishFriendBattle(
     avatarUrl: c.avatarUrl,
     loyaltyTier: c.loyaltyTier || 'none',
   }));
-  const defenderAvgRank = getAverageRarityRank(dTeam);
 
   // Run the battle!
   const battleResult = resolve3v3Battle(cTeam, dTeam);
@@ -328,18 +320,9 @@ async function finishFriendBattle(
 
   const winnerId = challengerWon ? battle.challengerId : battle.defenderId;
 
-  // Calculate rewards for both players
-  const challengerRewards = calculateRewards(
-    challengerWon, 'OPEN',
-    challengerWon ? challengerAvgRank : defenderAvgRank,
-    challengerWon ? defenderAvgRank : challengerAvgRank
-  );
-  
-  const defenderRewards = calculateRewards(
-    !challengerWon, 'OPEN',
-    !challengerWon ? defenderAvgRank : challengerAvgRank,
-    !challengerWon ? challengerAvgRank : defenderAvgRank
-  );
+  // Rewards for both players (friend battles use a fixed league table)
+  const challengerRewards = calculateRewards(challengerWon, FRIEND_BATTLE_LEAGUE);
+  const defenderRewards = calculateRewards(!challengerWon, FRIEND_BATTLE_LEAGUE);
 
   // Update battle status
   const updatedBattle = await prisma.battle.update({
@@ -350,19 +333,7 @@ async function finishFriendBattle(
       status: 'COMPLETED',
       winnerId,
       rewardBits: challengerRewards.bits + defenderRewards.bits,
-      battleStats: [
-        ...battleResult.challengerTeamState,
-        ...battleResult.defenderTeamState
-      ].map((c: any) => ({
-        cardId: c.id,
-        name: c.name,
-        team: cTeam.some((ct: any) => ct.id === c.id) ? 'CHALLENGER' : 'DEFENDER',
-        damageDealt: c.statsDealtDamage || 0,
-        damageReceived: c.statsTakenDamage || 0,
-        passivesTriggered: c.statsPassivesTriggered || 0,
-        critsLanded: c.statsCritsLanded || 0,
-        momentumAchieved: !!c.statsMomentumAchieved
-      })) as any,
+      battleStats: buildBattleStats(battleResult, cTeam) as any,
       completedAt: new Date(),
     },
     include: {
@@ -387,39 +358,22 @@ async function finishFriendBattle(
         currency: { increment: defenderRewards.bits },
       },
     });
-    
-    // We do not eagerly await defender XP to not block the challenger response,
-    // in a real app this would be queued or handled correctly, but we'll await it here.
+
     await grantXP(battle.defenderId, defenderRewards.xp);
 
-    // Update ratings for both players
-    if (winnerId && battle.challenger && battle.defender) {
-      const winner = winnerId === battle.challengerId ? battle.challenger : battle.defender;
-      const loser = winnerId === battle.challengerId ? battle.defender : battle.challenger;
-
-      if (winner && loser) {
-        const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
-        await prisma.user.update({ where: { id: winner.id }, data: { rating: newWinnerRating } });
-        await prisma.user.update({ where: { id: loser.id }, data: { rating: newLoserRating } });
-      }
+    // Update ratings for both players (PvP is the only thing that moves rating)
+    if (winnerId) {
+      const loserId = winnerId === battle.challengerId ? battle.defenderId : battle.challengerId;
+      await applyPvpRating(winnerId, loserId);
     }
   }
 
-  // Deduct 20 stamina from all participating cards
-  const now = new Date();
-  await Promise.all([
-    ...cTeamRaw.map((c: any) =>
-      prisma.userCard.update({
-        where: { id: c.id },
-        data: { stamina: Math.max(0, c.stamina - 20), lastUsedAt: now },
-      })
-    ),
-    ...dTeam.map((c) =>
-      prisma.userCard.update({
-        where: { id: c.id },
-        data: { stamina: { decrement: 20 }, lastUsedAt: now },
-      })
-    ),
+  // Spend 20 stamina from every participating card, starting from each card's
+  // CURRENT stamina. The challenger snapshot can be up to 24h old: writing
+  // "snapshot − 20" would restore stamina spent in other battles meanwhile.
+  await spendCardStamina([
+    ...cTeamRaw.map((c: any) => c.id as string),
+    ...dTeam.map((c) => c.id),
   ]);
 
   // --- Loyalty Processing for ALL participating cards ---

@@ -3,16 +3,22 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { randomInt } from 'node:crypto';
 import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
-import { fetchGitHubUserStats, toCardData } from '@/lib/githubService';
+import { fetchGitHubUserStats, isValidGitHubLogin, toCardData } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Each invocation also spends the server's GitHub quota
+    const limited = await enforceRateLimit(req, 'forge-invoke', 20, 60, session.user.id);
+    if (limited) return limited;
+
     const { username } = await req.json();
     if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
+    if (!isValidGitHubLogin(username)) return NextResponse.json({ error: 'Invalid GitHub username' }, { status: 400 });
 
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });

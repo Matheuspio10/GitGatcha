@@ -1,41 +1,33 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { getAudioOutput, isAudioMuted, useAudioMuted } from '@/lib/audioManager';
 
-// Web Audio API wrapper hook for procedural battle sounds
+export type BattleSound = 'lunge' | 'hit' | 'crit' | 'victory' | 'defeat' | 'passive';
+
+/**
+ * Procedural battle sounds on top of the shared audio manager.
+ * The AudioContext is unlocked by the first user gesture anywhere in the app
+ * (e.g. the "Battle!" click), so sounds play as soon as the replay starts.
+ * Mute state is global and persisted.
+ */
 export function useBattleAudio() {
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { isMuted, toggleMuted } = useAudioMuted();
 
-  // Initialize context on first user interaction (must be user-driven due to browser policies)
-  const initAudio = useCallback(() => {
-    if (!audioCtxRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        audioCtxRef.current = new AudioContextClass();
-        setIsInitialized(true);
-      }
-    } else if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-  }, []);
-
-  const playSound = useCallback((type: 'lunge' | 'hit' | 'crit' | 'victory' | 'defeat' | 'passive') => {
-    if (isMuted || !audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
-    
-    // Safety check if suspended
-    if (ctx.state === 'suspended') {
-        ctx.resume();
-    }
+  // Stable callback: reads the mute flag at call time, so toggling mute never
+  // re-triggers effects that depend on playSound (e.g. the victory jingle).
+  const playSound = useCallback((type: BattleSound) => {
+    if (isAudioMuted()) return;
+    const audio = getAudioOutput();
+    if (!audio) return;
+    const { ctx, out } = audio;
 
     const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(out);
 
     switch (type) {
       case 'lunge':
@@ -75,7 +67,7 @@ export function useBattleAudio() {
         const noiseGain = ctx.createGain();
         noiseSource.connect(noiseFilter);
         noiseFilter.connect(noiseGain);
-        noiseGain.connect(ctx.destination);
+        noiseGain.connect(out);
         
         noiseGain.gain.setValueAtTime(0.3, t);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
@@ -95,7 +87,7 @@ export function useBattleAudio() {
         osc2.frequency.exponentialRampToValueAtTime(300, t + 0.3);
         const gain2 = ctx.createGain();
         osc2.connect(gain2);
-        gain2.connect(ctx.destination);
+        gain2.connect(out);
 
         gain.gain.setValueAtTime(0.4, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
@@ -144,22 +136,11 @@ export function useBattleAudio() {
         osc.stop(t + 1.2);
         break;
     }
-  }, [isMuted]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-      }
-    };
   }, []);
 
   return {
-    initAudio,
     playSound,
     isMuted,
-    setIsMuted,
-    isInitialized
+    toggleMuted,
   };
 }

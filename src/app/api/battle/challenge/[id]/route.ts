@@ -5,6 +5,7 @@ import { advanceMissionProgress } from '@/lib/economyService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
+import { getCardStamina } from '@/lib/staminaService';
 
 // POST: Defender responds to a challenge with their 3-card team
 export async function POST(
@@ -64,6 +65,13 @@ export async function POST(
     const orderedCards = cardIds.map(id => userCards.find(uc => uc.cardId === id));
     if (orderedCards.some(uc => !uc)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
 
+    // Same exhaustion rule as battles against the computer, on the recovered value
+    for (const uc of orderedCards) {
+      if (getCardStamina(uc!) === 0) {
+        return NextResponse.json({ error: `Card ${uc!.card.name} is exhausted and cannot battle` }, { status: 400 });
+      }
+    }
+
     const dTeamCards = orderedCards.map(uc => {
       const c = uc!.card;
       return {
@@ -75,7 +83,7 @@ export async function POST(
         def: c.def,
         hp: c.hp,
         maxHp: c.hp,
-        stamina: uc!.stamina,
+        stamina: getCardStamina(uc!), // current (recovered) stamina drives the fatigue penalty
         rarity: c.rarity,
         primaryLanguage: c.primaryLanguage,
         type: getCardType(c),
@@ -86,11 +94,15 @@ export async function POST(
     // Resolve the full battle
     const result = await resolveFriendBattle(battleId, dTeamCards);
 
-    // Advance missions for winner
-    if (result.winnerSide === 'CHALLENGER') {
-      await advanceMissionProgress(battle.challengerId, 'WIN_BATTLE');
-    } else if (result.winnerSide === 'DEFENDER' && battle.defenderId) {
-      await advanceMissionProgress(battle.defenderId, 'WIN_BATTLE');
+    // Advance missions for winner (the battle is already resolved: never fail the response here)
+    try {
+      if (result.winnerSide === 'CHALLENGER') {
+        await advanceMissionProgress(battle.challengerId, 'WIN_BATTLE');
+      } else if (result.winnerSide === 'DEFENDER' && battle.defenderId) {
+        await advanceMissionProgress(battle.defenderId, 'WIN_BATTLE');
+      }
+    } catch (err) {
+      console.error('Mission progress error:', err);
     }
 
     return NextResponse.json({

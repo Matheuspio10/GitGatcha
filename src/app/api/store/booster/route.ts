@@ -5,12 +5,16 @@ import { authOptions } from '@/lib/auth';
 import { withUserLock, asArray } from '@/lib/userLock';
 import { getPackById } from '@/lib/packDefinitions';
 import { InventoryItem } from '@/lib/xpService';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const limited = await enforceRateLimit(req, 'store-booster', 20, 60, userId);
+    if (limited) return limited;
 
     let packId: string | undefined;
     try {

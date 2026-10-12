@@ -9,5 +9,7 @@ export const config = {
     "/battle/:path*",
     "/friends/:path*",
     "/profile/:path*",
+    "/inventory/:path*",
+    "/forge/:path*",
   ]
 }

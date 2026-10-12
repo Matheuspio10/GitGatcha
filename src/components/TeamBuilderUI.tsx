@@ -10,6 +10,7 @@ import {
 import { CardProps } from '@/components/Card';
 import clsx from 'clsx';
 import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
+import { LEAGUES, type LeagueMode } from '@/lib/battleConfig';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -19,15 +20,30 @@ export interface TeamBuilderCard extends CardProps {
   loyaltyCount?: number;
 }
 
-export type LeagueMode = 'OPEN' | 'COMMON' | 'BALANCED' | 'DIVERSITY' | 'LEGENDARY';
+export type { LeagueMode };
 
-export const LEAGUE_CONFIG: Record<LeagueMode, { label: string; icon: string; color: string; border: string; bg: string; description: string; winBits: number; winXp: number; entryFee?: number }> = {
-  OPEN: { label: 'Open League', icon: '⚔️', color: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-500/10', description: 'No restrictions — use any cards.', winBits: 50, winXp: 80 },
-  COMMON: { label: 'Common League', icon: '🛡️', color: 'text-green-400', border: 'border-green-500', bg: 'bg-green-500/10', description: 'Common & Uncommon cards only.', winBits: 80, winXp: 100 },
-  BALANCED: { label: 'Balanced League', icon: '⚖️', color: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-500/10', description: 'Team power cannot exceed the cap.', winBits: 100, winXp: 120 },
-  DIVERSITY: { label: 'Diversity League', icon: '🌍', color: 'text-purple-400', border: 'border-purple-500', bg: 'bg-purple-500/10', description: '3 different primary languages required.', winBits: 120, winXp: 140 },
-  LEGENDARY: { label: 'Legendary Only', icon: '👑', color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-500/10', description: 'Legendary cards only. 500 BITS entry.', winBits: 300, winXp: 200, entryFee: 500 },
+// Rewards, fees and rules come from battleConfig (same numbers the server pays and the wiki shows)
+const LEAGUE_STYLE: Record<LeagueMode, { icon: string; color: string; border: string; bg: string }> = {
+  OPEN: { icon: '⚔️', color: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-500/10' },
+  COMMON: { icon: '🛡️', color: 'text-green-400', border: 'border-green-500', bg: 'bg-green-500/10' },
+  BALANCED: { icon: '⚖️', color: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-500/10' },
+  DIVERSITY: { icon: '🌍', color: 'text-purple-400', border: 'border-purple-500', bg: 'bg-purple-500/10' },
+  LEGENDARY: { icon: '👑', color: 'text-yellow-400', border: 'border-yellow-500', bg: 'bg-yellow-500/10' },
 };
+
+export const LEAGUE_CONFIG = Object.fromEntries(
+  (Object.keys(LEAGUE_STYLE) as LeagueMode[]).map(mode => {
+    const l = LEAGUES[mode];
+    return [mode, {
+      ...LEAGUE_STYLE[mode],
+      label: l.label,
+      description: l.entryFee > 0 ? `${l.rules} ${l.entryFee} BITS entry.` : l.rules,
+      winBits: l.winBits,
+      winXp: l.winXp,
+      entryFee: l.entryFee > 0 ? l.entryFee : undefined,
+    }];
+  })
+) as Record<LeagueMode, { label: string; icon: string; color: string; border: string; bg: string; description: string; winBits: number; winXp: number; entryFee?: number }>;
 
 interface TeamBuilderProps {
   userCards: TeamBuilderCard[];
@@ -1307,7 +1323,7 @@ export default function TeamBuilderUI({
       if (slots.filter(Boolean).length >= 1 && currentLangs.includes(card.primaryLanguage || '')) {
         return 'Card shares a language with existing team member';
       }
-      if (!card.primaryLanguage) return 'Card has no primary language';
+      if (!card.primaryLanguage || card.primaryLanguage === 'Unknown') return 'Card has no primary language';
     }
     return null;
   }
@@ -1447,7 +1463,7 @@ export default function TeamBuilderUI({
             {(Object.keys(LEAGUE_CONFIG) as LeagueMode[]).map(mode => {
               const cfg = LEAGUE_CONFIG[mode];
               const isActive = leagueMode === mode;
-              const cantAfford = mode === 'LEGENDARY' && userBits < 500;
+              const cantAfford = !!cfg.entryFee && userBits < cfg.entryFee;
               return (
                 <button
                   key={mode}
@@ -1495,7 +1511,7 @@ export default function TeamBuilderUI({
           {leagueMode === 'LEGENDARY' && (
             <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
               <Crown size={16} className="text-yellow-400" />
-              <span className="text-xs text-yellow-300">500 BITS entry fee will be charged per battle</span>
+              <span className="text-xs text-yellow-300">{LEAGUES.LEGENDARY.entryFee} BITS entry fee will be charged per battle (win pays {LEAGUES.LEGENDARY.winBits}, a loss pays {LEAGUES.LEGENDARY.lossBits})</span>
               <span className="ml-auto text-xs text-slate-400">Balance: <span className="text-yellow-400 font-bold">{userBits}</span></span>
             </div>
           )}

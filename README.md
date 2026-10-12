@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitGacha
 
-## Getting Started
+Jogo de cartas colecionáveis (gacha) em que cada carta é um **desenvolvedor real do GitHub**. Os atributos vêm do perfil público (estrelas, forks, repositórios, seguidores, idade da conta) e a raridade vem dos seguidores, com bônus por estrelas.
 
-First, run the development server:
+Jogadores abrem boosters temáticos, montam times de 3, batalham (PvE e desafios entre amigos), forjam cartas com fragmentos e sobem de nível. Quem conecta o GitHub ganha a **própria carta na edição Signature**.
+
+Roadmap e análise de melhorias: [ROADMAP.md](ROADMAP.md).
+
+## Stack
+
+- Next.js 16 (App Router) + React 19 + Tailwind 4 + framer-motion
+- Prisma 6 + PostgreSQL (Neon)
+- next-auth v4 (GitHub, Google e e-mail/senha)
+- Deploy na Vercel (Fluid compute) com um cron diário
+
+## Rodando localmente
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Variáveis de ambiente (`.env.local`; veja `.env.example`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variável | Para quê |
+|---|---|
+| `DATABASE_URL` | Postgres. **Use uma branch de desenvolvimento do Neon, não a de produção.** |
+| `GITHUB_TOKEN` | Token do servidor para a API do GitHub (só leitura pública) |
+| `NEXTAUTH_URL`, `NEXTAUTH_SECRET` | next-auth |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Login com GitHub (OAuth App; callback `/api/auth/callback/github`) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Login com Google |
+| `CRON_SECRET` | Protege `/api/cron/rebuild-fallback-pool` (obrigatório em produção) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm test` | Testes (`node --test` + `tsx`) — puros, sem banco nem rede |
+| `npm run build` | Build local (não mexe no banco) |
+| `npm run db:migrate` | Aplica as migrações pendentes no banco do `DATABASE_URL` |
+| `node --env-file=.env.local --import tsx scripts/recalculate-cards.ts` | Recalcula todas as cartas com dados atuais do GitHub (dry run; `--apply` grava) |
 
-To learn more about Next.js, take a look at the following resources:
+Na Vercel o build usa `vercel-build`, que roda `prisma migrate deploy` antes do `next build`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Como o sorteio dos boosters funciona
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+O núcleo do jogo: **dentro do filtro de um booster, todo dev do GitHub da raridade sorteada tem a mesma chance de sair** — famoso ou conta nova.
 
-## Deploy on Vercel
+- `src/lib/rarity.ts` — faixas de seguidores, bônus por estrelas, chances por slot.
+- `src/lib/devSampler.ts` — sorteio uniforme (por ID de conta, por janelas de busca sobre a curva de cadastro do GitHub, ou por membros de organizações). Coberto por testes estatísticos em `devSampler.test.ts`.
+- `src/lib/boosterReserve.ts` — reserva consumível de devs pré-sorteados (cada um usado uma vez), reposta em segundo plano.
+- `src/lib/samplerStore.ts` — cache no banco, pools de organizações e uso do token do próprio jogador.
+- `src/lib/fallbackPoolService.ts` — manutenção diária (cron).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Consistência dos dados
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Toda leitura-e-escrita de BITS, inventário e campos JSON do usuário passa por `withUserLock` (`src/lib/userLock.ts`), que trava a linha do jogador numa transação. Não chame APIs externas dentro dessa trava.

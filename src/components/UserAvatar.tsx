@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 interface UserAvatarProps {
   username: string;
   image?: string | null;
@@ -19,13 +21,15 @@ const sizeClasses = {
 export function UserAvatar({ username, image, size = 'md', className = '', showUploadHint = false, onClick }: UserAvatarProps) {
   const sizeClass = sizeClasses[size] || sizeClasses.md;
   const initial = (username || '?').charAt(0).toUpperCase();
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
-  if (image) {
+  if (image && failedSrc !== image) {
     return (
       <div className={`relative group ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick}>
         <img
           src={image}
           alt={username}
+          onError={() => setFailedSrc(image)}
           className={`${sizeClass} rounded-full object-cover ring-2 ring-slate-800 border border-indigo-500/30`}
         />
         {showUploadHint && (

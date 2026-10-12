@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/Card';
 import { useSession } from 'next-auth/react';
 import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin, BookOpenText } from '@phosphor-icons/react';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
+import Link from 'next/link';
 
 type FragmentWallet = Record<string, number>;
 type WishlistItem = {
@@ -108,6 +109,7 @@ export default function ForgeClient() {
       if (res.ok) {
         setRevealedCard(data.card);
         fetchWallet(); // Refresh balances
+        window.dispatchEvent(new Event('bits:refresh')); // Sync Navbar BITS
         toast.success(`Successfully invoked ${data.card.name}!`);
       } else {
         toast.error(data.error || 'Invocation failed');
@@ -180,7 +182,6 @@ export default function ForgeClient() {
   if (revealedCard) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in duration-500">
-        <Toaster position="top-center" />
         <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 mb-8 drop-shadow-[0_0_15px_rgba(252,211,77,0.5)]">
           Invocation Successful!
         </h2>
@@ -200,7 +201,6 @@ export default function ForgeClient() {
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
-      <Toaster position="top-center" />
       
       {/* Header & Wallet */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -368,13 +368,13 @@ export default function ForgeClient() {
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {searchResult.recommendedPacks.map((pack: any) => (
-                        <a href={`/store?pack=${pack.id}`} key={pack.id} className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-indigo-500/50 transition-colors group cursor-pointer block">
+                        <Link href={`/store#pack-${pack.id}`} key={pack.id} className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-indigo-500/50 transition-colors group cursor-pointer block">
                           <div className="w-10 h-10 rounded shadow-md" style={{ background: pack.visualTheme?.gradient }}></div>
                           <div>
                             <div className="font-bold text-sm text-slate-200 group-hover:text-indigo-300 transition-colors line-clamp-1">{pack.name}</div>
                             <div className="text-xs text-slate-500">{pack.cost} BITS</div>
                           </div>
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   </div>
