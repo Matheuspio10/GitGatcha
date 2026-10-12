@@ -53,7 +53,7 @@ function LoginContent() {
 
         {authError && (
           <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-300">
-            {AUTH_ERRORS[authError] ?? 'Sign-in failed. Please try again.'}
+            {AUTH_ERRORS[authError] ?? `Sign-in failed (${authError}). Please try again.`}
           </div>
         )}
 
