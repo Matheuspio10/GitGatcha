@@ -29,8 +29,12 @@ test('the strongest real trait names the card', () => {
   assert.strictEqual(titleOf({ totalForks: 600, totalStars: 900 }), 'Fork Magnet');
 });
 
-test('account age only wins when nothing else stands out', () => {
-  assert.strictEqual(titleOf({ githubCreatedAt: yearsAgo(12) }), 'Veteran');
+test('account age only names really old accounts (14+ years) when nothing else stands out', () => {
+  assert.strictEqual(titleOf({ githubCreatedAt: yearsAgo(15) }), 'Pre-Cloud Elder');
+  assert.strictEqual(titleOf({ githubCreatedAt: yearsAgo(17.5) }), 'Remembers SVN');
+  assert.strictEqual(cardTitle(profile({ githubCreatedAt: yearsAgo(12) }), 'Go', 'Common', 'x', NOW).reason, 'a quiet GitHub profile');
+  assert.strictEqual(cardTitle(profile({ githubCreatedAt: yearsAgo(7) }), 'Go', 'Common', 'x', NOW).reason, 'a quiet GitHub profile');
+  assert.strictEqual(titleOf({ githubCreatedAt: yearsAgo(16), totalStars: 20_000 }), 'Supernova');
   assert.strictEqual(titleOf({ githubCreatedAt: yearsAgo(11), publicRepos: 120, totalStars: 900 }), 'Serial Starter');
 });
 
