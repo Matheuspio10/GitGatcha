@@ -7,6 +7,7 @@ import { BoosterReveal } from '@/components/BoosterReveal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
 import { toast } from 'react-hot-toast';
+import { notifyAchievements } from '@/lib/achievementToast';
 
 interface PackVisualTheme {
   gradient: string;
@@ -74,14 +75,15 @@ export default function InventoryClient({ userId }: { userId: string }) {
     fetchInventory();
   }, []);
 
-  const checkWishlistProgress = (data: { packDropFragments?: { language: string, amount: number }, cards: { isDuplicate?: boolean, language?: string }[] }) => {
+  const checkWishlistProgress = (data: { packDropFragments?: { language: string, amount: number }, cards: { isDuplicate?: boolean, primaryLanguage?: string }[] }) => {
     fetch('/api/forge/wallet').then(res => res.json()).then(wallet => {
       const fragments = wallet.fragments || {};
       const wishlist = wallet.wishlist || [];
       const earnedLangs = new Set<string>();
       if (data.packDropFragments) earnedLangs.add(data.packDropFragments.language);
-      data.cards.forEach((c: { isDuplicate?: boolean, language?: string }) => {
-        if (c.isDuplicate && c.language && c.language !== 'Unknown') earnedLangs.add(c.language);
+      // Duplicates are paid in fragments of the card's primary language
+      data.cards.forEach((c: { isDuplicate?: boolean, primaryLanguage?: string }) => {
+        if (c.isDuplicate && c.primaryLanguage && c.primaryLanguage !== 'Unknown') earnedLangs.add(c.primaryLanguage);
       });
       earnedLangs.forEach(lang => {
         const wItem = wishlist.find((w: { primaryLanguage: string, fragmentsRequired: number, name: string }) => w.primaryLanguage === lang);
@@ -119,6 +121,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
           setPackDropFragments(data.packDropFragments);
         }
         checkWishlistProgress(data);
+        notifyAchievements(data.achievementsUnlocked);
 
         // Update local inventory count
         setPacks(prev => prev.map(p => p.packId === pack.packId ? { ...p, count: p.count - 1 } : p).filter(p => p.count > 0));
@@ -192,9 +195,11 @@ export default function InventoryClient({ userId }: { userId: string }) {
           {packState === 'CARDS_REVEALED' && cards.length > 0 && !errorMessage && (
             <motion.div key="cards" className="w-full z-20 relative">
               <BoosterReveal 
-                cards={cards as (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[]} 
-                packDropFragments={packDropFragments} 
-                onComplete={resetView} 
+                cards={cards as (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[]}
+                packDropFragments={packDropFragments}
+                onComplete={resetView}
+                packName={selectedPack.packName}
+                packTheme={selectedPack.visualTheme}
               />
             </motion.div>
           )}
@@ -255,7 +260,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                   {pack.count}
                 </div>
 
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay pointer-events-none" />
+                <div className="absolute inset-0 tex-cubes opacity-20 mix-blend-overlay pointer-events-none" />
                 
                 {/* Branding */}
                 <div className="relative z-10 flex flex-col items-center text-center mt-20 px-4">

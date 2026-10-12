@@ -7,6 +7,7 @@ import { getPlayerGithubToken, getRecentPulls, recordPulls, samplerForToken } fr
 import { refillReserve, reserveDeficit, takeFromReserve } from './boosterReserve';
 import { isRarity, Rarity, rarityForSlot } from './rarity';
 import { asArray, asRecord, withUserLock } from './userLock';
+import { applyPity, packsUntilPity, pityCounterUpdate, PITY_THRESHOLD } from './pity';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
@@ -48,12 +49,34 @@ const FRAGMENTS_PER_RARITY: Record<string, number> = {
 };
 
 export async function openBoosterPack(userId: string, packId?: string) {
+  const pityTicket: PityTicket = { consumed: false, settled: false };
+  try {
+    return await drawBoosterPack(userId, packId, pityTicket);
+  } catch (err) {
+    // The opening failed before any card was granted (the caller gives the pack back):
+    // a pity consumed for it stays due for the next opening
+    if (pityTicket.consumed && !pityTicket.settled) await updatePityCounter(userId, false, true);
+    throw err;
+  }
+}
+
+interface PityTicket {
+  /** The due pity was claimed for this opening (counter reset to 0). */
+  consumed: boolean;
+  /** The counter was updated after the cards were granted. */
+  settled: boolean;
+}
+
+async function drawBoosterPack(userId: string, packId: string | undefined, pityTicket: PityTicket) {
   const pack = packId ? getPackById(packId) : null;
   const effectivePackId = packId || '_generic';
   const cardsToPull = pack?.cardCount ?? 5;
   const pool: PoolFilter = pack?.pool ?? {};
 
   let pickedRarities: string[] = [];
+  // All-Common packs (Junk Drawer) are outside the Legendary pity
+  const countsForPity = !pack?.allCommon;
+  let pityTriggered = false;
 
   if (pack?.allCommon) {
     pickedRarities = Array(cardsToPull).fill('Common');
@@ -61,6 +84,14 @@ export async function openBoosterPack(userId: string, packId?: string) {
     pickedRarities = getRaritiesForSlots(cardsToPull);
     if (pack?.guaranteedMinRarity) {
       pickedRarities = ensureMinimumRarity(pickedRarities, pack.guaranteedMinRarity);
+    }
+    // Pity: after PITY_THRESHOLD - 1 packs without a Legendary, this one gets one (before drawing)
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { packsSinceLegendary: true } });
+    const pity = applyPity(pickedRarities, user?.packsSinceLegendary ?? 0);
+    if (pity.triggered && await consumePity(userId)) {
+      pickedRarities = pity.rarities;
+      pityTriggered = true;
+      pityTicket.consumed = true;
     }
   }
 
@@ -133,6 +164,13 @@ export async function openBoosterPack(userId: string, packId?: string) {
       console.error(`[Booster] Could not grant ${dev.githubUsername}:`, (err as Error).message);
     }
   }
+  let packsSinceLegendary: number | null = null;
+  if (countsForPity) {
+    // Final card rarity (star bonus included) decides whether the pity resets
+    const gotLegendary = newCards.some(c => c.rarity === 'Legendary');
+    pityTicket.settled = true;
+    packsSinceLegendary = await updatePityCounter(userId, gotLegendary, pityTriggered);
+  }
   try {
     await recordPulls(userId, effectivePackId, newCards.map(d => d.githubUsername));
   } catch (err) {
@@ -173,7 +211,50 @@ export async function openBoosterPack(userId: string, packId?: string) {
     }
   }
 
-  return { newCards, packDropFragments };
+  return {
+    newCards,
+    packDropFragments,
+    pity: packsSinceLegendary === null ? null : { packsSinceLegendary, packsUntilGuaranteed: packsUntilPity(packsSinceLegendary), threshold: PITY_THRESHOLD, triggered: pityTriggered },
+  };
+}
+
+/**
+ * Claims a due pity atomically (resets the counter only if it is still due), so two
+ * parallel openings can't both get the guaranteed Legendary.
+ */
+async function consumePity(userId: string): Promise<boolean> {
+  try {
+    const { count } = await prisma.user.updateMany({
+      where: { id: userId, packsSinceLegendary: { gte: PITY_THRESHOLD - 1 } },
+      data: { packsSinceLegendary: 0 },
+    });
+    return count === 1;
+  } catch (err) {
+    console.error('[Booster] Could not consume pity:', (err as Error).message);
+    return false;
+  }
+}
+
+/** Atomic counter update after the cards were granted. Never throws (the pack is already given). */
+async function updatePityCounter(userId: string, gotLegendary: boolean, pityTriggered: boolean): Promise<number | null> {
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { packsSinceLegendary: pityCounterUpdate(gotLegendary, pityTriggered) },
+      select: { packsSinceLegendary: true },
+    });
+    return updated.packsSinceLegendary;
+  } catch (err) {
+    console.error('[Booster] Could not update the pity counter:', (err as Error).message);
+    return null;
+  }
+}
+
+/** Pity status for the store ("Legendary guaranteed within N packs"). */
+export async function getPityStatus(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { packsSinceLegendary: true } });
+  const packsSinceLegendary = user?.packsSinceLegendary ?? 0;
+  return { packsSinceLegendary, packsUntilGuaranteed: packsUntilPity(packsSinceLegendary), threshold: PITY_THRESHOLD };
 }
 
 type CardSource = 'reserve' | 'github' | 'fallback';

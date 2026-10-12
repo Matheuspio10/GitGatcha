@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { resolve3v3Battle, decideBattleWinner, remainingHpFraction, BattleCard } from './battleResolver';
+import { resolve3v3Battle, decideBattleWinner, remainingHpFraction, BattleCard, getCardType } from './battleResolver';
 
 function card(id: string, over: Partial<BattleCard> = {}): BattleCard {
   return {
@@ -59,5 +59,49 @@ describe('resolve3v3Battle end conditions', () => {
     const c = [card('c1', { atk: 500 }), card('c2', { atk: 500 }), card('c3', { atk: 500 })];
     const d = [card('d1', { atk: 5 }), card('d2', { atk: 5 }), card('d3', { atk: 5 })];
     assert.strictEqual(resolve3v3Battle(c, d).winner, 'CHALLENGER');
+  });
+});
+
+describe('combat formula and passives', () => {
+  const lone = (over: Partial<BattleCard>) => [card('x1', over), card('x2', { hp: 1, maxHp: 1 }), card('x3', { hp: 1, maxHp: 1 })];
+  const firstHit = (c: BattleCard[], d: BattleCard[]) => {
+    const turn = resolve3v3Battle(c, d, { rng: () => 0.99 }).log.find(t => t.turnNumber === 1)!;
+    return turn.events.filter(e => e.type === 'damage').map(e => ({ from: e.cardId, value: e.value }));
+  };
+
+  test('DEF mitigates a percentage: 100 DEF halves the damage', () => {
+    const hits = firstHit(lone({ atk: 80 }), lone({ def: 100, hp: 1000, maxHp: 1000 }));
+    assert.deepStrictEqual(hits.find(h => h.from === 'x1')?.value, 40);
+  });
+
+  test('new languages get a combat type; others stay Neutral', () => {
+    assert.strictEqual(getCardType({ primaryLanguage: 'Java', rarity: 'Rare' }), 'Java');
+    assert.strictEqual(getCardType({ primaryLanguage: 'Jupyter Notebook', rarity: 'Rare' }), 'Jupyter Notebook');
+    assert.strictEqual(getCardType({ primaryLanguage: 'Haskell', rarity: 'Rare' }), 'Neutral');
+    assert.strictEqual(getCardType({ primaryLanguage: null, rarity: 'Rare' }), 'Neutral');
+  });
+
+  test('Kotlin Null Safety caps a single turn at 30% of max HP', () => {
+    const hits = firstHit(lone({ atk: 900 }), lone({ type: 'Kotlin', primaryLanguage: 'Kotlin', hp: 1000, maxHp: 1000 }));
+    assert.strictEqual(hits.find(h => h.from === 'x1')?.value, 300);
+  });
+
+  test('PHP @ Error Suppression survives one knockout at 1 HP', () => {
+    const result = resolve3v3Battle(lone({ atk: 5000 }), lone({ type: 'PHP', primaryLanguage: 'PHP', atk: 1 }), { rng: () => 0.99 });
+    assert.ok(result.log.some(t => t.events.some(e => e.message.includes('@-suppressed'))));
+  });
+
+  test('CSS zero-damage chance shrinks with rarity', () => {
+    // rng 0.5 skips double damage (< 0.3·mult); with Common 0.9 → zero chance 0.111, Legendary → 0.091
+    let roll = 0;
+    const rolls = [0.5, 0.1];
+    const zeroed = (rarity: BattleCard['rarity']) => {
+      roll = 0;
+      const turn = resolve3v3Battle(lone({ type: 'CSS', primaryLanguage: 'CSS', rarity }), lone({ hp: 1000, maxHp: 1000 }), { rng: () => rolls[roll++ % 2] })
+        .log.find(t => t.turnNumber === 1)!;
+      return turn.events.some(e => e.message.includes('undefined behavior'));
+    };
+    assert.strictEqual(zeroed('Common'), true);
+    assert.strictEqual(zeroed('Legendary'), false);
   });
 });

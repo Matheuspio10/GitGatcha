@@ -2,18 +2,32 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, RARITY_STAT_MULTIPLIER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
+import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
+  COMBAT_LANGUAGES,
+  DEF_MITIGATION_K,
   FRIEND_BATTLE_LEAGUE,
   LEAGUES,
   LEAGUE_MODES,
   LOYALTY_MILESTONES,
-  PASSIVE_RARITY_MULTIPLIER,
+  MATCHUP_TURN_CAP,
+  MAX_DEF_MITIGATION,
+  MOMENTUM_BONUS_PER_STACK,
+  PASSIVE_INFO,
   RATING_K_FACTOR,
   STAMINA_COST_PER_BATTLE,
   STARTING_RATING,
+  SYNERGY,
+  TYPE_ADVANTAGES,
+  TYPE_ADVANTAGE_MULTIPLIER,
+  TYPE_DISADVANTAGE_MULTIPLIER,
+  typeWeaknesses,
 } from '@/lib/battleConfig';
+import { ACTIVE_RARITY_MULTIPLIER as RARITY_STAT_MULTIPLIER, describeStatFormula, STAT_MINIMUMS } from '@/lib/cardStats';
+import { DAILY_COOLDOWN_MS, LOGIN_CALENDAR_DAYS, LOGIN_CALENDAR_REWARDS, LOGIN_STREAK_WINDOW_MS } from '@/lib/loginCalendar';
+import { PITY_THRESHOLD } from '@/lib/pity';
+import { ACHIEVEMENTS, TIER_NAMES } from '@/lib/achievementUtils';
 import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils';
 import { INVOCATION_COSTS } from '@/lib/forgeService';
 import { 
@@ -31,9 +45,18 @@ import {
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-/** Chance range of a rarity-scaled passive, e.g. "15% (Common) to 35% (Legendary)". */
-const passiveChance = (base: number) =>
-  `${pct(base * PASSIVE_RARITY_MULTIPLIER.Common)} (Common) to ${pct(base * PASSIVE_RARITY_MULTIPLIER.Legendary)} (Legendary)`;
+const LANGUAGE_COLOR: Record<string, string> = {
+  Python: 'text-blue-300', JavaScript: 'text-yellow-300', TypeScript: 'text-blue-400', Ruby: 'text-red-400',
+  PHP: 'text-indigo-300', Rust: 'text-orange-500', C: 'text-gray-300', 'C++': 'text-gray-300', Go: 'text-cyan-400',
+  Java: 'text-amber-500', 'C#': 'text-violet-400', Kotlin: 'text-fuchsia-400', Swift: 'text-orange-400',
+  Dart: 'text-sky-400', Shell: 'text-lime-400', HTML: 'text-orange-300', CSS: 'text-blue-500', 'Jupyter Notebook': 'text-amber-300',
+};
+
+const STAT_TEXT = describeStatFormula();
+
+const HOURS = (ms: number) => Math.round(ms / 3_600_000);
+/** XP granted by every daily claim (XP_AMOUNTS.LOGIN_STREAK in xpService.ts, which is server-only). */
+const DAILY_CLAIM_XP = 20;
 
 const LEAGUE_TITLE_COLOR: Record<string, string> = {
   OPEN: 'text-white',
@@ -58,6 +81,7 @@ const SECTIONS = [
   { id: 'loyalty-system', title: 'Loyalty Contract System' },
   { id: 'forge-system', title: 'Forge System' },
   { id: 'team-synergies', title: 'Team Synergies' },
+  { id: 'daily-rewards', title: 'Daily Rewards, Pity and Achievements' },
   { id: 'glossary', title: 'Glossary' },
 ];
 
@@ -298,7 +322,10 @@ export default function WikiPage() {
                     <Sword size={24} weight="fill" className="text-red-400" />
                     <h3 className="text-xl font-bold text-white">Attack (ATK)</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Determines Base Damage. The damage dealt is calculated as <code>Damage = ATK - (DEF * 0.25)</code>, never less than 15% of ATK (minimum 1). ATK also determines how much HP Python cards regen.</p>
+                  <p className="text-sm text-slate-300 mb-2">
+                    {STAT_TEXT.atk}
+                  </p>
+                  <p className="text-sm text-slate-400">Damage per hit: <code>ATK × {DEF_MITIGATION_K} / ({DEF_MITIGATION_K} + DEF)</code>, minimum 1. ATK also sets how much Python and Jupyter Notebook cards regenerate.</p>
                 </div>
                 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
@@ -306,7 +333,12 @@ export default function WikiPage() {
                     <Shield size={24} weight="fill" className="text-blue-400" />
                     <h3 className="text-xl font-bold text-white">Defense (DEF)</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Reduces incoming damage. Every point of DEF reduces incoming attack by 0.25 points. Note: Minimum damage is clamped to 15% of the attacker&apos;s ATK.</p>
+                  <p className="text-sm text-slate-300 mb-2">
+                    {STAT_TEXT.def}
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    Blocks a share of every hit: <code>DEF / ({DEF_MITIGATION_K} + DEF)</code>. {DEF_MITIGATION_K} DEF halves the damage taken, and DEF never blocks more than {pct(MAX_DEF_MITIGATION)}. Diminishing returns: repo spam helps, but never makes a card immune.
+                  </p>
                 </div>
 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
@@ -314,7 +346,10 @@ export default function WikiPage() {
                     <Heart size={24} weight="fill" className="text-green-400" />
                     <h3 className="text-xl font-bold text-white">Health (HP)</h3>
                   </div>
-                  <p className="text-sm text-slate-300">Determines how much damage a card can take before being defeated. If a single matchup lasts 50 turns, the card with the higher remaining HP % wins it (an exact tie knocks out both).</p>
+                  <p className="text-sm text-slate-300 mb-2">
+                    {STAT_TEXT.hp}
+                  </p>
+                  <p className="text-sm text-slate-400">If a single matchup lasts {MATCHUP_TURN_CAP} turns, the card with the higher remaining HP % wins it (an exact tie knocks out both).</p>
                 </div>
 
                 <div className="bg-slate-800/30 p-5 rounded-xl border border-slate-700/50">
@@ -323,6 +358,7 @@ export default function WikiPage() {
                     <h3 className="text-xl font-bold text-white">Power</h3>
                   </div>
                   <p className="text-sm text-slate-300"><code>ATK + DEF + HP</code>. Used for sorting in the collection and for the Balanced League team cap.</p>
+                  <p className="text-sm text-slate-400 mt-2">Every stat is then multiplied by the card&apos;s rarity multiplier (minimum {STAT_MINIMUMS.atk} ATK, {STAT_MINIMUMS.def} DEF and {STAT_MINIMUMS.hp} HP). The formulas are tuned with a battle simulator so that rarity matters but upsets happen, and ATK, DEF and HP all decide fights.</p>
                 </div>
               </div>
             </section>
@@ -334,64 +370,30 @@ export default function WikiPage() {
                 Language Types and Advantages
               </h2>
               <p className="mb-6 text-slate-300">
-                Having a Type Advantage grants a <strong className="text-orange-400">1.5x (50%)</strong> multiplier to damage dealt. A disadvantage applies a <strong className="text-red-400">0.75x</strong> multiplier.
+                Having a Type Advantage grants a <strong className="text-orange-400">{TYPE_ADVANTAGE_MULTIPLIER}x</strong> multiplier to damage dealt. A disadvantage applies a <strong className="text-red-400">{TYPE_DISADVANTAGE_MULTIPLIER}x</strong> multiplier. CSS deals {TYPE_DISADVANTAGE_MULTIPLIER}x to every typed language; Neutral cards (any other language) have no matchups.
               </p>
-              
+
               <div className="overflow-x-auto rounded-xl border border-slate-700">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-slate-800 text-slate-300 uppercase font-bold text-xs">
                     <tr>
                       <th className="px-6 py-4">Language Type</th>
-                      <th className="px-6 py-4 text-green-400">Strong Against (1.5x)</th>
-                      <th className="px-6 py-4 text-red-400">Weak Against (0.75x)</th>
+                      <th className="px-6 py-4 text-green-400">Strong Against ({TYPE_ADVANTAGE_MULTIPLIER}x)</th>
+                      <th className="px-6 py-4 text-red-400">Weak Against ({TYPE_DISADVANTAGE_MULTIPLIER}x)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50 bg-slate-900/50">
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-blue-300">Python</td>
-                      <td className="px-6 py-4">JavaScript</td>
-                      <td className="px-6 py-4">PHP</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-yellow-300">JavaScript</td>
-                      <td className="px-6 py-4">Ruby</td>
-                      <td className="px-6 py-4">Python, TypeScript</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-red-400">Ruby</td>
-                      <td className="px-6 py-4">PHP</td>
-                      <td className="px-6 py-4">JavaScript</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-indigo-300">PHP</td>
-                      <td className="px-6 py-4">Python</td>
-                      <td className="px-6 py-4">Ruby</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-orange-500">Rust</td>
-                      <td className="px-6 py-4">C, C++</td>
-                      <td className="px-6 py-4">Go</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-gray-300">C / C++</td>
-                      <td className="px-6 py-4">Go</td>
-                      <td className="px-6 py-4">Rust</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-cyan-400">Go</td>
-                      <td className="px-6 py-4">Rust</td>
-                      <td className="px-6 py-4">C, C++</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-blue-400">TypeScript</td>
-                      <td className="px-6 py-4">JavaScript</td>
-                      <td className="px-6 py-4">None</td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/50">
-                      <td className="px-6 py-4 font-bold text-blue-500">CSS</td>
-                      <td className="px-6 py-4 text-slate-500">None</td>
-                      <td className="px-6 py-4">Everything (except Neutral/Legendary)</td>
-                    </tr>
+                    {COMBAT_LANGUAGES.map(lang => {
+                      const strong: readonly string[] = TYPE_ADVANTAGES[lang] ?? [];
+                      const weak: readonly string[] = lang === 'CSS' ? ['Everything (except Neutral)'] : typeWeaknesses(lang);
+                      return (
+                        <tr key={lang} className="hover:bg-slate-800/50">
+                          <td className={`px-6 py-4 font-bold ${LANGUAGE_COLOR[lang] ?? 'text-slate-200'}`}>{lang}</td>
+                          <td className={`px-6 py-4 ${strong.length ? '' : 'text-slate-500'}`}>{strong.length ? strong.join(', ') : 'None'}</td>
+                          <td className={`px-6 py-4 ${weak.length ? '' : 'text-slate-500'}`}>{weak.length ? weak.join(', ') : 'None'}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -404,20 +406,11 @@ export default function WikiPage() {
                 Passive Abilities
               </h2>
               <p className="mb-8 text-slate-300">
-                Most languages have unique passive mechanics that activate during battle. Chance-based passives scale with rarity (Rare is the baseline). Cards without one of these languages are Neutral.
+                {COMBAT_LANGUAGES.length} languages have a unique passive that activates during battle. Chance-based passives scale slightly with rarity (Rare is the baseline); bad luck such as CSS&apos;s zero-damage turns gets rarer on rarer cards. Cards with any other language are Neutral.
               </p>
 
               <div className="space-y-4">
-                {[
-                  { lang: 'C / C++', name: 'Raw Power', desc: 'Attacks ignore 50% of the opponent\'s DEF stat.' },
-                  { lang: 'CSS', name: 'Undefined Behavior', desc: `Each turn: ${passiveChance(0.25)} chance to deal Double Damage; otherwise ${passiveChance(0.15)} chance to deal exactly 0 damage.` },
-                  { lang: 'Go', name: 'First Strike', desc: 'Deals one hit to the opposing card as soon as it enters the field (blocked by Iron Shield).' },
-                  { lang: 'JavaScript', name: 'Double Callback', desc: `Each turn: ${passiveChance(0.25)} chance to hit again, dealing 1.5x damage that turn.` },
-                  { lang: 'Python', name: 'Regeneration', desc: 'At the end of every turn it survives, heals for HP equal to 10% of its ATK stat.' },
-                  { lang: 'Ruby', name: 'Last Stand', desc: 'While its HP is below 30%, deals 1.35x damage.' },
-                  { lang: 'Rust', name: 'Iron Shield', desc: 'Enters the field with a shield that blocks all damage of its first turn (including a Go First Strike).' },
-                  { lang: 'TypeScript', name: 'Type Safety', desc: 'Passively reduces all incoming damage received by 15%.' }
-                ].map((p) => (
+                {PASSIVE_INFO.map((p) => (
                   <div key={p.name} className="flex flex-col sm:flex-row gap-4 bg-slate-800/20 p-5 rounded-xl border border-slate-700/30">
                     <div className="sm:w-1/3 flex items-center gap-2">
                        <span className="px-2.5 py-1 text-xs font-bold rounded bg-slate-700 text-white min-w-[70px] text-center border border-slate-600">
@@ -454,9 +447,9 @@ export default function WikiPage() {
                   <li><strong>Before the battle:</strong> Loyalty bonuses, then Stamina fatigue penalties, modify base stats. Team Synergies are applied.</li>
                   <li><strong>On entry:</strong> First Strike (Go) and Iron Shield (Rust) activate when a card enters the field.</li>
                   <li><strong>Type Advantages:</strong> Multipliers are checked between active combatants.</li>
-                  <li><strong>Damage Calculation:</strong> Both cards attack each other at the same time. Momentum, Raw Power, Type Safety and Rust Synergy modify the numbers.</li>
-                  <li><strong>Passive Checks:</strong> Passives like Double Callback or Undefined Behavior alter the final damage.</li>
-                  <li><strong>Resolution:</strong> HP is reduced. If a Python card survived, it heals. A card at 0 HP is defeated and the next one enters.</li>
+                  <li><strong>Damage Calculation:</strong> Both cards attack each other at the same time: <code>ATK × {DEF_MITIGATION_K} / ({DEF_MITIGATION_K} + DEF)</code>, modified by the type multiplier, Momentum and the attacker&apos;s passive (Undefined Behavior, Last Stand, JIT Warm-up, Cron Job, Critical Hit, Raw Power, Double Callback).</li>
+                  <li><strong>Defense Checks:</strong> Type Safety, Graceful Degradation and Rust Synergy reduce the hit; Dodge and Iron Shield cancel it; Null Safety caps it.</li>
+                  <li><strong>Resolution:</strong> HP is reduced (@ Error Suppression can keep a PHP card alive at 1 HP). Survivors trigger Hot Reload and regeneration. A card at 0 HP is defeated and the next one enters.</li>
                 </ol>
 
                 <h4 className="text-white font-bold mt-6 mb-2">How a Battle is Decided</h4>
@@ -483,8 +476,8 @@ export default function WikiPage() {
                 </p>
                 <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
                   <li>Displays an <strong>On Fire</strong> effect during battle.</li>
-                  <li>Grants <strong>+10% ATK and DEF</strong> after the 2nd consecutive knockout and <strong>+20%</strong> after the 3rd (a full sweep).</li>
-                  <li>There are no critical hits in GitGacha: damage only varies through types, passives and Momentum.</li>
+                  <li>Grants <strong>+{pct(MOMENTUM_BONUS_PER_STACK)} ATK and DEF</strong> after the 2nd consecutive knockout and <strong>+{pct(2 * MOMENTUM_BONUS_PER_STACK)}</strong> after the 3rd (a full sweep).</li>
+                  <li>Only C# cards land critical hits; otherwise damage varies through types, passives and Momentum.</li>
                 </ul>
               </div>
             </section>
@@ -623,10 +616,10 @@ export default function WikiPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {[
-                  { name: 'Mixed Team Synergy', req: '3 different types', effect: '+8% ATK to ALL cards on the team.' },
-                  { name: 'Python Synergy', req: '2 or 3 Python cards', effect: 'Non-Python teammates also regenerate HP equal to 6% of their ATK each turn (Python cards keep their own 10%).' },
-                  { name: 'Rust Synergy', req: '2 or 3 Rust cards', effect: 'All 3 cards take 10% less damage (20% with 3 Rust cards).' },
-                  { name: 'JS Synergy', req: '2 or 3 JS cards', effect: 'Non-JS teammates get a 10% chance to Double Callback each turn (JS cards keep their own chance).' },
+                  { name: 'Mixed Team Synergy', req: '3 different types', effect: `+${pct(SYNERGY.mixedTeamAtk)} ATK to ALL cards on the team.` },
+                  { name: 'Python Synergy', req: '2 or 3 Python / Jupyter Notebook cards', effect: `Teammates regenerate HP equal to ${pct(SYNERGY.pythonRegenAtkPct)} of their ATK each turn (${pct(2 * SYNERGY.pythonRegenAtkPct)} with 3; Python cards keep their own rate).` },
+                  { name: 'Rust Synergy', req: '2 or 3 Rust cards', effect: `All 3 cards take ${pct(SYNERGY.rustDamageReduction)} less damage (${pct(2 * SYNERGY.rustDamageReduction)} with 3 Rust cards).` },
+                  { name: 'JS Synergy', req: '2 or 3 JS cards', effect: `Non-JS teammates get a ${pct(SYNERGY.jsCallbackChance)} chance to Double Callback each turn (${pct(2 * SYNERGY.jsCallbackChance)} with 3; JS cards keep their own chance).` },
                   { name: 'Go Synergy', req: '2 or 3 Go cards', effect: 'All 3 cards gain the Go First Strike ability.' },
                  ].map(syn => (
                    <div key={syn.name} className="bg-slate-800/30 border border-slate-700 rounded-lg p-5">
@@ -638,10 +631,84 @@ export default function WikiPage() {
               </div>
             </section>
 
-            {/* Section 13: Glossary */}
-            <section id="glossary" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
+            {/* Section 13: Daily Rewards, Pity and Achievements */}
+            <section id="daily-rewards" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
               <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">13</span>
+                Daily Rewards, Pity and Achievements
+              </h2>
+
+              <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 mb-6">
+                <h3 className="text-xl font-bold text-white mb-3">Daily Rewards ({LOGIN_CALENDAR_DAYS}-day login calendar)</h3>
+                <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                  Claim a daily reward in the <Link href="/store" className="text-indigo-400 hover:underline">Store</Link> once every {HOURS(DAILY_COOLDOWN_MS)} hours.
+                  Claiming again within {HOURS(LOGIN_STREAK_WINDOW_MS)} hours of your last claim advances your calendar; waiting longer restarts it at day 1.
+                  After day {LOGIN_CALENDAR_DAYS} a new cycle starts. Every claim also grants {DAILY_CLAIM_XP} XP.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                  {LOGIN_CALENDAR_REWARDS.map(r => (
+                    <div key={r.day} className={`rounded-lg border p-3 text-center ${r.packName ? 'border-yellow-500/50 bg-yellow-900/20' : 'border-slate-700 bg-slate-900/60'}`}>
+                      <div className="text-xs font-bold text-slate-400 uppercase mb-1">Day {r.day}</div>
+                      <div className="text-lg font-black text-orange-400">{r.bits}</div>
+                      <div className="text-[11px] text-slate-400">BITS</div>
+                      {r.packName && <div className="text-[11px] text-yellow-300 mt-1">+ {r.packName} (added to your Inventory)</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 p-6 rounded-xl border border-yellow-500/30 mb-6">
+                <h3 className="text-xl font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                  <Star size={24} weight="fill" />
+                  Legendary Pity
+                </h3>
+                <ul className="text-sm text-slate-300 list-disc pl-5 space-y-1">
+                  <li>Every booster you open without a Legendary card adds 1 to your pity counter.</li>
+                  <li>After <strong>{PITY_THRESHOLD - 1} packs in a row</strong> without one, your next pack&apos;s last card is <strong className="text-yellow-400">guaranteed Legendary</strong>.</li>
+                  <li>Pulling any Legendary (including one promoted by the star bonus) resets the counter.</li>
+                  <li>All-Common packs (Junk Drawer) don&apos;t count.</li>
+                  <li>The Store shows &quot;Legendary guaranteed within N packs&quot; and the per-card drop rates.</li>
+                </ul>
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-3">Achievements</h3>
+              <p className="text-sm text-slate-300 mb-4 leading-relaxed">
+                Each achievement has {TIER_NAMES.join(', ').replace(/, ([^,]*)$/, ' and $1')} tiers; every tier pays BITS once, the moment you reach it.
+                Progress is checked after opening packs, after battles, when you claim the daily reward and when you open your own profile.
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-slate-700">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-800 text-slate-300 uppercase font-bold text-xs">
+                    <tr>
+                      <th className="px-4 py-3">Achievement</th>
+                      <th className="px-4 py-3">Requirement</th>
+                      {TIER_NAMES.map(t => <th key={t} className="px-4 py-3 whitespace-nowrap">{t}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50 bg-slate-900/50">
+                    {ACHIEVEMENTS.map(a => (
+                      <tr key={a.id} className="hover:bg-slate-800/50">
+                        <td className="px-4 py-3 font-bold text-orange-300 whitespace-nowrap">{a.name}</td>
+                        <td className="px-4 py-3 text-slate-300">{a.description.replace('{n}', 'N')}</td>
+                        {TIER_NAMES.map((t, i) => {
+                          const tier = a.tiers[i];
+                          return (
+                            <td key={t} className="px-4 py-3 whitespace-nowrap text-slate-300">
+                              {tier ? <>N = {tier.threshold.toLocaleString('en-US')} <span className="text-slate-500">·</span> <span className="text-orange-400">{tier.reward} BITS</span></> : <span className="text-slate-600">—</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            {/* Section 14: Glossary */}
+            <section id="glossary" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
+              <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">14</span>
                 Glossary
               </h2>
               
@@ -651,7 +718,7 @@ export default function WikiPage() {
                   { t: 'BITS', d: 'The in-game currency used to buy packs, craft in the Forge, enter the Legendary League and restore stamina.' },
                   { t: 'Closer', d: 'The third and final card slot in a team.' },
                   { t: 'Common', d: `The lowest rarity tier (${RARITY_STAT_MULTIPLIER.Common}x stat multiplier).` },
-                  { t: 'DEF', d: 'Base Defense stat. Reduces incoming physical damage.' },
+                  { t: 'DEF', d: `Base Defense stat. Blocks DEF / (${DEF_MITIGATION_K} + DEF) of every hit, up to ${pct(MAX_DEF_MITIGATION)}.` },
                   { t: 'Eternal', d: `The maximum Loyalty rank, reached at ${LOYALTY_MILESTONES[LOYALTY_MILESTONES.length - 1].threshold} battles.` },
                   { t: 'Exhausted', d: 'A card at 0 Stamina. Cannot participate in battles.' },
                   { t: 'Fragment', d: 'Currency earned from dupes, used in the Forge to craft specific cards.' },
@@ -664,7 +731,7 @@ export default function WikiPage() {
                   { t: 'Passive', d: 'An innate ability specific to a language type.' },
                   { t: 'Power', d: 'Composite strength score of ATK, DEF, and HP.' },
                   { t: 'Synergy', d: 'Team-wide bonus granted by stacking similar card types.' },
-                  { t: 'Type Advantage', d: 'When a language beats another, granting 1.5x damage.' },
+                  { t: 'Type Advantage', d: `When a language beats another, granting ${TYPE_ADVANTAGE_MULTIPLIER}x damage.` },
                   { t: 'Veteran', d: `First Loyalty rank, reached at ${LOYALTY_MILESTONES[0].threshold} battles.` },
                   { t: 'Wishlist', d: 'Forge feature measuring fragment progress for a target card.' },
                   { t: 'XP', d: 'Account experience earned from battles and other activities. Leveling up grants reward boosters.' },

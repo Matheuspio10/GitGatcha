@@ -5,6 +5,7 @@
  *   node --env-file=.env.local --import tsx scripts/recalculate-cards.ts --apply   # write to the database
  *
  * Cards whose GitHub account no longer exists (or became an org) are left untouched.
+ * With --apply the booster reserve is also cleared, since it stores stats from draw time.
  */
 import { PrismaClient } from '@prisma/client';
 import { fetchGitHubUserStats, toCardData } from '../src/lib/githubService';
@@ -17,6 +18,12 @@ const prisma = new PrismaClient();
 async function main() {
   const cards = await prisma.card.findMany({ orderBy: { createdAt: 'asc' } });
   console.log(`${cards.length} cards — ${apply ? 'APPLYING' : 'dry run'}`);
+
+  if (apply) {
+    // Reserved developers carry stats from draw time: drop them first so none can overwrite a recalculated card
+    const { count } = await prisma.boosterReserve.deleteMany({});
+    console.log(`Booster reserve cleared: ${count} rows (refills automatically)`);
+  }
 
   const transitions: Record<string, number> = {};
   const missing: string[] = [];

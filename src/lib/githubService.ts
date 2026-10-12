@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import NodeCache from 'node-cache';
-import { computeRarity, RARITY_STAT_MULTIPLIER } from './rarity';
+import { computeRarity } from './rarity';
+import { computeCardStats } from './cardStats';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const API_BASE = 'https://api.github.com';
@@ -247,22 +248,26 @@ export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
   const accountAgeMs = new Date().getTime() - new Date(user.created_at).getTime();
   const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
 
-  // Rebalanced stat formulas (sqrt compression for balanced battles)
-  const baseAtk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
-  const baseDef = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
-  const baseHp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(baseAtk * 3);
-
   const { rarity, starBonus } = computeRarity(user.followers, totalStars);
-  const multiplier = RARITY_STAT_MULTIPLIER[rarity];
+
+  // Stat formula (STAT_FORMULA) in src/lib/cardStats.ts, tuned with the balance simulator (src/lib/balanceSim.ts)
+  const { atk, def, hp } = computeCardStats({
+    totalStars,
+    totalForks,
+    publicRepos: user.public_repos,
+    publicGists: user.public_gists || 0,
+    followers: user.followers,
+    accountAgeYears,
+  }, rarity);
 
   return {
     githubUsername: user.login,
     avatarUrl: user.avatar_url,
     name: user.name || user.login,
     flavorText: user.bio || `Master of the ${primaryLanguage} shadows.`,
-    atk: Math.max(10, Math.floor(baseAtk * multiplier)),
-    def: Math.max(10, Math.floor(baseDef * multiplier)),
-    hp: Math.max(50, Math.floor(baseHp * multiplier)),
+    atk,
+    def,
+    hp,
     rarity,
     primaryLanguage,
     topLanguages,

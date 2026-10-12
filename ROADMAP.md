@@ -61,6 +61,12 @@ Esforço: **P** = horas a 1 dia · **M** = alguns dias · **G** = 1 semana ou ma
 - ✅ 1.7 Limpeza: 20 arquivos de log/lixo removidos, dependências não usadas removidas, `@prisma/client` em dependências, README e `.env.example`.
 - Acessibilidade: respeita "reduzir movimento", zoom liberado no celular.
 
+**Rodada Fase 2 — balanceamento e progressão (15/10/2026)**
+- ✅ 2.3 Balanceamento com simulador de batalhas (`src/lib/balanceSim.ts`, `scripts/balance-sim.ts`): fórmula "fama" (status crescem com estrelas, repositórios, seguidores e idade em escala logarítmica, sem os números de centenas de milhares), DEF com mitigação percentual, 9 linguagens novas com passiva e tabela de tipos ampliada. Resultado: Legendary vence Common ~100%, raridades vizinhas 71–76%, mesma raridade ~50%.
+- ✅ 2.1 Booster estilo pack físico: rasgar o pack, pilha de cartas para virar e arremessar, suspense para Epic/Legendary, "Revelar tudo", sons, pular o mini-game.
+- ✅ 2.2 Molduras por raridade (aço, verde, azul com gemas, foil roxo, ouro animado), brilho holográfico que segue o mouse/inclinação para Epic+ e Shiny, texturas sem dependência externa.
+- ✅ 2.4 Calendário de login de 7 dias (pack no dia 7), 10 conquistas com bronze/prata/ouro e BITS por nível, pity (Legendary garantida em até 30 packs) com contador e chances na loja.
+
 **Pendente de ação sua**
 - 🟡 Aplicar as migrações no banco de produção (`prisma migrate resolve --applied 0_init` e `prisma migrate deploy`) — cria 3 tabelas novas (`GithubCache`, `OrgMember`, `RecentPull`), sem tocar nas existentes. **O código novo precisa delas.**
 - 🟡 Criar `CRON_SECRET` nas variáveis de ambiente da Vercel (sem ele o cron não roda).

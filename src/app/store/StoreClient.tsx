@@ -5,17 +5,24 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { missionRequiredCount } from '@/lib/missionUtils';
-import { 
-  Code, 
-  Trophy, 
-  Hourglass, 
-  Buildings, 
-  Globe, 
+import { notifyAchievements } from '@/lib/achievementToast';
+import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
+import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
+import { PITY_THRESHOLD } from '@/lib/pity';
+import {
+  Code,
+  Trophy,
+  Hourglass,
+  Buildings,
+  Globe,
   Sparkle,
   Coin,
   Gift,
   CheckCircle,
-  Circle
+  Circle,
+  Package,
+  ChartBar,
+  CaretDown,
 } from '@phosphor-icons/react';
 
 interface PackVisualTheme {
@@ -70,6 +77,143 @@ function formatCountdown(ms: number): string {
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
+const RARITY_TEXT: Record<Rarity, string> = {
+  Common: 'text-slate-300',
+  Uncommon: 'text-green-400',
+  Rare: 'text-blue-400',
+  Epic: 'text-purple-400',
+  Legendary: 'text-yellow-400',
+};
+
+function formatPercent(p: number): string {
+  const v = Math.round(p * 1000) / 10;
+  return `${v}%`;
+}
+
+interface PityStatus {
+  packsSinceLegendary: number;
+  packsUntilGuaranteed: number;
+  threshold: number;
+}
+
+/** 7-day login calendar: claimed / today / upcoming days, booster on day 7. */
+function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | null; cooldownMs: number }) {
+  const days = streak?.days ?? LOGIN_CALENDAR_REWARDS.map(r => ({ ...r, state: 'upcoming' as const }));
+  return (
+    <div className="w-full max-w-3xl mx-auto mt-6">
+      <div className="flex items-center justify-between gap-2 mb-2 text-xs text-slate-400 flex-wrap">
+        <span className="font-bold uppercase tracking-wider">Login Calendar</span>
+        {streak && (
+          <span>
+            {streak.claimedDay > 0 ? `Streak: day ${streak.claimedDay} of 7` : 'Claim daily to build a streak'}
+            {streak.streakExpiresAt && !streak.canClaim ? ' · claim within 48h to keep it' : ''}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+        {days.map(d => {
+          const isNext = !!streak && !streak.canClaim && d.day === streak.nextDay;
+          return (
+            <div
+              key={d.day}
+              className={`relative rounded-xl border p-2 flex flex-col items-center gap-1 text-center transition-all ${
+                d.state === 'claimed'
+                  ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                  : d.state === 'today'
+                    ? 'border-emerald-400 bg-emerald-500/15 text-white shadow-[0_0_16px_rgba(16,185,129,0.35)]'
+                    : isNext
+                      ? 'border-slate-500 bg-slate-800/80 text-slate-200'
+                      : 'border-slate-700 bg-slate-900/60 text-slate-400'
+              }`}
+              aria-label={`Day ${d.day}: ${d.bits} Bits${d.packId ? ' and a booster' : ''} (${d.state})`}
+            >
+              <span className="text-[10px] font-bold uppercase tracking-wider">Day {d.day}</span>
+              {d.packId ? (
+                <Package size={22} weight="duotone" className="text-purple-300" />
+              ) : (
+                <Coin size={20} weight="fill" className={d.state === 'upcoming' ? 'text-yellow-600' : 'text-yellow-400'} />
+              )}
+              <span className="text-xs font-black">{d.bits}</span>
+              {d.packId && <span className="text-[9px] leading-tight text-purple-300">+ {d.packName}</span>}
+              {d.state === 'claimed' && <CheckCircle size={14} weight="fill" className="absolute top-1 right-1 text-green-400" />}
+              {d.state === 'today' && <span className="text-[9px] font-bold text-emerald-300 uppercase">Today</span>}
+              {isNext && <span className="text-[9px] font-mono text-slate-400">{formatCountdown(cooldownMs)}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Pity counter and the per-slot odds of a standard booster. */
+function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
+  const [open, setOpen] = useState(false);
+  const average = averagePullRates();
+  return (
+    <div className="w-full max-w-3xl mx-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          {pity ? (
+            <>
+              <div className="text-sm font-bold text-yellow-300">
+                {pity.packsUntilGuaranteed <= 1
+                  ? 'Legendary guaranteed in your next pack!'
+                  : `Legendary guaranteed within ${pity.packsUntilGuaranteed} packs`}
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-yellow-600 to-yellow-300"
+                  style={{ width: `${Math.min(100, (Math.min(pity.packsSinceLegendary, pity.threshold - 1) / Math.max(1, pity.threshold - 1)) * 100)}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-500">Legendary guaranteed at least every {PITY_THRESHOLD} packs</div>
+          )}
+        </div>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700"
+          aria-expanded={open}
+        >
+          <ChartBar size={14} weight="bold" /> Drop rates
+          <CaretDown size={12} weight="bold" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      {open && (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="text-slate-500 uppercase tracking-wider">
+                <th className="py-1 pr-2 font-bold">Card</th>
+                {RARITY_ORDER.map(r => <th key={r} className={`py-1 px-2 font-bold ${RARITY_TEXT[r]}`}>{r}</th>)}
+              </tr>
+            </thead>
+            <tbody className="text-slate-300 font-mono">
+              {BOOSTER_SLOT_ODDS.map((odds, i) => (
+                <tr key={i} className="border-t border-slate-800">
+                  <td className="py-1 pr-2 text-slate-400 font-sans">#{i + 1}{i === BOOSTER_SLOT_ODDS.length - 1 ? '+' : ''}</td>
+                  {RARITY_ORDER.map(r => <td key={r} className="py-1 px-2">{odds[r] ? formatPercent(odds[r]!) : '—'}</td>)}
+                </tr>
+              ))}
+              <tr className="border-t border-slate-700 font-bold">
+                <td className="py-1 pr-2 text-slate-400 font-sans">Average</td>
+                {RARITY_ORDER.map(r => <td key={r} className="py-1 px-2">{formatPercent(average[r])}</td>)}
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
+            Odds of each card of a booster, before the star bonus (a developer with enough stars is promoted one rarity on reveal).
+            Packs marked &quot;≥1&quot; upgrade their lowest card to that rarity. After {(pity?.threshold ?? PITY_THRESHOLD) - 1} packs in a row
+            without a Legendary, the next pack&apos;s last card is a Legendary. All-Common packs don&apos;t count towards the pity.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Tells the Navbar (and anything else listening) to re-fetch the BITS balance. */
 function refreshBits() {
   window.dispatchEvent(new Event('bits:refresh'));
@@ -108,6 +252,8 @@ export default function StoreClient({
   const [activeCategory, setActiveCategory] = useState<string>('language');
   const [dailyCooldown, setDailyCooldown] = useState<number>(-1);
   const [claimingDaily, setClaimingDaily] = useState(false);
+  const [streak, setStreak] = useState<LoginCalendarState | null>(null);
+  const [pity, setPity] = useState<PityStatus | null>(null);
   const [missionResetMs, setMissionResetMs] = useState<number | null>(null);
   // Pack targeted by a `/store#pack-<id>` link (e.g. the Forge recommendation)
   const [highlightPackId, setHighlightPackId] = useState<string | null>(null);
@@ -150,11 +296,12 @@ export default function StoreClient({
     return () => { clearTimeout(scroll); clearTimeout(clear); };
   }, [highlightPackId, packs]);
 
-  // Check initial daily cooldown state
-  useEffect(() => {
+  // Daily reward / login calendar state
+  const loadDaily = () => {
     fetch('/api/store/daily')
       .then(res => res.json())
       .then(data => {
+        if (data.streak) setStreak(data.streak);
         if (!data.canClaim && data.remainingMs) {
           setDailyCooldown(data.remainingMs);
         } else {
@@ -165,6 +312,15 @@ export default function StoreClient({
         console.error(e);
         setDailyCooldown(0); // fallback
       });
+  };
+  useEffect(() => { loadDaily(); }, []);
+
+  // Legendary pity counter
+  useEffect(() => {
+    fetch('/api/store/pity')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (data && typeof data.packsUntilGuaranteed === 'number') setPity(data); })
+      .catch(console.error);
   }, []);
 
   // Daily cooldown countdown
@@ -178,6 +334,11 @@ export default function StoreClient({
     }, 1000);
     return () => clearInterval(interval);
   }, [dailyCooldown]);
+
+  // Countdown over: reload the calendar so the next day shows as claimable
+  useEffect(() => {
+    if (dailyCooldown === 0 && streak && !streak.canClaim) loadDaily();
+  }, [dailyCooldown, streak]);
 
   // Countdown to the next daily missions; reloads them once the day rolls over
   useEffect(() => {
@@ -204,11 +365,17 @@ export default function StoreClient({
       const data = await res.json();
       if (data.success) {
         setCurrency(data.newCurrency);
-        setDailyCooldown(24 * 60 * 60 * 1000);
-        toast.success(`+${data.amount ?? 100} Bits claimed!`);
+        setDailyCooldown(data.streak?.remainingMs || 24 * 60 * 60 * 1000);
+        if (data.streak) setStreak(data.streak);
+        toast.success(`${data.day ? `Day ${data.day}: ` : ''}+${data.amount ?? 100} Bits claimed!`);
+        if (data.packGranted) {
+          toast.success(`${data.packGranted.packName} added to your inventory!`, { icon: '📦' });
+        }
         refreshBits();
+        notifyAchievements(data.achievementsUnlocked);
         router.refresh();
       } else if (data.remainingMs) {
+        if (data.streak) setStreak(data.streak);
         setDailyCooldown(data.remainingMs);
       } else {
         toast.error(data.error || 'Failed to claim daily reward');
@@ -322,11 +489,15 @@ export default function StoreClient({
                 ? `Daily: ${formatCountdown(dailyCooldown)}` 
                 : claimingDaily 
                   ? 'Claiming...' 
-                  : 'Claim 100 Daily Bits'
+                  : `Claim Day ${streak?.nextDay ?? 1}: ${streak?.nextReward.bits ?? 100} Bits${streak?.nextReward.packId ? ' + Pack' : ''}`
             }
           </button>
         </div>
+
+        <LoginCalendar streak={streak} cooldownMs={Math.max(0, dailyCooldown)} />
       </div>
+
+      <DropRatesPanel pity={pity} />
 
       {/* Category Tabs */}
       <div className="flex gap-2 justify-center flex-wrap">
@@ -385,7 +556,7 @@ export default function StoreClient({
               )}
 
               {/* Textures and Seal borders */}
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay pointer-events-none" />
+              <div className="absolute inset-0 tex-cubes opacity-20 mix-blend-overlay pointer-events-none" />
               <div className="absolute top-0 w-full h-8 border-b-2 pointer-events-none" style={{ backgroundColor: pack.visualTheme.border + '40', borderColor: pack.visualTheme.border + '60' }} />
               <div className="absolute bottom-0 w-full h-8 border-t-2 pointer-events-none" style={{ backgroundColor: pack.visualTheme.border + '40', borderColor: pack.visualTheme.border + '60' }} />
               

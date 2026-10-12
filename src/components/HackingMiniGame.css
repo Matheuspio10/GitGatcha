@@ -392,6 +392,50 @@
   color: rgba(0, 255, 200, 0.35);
 }
 
+/* ── Skip button ───────────────────────────────────────── */
+.hacking-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  margin-left: 12px;
+  background: rgba(0, 255, 200, 0.14);
+  border: 1px solid rgba(0, 255, 200, 0.55);
+  border-radius: 6px;
+  color: #00ffc8;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.hacking-skip:hover,
+.hacking-skip:focus-visible {
+  background: rgba(0, 255, 200, 0.26);
+  box-shadow: 0 0 14px rgba(0, 255, 200, 0.35);
+  outline: none;
+}
+
+.hacking-skip.waiting {
+  cursor: progress;
+  opacity: 0.75;
+  animation: skipWaiting 1s ease-in-out infinite;
+}
+
+@keyframes skipWaiting {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hacking-skip.waiting { animation: none; }
+}
+
 /* ── Data Collected Bar ────────────────────────────────── */
 .hacking-data-bar-container {
   display: flex;
@@ -649,6 +693,20 @@
 
   .hacking-hud {
     padding: 6px 12px;
+    gap: 8px;
+  }
+
+  /* Phones steer by swipe: drop the WASD legend and counters so Skip/Mute fit */
+  .hacking-controls,
+  .hacking-hud > .hacking-hud-label,
+  .hacking-data-bar-label {
+    display: none;
+  }
+
+  .hacking-skip,
+  .hacking-mute {
+    margin-left: 0;
+    flex-shrink: 0;
   }
 
   .hacking-key {

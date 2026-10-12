@@ -33,6 +33,10 @@ model User {
   hasSetupProfile Boolean @default(false)
   // One-time reward for connecting GitHub (BITS + the player's own Signature card)
   githubBonusGranted Boolean @default(false)
+  // Consecutive daily-reward claims (resets when a day is skipped); drives the 7-day login calendar
+  loginStreak        Int      @default(0)
+  // Packs opened since the last Legendary card (pity counter)
+  packsSinceLegendary Int     @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -44,6 +48,7 @@ model User {
   friendRequests Friendship[]   @relation("FriendRequests")
   battlesAsChallenger Battle[] @relation("Challenger")
   battlesAsDefender   Battle[] @relation("Defender")
+  achievements        UserAchievement[]
 }
 
 model Account {
@@ -284,4 +289,16 @@ model RateLimitHit {
 
   @@id([key, windowStart])
   @@index([windowStart])
+}
+
+// Achievement tiers a player has unlocked (bronze = 1, silver = 2, gold = 3); rewards are paid once per tier
+model UserAchievement {
+  userId        String
+  achievementId String
+  tier          Int
+  unlockedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId, tier])
 }

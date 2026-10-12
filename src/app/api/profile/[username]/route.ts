@@ -1,21 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
-
-// Achievement definitions
-const ACHIEVEMENTS = [
-  { id: 'first_blood', name: 'First Blood', description: 'Win your first battle', icon: '⚔️', check: (s: any) => s.battlesWon >= 1 },
-  { id: 'veteran', name: 'Veteran', description: 'Use a single card in 10+ battles', icon: '🎖️', check: (_s: any, cards: any[]) => cards.some((c: any) => c.loyaltyCount >= 10) },
-  { id: 'legendary_pull', name: 'Legendary Pull', description: 'Own a Legendary rarity card', icon: '🌟', check: (_s: any, cards: any[]) => cards.some((c: any) => c.card?.rarity === 'Legendary') },
-  { id: 'perfect_season', name: 'Perfect Season', description: 'Achieve a 10-win streak', icon: '🔥', check: (s: any) => s.highestWinStreak >= 10 },
-  { id: 'polyglot', name: 'Polyglot', description: 'Own cards in 5 different languages', icon: '🌐', check: (_s: any, cards: any[]) => { const langs = new Set(cards.map((c: any) => c.card?.primaryLanguage).filter(Boolean)); return langs.size >= 5; } },
-  { id: 'hall_of_famer', name: 'Hall of Famer', description: 'Reach 50 battles with any single card', icon: '🏛️', check: (_s: any, cards: any[]) => cards.some((c: any) => c.loyaltyCount >= 50) },
-  { id: 'centurion', name: 'Centurion', description: 'Complete 100 total battles', icon: '💯', check: (s: any) => s.totalBattles >= 100 },
-  { id: 'collector', name: 'Collector', description: 'Own 20 or more cards', icon: '📚', check: (s: any) => s.totalCards >= 20 },
-  { id: 'social_butterfly', name: 'Social Butterfly', description: 'Have 10 or more friends', icon: '🦋', check: (s: any) => s.friendsCount >= 10 },
-  { id: 'shiny_hunter', name: 'Shiny Hunter', description: 'Own a Shiny card', icon: '✨', check: (_s: any, cards: any[]) => cards.some((c: any) => c.isShiny) },
-  { id: 'rising_star', name: 'Rising Star', description: 'Reach 1200 rating', icon: '⭐', check: (s: any) => s.rating >= 1200 },
-  { id: 'eternal_bond', name: 'Eternal Bond', description: 'Reach Eternal loyalty tier with a card', icon: '💎', check: (_s: any, cards: any[]) => cards.some((c: any) => c.loyaltyTier === 'eternal') },
-];
+import { authOptions } from '@/lib/auth';
+import { getAchievementViews, syncAchievementsSafe } from '@/lib/achievementService';
 
 function computeWinStreak(battles: any[], userId: string): number {
   let maxStreak = 0;
@@ -229,23 +216,12 @@ export async function GET(
         };
       });
 
-    // Compute achievements
-    const statsForAchievements = {
-      battlesWon,
-      totalBattles: completedBattles.length,
-      totalCards,
-      friendsCount,
-      highestWinStreak,
-      rating: userProfile.rating,
-    };
-
-    const achievements = ACHIEVEMENTS.map(a => ({
-      id: a.id,
-      name: a.name,
-      description: a.description,
-      icon: a.icon,
-      unlocked: a.check(statsForAchievements, userProfile.cards),
-    }));
+    // Achievements: persisted tiers + live progress. On the player's own profile, newly
+    // reached tiers are persisted and paid first (and returned for the unlock toasts).
+    const session = await getServerSession(authOptions);
+    const isOwnProfile = session?.user?.id === userProfile.id;
+    const achievementsUnlocked = isOwnProfile ? await syncAchievementsSafe(userProfile.id) : [];
+    const achievements = await getAchievementViews(userProfile.id);
 
     return NextResponse.json({ 
         user: {
@@ -274,6 +250,7 @@ export async function GET(
         friends: friendsList,
         recentBattles,
         achievements,
+        achievementsUnlocked,
         hasLeveledUpRecently,
         hasLegendaryBondPrestige,
     });

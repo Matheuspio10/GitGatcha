@@ -47,3 +47,179 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [style*="signatureFoil"] { animation: none !important; }
 }
+
+/* Loyalty effects (Card.tsx) */
+@keyframes holoShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes particleFloat {
+  0%, 100% { top: 100%; opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  50% { top: 10%; }
+}
+
+/* ─── Self-hosted textures (replace transparenttextures.com) ─────────────── */
+@layer components {
+  /* Isometric cubes: two lit faces + one transparent face */
+  .tex-cubes {
+    --tex-a: rgba(255, 255, 255, 0.28);
+    --tex-b: rgba(0, 0, 0, 0.32);
+    background-image:
+      linear-gradient(30deg, var(--tex-a) 12%, transparent 12.5%, transparent 87%, var(--tex-a) 87.5%, var(--tex-a)),
+      linear-gradient(150deg, var(--tex-a) 12%, transparent 12.5%, transparent 87%, var(--tex-a) 87.5%, var(--tex-a)),
+      linear-gradient(30deg, var(--tex-a) 12%, transparent 12.5%, transparent 87%, var(--tex-a) 87.5%, var(--tex-a)),
+      linear-gradient(150deg, var(--tex-a) 12%, transparent 12.5%, transparent 87%, var(--tex-a) 87.5%, var(--tex-a)),
+      linear-gradient(60deg, var(--tex-b) 25%, transparent 25.5%, transparent 75%, var(--tex-b) 75%, var(--tex-b)),
+      linear-gradient(60deg, var(--tex-b) 25%, transparent 25.5%, transparent 75%, var(--tex-b) 75%, var(--tex-b));
+    background-size: 20px 35px;
+    background-position: 0 0, 0 0, 10px 18px, 10px 18px, 0 0, 10px 18px;
+  }
+
+  /* Scattered star specks, tiles of co-prime sizes so the repeat is invisible */
+  .tex-stardust {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.95) 0 0.8px, transparent 1.4px),
+      radial-gradient(circle at 75% 60%, rgba(255, 255, 255, 0.85) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 45% 85%, rgba(255, 255, 255, 0.7) 0 0.6px, transparent 1.2px),
+      radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.9) 0 1.2px, transparent 2px),
+      radial-gradient(circle at 10% 70%, rgba(255, 255, 255, 0.6) 0 0.7px, transparent 1.3px);
+    background-size: 37px 41px, 53px 47px, 29px 31px, 71px 67px, 43px 59px;
+  }
+
+  /* Fine film grain (inline SVG turbulence) */
+  .tex-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+  }
+}
+
+/* ─── Card rarity frames (Card.tsx) ───────────────────────────────────────
+ * The frame is a gradient painted under a transparent border (border-box),
+ * the card body a flat fill (padding-box). Glow lives in --glow so Shiny can
+ * stack its own glow on top instead of replacing the rarity one. */
+@layer components {
+  .card-frame {
+    border-color: transparent;
+    background:
+      linear-gradient(#0f172a, #0f172a) padding-box,
+      var(--frame) border-box;
+    box-shadow: var(--glow), var(--bevel);
+  }
+  .card-frame:hover { box-shadow: var(--glow-hover), var(--bevel); }
+  .card-frame.card-shiny { box-shadow: var(--glow), 0 0 24px 2px rgba(255, 255, 255, 0.45), var(--bevel); }
+  .card-frame.card-shiny:hover { box-shadow: var(--glow-hover), 0 0 32px 4px rgba(255, 255, 255, 0.55), var(--bevel); }
+
+  /* Common: plain brushed steel, no glow */
+  .card-frame--Common {
+    --frame: linear-gradient(160deg, #cbd5e1 0%, #64748b 22%, #94a3b8 45%, #475569 70%, #94a3b8 100%);
+    --glow: 0 4px 14px rgba(0, 0, 0, 0.55);
+    --glow-hover: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 12px rgba(203, 213, 225, 0.2);
+    --bevel: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  /* Uncommon: green-tinted alloy with a soft green glow */
+  .card-frame--Uncommon {
+    --frame: linear-gradient(160deg, #bbf7d0 0%, #15803d 25%, #4ade80 48%, #14532d 72%, #86efac 100%);
+    --glow: 0 0 14px rgba(34, 197, 94, 0.4), 0 4px 14px rgba(0, 0, 0, 0.5);
+    --glow-hover: 0 0 22px rgba(34, 197, 94, 0.6), 0 6px 18px rgba(0, 0, 0, 0.5);
+    --bevel: inset 0 0 0 1px rgba(134, 239, 172, 0.25);
+  }
+  /* Rare: polished blue metal + corner gems (in the markup) */
+  .card-frame--Rare {
+    --frame: linear-gradient(150deg, #dbeafe 0%, #1d4ed8 20%, #93c5fd 38%, #1e3a8a 55%, #60a5fa 75%, #1e40af 90%, #bfdbfe 100%);
+    --glow: 0 0 20px rgba(59, 130, 246, 0.6), 0 4px 14px rgba(0, 0, 0, 0.5);
+    --glow-hover: 0 0 30px rgba(59, 130, 246, 0.8), 0 6px 18px rgba(0, 0, 0, 0.5);
+    --bevel: inset 0 0 0 1px rgba(191, 219, 254, 0.35), inset 0 0 18px rgba(59, 130, 246, 0.18);
+  }
+  /* Epic: purple foil (iridescent stripes) */
+  .card-frame--Epic {
+    --frame: linear-gradient(115deg, #581c87 0%, #c084fc 12%, #f0abfc 22%, #7e22ce 34%, #a5b4fc 46%, #6b21a8 58%, #e879f9 70%, #4c1d95 84%, #d8b4fe 100%);
+    --glow: 0 0 26px rgba(168, 85, 247, 0.7), 0 0 50px rgba(217, 70, 239, 0.25), 0 4px 14px rgba(0, 0, 0, 0.5);
+    --glow-hover: 0 0 36px rgba(168, 85, 247, 0.9), 0 0 64px rgba(217, 70, 239, 0.35), 0 6px 18px rgba(0, 0, 0, 0.5);
+    --bevel: inset 0 0 0 1px rgba(240, 171, 252, 0.4), inset 0 0 22px rgba(168, 85, 247, 0.25);
+  }
+  /* Legendary: animated gold foil, the strongest glow of all */
+  .card-frame--Legendary {
+    --frame: linear-gradient(115deg, #fde68a 0%, #b45309 10%, #fef9c3 20%, #f59e0b 32%, #92400e 44%, #fde047 56%, #fffbeb 64%, #d97706 76%, #78350f 88%, #fde68a 100%);
+    --glow: 0 0 30px rgba(250, 204, 21, 0.8), 0 0 70px rgba(245, 158, 11, 0.4), 0 4px 14px rgba(0, 0, 0, 0.5);
+    --glow-hover: 0 0 42px rgba(250, 204, 21, 1), 0 0 90px rgba(245, 158, 11, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5);
+    --bevel: inset 0 0 0 1px rgba(254, 240, 138, 0.6), inset 0 0 28px rgba(250, 204, 21, 0.28);
+    background-size: 100% 100%, 300% 300%;
+    animation: rarityFoil 5s linear infinite;
+  }
+
+  /* Diagonal light sweep for Legendary */
+  .card-sweep {
+    position: absolute;
+    inset: -20%;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 251, 235, 0.45) 48%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 251, 235, 0.45) 52%, transparent 60%);
+    transform: translateX(-100%);
+    animation: cardSweep 4.5s ease-in-out infinite;
+    mix-blend-mode: overlay;
+  }
+
+  /* ─── Holographic sheen (Epic+, Shiny) ─────────────────────────────────
+   * Position comes from the pointer (--mx/--my, set on the card) or, on
+   * touch devices, from the shared device-tilt vars (--gyro-x/--gyro-y). */
+  .card-holo {
+    --hx: var(--mx, var(--gyro-x, 35%));
+    --hy: var(--my, var(--gyro-y, 30%));
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image:
+      radial-gradient(circle at var(--hx) var(--hy), rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 42%),
+      var(--holo-bands);
+    background-size: 100% 100%, 300% 300%;
+    background-position: 0 0, var(--hx) var(--hy);
+    mix-blend-mode: color-dodge;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+  }
+  .card-holo-host:hover .card-holo { opacity: 0.6; }
+  @media (hover: none) {
+    .card-holo { opacity: 0.45; }
+  }
+  .card-holo--Epic {
+    --holo-bands: linear-gradient(115deg, transparent 15%, rgba(192, 132, 252, 0.55) 28%, rgba(244, 114, 182, 0.45) 36%, transparent 46%, rgba(129, 140, 248, 0.5) 58%, rgba(232, 121, 249, 0.45) 66%, transparent 78%);
+  }
+  .card-holo--Legendary {
+    --holo-bands: linear-gradient(115deg, transparent 15%, rgba(253, 224, 71, 0.6) 28%, rgba(255, 255, 255, 0.5) 34%, rgba(251, 191, 36, 0.55) 40%, transparent 50%, rgba(254, 240, 138, 0.55) 62%, rgba(245, 158, 11, 0.45) 70%, transparent 80%);
+  }
+  .card-holo--Shiny {
+    --holo-bands: linear-gradient(115deg, transparent 10%, rgba(255, 0, 128, 0.45) 20%, rgba(255, 200, 0, 0.45) 30%, rgba(0, 255, 140, 0.45) 40%, rgba(0, 180, 255, 0.5) 50%, rgba(160, 80, 255, 0.45) 60%, rgba(255, 0, 128, 0.4) 70%, transparent 85%);
+    opacity: 0.4;
+  }
+  .card-holo-host:hover .card-holo--Shiny { opacity: 0.7; }
+}
+
+@keyframes rarityFoil {
+  0% { background-position: 0 0, 0% 50%; }
+  50% { background-position: 0 0, 100% 50%; }
+  100% { background-position: 0 0, 0% 50%; }
+}
+@keyframes cardSweep {
+  0%, 55% { transform: translateX(-100%); }
+  85%, 100% { transform: translateX(100%); }
+}
+
+/* ─── Booster pack (BoosterReveal.tsx) ──────────────────────────────────── */
+@keyframes packFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+.pack-float { animation: packFloat 3.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-frame--Legendary,
+  .pack-float,
+  [style*="holoShift"],
+  [style*="particleFloat"] { animation: none !important; }
+  .card-sweep { display: none; }
+  /* Static foil: keep the sheen as a tint, never follow pointer/tilt */
+  .card-holo { --hx: 35% !important; --hy: 30% !important; transition: none; }
+}
