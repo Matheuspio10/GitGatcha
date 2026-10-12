@@ -27,8 +27,13 @@ if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
 // Per-instance cache of developer stats (cheap win on warm serverless instances)
 export const cache = new NodeCache({ stdTTL: 6 * 3600, useClones: false, maxKeys: 5000 });
 
-/** GitHub logins: 1–39 chars, alphanumeric or single hyphens, not starting with a hyphen. */
-const GITHUB_LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+/**
+ * GitHub logins: 1–39 letters, digits or hyphens, not starting with a hyphen.
+ * New accounts can't end with a hyphen or use "--", but older ones do (e.g. "LingDong-"),
+ * so those are accepted: rejecting them would make real developers impossible to draw.
+ * Still enough to keep usernames from changing the API path (no "/", "." or "?").
+ */
+const GITHUB_LOGIN_RE = /^[A-Za-z0-9][A-Za-z0-9-]{0,38}$/;
 
 export function isValidGitHubLogin(username: unknown): username is string {
   return typeof username === 'string' && GITHUB_LOGIN_RE.test(username);
