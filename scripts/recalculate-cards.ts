@@ -1,8 +1,8 @@
 /**
  * Recomputes every card with the current rarity/stat rules, from live GitHub data.
  *
- *   node --env-file=.env.local --import tsx scripts/recalculate-cards.ts           # dry run: report only
- *   node --env-file=.env.local --import tsx scripts/recalculate-cards.ts --apply   # write to the database
+ *   node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts           # dry run: report only
+ *   node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts --apply   # write to the database
  *   ... --only=login1,login2                                                       # just these cards
  *
  * Cards whose GitHub account no longer exists (deleted/renamed, or now an org) keep their

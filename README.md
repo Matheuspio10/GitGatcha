@@ -39,9 +39,19 @@ Variáveis de ambiente (`.env.local`; veja `.env.example`):
 | `npm test` | Testes (`node --test` + `tsx`) — puros, sem banco nem rede |
 | `npm run build` | Build local (não mexe no banco) |
 | `npm run db:migrate` | Aplica as migrações pendentes no banco do `DATABASE_URL` |
-| `node --env-file=.env.local --import tsx scripts/recalculate-cards.ts` | Recalcula todas as cartas com dados atuais do GitHub (dry run; `--apply` grava) |
+| `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts` | Recalcula as cartas com dados atuais do GitHub (dry run; `--apply` grava; `--only=a,b` só algumas) |
+| `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts` | Refaz os ratings a partir do histórico PvP (dry run; `--apply` grava) |
+| `node --env-file=.env.prod --import tsx scripts/dedupe-user-cards.ts` | Junta cartas duplicadas de um jogador (dry run; `--apply` grava) |
+| `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de batalhas para balanceamento (sem banco) |
 
-Na Vercel o build usa `vercel-build`, que roda `prisma migrate deploy` antes do `next build`.
+Na Vercel o build usa `scripts/vercel-build.mjs`: as migrações rodam **só no deploy de produção**, só quando há alguma pendente e pela conexão direta do Neon (o pooler pode prender a trava de migração do Prisma).
+
+## Bancos: desenvolvimento × produção
+
+- `.env` e `.env.local` → **branch de desenvolvimento do Neon** (usada por `npm run dev`, Prisma CLI e testes manuais).
+- `.env.prod` → **produção**, usado só de propósito pelos scripts de manutenção (`--env-file=.env.prod`).
+
+Para criar a branch: no console do Neon, abra o projeto → **Branches** → **Create branch** a partir de `main` (copia os dados atuais) → em **Connection details**, copie a connection string *pooled* e coloque em `DATABASE_URL` no `.env` e no `.env.local`. Aplique as migrações nela com `npm run db:migrate`.
 
 ## Como o sorteio dos boosters funciona
 

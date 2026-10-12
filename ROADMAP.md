@@ -67,6 +67,14 @@ Esforço: **P** = horas a 1 dia · **M** = alguns dias · **G** = 1 semana ou ma
 - ✅ 2.2 Molduras por raridade (aço, verde, azul com gemas, foil roxo, ouro animado), brilho holográfico que segue o mouse/inclinação para Epic+ e Shiny, texturas sem dependência externa.
 - ✅ 2.4 Calendário de login de 7 dias (pack no dia 7), 10 conquistas com bronze/prata/ouro e BITS por nível, pity (Legendary garantida em até 30 packs) com contador e chances na loja.
 
+**Pendências finalizadas (16/10/2026)**
+- ✅ 0.12 Cartas duplicadas: 12 pares juntados (`scripts/dedupe-user-cards.ts`; cada cópia extra virou fragmentos) e restrição única `UserCard(userId, cardId)` no banco.
+- ✅ Ratings refeitos a partir do histórico PvP (`scripts/recompute-ratings.ts`).
+- ✅ Build da Vercel seguro: migrações só em produção, pela conexão direta do Neon.
+- ✅ Logins antigos do GitHub (ex.: `LingDong-`) voltaram a ser sorteáveis; cartas de contas apagadas com a mediana da raridade.
+- ✅ Boosters só sorteiam contas com pelo menos 1 repositório público.
+- ✅ Branches antigas apagadas.
+
 **Pendente de ação sua**
 - 🟡 Aplicar as migrações no banco de produção (`prisma migrate resolve --applied 0_init` e `prisma migrate deploy`) — cria 3 tabelas novas (`GithubCache`, `OrgMember`, `RecentPull`), sem tocar nas existentes. **O código novo precisa delas.**
 - 🟡 Criar `CRON_SECRET` nas variáveis de ambiente da Vercel (sem ele o cron não roda).
@@ -98,7 +106,7 @@ Esses itens podem **apagar o banco de produção** ou permitem **duplicar BITS/p
 | ✅ 0.9 | **Exigir login e validar username em `/api/forge/search`.** Hoje é um proxy aberto que gasta o token do servidor; um username como `../user` acessa dados da conta dona do token. Validar com `^[A-Za-z0-9-]{1,39}$`. | `forge/search/route.ts`, `githubService.ts:37` | P |
 | 0.10 | **Rate limit** em login, registro, busca da forja, booster e batalha (ex.: Upstash Ratelimit no middleware). Hoje dá para criar contas em massa e farmar os 1.000 BITS iniciais. | `middleware.ts` | M |
 | 0.11 | **Validar imagens de perfil.** Banner/avatar aceitam qualquer URL externa e valores `preset:`/`color:` pulam a checagem de tamanho. Aceitar só `data:image/png|jpeg|webp` com limite, ou mover para storage (Vercel Blob). | `profile/update/route.ts:36-58` | P |
-| 0.12 | **Constraint única `UserCard(userId, cardId)`** — hoje dá para ter a mesma carta duplicada (forja não confere se já tem). | `prisma/schema.prisma` | P |
+| ✅ 0.12 | **Constraint única `UserCard(userId, cardId)`** — hoje dá para ter a mesma carta duplicada (forja não confere se já tem). | `prisma/schema.prisma` | P |
 | 0.13 | Adicionar `/inventory` e `/forge` ao `matcher` do middleware de autenticação. | `src/middleware.ts` | P |
 
 ---

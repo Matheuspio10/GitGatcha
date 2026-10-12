@@ -125,6 +125,8 @@ model UserCard {
   showcaseOrder     Int?
   createdAt DateTime @default(now())
 
+  // A player owns each developer once (extra pulls become fragments)
+  @@unique([userId, cardId])
   @@index([userId])
 }
 
