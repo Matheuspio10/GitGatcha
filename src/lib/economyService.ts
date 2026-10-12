@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { randomInt } from 'node:crypto';
+import { withUserLock } from './userLock';
 
 const POSSIBLE_MISSIONS = [
   { description: "Open 3 Boosters", type: "OPEN_BOOSTER", reward: 300, targetValue: "3" },
@@ -57,56 +58,48 @@ export async function getUserMissions(userId: string) {
 }
 
 export async function advanceMissionProgress(userId: string, type: string, targetValue?: string) {
-  const activeMissions = await prisma.userMission.findMany({
-    where: {
-      userId,
-      completed: false,
-      mission: { type }
-    },
-    include: { mission: true }
-  });
+  // Locked so two parallel progress events can't both complete (and pay) the same mission.
+  return withUserLock(userId, async (tx) => {
+    const activeMissions = await tx.userMission.findMany({
+      where: {
+        userId,
+        completed: false,
+        mission: { type }
+      },
+      include: { mission: true }
+    });
 
-  const missionUpdates = [];
-  let totalCurrencyGained = 0;
-  let totalXPGained = 0;
+    let totalCurrencyGained = 0;
+    let totalXPGained = 0;
 
-  for (const um of activeMissions) {
-    if (um.mission.targetValue && targetValue && um.mission.targetValue !== targetValue) {
-      continue; // e.g. looking for "Python" but we opened "JavaScript"
-    }
+    for (const um of activeMissions) {
+      if (um.mission.targetValue && targetValue && um.mission.targetValue !== targetValue) {
+        continue; // e.g. looking for "Python" but we opened "JavaScript"
+      }
 
-    const newProgress = um.progress + 1;
-    let isComplete = false;
-    let required = parseInt(um.mission.targetValue || "1", 10);
-    if (isNaN(required)) required = 1;
+      const newProgress = um.progress + 1;
+      let required = parseInt(um.mission.targetValue || "1", 10);
+      if (isNaN(required)) required = 1;
+      const isComplete = newProgress >= required;
 
-    if (newProgress >= required) {
-      isComplete = true;
-    }
-
-    missionUpdates.push(
-      prisma.userMission.update({
+      await tx.userMission.update({
         where: { id: um.id },
         data: {
           progress: newProgress,
           completed: isComplete
         }
-      })
-    );
+      });
 
-    if (isComplete) {
-      totalCurrencyGained += um.mission.reward;
-      totalXPGained += XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE;
+      if (isComplete) {
+        totalCurrencyGained += um.mission.reward;
+        totalXPGained += XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE;
+      }
     }
-  }
 
-  if (missionUpdates.length > 0) {
-    await prisma.$transaction(missionUpdates);
-  }
-
-  if (totalXPGained > 0 || totalCurrencyGained > 0) {
-    await grantXP(userId, totalXPGained, totalCurrencyGained);
-  }
+    if (totalXPGained > 0 || totalCurrencyGained > 0) {
+      await grantXP(userId, totalXPGained, totalCurrencyGained, tx);
+    }
+  });
 }
 
 import { grantXP, XP_AMOUNTS } from './xpService';
@@ -122,43 +115,43 @@ const DAILY_REWARD_AMOUNT = 100;
 const DAILY_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function claimDailyReward(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { lastDailyClaimAt: true, currency: true }
-  });
+  return withUserLock(userId, async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { lastDailyClaimAt: true }
+    });
 
-  if (!user) return { success: false, error: 'User not found' };
+    if (!user) return { success: false as const, error: 'User not found' };
 
-  const now = new Date();
+    const now = new Date();
 
-  if (user.lastDailyClaimAt) {
-    const timeSinceLast = now.getTime() - user.lastDailyClaimAt.getTime();
-    if (timeSinceLast < DAILY_COOLDOWN_MS) {
-      const nextClaimAt = new Date(user.lastDailyClaimAt.getTime() + DAILY_COOLDOWN_MS);
-      return {
-        success: false,
-        error: 'Daily reward already claimed',
-        nextClaimAt: nextClaimAt.toISOString(),
-        remainingMs: DAILY_COOLDOWN_MS - timeSinceLast,
-      };
+    if (user.lastDailyClaimAt) {
+      const timeSinceLast = now.getTime() - user.lastDailyClaimAt.getTime();
+      if (timeSinceLast < DAILY_COOLDOWN_MS) {
+        const nextClaimAt = new Date(user.lastDailyClaimAt.getTime() + DAILY_COOLDOWN_MS);
+        return {
+          success: false as const,
+          error: 'Daily reward already claimed',
+          nextClaimAt: nextClaimAt.toISOString(),
+          remainingMs: DAILY_COOLDOWN_MS - timeSinceLast,
+        };
+      }
     }
-  }
 
-  const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK);
+    const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK, DAILY_REWARD_AMOUNT, tx);
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      currency: { increment: DAILY_REWARD_AMOUNT },
-      lastDailyClaimAt: now,
-    }
+    const updated = await tx.user.update({
+      where: { id: userId },
+      data: { lastDailyClaimAt: now },
+      select: { currency: true },
+    });
+
+    return {
+      success: true as const,
+      amount: DAILY_REWARD_AMOUNT,
+      newCurrency: updated.currency,
+      xpResult,
+      nextClaimAt: new Date(now.getTime() + DAILY_COOLDOWN_MS).toISOString(),
+    };
   });
-
-  return {
-    success: true,
-    amount: DAILY_REWARD_AMOUNT,
-    newCurrency: updated.currency,
-    xpResult,
-    nextClaimAt: new Date(now.getTime() + DAILY_COOLDOWN_MS).toISOString(),
-  };
 }

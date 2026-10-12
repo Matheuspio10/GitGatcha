@@ -110,7 +110,7 @@ export async function GET() {
 
     // Expire old challenges
     await prisma.battle.updateMany({
-      where: { status: 'PENDING', expiresAt: { lt: new Date() } },
+      where: { status: { in: ['PENDING', 'RESOLVING'] }, expiresAt: { lt: new Date() } },
       data: { status: 'EXPIRED' },
     });
 

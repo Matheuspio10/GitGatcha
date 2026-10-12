@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { calculateCurrentStamina, MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from './staminaUtils.ts';
+import { calculateCurrentStamina, MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from './staminaUtils';
 
 describe('calculateCurrentStamina', () => {
   test('returns MAX_STAMINA if storedStamina is already >= MAX_STAMINA', () => {

@@ -218,3 +218,37 @@ model BoosterFallbackDev {
   @@unique([packId, githubUsername])
   @@index([packId, rarity])
 }
+
+// ─── Booster sampler state ──────────────────────────────────────────────
+
+// Key/value cache for the GitHub sampler: search counts, id→signup-time anchors, max account id
+model GithubCache {
+  key       String   @id
+  value     Json
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// Public members of GitHub organizations (pool of the Big Tech booster)
+model OrgMember {
+  org       String
+  login     String
+  followers Int
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@id([org, login])
+  @@index([org, followers])
+}
+
+// Developers a player pulled recently from each booster type (avoids back-to-back repeats)
+model RecentPull {
+  id             String   @id @default(uuid())
+  userId         String
+  packId         String
+  githubUsername String
+  createdAt      DateTime @default(now())
+
+  @@index([userId, packId, createdAt])
+  @@index([createdAt])
+}

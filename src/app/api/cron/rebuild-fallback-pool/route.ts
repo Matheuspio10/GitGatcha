@@ -2,18 +2,23 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 
+export const maxDuration = 60;
+
 /**
- * Cron endpoint to rebuild the fallback developer pool for language boosters.
- * Intended to be called every 48 hours by a cron scheduler (e.g., Vercel Cron).
- * 
- * Protected by CRON_SECRET environment variable.
+ * Daily maintenance of the booster sampler (see fallbackPoolService.ts),
+ * scheduled in vercel.json. Vercel Cron sends `Authorization: Bearer $CRON_SECRET`.
  */
 export async function GET(req: Request) {
   // Verify cron secret
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret) {
+  // Without a secret the endpoint would let anyone burn the GitHub quota: refuse to run
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 503 });
+  }
+
+  {
     const expectedAuth = `Bearer ${cronSecret}`;
     const providedAuth = authHeader || '';
 
@@ -31,7 +36,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      pools: results,
+      report: results,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

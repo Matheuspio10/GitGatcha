@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, RARITY_STAT_MULTIPLIER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import { 
   MagnifyingGlass, 
   List, 
@@ -215,28 +216,43 @@ export default function WikiPage() {
                 <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">02</span>
                 Cards and Rarities
               </h2>
-              <p className="mb-6 leading-relaxed">
-                Cards are ranked in 5 rarity tiers. A card&apos;s rarity is determined by the developer&apos;s real-world GitHub metrics (Followers, Repos, Stars). Rarity applies a multiplier to the card&apos;s base stats.
+              <p className="mb-4 leading-relaxed">
+                Cards are ranked in 5 rarity tiers. A card&apos;s rarity comes from the developer&apos;s real GitHub <strong>followers</strong>; a developer whose repositories collect lots of <strong>stars</strong> is promoted one tier as a bonus. Rarity applies a multiplier to the card&apos;s base stats.
               </p>
-              
+              <p className="mb-6 leading-relaxed text-slate-400 text-sm">
+                Boosters are truly random: within a booster&apos;s theme, <em>every</em> GitHub developer of the drawn rarity has exactly the same chance to drop — famous or brand new, including you.
+              </p>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { r: 'Common', b: 'bg-slate-500', t: 'text-slate-200', desc: 'Base Stats x0.6. The most frequent drops.', pull: '75%' },
-                  { r: 'Uncommon', b: 'bg-green-500', t: 'text-green-100', desc: 'Base Stats x0.8. Solid early-game cards.', pull: '18%' },
-                  { r: 'Rare', b: 'bg-blue-500', t: 'text-blue-100', desc: 'Base Stats x1.0. The standard baseline.', pull: '5%' },
-                  { r: 'Epic', b: 'bg-purple-500', t: 'text-purple-100', desc: 'Base Stats x1.2. Strong additions to any team.', pull: '1.5%' },
-                  { r: 'Legendary', b: 'bg-yellow-500', t: 'text-yellow-900', desc: 'Base Stats x1.4. Incredibly powerful game-changers.', pull: '0.5%' }
-                ].map((tier) => (
-                  <div key={tier.r} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex items-start gap-4">
-                    <div className={`px-3 py-1 rounded font-bold text-sm shadow-lg shadow-black/50 ${tier.b} ${tier.t}`}>
-                      {tier.r}
+                {RARITY_ORDER.map((r) => {
+                  const style: Record<string, { b: string; t: string }> = {
+                    Common: { b: 'bg-slate-500', t: 'text-slate-200' },
+                    Uncommon: { b: 'bg-green-500', t: 'text-green-100' },
+                    Rare: { b: 'bg-blue-500', t: 'text-blue-100' },
+                    Epic: { b: 'bg-purple-500', t: 'text-purple-100' },
+                    Legendary: { b: 'bg-yellow-500', t: 'text-yellow-900' },
+                  };
+                  const band = RARITY_FOLLOWER_BANDS[r];
+                  const followers = band.max === null
+                    ? `${band.min.toLocaleString('en-US')}+ followers`
+                    : `${band.min.toLocaleString('en-US')}–${band.max.toLocaleString('en-US')} followers`;
+                  const bonus = STAR_BONUS_THRESHOLD[r];
+                  const pull = averagePullRates()[r] * 100;
+                  return (
+                    <div key={r} className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex items-start gap-4">
+                      <div className={`px-3 py-1 rounded font-bold text-sm shadow-lg shadow-black/50 ${style[r].b} ${style[r].t}`}>
+                        {r}
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-400 mb-1">Standard pull rate: ~{Math.round(pull)}% of cards</div>
+                        <p className="text-sm text-slate-300">
+                          {followers}. Base stats x{RARITY_STAT_MULTIPLIER[r]}.
+                          {bonus !== undefined && <> With {bonus.toLocaleString('en-US')}+ stars the card is promoted one tier.</>}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm font-semibold text-slate-400 mb-1">Standard Pull Rate: ~{tier.pull}</div>
-                      <p className="text-sm text-slate-300">{tier.desc}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -598,13 +614,13 @@ export default function WikiPage() {
                   { t: 'ATK', d: 'Base Attack stat. Determines damage dealt.' },
                   { t: 'BITS', d: 'The primary premium currency used to buy packs and heal stamina.' },
                   { t: 'Closer', d: 'The third and final card slot in a team.' },
-                  { t: 'Common', d: 'The lowest rarity tie (0.6x stat multiplier).' },
+                  { t: 'Common', d: `The lowest rarity tier (${RARITY_STAT_MULTIPLIER.Common}x stat multiplier).` },
                   { t: 'DEF', d: 'Base Defense stat. Reduces incoming physical damage.' },
                   { t: 'Eternal', d: 'The maximum Loyalty rank achieved at 200 battles.' },
                   { t: 'Exhausted', d: 'A card at 0 Stamina. Cannot participate in battles.' },
                   { t: 'Fragment', d: 'Currency earned from dupes, used in the Forge to craft specific cards.' },
                   { t: 'HP', d: 'Health Points. Reaching 0 means defeat.' },
-                  { t: 'Legendary', d: 'The highest rarity tier (1.4x stat multiplier). Very low pull rates.' },
+                  { t: 'Legendary', d: `The highest rarity tier (${RARITY_STAT_MULTIPLIER.Legendary}x stat multiplier). Very low pull rates.` },
                   { t: 'Loyal', d: 'A card that has fought 10+ battles.' },
                   { t: 'Mid', d: 'The second card slot in a team.' },
                   { t: 'Momentum', d: 'Bonus activated after a single card defeats 2 enemies.' },

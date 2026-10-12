@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
-import { fetchGitHubUserStats } from '@/lib/githubService';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { fetchGitHubUserStats, isValidGitHubLogin } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
-import { ALL_PACKS } from '@/lib/packDefinitions';
+import { ALL_PACKS, getSerializablePacks } from '@/lib/packDefinitions';
 
 export async function GET(req: Request) {
+  // Each lookup spends the server's GitHub quota: logged-in players only
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');
 
   if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
+  if (!isValidGitHubLogin(username)) return NextResponse.json({ error: 'Invalid GitHub username' }, { status: 400 });
 
   try {
     const stats = await fetchGitHubUserStats(username);
@@ -17,7 +24,7 @@ export async function GET(req: Request) {
     
     // Find packs that might drop this language
     const lang = stats.primaryLanguage || 'Unknown';
-    const recommendedPacks = ALL_PACKS.filter(p => p.themeLanguage === lang || p.buildQuery().includes(lang));
+    const recommendedPacks = getSerializablePacks().filter(p => p.themeLanguage === lang || ALL_PACKS.find(a => a.id === p.id)?.pool.languages?.includes(lang));
 
     return NextResponse.json({ stats, cost, recommendedPacks });
   } catch (error) {

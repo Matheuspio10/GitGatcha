@@ -1,14 +1,13 @@
-import { randomInt } from 'node:crypto';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import NodeCache from 'node-cache';
+import { computeRarity, RARITY_STAT_MULTIPLIER } from './rarity';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-
-const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 const API_BASE = 'https://api.github.com';
 
-const headers = {
-  Authorization: GITHUB_TOKEN ? `token ${GITHUB_TOKEN}` : '',
+const headers: Record<string, string> = {
   Accept: 'application/vnd.github.v3+json',
+  ...(GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {}),
 };
 
 // Check if token is missing in production to prevent silent rate-limit bans
@@ -16,307 +15,256 @@ if (!GITHUB_TOKEN && process.env.NODE_ENV === 'production') {
   console.warn("WARNING: GITHUB_TOKEN is not set. API rate limits will be severely restricted.");
 }
 
-// Caching to memory to avoid ratelimits during local dev
-import NodeCache from 'node-cache';
-export const cache = new NodeCache({ stdTTL: 86400, useClones: false });
+// Per-instance cache of developer stats (cheap win on warm serverless instances)
+export const cache = new NodeCache({ stdTTL: 6 * 3600, useClones: false, maxKeys: 5000 });
 
-const CACHE_TTL_DEFAULT = 86400;   // 24 hours
-const CACHE_TTL_NICHE   = 7200;    // 2 hours — used when qualified pool is small
+/** GitHub logins: 1–39 chars, alphanumeric or single hyphens, not starting with a hyphen. */
+const GITHUB_LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 
-function getRandomUserId(maxId: number = 150000000) {
-  return Math.floor(secureMathRandom() * maxId) + 1;
+export function isValidGitHubLogin(username: unknown): username is string {
+  return typeof username === 'string' && GITHUB_LOGIN_RE.test(username);
 }
 
-export async function fetchGitHubUserStats(username: string, expectedRarity?: string) {
-  const cacheKey = expectedRarity ? `user_stats_${username}_${expectedRarity}` : `user_stats_${username}`;
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey) as any;
+// ─── Low-level API access ───────────────────────────────────────────────
+
+interface RestUser {
+  id: number;
+  login: string;
+  type: string;
+  name: string | null;
+  bio: string | null;
+  avatar_url: string;
+  followers: number;
+  public_repos: number;
+  public_gists: number;
+  created_at: string;
+}
+
+interface RestRepo {
+  stargazers_count: number;
+  forks_count: number;
+  language: string | null;
+  size: number;
+}
+
+export class GitHubUnavailableError extends Error {
+  constructor(message: string, public retryAt?: number) {
+    super(message);
   }
+}
+
+// Search API: 30 requests/min and a secondary limit on bursts. Calls are
+// spaced out per instance, and once GitHub says stop we stop until it resets.
+const SEARCH_MIN_INTERVAL_MS = 350;
+let searchChain: Promise<void> = Promise.resolve();
+let searchBlockedUntil = 0;
+let coreBlockedUntil = 0;
+
+function blockedUntilFrom(err: AxiosError): number {
+  const h = err.response?.headers ?? {};
+  const retryAfter = Number(h['retry-after']);
+  if (retryAfter > 0) return Date.now() + retryAfter * 1000;
+  const reset = Number(h['x-ratelimit-reset']);
+  if (reset > 0 && h['x-ratelimit-remaining'] === '0') return reset * 1000;
+  return Date.now() + 60_000;
+}
+
+function isRateLimit(err: unknown): err is AxiosError {
+  const status = (err as AxiosError)?.response?.status;
+  return status === 429 || (status === 403 && /rate limit/i.test(JSON.stringify((err as AxiosError).response?.data ?? '')));
+}
+
+async function coreGet<T>(path: string): Promise<{ data: T; headers: Record<string, unknown> }> {
+  if (Date.now() < coreBlockedUntil) throw new GitHubUnavailableError('GitHub core API rate limited', coreBlockedUntil);
+  try {
+    const res = await axios.get<T>(`${API_BASE}${path}`, { headers, timeout: 10_000 });
+    return { data: res.data, headers: res.headers as Record<string, unknown> };
+  } catch (err) {
+    if (isRateLimit(err)) {
+      coreBlockedUntil = blockedUntilFrom(err);
+      throw new GitHubUnavailableError('GitHub core API rate limited', coreBlockedUntil);
+    }
+    throw err;
+  }
+}
+
+export interface SearchUsersPage {
+  totalCount: number;
+  logins: string[];
+  ids: number[];
+}
+
+/** One GitHub user search call (users sorted by join date, so positions are stable). */
+export async function searchUsers(query: string, page: number, perPage: number, order: 'asc' | 'desc' = 'asc'): Promise<SearchUsersPage> {
+  const turn = searchChain.then(() => new Promise<void>(r => setTimeout(r, SEARCH_MIN_INTERVAL_MS)));
+  searchChain = turn.catch(() => undefined);
+  await turn;
+
+  if (Date.now() < searchBlockedUntil) throw new GitHubUnavailableError('GitHub search rate limited', searchBlockedUntil);
+  try {
+    const res = await axios.get(`${API_BASE}/search/users`, {
+      headers,
+      timeout: 15_000,
+      params: { q: query, page, per_page: perPage, sort: 'joined', order },
+    });
+    const items: { login: string; id: number }[] = res.data.items ?? [];
+    return { totalCount: res.data.total_count ?? 0, logins: items.map(u => u.login), ids: items.map(u => u.id) };
+  } catch (err) {
+    if (isRateLimit(err)) {
+      searchBlockedUntil = blockedUntilFrom(err);
+      throw new GitHubUnavailableError('GitHub search rate limited', searchBlockedUntil);
+    }
+    throw err;
+  }
+}
+
+export interface GitHubAccount {
+  id: number;
+  login: string;
+  type: string;
+  followers: number;
+  publicRepos: number;
+  createdAt: string;
+}
+
+/** Account by numeric id (`null` when it doesn't exist / was deleted). */
+export async function getAccountById(id: number): Promise<GitHubAccount | null> {
+  try {
+    const { data } = await coreGet<RestUser>(`/user/${id}`);
+    return { id: data.id, login: data.login, type: data.type, followers: data.followers, publicRepos: data.public_repos, createdAt: data.created_at };
+  } catch (err) {
+    if ((err as AxiosError)?.response?.status === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * First account (user or org) whose id is greater than `sinceId`.
+ * Caveat: GitHub answers `[]` when a long run of ids after `sinceId` was deleted,
+ * so `null` does NOT mean there are no newer accounts.
+ */
+export async function getFirstAccountAfter(sinceId: number): Promise<{ id: number; login: string } | null> {
+  const { data } = await coreGet<{ id: number; login: string }[]>(`/users?since=${sinceId}&per_page=1`);
+  return data.length > 0 ? { id: data[0].id, login: data[0].login } : null;
+}
+
+export async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+  const res = await axios.post(`${API_BASE}/graphql`, { query, variables }, {
+    headers: { Authorization: `bearer ${GITHUB_TOKEN}` },
+    timeout: 15_000,
+  });
+  if (res.data.errors?.length) throw new Error(`GitHub GraphQL: ${res.data.errors[0].message}`);
+  return res.data.data as T;
+}
+
+// ─── Developer stats ────────────────────────────────────────────────────
+
+export interface DevStats {
+  githubUsername: string;
+  avatarUrl: string;
+  name: string;
+  flavorText: string;
+  atk: number;
+  def: number;
+  hp: number;
+  rarity: string;
+  primaryLanguage: string;
+  topLanguages: string[];
+  followers: number;
+  totalStars: number;
+  starBonus: boolean;
+}
+
+/** Only the columns stored in the `Card` table. */
+export function toCardData(stats: DevStats) {
+  return {
+    githubUsername: stats.githubUsername,
+    avatarUrl: stats.avatarUrl,
+    name: stats.name,
+    flavorText: stats.flavorText,
+    atk: stats.atk,
+    def: stats.def,
+    hp: stats.hp,
+    rarity: stats.rarity,
+    primaryLanguage: stats.primaryLanguage,
+  };
+}
+
+const MAX_REPO_PAGES = 3;
+
+export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
+  let totalStars = 0;
+  let totalForks = 0;
+  const languages: Record<string, number> = {};
+
+  for (const repo of repos) {
+    totalStars += repo.stargazers_count;
+    totalForks += repo.forks_count;
+    if (repo.language) {
+      // Weight the language by repository size to determine dominant language by bytes/code quantity
+      languages[repo.language] = (languages[repo.language] || 0) + (repo.size || 1);
+    }
+  }
+
+  const sortedLangs = Object.keys(languages).sort((a, b) => languages[b] - languages[a]);
+  const primaryLanguage = sortedLangs[0] || 'Unknown';
+  const topLanguages = sortedLangs.slice(0, 3);
+
+  const accountAgeMs = new Date().getTime() - new Date(user.created_at).getTime();
+  const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
+
+  // Rebalanced stat formulas (sqrt compression for balanced battles)
+  const baseAtk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
+  const baseDef = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
+  const baseHp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(baseAtk * 3);
+
+  const { rarity, starBonus } = computeRarity(user.followers, totalStars);
+  const multiplier = RARITY_STAT_MULTIPLIER[rarity];
+
+  return {
+    githubUsername: user.login,
+    avatarUrl: user.avatar_url,
+    name: user.name || user.login,
+    flavorText: user.bio || `Master of the ${primaryLanguage} shadows.`,
+    atk: Math.max(10, Math.floor(baseAtk * multiplier)),
+    def: Math.max(10, Math.floor(baseDef * multiplier)),
+    hp: Math.max(50, Math.floor(baseHp * multiplier)),
+    rarity,
+    primaryLanguage,
+    topLanguages,
+    followers: user.followers,
+    totalStars,
+    starBonus,
+  };
+}
+
+/** Full card stats for a developer, or `null` if the account doesn't exist / isn't a user. */
+export async function fetchGitHubUserStats(username: string): Promise<DevStats | null> {
+  if (!isValidGitHubLogin(username)) return null;
+
+  const cacheKey = `user_stats_${username.toLowerCase()}`;
+  const cached = cache.get<DevStats>(cacheKey);
+  if (cached) return cached;
 
   try {
-    const userRes = await axios.get(`${API_BASE}/users/${username}`, { headers });
-    const user = userRes.data;
-    
-    // limited to 1 page for speed
-    const reposRes = await axios.get(`${API_BASE}/users/${username}/repos?per_page=100`, { headers });
-    const repos = reposRes.data;
+    const { data: user } = await coreGet<RestUser>(`/users/${username}`);
+    if (user.type !== 'User') return null;
 
-    let totalStars = 0;
-    let totalForks = 0;
-    const languages: Record<string, number> = {};
-
-    for (const repo of repos) {
-      totalStars += repo.stargazers_count;
-      totalForks += repo.forks_count;
-      if (repo.language) {
-        // Weight the language by repository size to determine dominant language by bytes/code quantity
-        languages[repo.language] = (languages[repo.language] || 0) + (repo.size || 1);
-      }
+    const repos: RestRepo[] = [];
+    const pages = Math.min(MAX_REPO_PAGES, Math.max(1, Math.ceil(user.public_repos / 100)));
+    for (let page = 1; page <= pages; page++) {
+      const { data } = await coreGet<RestRepo[]>(`/users/${username}/repos?per_page=100&page=${page}`);
+      repos.push(...data);
+      if (data.length < 100) break;
     }
 
-    const sortedLangs = Object.keys(languages).sort((a, b) => languages[b] - languages[a]);
-    const primaryLanguage = sortedLangs[0] || 'Unknown';
-    const topLanguages = sortedLangs.slice(0, 3);
-    
-    const accountAgeMs = new Date().getTime() - new Date(user.created_at).getTime();
-    const accountAgeYears = accountAgeMs / (1000 * 60 * 60 * 24 * 365.25);
-
-    // Rebalanced stat formulas (sqrt compression for balanced battles)
-    const baseAtk = Math.floor((Math.sqrt(totalStars) * 2 + Math.sqrt(totalForks)) * 10) + 10;
-    const baseDef = Math.floor(user.public_repos * 15 + (user.public_gists || 0) * 20) + Math.floor(user.followers * 0.5) + 50;
-    const baseHp = Math.floor(accountAgeYears * 50) + Math.floor(user.public_repos * 5) + 200 + Math.floor(baseAtk * 3);
-
-    // Dynamic Power Score for accurate rarity determination at generation time
-    const powerScore = (user.followers * 2) + totalStars * 2 + (totalForks * 2) + (user.public_repos * 5);
-
-    let rarity = 'Common';
-    // Base the rarity on the dynamically calculated powerScore instead of forcing it
-    if (powerScore > 50000 || (user.company && ['google', 'microsoft', 'vercel', 'facebook', 'meta'].some(c => user.company.toLowerCase().includes(c)))) {
-      rarity = 'Legendary';
-    } else if (powerScore > 10000) {
-      rarity = 'Epic';
-    } else if (powerScore > 2500) {
-      rarity = 'Rare';
-    } else if (powerScore > 500) {
-      rarity = 'Uncommon';
-    }
-
-    const rarityMultipliers: Record<string, number> = {
-      'Common': 0.5,
-      'Uncommon': 0.8,
-      'Rare': 1.2,
-      'Epic': 1.8,
-      'Legendary': 2.5
-    };
-    const multiplier = rarityMultipliers[rarity] || 1.0;
-
-    const atk = Math.max(10, Math.floor(baseAtk * multiplier));
-    const def = Math.max(10, Math.floor(baseDef * multiplier));
-    const hp = Math.max(50, Math.floor(baseHp * multiplier));
-
-    const flavorText = user.bio || `Master of the ${primaryLanguage} shadows.`;
-
-    const stats = {
-      githubUsername: user.login,
-      avatarUrl: user.avatar_url,
-      name: user.name || user.login,
-      flavorText,
-      atk,
-      def,
-      hp,
-      rarity,
-      primaryLanguage,
-      topLanguages,
-    };
-
+    const stats = buildDevStats(user, repos);
     cache.set(cacheKey, stats);
     return stats;
-
-  } catch (err: any) {
-    console.error(`Error fetching user ${username}`, err);
+  } catch (err) {
+    if ((err as AxiosError)?.response?.status === 404) return null;
+    if (err instanceof GitHubUnavailableError) throw err;
+    console.error(`Error fetching user ${username}`, (err as Error).message);
     return null;
   }
-}
-
-import { prisma } from './prisma';
-
-// Generates a random 30-day window between GitHub's inception (2008) and today
-// Bypasses GitHub's 1000 search result cap to unlock all 100M+ developers
-function getRandomDateSlice(): string {
-  const start = new Date('2008-04-01').getTime();
-  const end = new Date().getTime() - (30 * 24 * 60 * 60 * 1000); // Up to 30 days ago
-  
-  const randomStartMs = start + secureMathRandom() * (end - start);
-  const randomEndMs = randomStartMs + (30 * 24 * 60 * 60 * 1000);
-  
-  const formatDate = (ms: number) => {
-    const d = new Date(ms);
-    return `${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, '0')}-${d.getUTCDate().toString().padStart(2, '0')}`;
-  };
-
-  return `created:${formatDate(randomStartMs)}..${formatDate(randomEndMs)}`;
-}
-
-export async function searchUsersForPackWithRarity(baseQuery: string, targetRarity: string, count: number, ignoreSessionUsernames: string[] = []): Promise<any[]> {
-  const results: any[] = [];
-  let attempts = 0;
-  let detectedNichePool = false;
-  
-  while (results.length < count && attempts < 5) {
-    attempts++;
-    let searchQuery = baseQuery;
-    
-    // Append loose followers constraints purely to optimize finding the correct rarity tier
-    if (targetRarity === 'Legendary') searchQuery += ' followers:>5000';
-    else if (targetRarity === 'Epic') searchQuery += ' followers:1000..5000';
-    else if (targetRarity === 'Rare') searchQuery += ' followers:200..1000';
-    else if (targetRarity === 'Uncommon') searchQuery += ' followers:50..200';
-    else searchQuery += ' followers:<50';
-
-    // Query Sharding: If pack does not have an era filter, heavily slice time to guarantee all devs are reachable
-    if (!searchQuery.includes('created:')) {
-      searchQuery += ` ${getRandomDateSlice()}`;
-    }
-
-    // Randomize page offset for un-biased genuine randomness
-    // Increase maxPage on niche pools or retry attempts to sample different subsets
-    const baseMaxPage = targetRarity === 'Legendary' ? 5 : targetRarity === 'Epic' ? 10 : 30;
-    const maxPage = detectedNichePool ? Math.min(baseMaxPage * 2, 50) : baseMaxPage;
-    const page = Math.floor(secureMathRandom() * maxPage) + 1;
-    
-    const searchUrl = `${API_BASE}/search/users?q=${encodeURIComponent(searchQuery)}&per_page=30&page=${page}`;
-
-    try {
-      const res = await axios.get(searchUrl, { headers });
-      const users = res.data.items || [];
-
-      // Filter out cache session hits (recent 3 packs)
-      let eligibleUsers = users.filter((u: any) => !ignoreSessionUsernames.includes(u.login));
-      
-      if (eligibleUsers.length === 0) {
-        // If entirely filtered out (small pool), accept them anyway to avoid infinite loops, as per spec.
-        eligibleUsers = users;
-      }
-      
-      const shuffled = eligibleUsers.sort(() => 0.5 - secureMathRandom());
-
-      // Extract required languages from the base query once per attempt
-      const langRegex = /language:([^\s]+)/ig;
-      let match;
-      const requiredLangs: string[] = [];
-      while ((match = langRegex.exec(baseQuery)) !== null) {
-        requiredLangs.push(match[1].toLowerCase());
-      }
-
-      let qualifiedCount = 0;
-
-      // Parallelize fetching to prevent Vercel/NextJS Timeout
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < shuffled.length; i += BATCH_SIZE) {
-        if (results.length >= count) break;
-        
-        const batch = shuffled.slice(i, i + BATCH_SIZE);
-        const statsPromises = batch.map(async (u: any) => {
-          // Ensure not querying duplicates already found
-          if (results.some(r => r.githubUsername === u.login)) return null;
-          
-          const stats = await fetchGitHubUserStats(u.login);
-          if (!stats) return null;
-
-          // Override cache TTL for this user if we're in a niche pool
-          if (detectedNichePool) {
-            const cacheKey = `user_stats_${u.login}`;
-            cache.ttl(cacheKey, CACHE_TTL_NICHE);
-          }
-
-          if (stats.rarity !== targetRarity) return null;
-
-          // Top-3 Language Qualification
-          if (requiredLangs.length > 0) {
-            const userTop3 = (stats.topLanguages || [stats.primaryLanguage]).map((l: string) => l.toLowerCase());
-            if (!requiredLangs.some(lang => userTop3.includes(lang))) {
-              return null; // Target language not in developer's top 3
-            }
-          }
-
-          return stats;
-        });
-
-        const batchResults = await Promise.all(statsPromises);
-        
-        for (const stats of batchResults) {
-          if (stats && results.length < count) {
-            // Check again here to avoid duplicates within the concurrent batch if possible, 
-            // though login IDs are unique in a single Github page anyway.
-            if (!results.some(r => r.githubUsername === stats.githubUsername)) {
-              qualifiedCount++;
-              results.push(stats);
-            }
-          }
-        }
-      }
-
-      // If very few users qualified from a full page, flag as niche pool
-      if (qualifiedCount === 0 && shuffled.length > 0) {
-        detectedNichePool = true;
-      }
-    } catch (err) {
-      console.error('Error in search API for themed pack', err);
-    }
-  }
-
-  // Graceful degradation: If API is rate-limited or pool small, fallback to DB pre-cached pool
-  if (results.length < count) {
-    console.warn(`Shortfall of ${count - results.length} for ${targetRarity}. Falling back to DB pool.`);
-    try {
-      // Basic language matching if base query has language
-      const langMatch = baseQuery.match(/language:([^\s]+)/i);
-      const languageFilter = langMatch ? langMatch[1] : undefined;
-
-      // 1. Try the dedicated BoosterFallbackDev table first (populated by cron)
-      let fallbackFilled = false;
-      if (languageFilter) {
-        try {
-          // Extract packId concept from base query — match any pack whose language filter matches
-          const fallbackDevs = await prisma.boosterFallbackDev.findMany({
-            where: {
-              rarity: targetRarity,
-              OR: [
-                { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } },
-                { topLanguages: { array_contains: [languageFilter] } },
-              ],
-            },
-          });
-
-          let validPoolDevs = fallbackDevs.filter((d: any) =>
-            !ignoreSessionUsernames.includes(d.githubUsername) &&
-            !results.some(r => r.githubUsername === d.githubUsername)
-          );
-
-          if (validPoolDevs.length === 0) {
-            validPoolDevs = fallbackDevs.filter((d: any) => !results.some(r => r.githubUsername === d.githubUsername));
-          }
-
-          if (validPoolDevs.length > 0) {
-            const shuffledPool = validPoolDevs.sort(() => 0.5 - secureMathRandom()).slice(0, count - results.length);
-            results.push(...shuffledPool);
-            fallbackFilled = results.length >= count;
-          }
-        } catch {
-          // BoosterFallbackDev table may not exist yet (pre-migration) — gracefully skip
-        }
-      }
-
-      // 2. Fall through to generic Card table if still short
-      if (!fallbackFilled && results.length < count) {
-        const dbFallbacks = await prisma.card.findMany({
-          where: { 
-            rarity: targetRarity,
-            ...(languageFilter ? { primaryLanguage: { contains: languageFilter, mode: 'insensitive' } } : {})
-          },
-        });
-        
-        let validFallbacks = dbFallbacks.filter((c: any) => 
-          !ignoreSessionUsernames.includes(c.githubUsername) && 
-          !results.some(r => r.githubUsername === c.githubUsername)
-        );
-
-        // Relax cache constraints if strict fallback yields nothing
-        if (validFallbacks.length === 0) {
-          validFallbacks = dbFallbacks.filter((c: any) => !results.some(r => r.githubUsername === c.githubUsername));
-        }
-        
-        const shuffledFallbacks = validFallbacks.sort(() => 0.5 - secureMathRandom()).slice(0, count - results.length);
-        results.push(...shuffledFallbacks);
-      }
-    } catch (e) {
-      console.error('Failed fetching fallback developers from DB', e);
-    }
-  }
-
-  return results;
-}
-
-export async function getRandomDevelopersByRarity(rarity: string, limit: number = 1, ignoreSession: string[] = []): Promise<any[]> {
-  return searchUsersForPackWithRarity("type:user", rarity, limit, ignoreSession);
 }
