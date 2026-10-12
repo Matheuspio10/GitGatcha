@@ -34,10 +34,11 @@ export type StatFormulaName = 'impact' | 'fame';
 export const STAT_FORMULA: StatFormulaName = 'fame';
 
 /**
- * Bump whenever stat formulas or multipliers change: stats stored at draw time
- * (BoosterReserve) with another version are discarded instead of being granted.
+ * Bump whenever stat formulas, multipliers or the booster pool rules change: devs
+ * stored at draw time (BoosterReserve) with another version are discarded, not granted.
+ * -3: boosters require at least one public repository (devSampler MIN_PUBLIC_REPOS).
  */
-export const STAT_VERSION = `${STAT_FORMULA}-2`;
+export const STAT_VERSION = `${STAT_FORMULA}-3`;
 
 export interface StatInputs {
   totalStars: number;

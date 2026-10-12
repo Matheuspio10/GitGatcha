@@ -213,6 +213,8 @@ export interface DevStats {
   followers: number;
   totalStars: number;
   starBonus: boolean;
+  /** Public repositories at fetch time (absent for cards rebuilt from the Card table). */
+  publicRepos?: number;
 }
 
 /** Only the columns stored in the `Card` table. */
@@ -279,6 +281,7 @@ export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
     followers: user.followers,
     totalStars,
     starBonus,
+    publicRepos: user.public_repos,
   };
 }
 

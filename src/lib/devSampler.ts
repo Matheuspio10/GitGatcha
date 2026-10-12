@@ -70,6 +70,17 @@ interface CurvePoint {
   t: number;
 }
 
+/**
+ * Boosters draw developers, not empty accounts: at least this many public
+ * repositories, on top of any pack filter. Uniform among everyone who qualifies.
+ */
+export const MIN_PUBLIC_REPOS = 1;
+
+/** Effective "more than N public repos" for a filter (pack rule or the global minimum). */
+function minReposExclusive(filter: PoolFilter): number {
+  return Math.max(filter.reposMoreThan ?? 0, MIN_PUBLIC_REPOS - 1);
+}
+
 const SEARCH_RESULT_CAP = 1000;   // GitHub search never returns past result #1000
 const PER_PAGE = 100;
 const TARGET_PER_WINDOW = 400;    // average devs per window → ~40% acceptance per search call
@@ -97,7 +108,7 @@ export function chooseStrategy(filter: PoolFilter, rarity: Rarity): SamplerStrat
     rarity === 'Common' &&
     !filter.languages?.length &&
     !filter.locations?.length &&
-    (filter.reposMoreThan ?? 0) <= ID_STRATEGY_MAX_REPOS
+    minReposExclusive(filter) <= ID_STRATEGY_MAX_REPOS
   ) {
     return 'id';
   }
@@ -117,7 +128,7 @@ export function baseQuery(filter: PoolFilter, rarity: Rarity): string {
   for (const lang of filter.languages ?? []) parts.push(`language:${quoteValue(lang)}`);
   // Locations may be written URL-style ('São+Paulo')
   for (const loc of filter.locations ?? []) parts.push(`location:${quoteValue(loc.replace(/\+/g, ' '))}`);
-  if (filter.reposMoreThan !== undefined) parts.push(`repos:>${filter.reposMoreThan}`);
+  parts.push(`repos:>${minReposExclusive(filter)}`);
   parts.push(followerBandQualifier(rarity));
   return parts.join(' ');
 }
@@ -149,7 +160,7 @@ function filterTimeRange(filter: PoolFilter, nowMs: number): [number, number] {
 function matchesAccount(filter: PoolFilter, rarity: Rarity, account: GitHubAccount, nowMs: number): boolean {
   if (account.type !== 'User') return false;
   if (!isInFollowerBand(account.followers, rarity)) return false;
-  if (filter.reposMoreThan !== undefined && !(account.publicRepos > filter.reposMoreThan)) return false;
+  if (!(account.publicRepos > minReposExclusive(filter))) return false;
   const created = Date.parse(account.createdAt);
   const [from, to] = filterTimeRange(filter, nowMs);
   return created >= from && created <= to;
@@ -182,6 +193,7 @@ export class DevSampler {
       if (!stats) continue;
       // The search index can lag behind the live profile; keep the band exact.
       if (!isInFollowerBand(stats.followers, rarity)) continue;
+      if (stats.publicRepos !== undefined && !(stats.publicRepos > minReposExclusive(filter))) continue;
       if (requiredLangs.length > 0) {
         const top = (stats.topLanguages.length ? stats.topLanguages : [stats.primaryLanguage]).map(l => l.toLowerCase());
         if (!requiredLangs.some(l => top.includes(l))) continue;

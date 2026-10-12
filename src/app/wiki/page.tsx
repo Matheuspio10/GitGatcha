@@ -274,7 +274,7 @@ export default function WikiPage() {
                 Cards are ranked in 5 rarity tiers. A card&apos;s rarity comes from the developer&apos;s real GitHub <strong>followers</strong>; a developer whose repositories collect lots of <strong>stars</strong> is promoted one tier as a bonus. Rarity applies a multiplier to the card&apos;s base stats.
               </p>
               <p className="mb-6 leading-relaxed text-slate-400 text-sm">
-                Boosters are truly random: within a booster&apos;s theme, <em>every</em> GitHub developer of the drawn rarity has exactly the same chance to drop — famous or brand new, including you.
+                Boosters are truly random: within a booster&apos;s theme, <em>every</em> GitHub developer of the drawn rarity with at least one public repository has exactly the same chance to drop — famous or brand new, including you.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

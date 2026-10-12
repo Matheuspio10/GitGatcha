@@ -127,7 +127,7 @@ function fakeDeps(world: FakeAccount[], seed: number, orgs: Record<string, strin
       return {
         githubUsername: a.login, avatarUrl: '', name: a.login, flavorText: '', atk: 10, def: 10, hp: 50,
         rarity: computeRarity(a.followers, 0).rarity, primaryLanguage: a.language, topLanguages: [a.language],
-        followers: a.followers, totalStars: 0, starBonus: false,
+        followers: a.followers, totalStars: 0, starBonus: false, publicRepos: a.publicRepos,
       };
     },
     async orgMembers(list) {
@@ -202,7 +202,7 @@ describe('DevSampler', () => {
     // 1500 Common Go devs signed up within the same hour, in a world of 60k accounts
     const burst = Date.parse('2009-06-01T12:00:00Z');
     const world = makeWorld(60_000, 5,
-      id => (id <= 1500 ? { language: 'Go', followers: 3, deleted: false, type: 'User' } : { language: 'Python' }),
+      id => (id <= 1500 ? { language: 'Go', followers: 3, publicRepos: 5, deleted: false, type: 'User' } : { language: 'Python' }),
       id => (id <= 1500 ? burst + id * 1000 : burst + 3_600_000 + ((NOW - burst) * id) / 60_001));
     const pool = eligible(world, { languages: ['Go'] }, 'Common');
     assert.strictEqual(pool.length, 1500);
@@ -250,6 +250,20 @@ describe('DevSampler', () => {
       seen.add(login);
     }
     assert.strictEqual(seen.size, pool.size);
+  });
+
+  test('accounts without public repositories never drop (every strategy)', async () => {
+    // A third of the accounts are empty; none of them may come out
+    const world = makeWorld(8000, 32, (id, rnd) => (rnd() < 0.33 ? { publicRepos: 0 } : {}));
+    const { deps } = fakeDeps(world, 33);
+    const sampler = new DevSampler(deps, { gridStep: 1500 });
+    const empty = new Set(world.filter(a => a.publicRepos === 0).map(a => a.login));
+    for (const [filter, rarity] of [[{}, 'Common'], [{ languages: ['Rust'] }, 'Rare'], [{ locations: ['Brazil'] }, 'Epic']] as [PoolFilter, Rarity][]) {
+      for (let i = 0; i < 300; i++) {
+        const dev = await sampler.drawDev(filter, rarity);
+        if (dev) assert.ok(!empty.has(dev.githubUsername), `${dev.githubUsername} has no public repos`);
+      }
+    }
   });
 
   test('drawDev skips excluded developers', async () => {
