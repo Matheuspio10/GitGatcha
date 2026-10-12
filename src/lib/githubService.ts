@@ -215,6 +215,13 @@ export interface DevStats {
   starBonus: boolean;
   /** Public repositories at fetch time (absent for cards rebuilt from the Card table). */
   publicRepos?: number;
+  // Profile snapshot for the card title; absent on devs reserved before it existed
+  totalForks?: number;
+  topRepoStars?: number;
+  publicGists?: number;
+  languageCount?: number;
+  /** ISO date the GitHub account was created. */
+  githubCreatedAt?: string;
 }
 
 /** Only the columns stored in the `Card` table. */
@@ -229,6 +236,26 @@ export function toCardData(stats: DevStats) {
     hp: stats.hp,
     rarity: stats.rarity,
     primaryLanguage: stats.primaryLanguage,
+    ...toCardProfile(stats),
+  };
+}
+
+/**
+ * The GitHub profile columns of a card (title data). Empty for devs reserved before
+ * the snapshot existed, so an update never wipes a profile with nulls.
+ */
+export function toCardProfile(stats: DevStats) {
+  if (stats.githubCreatedAt === undefined) return {};
+  return {
+    followers: stats.followers,
+    totalStars: stats.totalStars,
+    totalForks: stats.totalForks ?? null,
+    topRepoStars: stats.topRepoStars ?? null,
+    publicRepos: stats.publicRepos ?? null,
+    publicGists: stats.publicGists ?? null,
+    languageCount: stats.languageCount ?? null,
+    githubCreatedAt: new Date(stats.githubCreatedAt),
+    profileUpdatedAt: new Date(),
   };
 }
 
@@ -237,11 +264,13 @@ const MAX_REPO_PAGES = 3;
 export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
   let totalStars = 0;
   let totalForks = 0;
+  let topRepoStars = 0;
   const languages: Record<string, number> = {};
 
   for (const repo of repos) {
     totalStars += repo.stargazers_count;
     totalForks += repo.forks_count;
+    topRepoStars = Math.max(topRepoStars, repo.stargazers_count);
     if (repo.language) {
       // Weight the language by repository size to determine dominant language by bytes/code quantity
       languages[repo.language] = (languages[repo.language] || 0) + (repo.size || 1);
@@ -282,6 +311,11 @@ export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
     totalStars,
     starBonus,
     publicRepos: user.public_repos,
+    totalForks,
+    topRepoStars,
+    publicGists: user.public_gists || 0,
+    languageCount: sortedLangs.length,
+    githubCreatedAt: user.created_at,
   };
 }
 
