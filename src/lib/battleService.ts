@@ -8,6 +8,7 @@ import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
 import { grantXP } from './xpService';
 import { lockUser, withUserLock } from './userLock';
 import { pushNotification } from './notifications';
+import { closeDueSeasons, recordSeasonProgress } from './seasonService';
 import { RANKED_SEARCH_WINDOWS } from './ranks';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
@@ -117,6 +118,9 @@ async function applyPvpRating(winnerId: string, loserId: string): Promise<Rating
     const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
     await tx.user.update({ where: { id: winnerId }, data: { rating: newWinnerRating } });
     await tx.user.update({ where: { id: loserId }, data: { rating: newLoserRating } });
+    // Season: battles played, peak rating and first-time rank promotions
+    await recordSeasonProgress(tx, winnerId, newWinnerRating);
+    await recordSeasonProgress(tx, loserId, newLoserRating);
     return {
       winner: { before: winner.rating, after: newWinnerRating },
       loser: { before: loser.rating, after: newLoserRating },
@@ -281,6 +285,7 @@ export async function resolveFriendBattle(
   battleId: string,
   defenderTeamCards: any[]
 ) {
+  await closeDueSeasons();
   const battle = await findBattleWithPlayers(battleId);
 
   if (!battle) throw new Error('Battle not found');
@@ -497,6 +502,8 @@ function toBattleCard(c: RankedCardData, stamina: number, loyaltyTier: string): 
 export type RankedTeamCard = RankedCardData & { stamina?: number; loyaltyTier?: string };
 
 export async function resolveRankedBattle(challengerId: string, challengerTeamCards: RankedTeamCard[]) {
+  // A season that just ended is closed (and ratings reset) before the battle counts
+  await closeDueSeasons();
   const challenger = await prisma.user.findUnique({ where: { id: challengerId }, select: { rating: true, username: true } });
   if (!challenger) throw new NoRankedOpponentError();
   const opponent = await findRankedOpponent(challengerId, challenger.rating);

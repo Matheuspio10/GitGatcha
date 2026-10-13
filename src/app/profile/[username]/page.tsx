@@ -59,6 +59,8 @@ interface ProfileData {
     level: number;
     xp: number;
     rating: number;
+    /** Past ranked seasons, newest first (peak rating of each). */
+    seasons?: { seasonId: number; peakRating: number }[];
     createdAt: string;
     image?: string | null;
     bio?: string | null;
@@ -294,6 +296,11 @@ export default function ProfilePage() {
                     Level {profile.user.level}
                   </span>
                   <RankBadge rating={profile.user.rating} className="px-3 py-1" />
+                  {profile.user.seasons?.map(s => (
+                    <span key={s.seasonId} className="inline-flex items-center gap-1 text-[10px] text-slate-500" title={`Season ${s.seasonId} peak`}>
+                      S{s.seasonId} <RankBadge rating={s.peakRating} showRating={false} />
+                    </span>
+                  ))}
                   {profile.hasLegendaryBondPrestige && (
                     <span className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full text-xs font-bold text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)] animate-pulse">
                       <Sparkle weight="fill" />

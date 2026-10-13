@@ -3,12 +3,16 @@
  *
  *   node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts           # dry run: report only
  *   node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts --apply   # write to the database
+ *
+ * The replay knows nothing about ranked seasons (each season end resets ratings
+ * halfway), so once a season has closed --apply refuses to run unless --force.
  */
 import { PrismaClient } from '@prisma/client';
 import { replayPvpRatings } from '../src/lib/ratings';
 import { STARTING_RATING } from '../src/lib/battleConfig';
 
 const apply = process.argv.includes('--apply');
+const force = process.argv.includes('--force');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -25,6 +29,13 @@ async function main() {
     .sort((a, b) => b.next - a.next);
   for (const u of rows) {
     console.log(`  ${(u.username ?? u.id).padEnd(34)} ${String(u.rating).padStart(5)} → ${u.next}`);
+  }
+
+  const closedSeasons = await prisma.season.count({ where: { closedAt: { not: null } } });
+  if (apply && closedSeasons > 0 && !force) {
+    console.error(`\n${closedSeasons} season(s) already closed: this replay ignores the season resets and would undo them. Not applied (use --force if you really mean it).`);
+    process.exitCode = 1;
+    return;
   }
 
   if (apply) {

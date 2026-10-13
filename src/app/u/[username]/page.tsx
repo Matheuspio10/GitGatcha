@@ -51,6 +51,19 @@ export default async function PublicProfilePage({ params }: Props) {
         <ShareButtons url={url} text={`${profile.username}'s GitGacha collection: ${profile.uniqueCards} developers`} />
       </div>
 
+      {profile.seasons.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Past seasons</h2>
+          <div className="flex flex-wrap gap-2">
+            {profile.seasons.map(s => (
+              <span key={s.seasonId} className="inline-flex items-center gap-2 text-xs text-slate-400">
+                S{s.seasonId} <RankBadge rating={s.peakRating} />
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {profile.signatureCard && (
         <section className="mt-10">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-fuchsia-300">Signature card</h2>

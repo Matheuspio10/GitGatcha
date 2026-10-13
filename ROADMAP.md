@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 13 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 169 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 14 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 173 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -44,7 +44,7 @@
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
-| `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP |
+| `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP. Ignora os resets de temporada: depois que uma temporada fecha, o `--apply` recusa sem `--force` |
 | `node --env-file=.env.prod --import tsx scripts/dedupe-user-cards.ts [--apply]` | Junta cartas duplicadas, que viram fragmentos |
 | `node --env-file=.env.prod --import tsx scripts/backfill-card-profiles.ts [--apply]` | Preenche o retrato do perfil no GitHub das cartas (só as colunas de perfil; status não mudam). 2–4 chamadas REST por carta |
 | `node --env-file=.env.prod scripts/seed-changelog.js` | Seed do changelog (cria entradas novas) |
@@ -61,7 +61,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
-| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44) · falta: **temporadas** (reset suave, recompensas, colocação) e desafios melhores (revanche, link, aposta) (3.1) | 2 rodadas, M |
+| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45) · falta: desafios melhores (revanche, link, aposta) e partidas de colocação (3.1) | 1 rodada, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
@@ -215,6 +215,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - O seletor de ligas virou 6 colunas; botão e confirmação dizem "Battle Ranked". Notificações viraram um helper comum (`src/lib/notifications.ts`).
 - Corrigido: o pulso das sinergias no montador de time lançava erro do framer-motion (spring com 3 keyframes).
 
+### Onda 5 — temporadas (PR #45)
+- **Temporada = mês do calendário (UTC)** (`Season`, migração `20261024000000_seasons`, que abre a temporada 1 no deploy até o dia 1º do mês seguinte).
+- **Promoção:** a primeira vez que o pico da temporada passa de um elo paga Silver +100 · Gold +200 · Platinum +400 · Diamond +800 BITS, com notificação (`recordSeasonProgress`, chamado dentro do `applyPvpRating`, que também conta as batalhas PvP e o pico da temporada no `User`).
+- **Fim da temporada** (`closeDueSeasons` em `seasonService.ts`): quem jogou PvP na temporada ganha pelo **pico** (Bronze +100 · Silver +200 · Gold +400 · Platinum +700 · Diamond +1200), o resultado fica em `SeasonResult` (no perfil: "S1 Gold"), e todo rating volta **metade** do caminho até 1000. Abre a próxima temporada.
+  - Sem cron novo: fecha quando alguém abre o ranking, joga Ranked/desafio, ou no cron diário que já existe. Idempotente (linha da temporada travada e conferida).
+- **Interface:** faixa da temporada no ranking (tempo restante, seu pico, tabela de recompensas), temporadas passadas no perfil e na página pública, regra na wiki.
+- **Partidas de colocação** ficaram para depois: mudam o K por jogador e quebrariam o `recompute-ratings`.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -281,7 +289,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.1 Competitivo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Temporadas** | Os elos (Bronze → Diamante) já existem (PR #44). Falta: temporadas com reset suave, partidas de colocação, recompensa por promoção e por fim de temporada | M |
+| **Partidas de colocação** | As temporadas existem (PR #45). Falta: K maior nas primeiras partidas da temporada; exige o `recompute-ratings` entender temporadas | P |
 | **Desafios melhores** | Só entre amigos, revanche/melhor de 3, aposta de BITS combinada, link compartilhável | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
 
@@ -341,7 +349,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Revelação uma carta por vez (Pokémon/MTG) | ✅ pack físico (2.1) e rasgável (PR #31) |
 | Verificar se a API está funcionando / mesmos devs | ✅ sorteio uniforme (1.1) |
 | O que fazer quando o usuário não tem fragmentos (Keslley) | ✅ fragmento coringa (PR #41) |
-| Sistema de elos | ✅ elos e Ranked (PR #44); temporadas pendentes (3.1) |
+| Sistema de elos | ✅ elos, Ranked e temporadas (PR #44, #45) |
 | Sincronizar BITS | ✅ |
 | Métodos de pagamento | pendente (Fase 4) |
 | Treinar as cartas | pendente (3.3) |

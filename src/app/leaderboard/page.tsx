@@ -9,6 +9,8 @@ import { sortLeaderboard } from '@/lib/leaderboard';
 import { STARTING_RATING } from '@/lib/battleConfig';
 import { LeaderboardAvatar } from './LeaderboardAvatar';
 import { RankBadge as TierBadge } from '@/components/RankBadge';
+import { SeasonBanner } from '@/components/SeasonBanner';
+import { getCurrentSeason } from '@/lib/seasonService';
 
 const GLOBAL_LIMIT = 50;
 
@@ -243,6 +245,12 @@ function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRo
 export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const currentUser = await getCurrentUser();
   const { tab } = await searchParams;
+  const now = new Date();
+  // Closes a season that already ended (pays it, resets ratings) before showing anything
+  const [season, viewerSeason] = await Promise.all([
+    getCurrentSeason(now),
+    currentUser ? prisma.user.findUnique({ where: { id: currentUser.id }, select: { seasonPeakRating: true, seasonBattles: true } }) : null,
+  ]);
   const showRivals = tab === 'rivals' && !!currentUser;
   const showCollectors = tab === 'collectors';
 
@@ -286,6 +294,8 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
           Rating only changes in PvP: Ranked battles and friend challenges. Ties: PvP wins, then battles played, then oldest account.
         </p>
       </div>
+
+      {season && !showCollectors && <SeasonBanner season={season} now={now} viewer={viewerSeason} />}
 
       <div className="flex justify-center gap-2">
         <Link href="/leaderboard" className={tabClass(!showRivals && !showCollectors)}>

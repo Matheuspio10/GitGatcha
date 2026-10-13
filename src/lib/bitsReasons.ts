@@ -16,6 +16,8 @@ export const BITS_REASONS = {
   share_bonus: 'First share',
   onboarding: 'Getting started',
   referral: 'Invite reward',
+  rank_promotion: 'Rank promotion',
+  season_reward: 'Season reward',
 } as const;
 
 export type BitsReason = keyof typeof BITS_REASONS;

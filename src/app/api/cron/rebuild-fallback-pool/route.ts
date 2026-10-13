@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
+import { closeDueSeasons } from '@/lib/seasonService';
 
 // Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
 export const maxDuration = 300;
@@ -33,10 +34,16 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Ranked seasons close here too, in case nobody played or opened the rankings
+    const seasonsClosed = await closeDueSeasons().catch((err: unknown) => {
+      console.error('[Cron] Season close failed:', err);
+      return 0;
+    });
     const results = await rebuildFallbackPools();
 
     return NextResponse.json({
       success: true,
+      seasonsClosed,
       report: results,
       timestamp: new Date().toISOString(),
     });
