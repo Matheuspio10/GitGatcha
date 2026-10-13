@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 16/10/2026, ao fim das rodadas Fase 0, Fase 1 e Fase 2 (PRs #19–#26).
+> Atualizado em 13/10/2026, depois das rodadas de identidade visual, títulos nas cartas e booster rasgável (PRs #27–#32). O backlog está organizado em **ondas** (ver "Ondas de melhorias").
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -12,9 +12,9 @@
 ## 👉 Como continuar (leia primeiro)
 
 ### Estado atual
-- **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app).
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 6 migrações aplicadas, todas aditivas.
-- 125 testes (`npm test`), `tsc` sem erros, lint com 109 erros (quase todos `any` antigos).
+- **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 7 migrações aplicadas, todas aditivas.
+- 134 testes (`npm test`), `tsc` sem erros, lint com 109 erros e 57 avisos (quase todos `any` antigos).
 
 ### Ambiente
 | O quê | Como está |
@@ -42,16 +42,28 @@
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
 | `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP |
 | `node --env-file=.env.prod --import tsx scripts/dedupe-user-cards.ts [--apply]` | Junta cartas duplicadas, que viram fragmentos |
+| `node --env-file=.env.prod --import tsx scripts/backfill-card-profiles.ts [--apply]` | Preenche o retrato do perfil no GitHub das cartas (só as colunas de perfil; status não mudam). 2–4 chamadas REST por carta |
 | `node --env-file=.env.prod scripts/seed-changelog.js` | Seed do changelog (cria entradas novas) |
 
-### Próximos passos sugeridos (em ordem)
-1. **Onboarding para jogador novo (2.5):** pack inicial, tour de 4 passos ligado às primeiras missões, **pack de visitante sem cadastro** e tela de boas-vindas 🅶. Com o dev branch dá para testar no navegador, logado.
-2. **Rodada de crescimento 🅶:** carta compartilhável com imagem de preview, "Copiar para o README" da carta Signature (3.4) e indicação de amigos (3.4).
-3. **Missões de dev pelo GitHub (2.4)** e **títulos nas cartas (3.3)** 🅶: pequenos, cabem numa rodada.
-4. **Sistema de elos com temporadas (3.1)**, junto com o **PvP assíncrono "fantasma" (3.1)**, que dá sentido ao rating.
-5. **Torre estilo Mortal Kombat (3.2):** reaproveita `resolve3v3Battle`.
-6. **CI no GitHub Actions (2.8)** junto com o **backup diário do banco** 🅶, para os PRs rodarem `tsc`, lint, testes e build sozinhos.
-7. **Tradução para português (2.5)**, a liga estilo Cartola (3.2) e o resto das Fases 3 e 4.
+---
+
+## 🌊 Ondas de melhorias (ordem sugerida)
+
+Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–3 rodadas (uma PR por rodada). Os números entre parênteses apontam para a seção do backlog.
+
+| Onda | Tema | O que entra | Tamanho |
+|---|---|---|---|
+| **1** | 🧹 Casa arrumada | Pontas soltas 🟠/🟡 (taxa da liga Legendary, pack com 0 cartas, `loyaltyCount` sem trava, Rust × Go, sinergia Python, Common × Uncommon, recompensa por força do oponente) + **CI no GitHub Actions** + **backup diário do banco** 🅶 (2.8) | 1–2 rodadas, P |
+| **2** | 👋 Primeira impressão | **Onboarding** (pack inicial + tour de 4 passos ligado às primeiras missões), **pack de visitante** 🅶, **tela de boas-vindas** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 2 rodadas, M |
+| **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
+| **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
+| **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
+| **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
+| **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
+| **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
+| **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+
+**Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
 ---
 
@@ -108,11 +120,22 @@
   - 10 conquistas Bronze/Prata/Ouro, pagas uma vez por nível (as já cumpridas foram pagas como presente de lançamento);
   - pity com Legendary garantida em até 30 packs.
 
-### Identidade visual
+### Identidade visual (PR #29)
 - **Logo** (`src/components/Logo.tsx`): cápsula de gacha cortada pela linha de commits; o botão é um commit. Favicon em `src/app/icon.svg`.
 - **Paleta e fontes** (`globals.css`, `layout.tsx`): as escalas `slate` e `indigo` do Tailwind foram retingidas (tinta violeta e violeta da marca), então todo o jogo mudou sem mexer em cada tela. Marca `brand-a/brand-b` (#7C4DFF → #FF4FA3), `commit` (#3DDC97). Fontes: Unbounded (logo/títulos), Chakra Petch (interface), JetBrains Mono (números), Caveat (autógrafo).
-- **Carta nova** (`Card.tsx` + `.gg-*` no `globals.css`): cantos chanfrados, material por raridade (Epic/Legendary com moldura girando), trilha de commits de 1 a 5 nós como raridade, hash de série, emblema de linguagem, **passiva escrita na carta** (`cardPassive` em `battleConfig.ts`, mesmos números da wiki), flavor como mensagem de commit, 3D seguindo o mouse. Título provisório "linguagem + patente" (`cardVisuals.ts`) até existirem títulos por dados reais.
+- **Carta nova** (`Card.tsx` + `.gg-*` no `globals.css`): cantos chanfrados, material por raridade (Epic/Legendary com moldura girando), trilha de commits de 1 a 5 nós como raridade, hash de série, emblema de linguagem, **passiva escrita na carta** (`cardPassive` em `battleConfig.ts`, mesmos números da wiki), flavor como mensagem de commit, 3D seguindo o mouse.
 - **Booster:** verso e arte do pack com o logo. Galeria só de desenvolvimento em `/dev/cards` (404 em produção). Proposta original em `docs/visual-proposta.html`.
+
+### Títulos nas cartas 🅶 (PR #30, #32)
+- **Retrato do perfil no GitHub** salvo em `Card` (seguidores, estrelas, forks, estrelas do repo principal, repos, gists, nº de linguagens, criação da conta), migração aditiva `20261017000000_card_github_profile`. Preenchido em toda busca ao vivo (booster, forja, Signature) via `toCardData`; as cartas antigas, por `scripts/backfill-card-profiles.ts`.
+- **`cardTitle`** (`src/lib/cardVisuals.ts`): o traço mais forte do dev em 4 níveis (estrelas, repo principal, seguidores, forks, repos, linguagens, gists, idade). Idade só a partir de 14 anos de conta (Pre-Cloud Elder, Remembers SVN).
+- Combinações engraçadas (Side Project Graveyard, Fork Bomb, Social Butterfly, Ancient Lurker) e piadas por linguagem ou genéricas para perfis quietos. Passar o mouse mostra o motivo.
+- Só cosmético: calculado na hora, não sobe `STAT_VERSION`. Cartas sem retrato ficam com "linguagem + patente".
+
+### Booster rasgável (PR #31)
+- Arrastar pela faixa de cima rasga o pack; a luz vaza na cor da melhor carta, com faíscas de foil. Tocar, Enter ou Espaço rasgam de uma vez.
+- Depois do rasgo, o maço sobe para fora do pack e a embalagem cai (modo de entrada `emerge`). O rasgo completa mesmo sem áudio.
+- Galeria `/dev/cards` ganhou um booster de teste (não gasta BITS nem salva) e `?autoplay=Rare|Epic|Legendary`.
 
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
@@ -221,7 +244,6 @@
 | **Coleções/sets** | Completar o elenco de um pack dá título, moldura ou banner; mostrar % por pack | M |
 | **Wishlist ativa** | Itens da wishlist com chance levemente maior (cuidado com a regra de ouro 1: seria um viés explícito e anunciado) | P |
 | **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui. Padrão do GitPacks 🅶: a cada requisição, tentar pegar uma vaga global (`UPDATE … WHERE updated_at < agora-5min RETURNING`) e atualizar **a carta mais desatualizada**, em rodízio, sem cron. Respeitar a regra 4 (`STAT_VERSION`) | M |
-| **Títulos e habilidades 🅶** | Título e frase por status dominante e raridade, com os dados que já temos (muitas estrelas → "Star Magnet", conta antiga → "Veterano", muitos repos → "Prolífico", linguagem). Só cosmético, não sobe `STAT_VERSION` | P |
 
 ### 3.4 Social
 | Feature | Descrição | Esforço |
@@ -263,7 +285,7 @@
 
 | Ideia | Status |
 |---|---|
-| Revelação uma carta por vez (Pokémon/MTG) | ✅ pack físico (2.1) |
+| Revelação uma carta por vez (Pokémon/MTG) | ✅ pack físico (2.1) e rasgável (PR #31) |
 | Verificar se a API está funcionando / mesmos devs | ✅ sorteio uniforme (1.1) |
 | O que fazer quando o usuário não tem fragmentos (Keslley) | pendente (2.4 alívio de fragmentos) |
 | Sistema de elos | pendente (3.1) — rating já está correto |
