@@ -14,7 +14,7 @@
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 7 migrações aplicadas, todas aditivas.
-- 134 testes (`npm test`), `tsc` sem erros, lint com 109 erros e 57 avisos (quase todos `any` antigos).
+- 140 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos).
 
 ### Ambiente
 | O quê | Como está |
@@ -53,7 +53,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 
 | Onda | Tema | O que entra | Tamanho |
 |---|---|---|---|
-| **1** | 🧹 Casa arrumada | Pontas soltas 🟠/🟡 (taxa da liga Legendary, pack com 0 cartas, `loyaltyCount` sem trava, Rust × Go, sinergia Python, Common × Uncommon, recompensa por força do oponente) + **CI no GitHub Actions** + **backup diário do banco** 🅶 (2.8) | 1–2 rodadas, P |
+| **1** | 🧹 Casa arrumada | ~~Bugs das pontas soltas~~ ✅ (PR #34) · decisões de balanceamento (Common × Uncommon, recompensa por força do oponente, teto da liga Diversity) + **CI no GitHub Actions** + **backup diário do banco** 🅶 (2.8) | 1–2 rodadas, P |
 | **2** | 👋 Primeira impressão | **Onboarding** (pack inicial + tour de 4 passos ligado às primeiras missões), **pack de visitante** 🅶, **tela de boas-vindas** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 2 rodadas, M |
 | **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
@@ -137,6 +137,17 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - Depois do rasgo, o maço sobe para fora do pack e a embalagem cai (modo de entrada `emerge`). O rasgo completa mesmo sem áudio.
 - Galeria `/dev/cards` ganhou um booster de teste (não gasta BITS nem salva) e `?autoplay=Rare|Epic|Legendary`.
 
+### Onda 1 — pontas soltas (PR #34)
+- **Taxa da liga Legendary:** a batalha contra o computador e os BITS dela são salvos numa transação só; qualquer erro antes disso devolve a taxa. XP, stamina e fidelidade depois da batalha só registram erro, não derrubam o resultado.
+- **Pack com 0 cartas:** vira erro (`EmptyPackError`) antes de entregar algo, então o pack volta para o inventário e o pity consumido continua valendo.
+- **Fidelidade das cartas:** `processPostBattleCardStats` trava as linhas das cartas (em ordem de id) antes de ler; batalhas paralelas com a mesma carta não perdem incremento.
+- **Pity:** o pack do pity não zera de novo o contador (ele já foi zerado ao consumir o pity), então o +1 de um pack aberto em paralelo não se perde.
+- **Rust × Go:** as cartas entram juntas: primeiro o Escudo de Ferro, depois todos os Primeiros Golpes ao mesmo tempo. O escudo dura o turno de entrada inteiro (como a descrição sempre disse), então o erro do CSS não o gasta.
+- **Sinergia Python:** cada carta cura pela maior taxa entre a própria e a da sinergia; 3 Python agora curam 12% em vez de 10%.
+- **Contagem das missões:** o servidor manda o tempo restante, não a hora; relógio do celular adiantado não trava mais.
+- **iOS:** a inclinação holográfica pede permissão no primeiro toque.
+- `resolve3v3Battle` usa o tamanho dos times em vez de 3 fixo (prepara a Torre).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -147,17 +158,8 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### Pontas soltas conhecidas (pequenas)
 | Item | Prioridade | Esforço |
 |---|---|---|
-| Taxa da liga Legendary só é devolvida em `NoOpponentError`. Um erro inesperado depois da cobrança fica com os 500 BITS (`api/battle/route.ts`) | 🟠 | P |
-| Abertura de pack que retorna 0 cartas mostra erro e não devolve o pack | 🟠 | P |
-| `processPostBattleCardStats` lê e grava `loyaltyCount` sem trava (batalhas paralelas com a mesma carta perdem incremento) | 🟡 | P |
-| Pity: um pack aberto em paralelo com o pack do pity pode perder o +1 (a favor do jogador) | 🟢 | P |
-| Escudo do Rust × Primeiro golpe do Go depende de quem é desafiante (assimetria). O escudo também é consumido por um erro do CSS | 🟡 | P |
-| Sinergia de 3 Python não tem efeito (só vale para colegas não-Python) | 🟡 | P |
-| Common × Uncommon = 83% (a faixa Common é de contas quase vazias) — avaliar | 🟡 | P |
+| Common × Uncommon = 82% (a faixa Common é de contas quase vazias) — avaliar | 🟡 | P |
 | Recompensas escalando pela força do oponente (os parâmetros de "upset" existem e não são usados); liga Diversity paga 120 sem teto | 🟡 | P |
-| Contagem regressiva das missões trava se o relógio do cliente estiver adiantado | 🟢 | P |
-| Inclinação no iOS precisa pedir permissão (`DeviceOrientationEvent.requestPermission`) | 🟢 | P |
-| `resolve3v3Battle` tem 3 cartas fixas por time (`cIdx < 3`) | 🟢 | P |
 | Pedir ao suporte do GitHub a remoção das refs internas das PRs #1–#18 (ainda guardam o `dev.db` antigo) | 🟡 | P |
 | Suíte de testes lenta (~90 s, simulador) — separar testes rápidos e lentos | 🟢 | P |
 

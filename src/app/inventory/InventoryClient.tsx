@@ -130,12 +130,14 @@ export default function InventoryClient({ userId }: { userId: string }) {
       } else {
         setErrorMessage(data.error || 'Failed to locate enough developers. The API might rate-limited or the pool is empty.');
         setApiState('ERROR');
+        router.refresh(); // a failed opening gives the pack back: resync the inventory
       }
     })
     .catch(e => {
       console.error(e);
       setErrorMessage('Network error');
       setApiState('ERROR');
+      router.refresh();
     });
   };
 

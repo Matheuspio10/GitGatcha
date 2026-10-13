@@ -266,31 +266,45 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     logEvents.push({ type: 'passive', cardId: card.id, message: `[PHP] ${card.name} @-suppressed a fatal error and survives with ${card.hp} HP!` });
   };
 
-  const enterField = (card: BattleCard, opponent: BattleCard, logEvents: BattleLogEvent[]) => {
+  /** On-entry states (Iron Shield). Runs for every entering card before any First Strike. */
+  const enterField = (card: BattleCard, logEvents: BattleLogEvent[]) => {
       logEvents.push({ type: 'enter_field', cardId: card.id, message: `${card.name} enters the field!` });
 
-      // Rust Iron Shield
+      // Rust Iron Shield: blocks all damage until the end of this turn
       if (card.type === 'Rust') {
           st(card).ironShield = true;
           logEvents.push({ type: 'passive', cardId: card.id, message: `[Rust] ${card.name} gained Iron Shield (blocks first turn damage).` });
       }
+  };
 
-      // Go First Strike OR Go Synergy First Strike
-      if (card.type === 'Go' || st(card).goSynergy) {
+  /**
+   * Go First Strike (or Go Synergy) of the cards entering this turn. Every
+   * strike is computed before any lands, so two cards entering together hit
+   * each other at the same time and the result doesn't depend on which side
+   * is the challenger.
+   */
+  const resolveFirstStrikes = (entering: [BattleCard, BattleCard][], logEvents: BattleLogEvent[]) => {
+      const strikes = entering
+        .filter(([card]) => card.type === 'Go' || st(card).goSynergy)
+        .map(([card, opponent]) => ({ card, opponent, dmg: mitigatedDamage(card.atk * momentum(card), opponent.def * momentum(opponent)) }));
+
+      for (const { card, opponent, dmg } of strikes) {
           logEvents.push({ type: 'passive', cardId: card.id, message: `${card.name} strikes first on entry!` });
-          const dmg = mitigatedDamage(card.atk * momentum(card), opponent.def * momentum(opponent));
-
           if (st(opponent).ironShield) {
-            st(opponent).ironShield = false; // the shield is spent on the First Strike
             logEvents.push({ type: 'passive', cardId: opponent.id, message: `Iron Shield blocked First Strike!` });
           } else {
              opponent.hp -= dmg;
              card.statsDealtDamage = (card.statsDealtDamage || 0) + dmg;
              opponent.statsTakenDamage = (opponent.statsTakenDamage || 0) + dmg;
              logEvents.push({ type: 'damage', cardId: card.id, targetId: opponent.id, value: dmg, message: `${card.name} dealt ${dmg} first strike damage.` });
-             trySuppress(opponent, logEvents);
           }
       }
+      for (const { opponent } of strikes) trySuppress(opponent, logEvents);
+  };
+
+  /** Iron Shield only lasts for the turn the Rust card entered on. */
+  const endShields = (...cards: BattleCard[]) => {
+      for (const card of cards) st(card).ironShield = false;
   };
 
   /**
@@ -387,10 +401,9 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       return 0;
     }
 
-    // Rust Iron Shield turn 1 block
+    // Rust Iron Shield: nothing gets through on its first turn (a 0-damage hit doesn't touch it)
     if (st(def).ironShield) {
-      st(def).ironShield = false; // consumed
-      events.push({ type: 'passive', cardId: def.id, message: `Iron Shield blocked all damage!` });
+      if (dmg > 0) events.push({ type: 'passive', cardId: def.id, message: `Iron Shield blocked all damage!` });
       return 0;
     }
 
@@ -418,10 +431,10 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     }
 
     // Regen: Python, Jupyter Notebook, Python Synergy
-    // (Python cards keep their own rate; teammates use the synergy rate)
-    const healPct = card.type === 'Python'
-      ? PASSIVE.python.regenAtkPct
-      : Math.max(card.type === 'Jupyter Notebook' ? PASSIVE.jupyter.regenAtkPct : 0, st(card).pySynergy);
+    // (every card heals at the higher of its own rate and the synergy rate)
+    const ownRegen = card.type === 'Python' ? PASSIVE.python.regenAtkPct
+      : card.type === 'Jupyter Notebook' ? PASSIVE.jupyter.regenAtkPct : 0;
+    const healPct = Math.max(ownRegen, st(card).pySynergy);
     if (healPct > 0) {
       const heal = Math.floor(card.atk * healPct);
       card.hp = Math.min(card.maxHp, card.hp + heal);
@@ -447,7 +460,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   let dJustEntered = true;
   let turnsInMatchup = 0;
 
-  while (cIdx < 3 && dIdx < 3) {
+  while (cIdx < cTeam.length && dIdx < dTeam.length) {
     const cCard = cTeam[cIdx];
     const dCard = dTeam[dIdx];
 
@@ -455,8 +468,11 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     const cHpStart = cCard.hp;
     const dHpStart = dCard.hp;
 
-    if (cJustEntered) enterField(cCard, dCard, turnEvents);
-    if (dJustEntered && dCard.hp > 0) enterField(dCard, cCard, turnEvents); // Only if dCard didn't die from cCard's first strike
+    const entering: [BattleCard, BattleCard][] = [];
+    if (cJustEntered) entering.push([cCard, dCard]);
+    if (dJustEntered) entering.push([dCard, cCard]);
+    for (const [card] of entering) enterField(card, turnEvents);
+    resolveFirstStrikes(entering, turnEvents);
 
     cJustEntered = false;
     dJustEntered = false;
@@ -473,6 +489,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
             dIdx++; dJustEntered = true; turnsInMatchup = 0;
             if (cCard.hp > 0) recordKnockout(cCard, turnEvents);
         }
+        endShields(cCard, dCard);
         log.push({
             turnNumber, cCardId: cCard.id, dCardId: dCard.id,
             cHpStart, dHpStart, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp),
@@ -488,6 +505,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     const cDmgToD = receive(dCard, cCard, cHit.dmg, turnEvents);
     const dDmgToC = receive(cCard, dCard, dHit.dmg, turnEvents);
+    endShields(cCard, dCard);
 
     cCard.hp -= dDmgToC;
     dCard.hp -= cDmgToD;

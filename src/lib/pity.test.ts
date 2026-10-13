@@ -28,8 +28,18 @@ describe('legendary pity', () => {
 
   test('counter resets on a Legendary, otherwise counts one more', () => {
     assert.deepStrictEqual(pityCounterUpdate(true, false), { set: 0 });
-    assert.deepStrictEqual(pityCounterUpdate(true, true), { set: 0 });
+    assert.deepStrictEqual(pityCounterUpdate(true, true), { increment: 0 });
     assert.deepStrictEqual(pityCounterUpdate(false, false), { increment: 1 });
+  });
+
+  test('a pity pack keeps the +1 of a pack opened in parallel', () => {
+    // consumePity reset the counter to 0, then a parallel normal pack counted +1
+    // before the pity pack finished: the pity pack must not wipe that +1
+    let counter = 0;
+    counter += (pityCounterUpdate(false, false) as { increment: number }).increment;
+    const update = pityCounterUpdate(true, true);
+    counter = 'set' in update ? update.set : counter + update.increment;
+    assert.strictEqual(counter, 1);
   });
 
   test('a consumed pity whose Legendary was not granted stays due', () => {

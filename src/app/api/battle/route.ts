@@ -123,8 +123,9 @@ export async function POST(req: Request) {
     try {
       result = await resolveRandomBattle(userId, cTeamCards, leagueMode, { powerCap });
     } catch (err) {
-      // No opponent could be built, so the battle never happened: give the entry fee back
-      if (entryFee > 0 && err instanceof NoOpponentError) {
+      // resolveRandomBattle only throws before the battle is saved (no opponent,
+      // database error…): the battle never happened, so the entry fee goes back
+      if (entryFee > 0) {
         await prisma.user.update({ where: { id: userId }, data: { currency: { increment: entryFee } } });
       }
       throw err;

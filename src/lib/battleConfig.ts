@@ -57,7 +57,8 @@ export const LEAGUES: Record<LeagueMode, LeagueRules> = {
     rules: '3 different primary languages required.',
     winBits: 120, winXp: 140, lossBits: 10, lossXp: 30, entryFee: 0,
   },
-  // The entry fee is paid up front and never refunded. A win must be net
+  // The entry fee is paid up front and only refunded when the battle could not
+  // be saved (api/battle/route.ts). A win must be net
   // positive (900 − 500 = +400 BITS) to justify the risk; a loss pays nothing
   // (−500 BITS). Before this the win paid 300, so the league always lost money.
   LEGENDARY: {
@@ -201,7 +202,7 @@ export const PASSIVE = {
 
 export const SYNERGY = {
   mixedTeamAtk: 0.08,
-  pythonRegenAtkPct: 0.06, // non-Python teammates (12% with 3 Python cards)
+  pythonRegenAtkPct: 0.06, // 12% with 3 Python cards; each card heals at the higher of this and its own rate
   rustDamageReduction: 0.10, // 20% with 3 Rust cards
   jsCallbackChance: 0.10, // non-JS teammates (20% with 3 JS cards)
 } as const;

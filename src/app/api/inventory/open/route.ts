@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { withUserLock, asArray } from '@/lib/userLock';
-import { openBoosterPack, refillBoosterReserve } from '@/lib/boosterService';
+import { openBoosterPack, refillBoosterReserve, EmptyPackError } from '@/lib/boosterService';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { grantXP, InventoryItem, XP_AMOUNTS } from '@/lib/xpService';
 import { syncAchievementsSafe } from '@/lib/achievementService';
@@ -83,6 +83,9 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error('Open pack error:', error);
-    return NextResponse.json({ error: 'Failed to open pack' }, { status: 500 });
+    if (error instanceof EmptyPackError) {
+      return NextResponse.json({ error: 'Could not draw any card right now. The pack is back in your inventory, try again in a few minutes.' }, { status: 503 });
+    }
+    return NextResponse.json({ error: 'Failed to open pack. If it was taken, it is back in your inventory.' }, { status: 500 });
   }
 }

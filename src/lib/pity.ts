@@ -27,12 +27,13 @@ export function applyPity(rarities: readonly string[], packsSinceLegendary: numb
 
 /**
  * Counter change after a pack's cards were granted, as an atomic update:
- * reset when a Legendary was granted, otherwise one more. A pity that was
- * consumed (counter already reset) but whose Legendary couldn't be granted is
- * put back to due, so the next pack gets it.
+ * reset when a Legendary was granted, otherwise one more. A pity pack already
+ * reset the counter when it claimed the pity, so it leaves it alone: packs
+ * opened in parallel may have counted since then. A pity that was consumed but
+ * whose Legendary couldn't be granted is put back to due, so the next pack gets it.
  */
 export function pityCounterUpdate(gotLegendary: boolean, pityTriggered: boolean): { set: number } | { increment: number } {
-  if (gotLegendary) return { set: 0 };
+  if (gotLegendary) return pityTriggered ? { increment: 0 } : { set: 0 };
   return { increment: pityTriggered ? PITY_THRESHOLD - 1 : 1 };
 }
 
