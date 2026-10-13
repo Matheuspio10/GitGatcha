@@ -21,6 +21,7 @@ export const BITS_REASONS = {
   challenge_stake: 'Challenge stake',
   challenge_payout: 'Challenge won (stakes)',
   challenge_refund: 'Challenge stake refunded',
+  tower_reward: 'Tower floor cleared',
 } as const;
 
 export type BitsReason = keyof typeof BITS_REASONS;
