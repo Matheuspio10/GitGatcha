@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import toast from 'react-hot-toast';
 import { CardProps, Card } from '@/components/Card';
-import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText, ShareNetwork } from '@phosphor-icons/react';
+import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import clsx from 'clsx';
 
@@ -554,6 +555,19 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                    <GithubLogo size={18} weight="fill" />
                    Open Profile
                  </a>
+
+                 <button
+                   onClick={async () => {
+                     await copyText(`${window.location.origin}/card/${selectedCard.githubUsername}`);
+                     toast.success('Card link copied');
+                     claimShareBonus();
+                   }}
+                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold rounded-xl transition-all text-sm"
+                   title="Copy a public link to this card (with a preview image)"
+                 >
+                   <ShareNetwork size={18} />
+                   Share
+                 </button>
 
                  {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
                    <button

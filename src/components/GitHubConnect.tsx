@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { GithubLogo, Sparkle } from '@phosphor-icons/react';
+import { Check, Copy, GithubLogo, Sparkle } from '@phosphor-icons/react';
+import { claimShareBonus, copyText } from './ShareButtons';
 
 interface GitHubStatus {
   connected: boolean;
@@ -80,10 +81,13 @@ export function GitHubConnect() {
       ) : (
         <>
           {status.signatureCard ? (
-            <p className="text-xs text-slate-400 mb-3 flex items-center gap-1.5">
-              <Sparkle size={14} weight="fill" className="text-fuchsia-300 flex-shrink-0" />
-              Your Signature card ({status.signatureCard.rarity}) is in your collection.
-            </p>
+            <>
+              <p className="text-xs text-slate-400 mb-3 flex items-center gap-1.5">
+                <Sparkle size={14} weight="fill" className="text-fuchsia-300 flex-shrink-0" />
+                Your Signature card ({status.signatureCard.rarity}) is in your collection.
+              </p>
+              <SignatureReadme login={status.signatureCard.githubUsername} name={status.signatureCard.name} />
+            </>
           ) : (
             <p className="text-xs text-slate-400 mb-3">Connected. Your Signature card will appear in your collection shortly.</p>
           )}
@@ -104,6 +108,43 @@ export function GitHubConnect() {
       )}
 
       {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * "Copy for README": markdown that shows the player's Signature card on their
+ * GitHub profile README, linking back to its public page (free word of mouth).
+ */
+function SignatureReadme({ login, name }: { login: string; name: string }) {
+  const [copied, setCopied] = useState(false);
+  const imagePath = `/api/card-image/${encodeURIComponent(login)}?edition=signature`;
+
+  const copy = async () => {
+    const origin = window.location.origin;
+    const markdown = `[![${name} on GitGacha](${origin}${imagePath})](${origin}/card/${encodeURIComponent(login)})`;
+    await copyText(markdown, 'Copy this into your README:');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+    claimShareBonus();
+  };
+
+  return (
+    <div className="mb-3 flex items-center gap-3 rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={imagePath} alt={`${name} Signature card`} width={60} height={84} className="rounded-md shrink-0" loading="lazy" />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-fuchsia-200">Show it on your GitHub profile</p>
+        <p className="text-[11px] text-slate-400">Paste in your profile README (github.com/{login}/{login}).</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button onClick={copy} className="inline-flex items-center gap-1.5 rounded-lg bg-fuchsia-500/20 px-2.5 py-1 text-xs font-bold text-fuchsia-100 hover:bg-fuchsia-500/30">
+            {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied!' : 'Copy for README'}
+          </button>
+          <a href={`/card/${encodeURIComponent(login)}`} target="_blank" rel="noreferrer" className="text-xs text-slate-400 underline hover:text-white self-center">
+            Public page
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

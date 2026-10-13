@@ -18,6 +18,7 @@ import { EditProfileModal } from '@/components/EditProfileModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { AchievementView } from '@/lib/achievementUtils';
 import { notifyAchievements } from '@/lib/achievementToast';
+import { claimShareBonus, copyText } from '@/components/ShareButtons';
 
 interface FriendInfo {
   id: string;
@@ -194,10 +195,12 @@ export default function ProfilePage() {
     } catch (err) { console.error(err); }
   };
 
+  // Shares the PUBLIC page (/u/<username>, with a preview image): /profile needs a login
   const handleShareProfile = () => {
-    navigator.clipboard.writeText(window.location.href);
+    copyText(`${window.location.origin}/u/${encodeURIComponent(profileUsername)}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    claimShareBonus();
   };
 
   const isOwnProfile = (session?.user as any)?.username === profileUsername || session?.user?.name === profileUsername;

@@ -13,7 +13,7 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 9 migrações, todas aditivas.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 10 migrações, todas aditivas.
 - 152 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
@@ -58,7 +58,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|---|---|
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
-| **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
+| **3** | 📣 Crescimento | ✅ Carta e perfil compartilháveis, README da Signature e bônus de compartilhar (PR #39) · falta: **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 1 rodada, P–M |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
@@ -169,6 +169,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Estados vazios com ação** (`EmptyState`): coleção vazia ou busca sem resultado, forja sem fragmentos, amigos, histórico de batalhas.
 - **Skeleton** na grade de packs enquanto o catálogo carrega.
 
+### Onda 3 — compartilhar (PR #39)
+- **Páginas públicas, sem login:** `/card/<login>` (a carta, título, passiva, quem tem a Signature, convite para o pack grátis) e `/u/<username>` (nível, rating, coleção por raridade, Signature e as 6 melhores cartas). O `/profile/<username>` continua sendo o perfil completo, só para quem está logado.
+- **Imagens de preview** (`next/og`): `opengraph-image` das duas páginas (1200×630) e `/api/card-image/<login>[?edition=signature]` (PNG 400×560 da carta, cache de 1 dia). A carta das imagens é uma versão simplificada do `Card.tsx` em `src/lib/shareCard.tsx`, porque o satori só entende estilos inline.
+- **Compartilhar:** `ShareButtons` (copiar link, X, compartilhamento nativo do celular) nas páginas públicas; "Share" no detalhe da carta na coleção; o compartilhar do perfil agora copia o link público. Sem permissão de área de transferência, o link aparece numa caixa para copiar à mão.
+- **"Copy for README"** da carta Signature no painel do GitHub: markdown com a imagem e o link para a página pública.
+- **Bônus único de compartilhar:** 100 BITS na primeira vez (`SHARE_BONUS`, coluna `shareBonusGranted`, migração `20261020000000_share_bonus`).
+- `Card.tsx` passou a ter `'use client'` (usa hooks e agora aparece em páginas de servidor). `metadataBase` no layout vem de `siteUrl()` (`NEXT_PUBLIC_SITE_URL` › `VERCEL_PROJECT_PRODUCTION_URL` › `NEXTAUTH_URL`).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -269,7 +277,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|---|
 | Presentear cartas | Só cartas ganhas, com taxa em BITS | M |
 | Trocas entre jogadores | Depois do presente; sem valor em dinheiro | G |
-| **Carta e perfil compartilháveis 🅶** | Página pública por carta e por perfil com `og:image` (PNG gerado com `ImageResponse` de `next/og`), botões Compartilhar no X / Copiar link. **"Copiar para o README"** da carta Signature: markdown `[![card](png)](link)` para o README do perfil do GitHub — divulgação grátis. Recompensa única por compartilhar | P |
 | **Indicação de amigos 🅶** | Código = username; os dois ganham; teto de 10 por pessoa; sem autoindicação; indicado só uma vez (chave única). Pagar só quando o indicado **conectar o GitHub** (contas por e-mail facilitam fraude). Dentro de `withUserLock` | P |
 | **Comparar coleção 🅶** | Em Amigos: "cartas que ele tem e você não" — prepara presentes e trocas | P |
 | Feed de atividade de amigos | "Fulano tirou uma Legendary" | M |
