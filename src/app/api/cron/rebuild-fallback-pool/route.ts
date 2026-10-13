@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 import { closeDueSeasons } from '@/lib/seasonService';
+import { maintainSprints } from '@/lib/sprintService';
 
 // Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
 export const maxDuration = 300;
@@ -39,11 +40,17 @@ export async function GET(req: Request) {
       console.error('[Cron] Season close failed:', err);
       return 0;
     });
+    // Sprints too: pays the ones that ended and opens today's (and this week's)
+    const sprintsClosed = await maintainSprints().catch((err: unknown) => {
+      console.error('[Cron] Sprint close failed:', err);
+      return 0;
+    });
     const results = await rebuildFallbackPools();
 
     return NextResponse.json({
       success: true,
       seasonsClosed,
+      sprintsClosed,
       report: results,
       timestamp: new Date().toISOString(),
     });
