@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { User, Warning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { REFERRAL_BONUS, REFERRAL_COOKIE } from '@/lib/referral';
 
 export function SetupProfileModal() {
   const { data: session, status, update } = useSession();
@@ -14,6 +15,12 @@ export function SetupProfileModal() {
   const isTargeted = status === 'authenticated' && session?.user && session.user.hasSetupProfile === false;
   
   const [username, setUsername] = useState('');
+  // Invite code from the invite link (?ref=) remembered in a cookie; editable
+  const [referralCode, setReferralCode] = useState(() => {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie.match(new RegExp(`(?:^|; )${REFERRAL_COOKIE}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : '';
+  });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,7 +46,7 @@ export function SetupProfileModal() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: username.trim() }),
+        body: JSON.stringify({ username: username.trim(), referralCode: referralCode.trim() || undefined }),
       });
 
       const data = await res.json();
@@ -111,6 +118,24 @@ export function SetupProfileModal() {
               />
               <p className="text-xs text-slate-500 mt-2">
                 Only letters, numbers, and underscores. (3-20 characters)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-bold mb-2 text-sm" htmlFor="referral">
+                Invited by <span className="font-normal text-slate-500">(optional)</span>
+              </label>
+              <input
+                id="referral"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 font-medium text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                placeholder="A friend's nickname"
+                autoComplete="off"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                You both get {REFERRAL_BONUS} BITS when you connect your GitHub account.
               </p>
             </div>
 

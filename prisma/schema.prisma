@@ -35,6 +35,10 @@ model User {
   githubBonusGranted Boolean @default(false)
   // One-time reward for sharing a card or profile link (SHARE_BONUS)
   shareBonusGranted  Boolean @default(false)
+  // Referral: the player whose invite link this account signed up with (set once, new players only),
+  // and whether the referral BITS were paid (when this account connected GitHub)
+  referredById       String?
+  referralRewardPaid Boolean @default(false)
   // Consecutive daily-reward claims (resets when a day is skipped); drives the 7-day login calendar
   loginStreak        Int      @default(0)
   // Packs opened since the last Legendary card (pity counter)
@@ -53,6 +57,8 @@ model User {
   battlesAsChallenger Battle[] @relation("Challenger")
   battlesAsDefender   Battle[] @relation("Defender")
   achievements        UserAchievement[]
+
+  @@index([referredById])
 }
 
 model Account {

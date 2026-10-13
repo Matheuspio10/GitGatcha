@@ -8,6 +8,7 @@ import { LevelUpModal } from "@/components/LevelUpModal";
 import { SetupProfileModal } from "@/components/SetupProfileModal";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { ReferralCapture } from "@/components/ReferralCapture";
 import { buildEarnGuide } from "@/lib/earnGuide";
 import { getPackById } from "@/lib/packDefinitions";
 import { STARTER_PACK_ID } from "@/lib/onboarding";
@@ -46,6 +47,7 @@ export default async function RootLayout({
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
           <SetupProfileModal />
+          {!user && <ReferralCapture />}
           {user?.onboarding && !user.onboarding.welcomeSeen && (
             <WelcomeModal
               username={user.username}

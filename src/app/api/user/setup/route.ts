@@ -6,6 +6,8 @@ import { withUserLock } from '@/lib/userLock';
 import { recordGuestCards, startOnboarding } from '@/lib/onboardingService';
 import { cookies } from 'next/headers';
 import { GUEST_COOKIE, claimGuestPull } from '@/lib/guestPack';
+import { REFERRAL_COOKIE } from '@/lib/referral';
+import { attachReferrer, payReferralSafe } from '@/lib/referralService';
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { username } = await req.json();
+    const { username, referralCode } = await req.json();
 
     if (!username || typeof username !== 'string' || username.length < 3 || username.length > 20) {
       return NextResponse.json({ error: 'Username must be between 3 and 20 characters.' }, { status: 400 });
@@ -45,7 +47,10 @@ export async function POST(req: Request) {
         where: { id: userId },
         data: { username: username, hasSetupProfile: true }
       });
-      return before?.hasSetupProfile === false ? startOnboarding(tx, userId) : false;
+      if (before?.hasSetupProfile !== false) return false;
+      // New player: remember who invited them (code typed in the form, or the invite link's cookie)
+      await attachReferrer(tx, userId, referralCode || (await cookies()).get(REFERRAL_COOKIE)?.value);
+      return startOnboarding(tx, userId);
     });
 
     // A visitor's free pack (opened on /try before signing up) joins the new account
@@ -55,6 +60,9 @@ export async function POST(req: Request) {
       guestCards = await claimGuestPull(userId, cookieStore.get(GUEST_COOKIE)?.value);
       cookieStore.delete(GUEST_COOKIE);
       if (guestCards > 0) await recordGuestCards(userId, guestCards);
+      cookieStore.delete(REFERRAL_COOKIE);
+      // Signed up with GitHub: the referral can be paid right away
+      await payReferralSafe(userId);
     }
 
     return NextResponse.json({ success: true, username, starterPack, guestCards });
