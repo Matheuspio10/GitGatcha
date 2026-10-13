@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Shield, Sword, Heart } from '@phosphor-icons/react';
 import clsx from 'clsx';

@@ -33,6 +33,8 @@ model User {
   hasSetupProfile Boolean @default(false)
   // One-time reward for connecting GitHub (BITS + the player's own Signature card)
   githubBonusGranted Boolean @default(false)
+  // One-time reward for sharing a card or profile link (SHARE_BONUS)
+  shareBonusGranted  Boolean @default(false)
   // Consecutive daily-reward claims (resets when a day is skipped); drives the 7-day login calendar
   loginStreak        Int      @default(0)
   // Packs opened since the last Legendary card (pity counter)

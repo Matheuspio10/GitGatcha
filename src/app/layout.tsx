@@ -11,6 +11,7 @@ import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { buildEarnGuide } from "@/lib/earnGuide";
 import { getPackById } from "@/lib/packDefinitions";
 import { STARTER_PACK_ID } from "@/lib/onboarding";
+import { siteUrl } from "@/lib/siteUrl";
 
 // Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
@@ -19,6 +20,8 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-jet
 const caveat = Caveat({ subsets: ["latin"], weight: ["700"], variable: '--font-caveat' });
 
 export const metadata: Metadata = {
+  // Absolute URLs for the og:image of the public card and player pages
+  metadataBase: new URL(siteUrl()),
   title: "GitGacha - Dev Card Game",
   description: "Collect developers, build your deck, rule the repository.",
 };
