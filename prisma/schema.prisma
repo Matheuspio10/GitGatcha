@@ -37,6 +37,8 @@ model User {
   loginStreak        Int      @default(0)
   // Packs opened since the last Legendary card (pity counter)
   packsSinceLegendary Int     @default(0)
+  // New-player onboarding (starter pack, welcome screen, "Getting started" checklist); null for players from before it existed
+  onboarding         Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

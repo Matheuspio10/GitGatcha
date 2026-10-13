@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import CollectionClient from './CollectionClient';
+import { OnboardingStepMarker } from '@/components/OnboardingStepMarker';
 
 export default async function CollectionPage() {
   const user = await getCurrentUser();
@@ -41,5 +42,13 @@ export default async function CollectionPage() {
     showcaseOrder: uc.showcaseOrder,
   }));
 
-  return <CollectionClient initialCards={cardsList} />;
+  // New players: visiting the collection completes a "Getting started" step
+  const markCollection = !!user.onboarding && !user.onboarding.collectionSeen;
+
+  return (
+    <>
+      {markCollection && <OnboardingStepMarker action="collection-seen" />}
+      <CollectionClient initialCards={cardsList} />
+    </>
+  );
 }
