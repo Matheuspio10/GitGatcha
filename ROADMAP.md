@@ -37,6 +37,7 @@
 | Comando | Para quê |
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
+| `node scripts/lint-budget.mjs` | Lint com orçamento de erros (o mesmo do CI) |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
@@ -151,6 +152,11 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
+### CI e backup (PR #35)
+- **CI** (`.github/workflows/ci.yml`): em todo PR e push na `main`, roda `tsc`, lint, `npm test` e `next build`, sem banco.
+- **Orçamento de lint** (`scripts/lint-budget.mjs`): reprova só se o número de erros passar do orçamento. Baixar o número sempre que cair.
+- **Backup diário** 🅶 (`.github/workflows/backup.yml`): `pg_dump` da produção, gzip e criptografia com age antes de tocar o disco; artifact por 30 dias. Configuração e restauração em [`docs/backup.md`](docs/backup.md).
+
 ---
 
 ## 📋 Backlog pendente
@@ -205,8 +211,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.8 Engenharia
 | Item | Esforço |
 |---|---|
-| **CI no GitHub Actions:** `tsc`, `eslint`, testes e `next build` | P |
-| **Backup diário do banco 🅶:** workflow com `pg_dump` + gzip, retenção de 30 dias. A janela de restauração do Neon no plano grátis é curta. ⚠️ Não usar *artifacts* do Actions se o repo for público (o dump tem e-mails e hashes): mandar para armazenamento privado ou criptografar com chave em secret | P |
 | Testes de concorrência (compra, abertura, daily, desafio) contra a branch dev | M |
 | Mover JSON (inventário, notificações, fragmentos) para tabelas próprias | G |
 | Índices restantes: `Battle(defenderId,status)`, `Battle(challengerId)`, `Friendship(friendId,status)`, `Card(rarity,primaryLanguage)` | P |
