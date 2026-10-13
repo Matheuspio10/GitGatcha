@@ -6,6 +6,8 @@
  * them as the fallback when no mouse pointer is over them, so a grid of 100
  * cards costs one listener and zero React re-renders.
  * Skipped entirely with prefers-reduced-motion or on non-touch devices.
+ * iOS 13+ only sends the events after `DeviceOrientationEvent.requestPermission()`,
+ * which must run inside a user gesture: it is asked on the first tap.
  */
 
 import { useEffect } from 'react';
@@ -13,6 +15,21 @@ import { useEffect } from 'react';
 let subscribers = 0;
 let frame = 0;
 let pending: { x: number; y: number } | null = null;
+let permissionAsked = false;
+
+type OrientationEventWithPermission = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<'granted' | 'denied'>;
+};
+
+/** iOS: asks for motion access on the first tap (once per page load; the system remembers the answer). */
+function askPermissionOnFirstTap() {
+  const requestPermission = (DeviceOrientationEvent as OrientationEventWithPermission).requestPermission;
+  if (permissionAsked || typeof requestPermission !== 'function') return;
+  permissionAsked = true;
+  window.addEventListener('touchend', () => {
+    requestPermission.call(DeviceOrientationEvent).catch(() => { /* denied or not in a gesture: no tilt */ });
+  }, { once: true });
+}
 
 function flush() {
   frame = 0;
@@ -46,7 +63,10 @@ export function useHoloGyro(enabled: boolean) {
   useEffect(() => {
     if (!enabled || !canUseGyro()) return;
     subscribers += 1;
-    if (subscribers === 1) window.addEventListener('deviceorientation', onOrientation);
+    if (subscribers === 1) {
+      window.addEventListener('deviceorientation', onOrientation);
+      askPermissionOnFirstTap();
+    }
     return () => {
       subscribers -= 1;
       if (subscribers === 0) {

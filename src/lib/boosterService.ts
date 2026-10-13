@@ -48,6 +48,13 @@ const FRAGMENTS_PER_RARITY: Record<string, number> = {
   'Legendary': 80
 };
 
+/** No card could be drawn or granted. Thrown before anything reached the player. */
+export class EmptyPackError extends Error {
+  constructor() {
+    super('No cards could be drawn right now');
+  }
+}
+
 export async function openBoosterPack(userId: string, packId?: string) {
   const pityTicket: PityTicket = { consumed: false, settled: false };
   try {
@@ -164,6 +171,10 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
       console.error(`[Booster] Could not grant ${dev.githubUsername}:`, (err as Error).message);
     }
   }
+  // Nothing reached the player (every draw or grant failed): fail the opening so
+  // the caller gives the pack back and a consumed pity stays due
+  if (newCards.length === 0) throw new EmptyPackError();
+
   let packsSinceLegendary: number | null = null;
   if (countsForPity) {
     // Final card rarity (star bonus included) decides whether the pity resets

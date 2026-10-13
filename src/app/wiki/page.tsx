@@ -445,7 +445,7 @@ export default function WikiPage() {
                 <h4 className="text-white font-bold mt-6 mb-2">Order of Operations</h4>
                 <ol>
                   <li><strong>Before the battle:</strong> Loyalty bonuses, then Stamina fatigue penalties, modify base stats. Team Synergies are applied.</li>
-                  <li><strong>On entry:</strong> First Strike (Go) and Iron Shield (Rust) activate when a card enters the field.</li>
+                  <li><strong>On entry:</strong> Iron Shield (Rust) goes up first, then every First Strike (Go) lands at the same time, so it makes no difference who challenged whom. The shield lasts until the end of that turn.</li>
                   <li><strong>Type Advantages:</strong> Multipliers are checked between active combatants.</li>
                   <li><strong>Damage Calculation:</strong> Both cards attack each other at the same time: <code>ATK × {DEF_MITIGATION_K} / ({DEF_MITIGATION_K} + DEF)</code>, modified by the type multiplier, Momentum and the attacker&apos;s passive (Undefined Behavior, Last Stand, JIT Warm-up, Cron Job, Critical Hit, Raw Power, Double Callback).</li>
                   <li><strong>Defense Checks:</strong> Type Safety, Graceful Degradation and Rust Synergy reduce the hit; Dodge and Iron Shield cancel it; Null Safety caps it.</li>
@@ -617,7 +617,7 @@ export default function WikiPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {[
                   { name: 'Mixed Team Synergy', req: '3 different types', effect: `+${pct(SYNERGY.mixedTeamAtk)} ATK to ALL cards on the team.` },
-                  { name: 'Python Synergy', req: '2 or 3 Python / Jupyter Notebook cards', effect: `Teammates regenerate HP equal to ${pct(SYNERGY.pythonRegenAtkPct)} of their ATK each turn (${pct(2 * SYNERGY.pythonRegenAtkPct)} with 3; Python cards keep their own rate).` },
+                  { name: 'Python Synergy', req: '2 or 3 Python / Jupyter Notebook cards', effect: `Teammates regenerate HP equal to ${pct(SYNERGY.pythonRegenAtkPct)} of their ATK each turn (${pct(2 * SYNERGY.pythonRegenAtkPct)} with 3). Python and Jupyter cards heal at whichever rate is higher, theirs or the synergy's.` },
                   { name: 'Rust Synergy', req: '2 or 3 Rust cards', effect: `All 3 cards take ${pct(SYNERGY.rustDamageReduction)} less damage (${pct(2 * SYNERGY.rustDamageReduction)} with 3 Rust cards).` },
                   { name: 'JS Synergy', req: '2 or 3 JS cards', effect: `Non-JS teammates get a ${pct(SYNERGY.jsCallbackChance)} chance to Double Callback each turn (${pct(2 * SYNERGY.jsCallbackChance)} with 3; JS cards keep their own chance).` },
                   { name: 'Go Synergy', req: '2 or 3 Go cards', effect: 'All 3 cards gain the Go First Strike ability.' },

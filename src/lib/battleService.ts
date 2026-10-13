@@ -173,37 +173,50 @@ export async function resolveRandomBattle(
   const rewards = calculateRewards(playerWon, leagueMode);
   const battleStats = buildBattleStats(battleResult, cTeam);
 
-  // Create battle record
-  const battle = await prisma.battle.create({
-    data: {
-      challengerId,
-      defenderId: null,
-      challengerTeam: cTeam as any, // initial state
-      defenderTeam: dTeam as any, // initial state
-      log: battleResult.log as any, // the turn-by-turn history
-      status: 'COMPLETED',
-      isRandom: true,
-      leagueMode,
-      battleStats: battleStats as any,
-      winnerId: playerWon ? challengerId : '__SYSTEM__',
-      rewardBits: rewards.bits,
-      completedAt: new Date(),
+  // The battle record and its BITS are saved together: if this throws, nothing
+  // happened and the caller can refund the entry fee. Battles against the
+  // computer never change the rating (rating is a PvP-only ELO, see ratings.ts).
+  const battle = await prisma.$transaction(async (tx) => {
+    const created = await tx.battle.create({
+      data: {
+        challengerId,
+        defenderId: null,
+        challengerTeam: cTeam as any, // initial state
+        defenderTeam: dTeam as any, // initial state
+        log: battleResult.log as any, // the turn-by-turn history
+        status: 'COMPLETED',
+        isRandom: true,
+        leagueMode,
+        battleStats: battleStats as any,
+        winnerId: playerWon ? challengerId : '__SYSTEM__',
+        rewardBits: rewards.bits,
+        completedAt: new Date(),
+      }
+    });
+    if (rewards.bits > 0) {
+      await tx.user.update({
+        where: { id: challengerId },
+        data: { currency: { increment: rewards.bits } },
+      });
     }
+    return created;
   });
 
-  // Grant rewards. Battles against the computer never change the rating:
-  // rating is a PvP-only ELO (see ratings.ts).
-  if (rewards.bits > 0) {
-    await prisma.user.update({
-      where: { id: challengerId },
-      data: { currency: { increment: rewards.bits } },
-    });
-  }
+  // From here on the battle exists and is paid: the follow-up steps are logged,
+  // never thrown, so the player still sees the result (and keeps the fee spent).
+  const afterBattle = async <T>(label: string, fallback: T, fn: () => Promise<T>): Promise<T> => {
+    try {
+      return await fn();
+    } catch (err) {
+      console.error(`[Battle ${battle.id}] ${label} failed:`, (err as Error).message);
+      return fallback;
+    }
+  };
 
-  const xpResult = await grantXP(challengerId, rewards.xp);
+  const xpResult = await afterBattle('XP', null, () => grantXP(challengerId, rewards.xp));
 
   // Spend stamina from the cards' current value (floor 0)
-  await spendCardStamina(challengerTeamCards.map((c) => c.id as string));
+  await afterBattle('Stamina', undefined, () => spendCardStamina(challengerTeamCards.map((c) => c.id as string)));
 
   // --- Loyalty Processing for challenger cards ---
   const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
@@ -219,7 +232,7 @@ export async function resolveRandomBattle(
     };
   });
 
-  const unlocksMap = await processPostBattleCardStats(cardsStatsToProcess);
+  const unlocksMap = await afterBattle('Loyalty', new Map<string, MilestoneUnlock[]>(), () => processPostBattleCardStats(cardsStatsToProcess));
 
   for (const c of cTeam) {
     const unlocks = unlocksMap.get(c.id);

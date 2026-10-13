@@ -105,3 +105,47 @@ describe('combat formula and passives', () => {
     assert.strictEqual(zeroed('Legendary'), false);
   });
 });
+
+describe('entry passives (Go First Strike × Rust Iron Shield)', () => {
+  const go = (id: string) => card(id, { type: 'Go', primaryLanguage: 'Go' });
+  const rust = (id: string) => card(id, { type: 'Rust', primaryLanguage: 'Rust' });
+  const filler = (id: string) => card(id, { atk: 1, hp: 1000, maxHp: 1000 });
+  const firstTurn = (log: ReturnType<typeof resolve3v3Battle>['log']) =>
+    log.find(t => t.events.some(e => e.type === 'enter_field'))!;
+
+  test('the shield blocks the First Strike whichever side the Rust card is on', () => {
+    const asDefender = firstTurn(resolve3v3Battle([go('g'), filler('c2'), filler('c3')], [rust('r'), filler('d2'), filler('d3')]).log);
+    const asChallenger = firstTurn(resolve3v3Battle([rust('r'), filler('c2'), filler('c3')], [go('g'), filler('d2'), filler('d3')]).log);
+    assert.strictEqual(asDefender.dHpEnd, 100);
+    assert.strictEqual(asChallenger.cHpEnd, 100);
+    for (const turn of [asDefender, asChallenger]) {
+      assert.ok(turn.events.some(e => e.message === 'Iron Shield blocked First Strike!'));
+    }
+  });
+
+  test('two Go cards entering together hit each other at the same time', () => {
+    const result = resolve3v3Battle(
+      [card('g1', { type: 'Go', atk: 200 }), filler('c2'), filler('c3')],
+      [card('g2', { type: 'Go', atk: 200 }), filler('d2'), filler('d3')],
+    );
+    const turn = firstTurn(result.log);
+    assert.strictEqual(turn.cHpEnd, 0);
+    assert.strictEqual(turn.dHpEnd, 0);
+  });
+
+  test('the shield only lasts for the turn the Rust card entered on', () => {
+    const result = resolve3v3Battle([rust('r'), filler('c2'), filler('c3')], [card('d1', { atk: 30 }), filler('d2'), filler('d3')]);
+    const rustTurns = result.log.filter(t => t.cCardId === 'r');
+    assert.strictEqual(rustTurns[0].cHpEnd, 100);
+    assert.ok(rustTurns[1].cHpEnd < 100);
+  });
+});
+
+describe('Python Synergy', () => {
+  test('a team of 3 Python cards heals at the synergy rate when it beats their own', () => {
+    const py = (id: string) => card(id, { type: 'Python', primaryLanguage: 'Python', hp: 1000, maxHp: 1000 });
+    const result = resolve3v3Battle([py('p1'), py('p2'), py('p3')], [card('d1', { atk: 30 }), card('d2'), card('d3')]);
+    // 12% (2 × 6% with 3 cards) of 50 ATK, above Python's own 10%
+    assert.ok(result.log.some(t => t.events.some(e => e.message === '[Python] Regenerated 6 HP.')));
+  });
+});

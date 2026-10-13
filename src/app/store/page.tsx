@@ -15,7 +15,7 @@ export default async function StorePage() {
     <StoreClient
       userCurrency={user.currency}
       initialMissions={missions}
-      missionsResetAt={nextMissionReset().toISOString()}
+      missionsResetInMs={nextMissionReset().getTime() - Date.now()}
     />
   );
 }

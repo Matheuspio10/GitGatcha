@@ -238,12 +238,15 @@ function requiredFor(um: UserMissionInfo): number {
 export default function StoreClient({ 
   userCurrency,
   initialMissions,
-  missionsResetAt,
+  missionsResetInMs,
 }: { 
   userCurrency: number;
   initialMissions: UserMissionInfo[];
-  /** ISO time of the next daily mission refresh (midnight UTC). */
-  missionsResetAt?: string;
+  /**
+   * Time left until the next daily mission refresh (midnight UTC), measured on
+   * the server: counting down from it works even when the device clock is off.
+   */
+  missionsResetInMs?: number;
 }) {
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState(userCurrency);
@@ -342,8 +345,8 @@ export default function StoreClient({
 
   // Countdown to the next daily missions; reloads them once the day rolls over
   useEffect(() => {
-    if (!missionsResetAt) return;
-    const resetAt = new Date(missionsResetAt).getTime();
+    if (missionsResetInMs === undefined) return;
+    const resetAt = Date.now() + missionsResetInMs;
     let refreshed = false;
     const tick = () => {
       const remaining = resetAt - Date.now();
@@ -356,7 +359,7 @@ export default function StoreClient({
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [missionsResetAt, router]);
+  }, [missionsResetInMs, router]);
 
   const handleClaimDaily = async () => {
     setClaimingDaily(true);

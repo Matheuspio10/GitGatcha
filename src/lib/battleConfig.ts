@@ -201,7 +201,7 @@ export const PASSIVE = {
 
 export const SYNERGY = {
   mixedTeamAtk: 0.08,
-  pythonRegenAtkPct: 0.06, // non-Python teammates (12% with 3 Python cards)
+  pythonRegenAtkPct: 0.06, // 12% with 3 Python cards; each card heals at the higher of this and its own rate
   rustDamageReduction: 0.10, // 20% with 3 Rust cards
   jsCallbackChance: 0.10, // non-JS teammates (20% with 3 JS cards)
 } as const;

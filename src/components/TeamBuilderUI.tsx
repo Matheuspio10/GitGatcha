@@ -177,7 +177,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     if (type === 'Python') {
       results.push({
         label: `${count}× Python`,
-        description: `Non-Python teammates heal ${pct(SYNERGY.pythonRegenAtkPct * mult)} of their ATK per turn (Python cards keep their own ${pct(PASSIVE.python.regenAtkPct)}; Jupyter counts as Python)`,
+        description: `Every card heals ${pct(SYNERGY.pythonRegenAtkPct * mult)} of its ATK per turn (Python cards use their own ${pct(PASSIVE.python.regenAtkPct)} if higher; Jupyter counts as Python)`,
         color: 'text-cyan-400',
         icon: '🐍',
         active: true,
