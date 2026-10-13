@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { addBits } from './bitsLedger';
 import { withUserLock } from './userLock';
 import {
   achievementKey,
@@ -92,7 +93,7 @@ export async function syncAchievements(userId: string): Promise<UnlockedAchievem
     }
     const total = unlocked.reduce((sum, a) => sum + a.reward, 0);
     if (total > 0) {
-      await tx.user.update({ where: { id: userId }, data: { currency: { increment: total } } });
+      await addBits(userId, total, 'achievement', { tx, detail: unlocked.map(a => `${a.name} ${a.tierName}`).join(', ') });
     }
     return unlocked;
   });

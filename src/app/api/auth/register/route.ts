@@ -48,6 +48,7 @@ export async function POST(req: Request) {
         username: await availableUsername(email.split('@')[0]),
         password: hashedPassword,
         currency: STARTING_BITS,
+        bitsTransactions: { create: { amount: STARTING_BITS, balanceAfter: STARTING_BITS, reason: 'starting_bits' } },
         xp: 0,
         level: 1
       }

@@ -240,6 +240,13 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 <div className="text-2xl font-black text-white leading-none">{currency.toLocaleString('en-US')}</div>
                 <div className="text-xs uppercase tracking-wider text-yellow-500/80 mt-1">Current balance</div>
               </div>
+              <Link
+                href="/bits"
+                onClick={() => setShowBitsModal(false)}
+                className="ml-auto text-xs font-bold text-indigo-300 hover:text-indigo-200 whitespace-nowrap"
+              >
+                History &rarr;
+              </Link>
             </div>
 
             <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">How to earn BITS</h3>

@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { addBits } from './bitsLedger';
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { resolve3v3Battle, BattleCard, BattleResult, getCardType } from './battleResolver';
@@ -195,12 +196,7 @@ export async function resolveRandomBattle(
         completedAt: new Date(),
       }
     });
-    if (rewards.bits > 0) {
-      await tx.user.update({
-        where: { id: challengerId },
-        data: { currency: { increment: rewards.bits } },
-      });
-    }
+    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: `${LEAGUES[isLeagueMode(leagueMode) ? leagueMode : 'OPEN'].label}${playerWon ? ' win' : ' loss'}` });
     return created;
   });
 
@@ -359,21 +355,11 @@ async function finishFriendBattle(
   });
 
   // Grant rewards to both players
-  await prisma.user.update({
-    where: { id: battle.challengerId },
-    data: {
-      currency: { increment: challengerRewards.bits },
-    },
-  });
+  await addBits(battle.challengerId, challengerRewards.bits, 'battle_reward', { detail: `Friend challenge ${challengerWon ? 'win' : 'loss'}` });
   const challengerXpResult = await grantXP(battle.challengerId, challengerRewards.xp);
 
   if (battle.defenderId) {
-    await prisma.user.update({
-      where: { id: battle.defenderId },
-      data: {
-        currency: { increment: defenderRewards.bits },
-      },
-    });
+    await addBits(battle.defenderId, defenderRewards.bits, 'battle_reward', { detail: `Friend challenge ${challengerWon ? 'loss' : 'win'}` });
 
     await grantXP(battle.defenderId, defenderRewards.xp);
 

@@ -1,4 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
+import { STARTING_BITS } from '@/lib/onboarding';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -132,6 +133,14 @@ export const authOptions: NextAuthOptions = {
     }
   },
   events: {
+    // Google / GitHub sign-ups get STARTING_BITS from the schema default: record it in the history
+    async createUser({ user }) {
+      try {
+        await prisma.bitsTransaction.create({ data: { userId: user.id, amount: STARTING_BITS, balanceAfter: STARTING_BITS, reason: 'starting_bits' } });
+      } catch (err) {
+        console.error('[Auth] Could not record the starting BITS:', (err as Error).message);
+      }
+    },
     // Fires when a GitHub account gets attached to a player (sign-up with GitHub or "Connect GitHub")
     async linkAccount({ user, account }) {
       if (account.provider !== 'github') return;

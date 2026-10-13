@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { addBits, spendBits } from '@/lib/bitsLedger';
 import { prisma } from '@/lib/prisma';
 import { resolveRandomBattle, getBalancedPowerCap, NoOpponentError } from '@/lib/battleService';
 import { LEAGUES, isLeagueMode } from '@/lib/battleConfig';
@@ -109,12 +110,9 @@ export async function POST(req: Request) {
       if (userObj.currency < entryFee) {
         return NextResponse.json({ error: `Insufficient BITS for ${league.label} entry fee (${entryFee} required)` }, { status: 400 });
       }
-      // Conditional decrement: parallel requests can't push the balance below zero
-      const charged = await prisma.user.updateMany({
-        where: { id: userId, currency: { gte: entryFee } },
-        data: { currency: { decrement: entryFee } }
-      });
-      if (charged.count === 0) {
+      // Conditional spend: parallel requests can't push the balance below zero
+      const charged = await spendBits(userId, entryFee, 'league_entry', { detail: league.label });
+      if (charged === null) {
         return NextResponse.json({ error: `Insufficient BITS for ${league.label} entry fee (${entryFee} required)` }, { status: 400 });
       }
     }
@@ -126,7 +124,7 @@ export async function POST(req: Request) {
       // resolveRandomBattle only throws before the battle is saved (no opponent,
       // database error…): the battle never happened, so the entry fee goes back
       if (entryFee > 0) {
-        await prisma.user.update({ where: { id: userId }, data: { currency: { increment: entryFee } } });
+        await addBits(userId, entryFee, 'league_refund', { detail: league.label });
       }
       throw err;
     }

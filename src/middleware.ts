@@ -11,5 +11,6 @@ export const config = {
     "/profile/:path*",
     "/inventory/:path*",
     "/forge/:path*",
+    "/bits/:path*",
   ]
 }

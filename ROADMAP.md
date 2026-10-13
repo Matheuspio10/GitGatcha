@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 12 migrações, todas aditivas.
-- 165 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 13 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 167 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -30,7 +30,7 @@
 ### Regras de ouro do projeto
 1. **Sorteio justo é o núcleo do jogo.** Dentro do filtro do booster, todo dev da raridade sorteada (com ≥1 repositório público) tem a **mesma chance**, inclusive o próprio jogador. Nunca trocar por um pool curado. Os testes de qui-quadrado em `src/lib/devSampler.test.ts` precisam continuar passando.
 2. **A raridade precisa poder virar filtro de busca do GitHub.** Hoje ela vem da faixa de seguidores (0–49 / 50–199 / 200–999 / 1.000–4.999 / 5.000+), com +1 nível por estrelas (1k/3k/10k/30k). Sem isso o sorteio uniforme não funciona.
-3. **Moeda e campos JSON do usuário só mudam dentro de `withUserLock`** (`src/lib/userLock.ts`). Nada lento, como chamadas ao GitHub, dentro da trava.
+3. **Moeda e campos JSON do usuário só mudam dentro de `withUserLock`** (`src/lib/userLock.ts`). Nada lento, como chamadas ao GitHub, dentro da trava. **BITS só mudam por `addBits` / `spendBits`** (`src/lib/bitsLedger.ts`), que gravam o histórico na mesma transação; um teste falha se outro arquivo mexer em `currency` direto.
 4. **Ao mudar a fórmula de status, os multiplicadores ou as regras do pool**, subir `STAT_VERSION` (`src/lib/cardStats.ts`) e rodar `scripts/recalculate-cards.ts --apply` logo depois do deploy.
 5. **Escrita em produção só com aprovação do dono** e sempre com `--env-file=.env.prod`. Migrações devem ser aditivas; o deploy de produção as aplica.
 6. Números de jogo vivem em `src/lib/rarity.ts`, `battleConfig.ts`, `cardStats.ts`, `loginCalendar.ts`, `pity.ts` e `achievementUtils.ts`. A **wiki é gerada deles**; não duplicar números na UI.
@@ -40,6 +40,7 @@
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
 | `node scripts/lint-budget.mjs` | Lint com orçamento de erros (o mesmo do CI) |
+| `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
@@ -59,7 +60,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
-| **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42) · falta: **histórico de BITS** (2.4) | 1 rodada, M |
+| **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
@@ -198,6 +199,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Troca diária:** 1 missão diária não concluída pode ser trocada por dia (`User.missionRerollAt`, `/api/missions/reroll`).
 - A seção de missões da loja virou `MissionsPanel` (hoje · esta semana · dev). As missões continuam pagando sozinhas ao completar; só a de dev tem botão, porque precisa consultar o GitHub.
 
+### Onda 4 — histórico de BITS (PR #43)
+- **`BitsTransaction`** (migração `20261023000000_bits_ledger`): uma linha por mudança de saldo, com valor (com sinal), saldo depois, motivo (`bitsReasons.ts`) e detalhe. A migração grava o **saldo de abertura** de cada jogador, então a soma do histórico sempre bate com o saldo.
+- **`addBits` / `spendBits`** (`src/lib/bitsLedger.ts`) são a única forma de mudar BITS: saldo e linha na mesma transação; `spendBits` é um UPDATE condicional (`currency >= valor`) com `RETURNING`. Os 16 pontos que mexiam em BITS foram convertidos (compra, forja, stamina, taxa e reembolso de liga, batalhas, missões, daily, level up, conquistas, GitHub, compartilhar, onboarding, indicação, BITS iniciais — o cadastro por OAuth é registrado no evento `createUser`).
+- **Guarda:** `bitsLedger.test.ts` falha se algum arquivo além do ledger escrever em `currency`.
+- **Tela `/bits`** (link "History" no painel de BITS do menu): cada ganho e gasto com motivo, detalhe, valor e saldo, 50 por página.
+- **`scripts/check-bits-ledger.ts`**: confere, só lendo, se o histórico de cada jogador soma o saldo.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -221,7 +229,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Item | Esforço |
 |---|---|
 | Níveis desbloqueiam algo além de packs (modos, molduras, títulos) | M |
-| Histórico de BITS (tabela de transações), base para auditoria e pagamento | M |
 
 ### 2.5 UX geral
 | Item | Esforço |
@@ -311,7 +318,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 
 | Item | Esforço |
 |---|---|
-| Pré-requisito: histórico de transações de BITS | M |
+| ~~Pré-requisito: histórico de transações de BITS~~ ✅ (PR #43) | — |
 | Pix (Mercado Pago / Pagar.me) ou Stripe, com webhook idempotente | M |
 | Vender cosméticos, passe de temporada premium e itens diretos — não packs aleatórios | M |
 | Passe de temporada (trilha grátis + premium), junto com o sistema de elos | G |
