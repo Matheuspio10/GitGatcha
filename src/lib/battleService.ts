@@ -12,6 +12,8 @@ import {
   LEAGUES,
   getLeagueRewards,
   isLeagueMode,
+  upsetBonusPct,
+  withUpsetBonus,
 } from './battleConfig';
 import { calculateNewRatings } from './ratings';
 import { pickOpponentTeam, OpponentCandidate } from './opponentPicker';
@@ -170,7 +172,7 @@ export async function resolveRandomBattle(
   const battleResult = resolve3v3Battle(cTeam, dTeam);
 
   const playerWon = battleResult.winner === 'CHALLENGER';
-  const rewards = calculateRewards(playerWon, leagueMode);
+  const rewards = withUpsetBonus(calculateRewards(playerWon, leagueMode), playerWon ? upsetBonusPct(cTeam, dTeam) : 0);
   const battleStats = buildBattleStats(battleResult, cTeam);
 
   // The battle record and its BITS are saved together: if this throws, nothing
@@ -333,9 +335,10 @@ async function finishFriendBattle(
 
   const winnerId = challengerWon ? battle.challengerId : battle.defenderId;
 
-  // Rewards for both players (friend battles use a fixed league table)
-  const challengerRewards = calculateRewards(challengerWon, FRIEND_BATTLE_LEAGUE);
-  const defenderRewards = calculateRewards(!challengerWon, FRIEND_BATTLE_LEAGUE);
+  // Rewards for both players (friend battles use a fixed league table); the winner
+  // gets the upset bonus when their team was the weaker one
+  const challengerRewards = withUpsetBonus(calculateRewards(challengerWon, FRIEND_BATTLE_LEAGUE), challengerWon ? upsetBonusPct(cTeam, dTeam) : 0);
+  const defenderRewards = withUpsetBonus(calculateRewards(!challengerWon, FRIEND_BATTLE_LEAGUE), challengerWon ? 0 : upsetBonusPct(dTeam, cTeam));
 
   // Update battle status
   const updatedBattle = await prisma.battle.update({

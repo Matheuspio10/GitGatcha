@@ -1,6 +1,6 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { LEAGUES, LEAGUE_MODES, getLeagueRewards, COMBAT_LANGUAGES, cardPassive } from './battleConfig';
+import { LEAGUES, LEAGUE_MODES, getLeagueRewards, COMBAT_LANGUAGES, cardPassive, upsetBonusPct, withUpsetBonus } from './battleConfig';
 
 test('every league pays more on a win than it costs to enter', () => {
   for (const mode of LEAGUE_MODES) {
@@ -55,4 +55,25 @@ test('every combat language prints a short passive on the card', () => {
 test('card passive chances follow the rarity multiplier', () => {
   assert.match(cardPassive('JavaScript', 'Common').desc, /^27% /);
   assert.match(cardPassive('JavaScript', 'Legendary').desc, /^33% /);
+});
+
+describe('upset bonus', () => {
+  const team = (...rarities: string[]) => rarities.map(rarity => ({ rarity }));
+
+  test('+25% per tier of average rarity the winner was behind, up to +100%', () => {
+    assert.strictEqual(upsetBonusPct(team('Common', 'Common', 'Common'), team('Uncommon', 'Uncommon', 'Uncommon')), 0.25);
+    assert.strictEqual(upsetBonusPct(team('Common', 'Common', 'Common'), team('Common', 'Common', 'Uncommon')), 0.08);
+    assert.strictEqual(upsetBonusPct(team('Common', 'Common', 'Common'), team('Rare', 'Rare', 'Rare')), 0.5);
+    assert.strictEqual(upsetBonusPct(team('Common', 'Common', 'Common'), team('Legendary', 'Legendary', 'Legendary')), 1);
+  });
+
+  test('no bonus for the favourite or an even match', () => {
+    assert.strictEqual(upsetBonusPct(team('Epic', 'Epic', 'Epic'), team('Rare', 'Rare', 'Rare')), 0);
+    assert.strictEqual(upsetBonusPct(team('Rare', 'Uncommon', 'Epic'), team('Rare', 'Rare', 'Rare')), 0);
+  });
+
+  test('only BITS grow; no bonus leaves the rewards untouched', () => {
+    assert.deepStrictEqual(withUpsetBonus({ bits: 50, xp: 80 }, 0.25), { bits: 63, xp: 80, upsetBonusPct: 0.25 });
+    assert.deepStrictEqual(withUpsetBonus({ bits: 50, xp: 80 }, 0), { bits: 50, xp: 80 });
+  });
 });

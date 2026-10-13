@@ -6,6 +6,8 @@
  * free of server-only imports (no prisma, no node modules).
  */
 
+import { RARITY_ORDER } from './rarity';
+
 // ─── Leagues ──────────────────────────────────────────────────────────────────
 
 export const LEAGUE_MODES = ['OPEN', 'COMMON', 'BALANCED', 'DIVERSITY', 'LEGENDARY'] as const;
@@ -77,6 +79,43 @@ export function getLeagueRewards(leagueMode: string, didWin: boolean): { bits: n
   return didWin
     ? { bits: league.winBits, xp: league.winXp }
     : { bits: league.lossBits, xp: league.lossXp };
+}
+
+// ─── Upset bonus ──────────────────────────────────────────────────────────────
+
+/**
+ * Beating a team of higher average rarity pays more BITS (XP is unchanged):
+ * +25% per rarity tier of difference, up to +100%. Upsets are rare (a full
+ * Common team beats a full Uncommon one ~18% of the time), so this rewards
+ * weaker collections without inflating the economy.
+ */
+export const UPSET_BONUS = { perTier: 0.25, max: 1 } as const;
+
+/** Average rarity tier of a team: 0 (Common) to 4 (Legendary). */
+export function teamRarityTier(team: readonly { rarity: string }[]): number {
+  if (team.length === 0) return 0;
+  const tier = (r: string) => Math.max(0, (RARITY_ORDER as readonly string[]).indexOf(r));
+  return team.reduce((sum, c) => sum + tier(c.rarity), 0) / team.length;
+}
+
+/** Upset bonus of the winning team (0 when it wasn't the underdog), in whole percents as a fraction. */
+export function upsetBonusPct(winnerTeam: readonly { rarity: string }[], loserTeam: readonly { rarity: string }[]): number {
+  const gap = teamRarityTier(loserTeam) - teamRarityTier(winnerTeam);
+  if (gap <= 0) return 0;
+  return Math.round(Math.min(UPSET_BONUS.max, gap * UPSET_BONUS.perTier) * 100) / 100;
+}
+
+export interface BattleRewards {
+  bits: number;
+  xp: number;
+  /** Extra BITS share for beating a stronger team (0.25 = +25%); only on a win. */
+  upsetBonusPct?: number;
+}
+
+/** Adds the upset bonus to a win's BITS. */
+export function withUpsetBonus(rewards: { bits: number; xp: number }, bonusPct: number): BattleRewards {
+  if (bonusPct <= 0) return rewards;
+  return { ...rewards, bits: Math.round(rewards.bits * (1 + bonusPct)), upsetBonusPct: bonusPct };
 }
 
 // ─── Stamina ──────────────────────────────────────────────────────────────────

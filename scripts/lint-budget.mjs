@@ -9,7 +9,7 @@
 import { ESLint } from 'eslint';
 
 /** Lower this whenever the count drops (the script tells you when). */
-const ERROR_BUDGET = 109;
+const ERROR_BUDGET = 104;
 
 const eslint = new ESLint();
 const results = await eslint.lintFiles(['.']);

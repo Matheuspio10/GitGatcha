@@ -14,7 +14,7 @@
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 7 migrações aplicadas, todas aditivas.
-- 140 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos).
+- 143 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 | O quê | Como está |
@@ -54,7 +54,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 
 | Onda | Tema | O que entra | Tamanho |
 |---|---|---|---|
-| **1** | 🧹 Casa arrumada | ~~Bugs das pontas soltas~~ ✅ (PR #34) · decisões de balanceamento (Common × Uncommon, recompensa por força do oponente, teto da liga Diversity) + **CI no GitHub Actions** + **backup diário do banco** 🅶 (2.8) | 1–2 rodadas, P |
+| **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | **Onboarding** (pack inicial + tour de 4 passos ligado às primeiras missões), **pack de visitante** 🅶, **tela de boas-vindas** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 2 rodadas, M |
 | **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
@@ -149,6 +149,10 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **iOS:** a inclinação holográfica pede permissão no primeiro toque.
 - `resolve3v3Battle` usa o tamanho dos times em vez de 3 fixo (prepara a Torre).
 
+### Bônus por zebra (PR #36)
+- Vencer um time de raridade média maior paga **+25% de BITS por nível de diferença, até +100%** (`UPSET_BONUS` em `battleConfig.ts`); XP não muda. Vale em todas as ligas e nos desafios entre amigos.
+- A tela de resultado mostra "Upset! +N%"; a wiki explica a regra.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -164,8 +168,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### Pontas soltas conhecidas (pequenas)
 | Item | Prioridade | Esforço |
 |---|---|---|
-| Common × Uncommon = 82% (a faixa Common é de contas quase vazias) — avaliar | 🟡 | P |
-| Recompensas escalando pela força do oponente (os parâmetros de "upset" existem e não são usados); liga Diversity paga 120 sem teto | 🟡 | P |
+| Liga Diversity paga 120 sem teto de força (3 Legendaries de linguagens diferentes valem) — avaliar junto com a economia | 🟢 | P |
 | Pedir ao suporte do GitHub a remoção das refs internas das PRs #1–#18 (ainda guardam o `dev.db` antigo) | 🟡 | P |
 | Suíte de testes lenta (~90 s, simulador) — separar testes rápidos e lentos | 🟢 | P |
 
