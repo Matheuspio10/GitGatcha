@@ -16,6 +16,9 @@ import { toast } from 'react-hot-toast';
 import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
 import type { BattleRewards, LeagueMode } from '@/lib/battleConfig';
 import { RankBadge } from '@/components/RankBadge';
+import { copyText } from '@/components/ShareButtons';
+import { challengeLink } from '@/lib/challenges';
+import { CHALLENGE_STAKE_MAX } from '@/lib/battleConfig';
 
 type RankedResult = { opponent: string | null; rating: { before: number; after: number } | null };
 
@@ -1032,8 +1035,14 @@ function BattleReplay({
 export default function BattleClient({ userCards, userId, powerCap, userBits }: { userCards: TeamBuilderCard[]; userId: string; powerCap: number; userBits: number }) {
   const searchParams = useSearchParams();
   const challengeParam = searchParams.get('challenge');
+  // Coming from a challenge link (/challenge/<id>): answer it straight away
+  const respondParam = searchParams.get('respond');
+  const respondFrom = searchParams.get('from');
 
-  const [tab, setTab] = useState<Tab>(challengeParam ? 'Challenge' : 'Quick Battle');
+  const [tab, setTab] = useState<Tab>(challengeParam || respondParam ? 'Challenge' : 'Quick Battle');
+  // Friend challenge options: BITS stake and a preset opponent for rematches
+  const [stake, setStake] = useState(0);
+  const [rematchWith, setRematchWith] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [leagueMode, setLeagueMode] = useState<LeagueMode>('OPEN');
 
@@ -1052,11 +1061,11 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
 
   // Challenge state
   const [challenges, setChallenges] = useState<{
-    incoming: { id: string; challenger: { id: string; username: string; image?: string }; createdAt: string; expiresAt: string }[];
-    outgoing: { id: string; defender: { id: string; username: string; image?: string } | null }[];
+    incoming: { id: string; challenger: { id: string; username: string; image?: string }; createdAt: string; expiresAt: string; stake: number }[];
+    outgoing: { id: string; defender: { id: string; username: string; image?: string } | null; stake: number; isOpen: boolean }[];
   }>({ incoming: [], outgoing: [] });
-  const [respondingToId, setRespondingToId] = useState<string | null>(null);
-  const [respondingToChallenger, setRespondingToChallenger] = useState<string>('');
+  const [respondingToId, setRespondingToId] = useState<string | null>(respondParam);
+  const [respondingToChallenger, setRespondingToChallenger] = useState<string>(respondFrom ?? '');
 
   // History state
   const [history, setHistory] = useState<any[]>([]);
@@ -1139,13 +1148,20 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       const res = await fetch('/api/battle/challenge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defenderUsername, cardIds, leagueMode })
+        body: JSON.stringify({ defenderUsername, cardIds, leagueMode, stake })
       });
       const data = await res.json();
       if (data.success) {
         fetchChallenges();
         window.dispatchEvent(new Event('bits:refresh'));
-        toast.success('Challenge sent! The opponent has 24 hours to respond.');
+        setRematchWith(null);
+        if (data.battle?.isOpen) {
+          const link = challengeLink(window.location.origin, data.battle.id);
+          await copyText(link, 'Share this challenge link:');
+          toast.success('Challenge link copied! Share it anywhere.');
+        } else {
+          toast.success('Challenge sent! The opponent has 24 hours to respond.');
+        }
       } else {
         toast.error(data.error || 'Failed to send challenge.');
       }
@@ -1153,6 +1169,19 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       toast.error('Failed to send challenge.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cancelChallenge = async (battleId: string) => {
+    try {
+      const res = await fetch(`/api/battle/challenge/${battleId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not cancel');
+      toast.success('Challenge cancelled');
+      window.dispatchEvent(new Event('bits:refresh'));
+      fetchChallenges();
+    } catch (err) {
+      toast.error((err as Error).message);
     }
   };
 
@@ -1292,9 +1321,26 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
               <Sword size={20} className="text-red-400" />
-              Create a Challenge
+              {rematchWith ? `Rematch vs ${rematchWith}` : 'Create a Challenge'}
             </h2>
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm">
+              <label htmlFor="challenge-stake" className="font-bold text-slate-300">Stake</label>
+              <input
+                id="challenge-stake"
+                type="number" min={0} max={CHALLENGE_STAKE_MAX} step={50}
+                value={stake}
+                onChange={e => setStake(Math.min(CHALLENGE_STAKE_MAX, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
+                className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-white"
+              />
+              <span className="text-xs text-slate-500">BITS each (0–{CHALLENGE_STAKE_MAX}). Winner takes both; refunded if nobody accepts.</span>
+              {rematchWith && (
+                <button onClick={() => setRematchWith(null)} className="ml-auto text-xs text-slate-400 hover:text-white">Cancel rematch</button>
+              )}
+            </div>
             <TeamBuilderUI
+              key={rematchWith ?? 'new-challenge'}
+              challengeUsername={rematchWith ?? ''}
+              challengeStake={stake}
               userCards={userCards}
               onSubmitRandom={startRandomBattle}
               onSubmitChallenge={sendChallenge}
@@ -1318,7 +1364,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                 <div key={c.id} className="bg-slate-900/60 border border-yellow-500/20 rounded-xl p-4 flex items-center justify-between">
                   <div>
                     <p className="font-bold text-white">{c.challenger?.username || 'Unknown'} challenges you!</p>
-                    <p className="text-xs text-slate-500 mt-1">Expires {new Date(c.expiresAt).toLocaleString()}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Expires {new Date(c.expiresAt).toLocaleString()}
+                      {c.stake > 0 && <span className="ml-2 font-bold text-yellow-300">Stake {c.stake} BITS</span>}
+                    </p>
                   </div>
                   <button
                     onClick={() => {
@@ -1342,9 +1391,30 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                 Sent (waiting...)
               </h2>
               {challenges.outgoing.map(c => (
-                <div key={c.id} className="bg-slate-900/60 border border-slate-700 rounded-xl p-4">
-                  <p className="font-bold text-white">vs {c.defender?.username || 'Unknown'}</p>
-                  <p className="text-xs text-slate-400 mt-1">Awaiting response…</p>
+                <div key={c.id} className="bg-slate-900/60 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-white">{c.isOpen && !c.defender ? 'Open challenge (link)' : `vs ${c.defender?.username || 'Unknown'}`}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Awaiting response…
+                      {c.stake > 0 && <span className="ml-2 font-bold text-yellow-300">Stake {c.stake} BITS</span>}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {c.isOpen && (
+                      <button
+                        onClick={async () => { await copyText(challengeLink(window.location.origin, c.id), 'Share this challenge link:'); toast.success('Link copied'); }}
+                        className="px-3 py-1.5 rounded-lg border border-slate-600 text-xs font-bold text-slate-200 hover:bg-slate-800"
+                      >
+                        Copy link
+                      </button>
+                    )}
+                    <button
+                      onClick={() => cancelChallenge(c.id)}
+                      className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-bold text-slate-400 hover:text-white hover:border-red-500/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1413,6 +1483,17 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                       <span className="font-bold text-white">{didWin ? 'Victory' : 'Defeat'} vs {opponentName}</span>
                       {battle.isRandom && (
                         <span className="text-[10px] uppercase bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">Random</span>
+                      )}
+                      {battle.stake > 0 && (
+                        <span className="text-[10px] uppercase bg-yellow-500/10 text-yellow-300 px-2 py-0.5 rounded-full">Stake {battle.stake}</span>
+                      )}
+                      {!battle.isRandom && battle.leagueMode !== 'RANKED' && opponentName && opponentName !== '???' && (
+                        <button
+                          onClick={() => { setRematchWith(opponentName); setStake(battle.stake || 0); setRespondingToId(null); setTab('Challenge'); }}
+                          className="text-[10px] uppercase font-bold bg-orange-500/10 text-orange-300 px-2 py-0.5 rounded-full hover:bg-orange-500/20"
+                        >
+                          Rematch
+                        </button>
                       )}
                     </div>
                     <span className="text-xs text-slate-500">

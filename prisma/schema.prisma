@@ -185,6 +185,10 @@ model UserMission {
 }
 
 model Battle {
+  // Friend challenges: BITS each player puts in (winner takes both) and whether
+  // anyone with the link may accept it (defenderId set when someone does)
+  stake            Int           @default(0)
+  isOpen           Boolean       @default(false)
   id               String        @id @default(uuid())
   challengerId     String
   defenderId       String?

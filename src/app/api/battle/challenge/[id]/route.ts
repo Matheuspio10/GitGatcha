@@ -7,6 +7,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
 import { getCardStamina } from '@/lib/staminaService';
+import { UserFacingError } from '@/lib/userLock';
+import { cancelChallenge, expireChallenges, joinChallenge, releaseDefender } from '@/lib/challengeService';
 
 // POST: Defender responds to a challenge with their 3-card team
 export async function POST(
@@ -25,19 +27,16 @@ export async function POST(
       return NextResponse.json({ error: 'You must select exactly 3 cards for your team' }, { status: 400 });
     }
 
-    // Verify the battle exists and user is the defender
+    // The battle must still be waiting; an expired one is closed (stake refunded)
     const battle = await prisma.battle.findUnique({ where: { id: battleId } });
     if (!battle) return NextResponse.json({ error: 'Battle not found' }, { status: 404 });
-    if (battle.defenderId !== userId) return NextResponse.json({ error: 'You are not the defender of this battle' }, { status: 403 });
     if (battle.status !== 'PENDING') return NextResponse.json({ error: 'Battle is no longer pending' }, { status: 400 });
-
-    // Check expiry
     if (battle.expiresAt && battle.expiresAt < new Date()) {
-      await prisma.battle.update({
-        where: { id: battleId },
-        data: { status: 'EXPIRED', winnerId: battle.challengerId, completedAt: new Date() }
-      });
+      await expireChallenges();
       return NextResponse.json({ error: 'Challenge has expired' }, { status: 400 });
+    }
+    if (battle.defenderId !== userId && !(battle.isOpen && !battle.defenderId)) {
+      return NextResponse.json({ error: 'You are not the defender of this battle' }, { status: 403 });
     }
 
     // Verify defender owns all 3 cards
@@ -92,8 +91,16 @@ export async function POST(
       };
     });
 
-    // Resolve the full battle
-    const result = await resolveFriendBattle(battleId, dTeamCards);
+    // Join (claims an open challenge, matches the stake), then resolve. If the
+    // battle can't be resolved, the defender's stake and claim are undone.
+    const joined = await joinChallenge(battleId, userId);
+    let result: Awaited<ReturnType<typeof resolveFriendBattle>>;
+    try {
+      result = await resolveFriendBattle(battleId, dTeamCards);
+    } catch (err) {
+      await releaseDefender(battleId, userId, joined);
+      throw err;
+    }
 
     // Advance missions for winner (the battle is already resolved: never fail the response here)
     try {
@@ -128,8 +135,28 @@ export async function POST(
       achievementsUnlocked,
     });
 
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof UserFacingError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error('Challenge response error:', error);
-    return NextResponse.json({ error: 'Failed to respond to challenge: ' + error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to respond to challenge: ' + (error as Error).message }, { status: 500 });
+  }
+}
+
+// DELETE: the challenger withdraws a pending challenge (stake refunded)
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { id } = await params;
+  try {
+    await cancelChallenge(id, userId);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
+    console.error('Challenge cancel error:', err);
+    return NextResponse.json({ error: 'Could not cancel the challenge' }, { status: 500 });
   }
 }

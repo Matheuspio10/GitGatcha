@@ -18,6 +18,9 @@ export const BITS_REASONS = {
   referral: 'Invite reward',
   rank_promotion: 'Rank promotion',
   season_reward: 'Season reward',
+  challenge_stake: 'Challenge stake',
+  challenge_payout: 'Challenge won (stakes)',
+  challenge_refund: 'Challenge stake refunded',
 } as const;
 
 export type BitsReason = keyof typeof BITS_REASONS;
