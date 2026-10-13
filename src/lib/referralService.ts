@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { addBits } from './bitsLedger';
-import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
-import { Tx, asArray } from './userLock';
+import type { Tx } from './userLock';
+import { pushNotification } from './notifications';
 import { REFERRAL_BONUS, REFERRAL_CAP, normalizeReferralCode, referrerStillPaid } from './referral';
 
 /**
@@ -25,12 +24,7 @@ export async function attachReferrer(tx: Tx, userId: string, code: unknown): Pro
   return count === 1 ? referrer.id : null;
 }
 
-async function notify(tx: Tx, userId: string, message: string) {
-  const user = await tx.user.findUnique({ where: { id: userId }, select: { notifications: true } });
-  const notifications = asArray(user?.notifications);
-  notifications.push({ id: randomUUID(), type: 'referral_reward', message, actionUrl: '/friends', timestamp: new Date().toISOString(), read: false });
-  await tx.user.update({ where: { id: userId }, data: { notifications: notifications as Prisma.InputJsonValue } });
-}
+const notify = (tx: Tx, userId: string, message: string) => pushNotification(tx, userId, 'referral_reward', message, '/friends');
 
 /**
  * Pays the referral once the invited player has GitHub connected: both get

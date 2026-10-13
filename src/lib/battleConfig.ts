@@ -10,7 +10,7 @@ import { RARITY_ORDER } from './rarity';
 
 // ─── Leagues ──────────────────────────────────────────────────────────────────
 
-export const LEAGUE_MODES = ['OPEN', 'COMMON', 'BALANCED', 'DIVERSITY', 'LEGENDARY'] as const;
+export const LEAGUE_MODES = ['OPEN', 'RANKED', 'COMMON', 'BALANCED', 'DIVERSITY', 'LEGENDARY'] as const;
 export type LeagueMode = (typeof LEAGUE_MODES)[number];
 
 export function isLeagueMode(value: unknown): value is LeagueMode {
@@ -39,6 +39,13 @@ export const LEAGUES: Record<LeagueMode, LeagueRules> = {
     label: 'Open League',
     rules: 'No restrictions — use any cards.',
     winBits: 50, winXp: 80, lossBits: 10, lossXp: 30, entryFee: 0,
+  },
+  // Ranked: the opponent is the saved active team of a player near your rating
+  // ("ghost" PvP). The only league that moves the rating and the rank (ranks.ts).
+  RANKED: {
+    label: 'Ranked',
+    rules: "Fight the saved team of a player near your rating. Rating and rank change; they don't have to be online.",
+    winBits: 60, winXp: 100, lossBits: 10, lossXp: 30, entryFee: 0,
   },
   COMMON: {
     label: 'Common League',
@@ -70,6 +77,11 @@ export const LEAGUES: Record<LeagueMode, LeagueRules> = {
     allowedRarities: ['Legendary'],
   },
 };
+
+/** BITS for a player whose saved team wins when someone attacks it in Ranked. */
+export const RANKED_DEFENSE_WIN_BITS = 20;
+/** A player's last N Ranked opponents are skipped when finding the next one (when possible). */
+export const RANKED_RECENT_OPPONENTS = 3;
 
 /** Friend challenges always use these rewards (no entry fee, no restrictions). */
 export const FRIEND_BATTLE_LEAGUE: LeagueMode = 'OPEN';

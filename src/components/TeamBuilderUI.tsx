@@ -35,6 +35,7 @@ export type { LeagueMode };
 // Rewards, fees and rules come from battleConfig (same numbers the server pays and the wiki shows)
 const LEAGUE_STYLE: Record<LeagueMode, { icon: string; color: string; border: string; bg: string }> = {
   OPEN: { icon: '⚔️', color: 'text-slate-300', border: 'border-slate-500', bg: 'bg-slate-500/10' },
+  RANKED: { icon: '🏅', color: 'text-orange-300', border: 'border-orange-500', bg: 'bg-orange-500/10' },
   COMMON: { icon: '🛡️', color: 'text-green-400', border: 'border-green-500', bg: 'bg-green-500/10' },
   BALANCED: { icon: '⚖️', color: 'text-blue-400', border: 'border-blue-500', bg: 'bg-blue-500/10' },
   DIVERSITY: { icon: '🌍', color: 'text-purple-400', border: 'border-purple-500', bg: 'bg-purple-500/10' },
@@ -550,7 +551,8 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
                 opacity: 1, scale: pulsing && syn.active ? [1, 1.05, 1] : 1, x: 0,
               }}
               exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 25 }}
+              // The pulse has 3 keyframes, which springs can't animate: tween for scale
+              transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 25, scale: { type: 'tween', duration: 0.4 } }}
               className={clsx(
                 'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold border',
                 syn.active
@@ -752,9 +754,12 @@ function ConfirmationModal({
   onConfirm,
   onCancel,
   loading,
+  ranked = false,
 }: {
   slots: (TeamBuilderCard | null)[];
   mode: 'random' | 'challenge';
+  /** Ranked: the opponent is another player's saved team, and the rating changes. */
+  ranked?: boolean;
   defenderUsername?: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -780,11 +785,13 @@ function ConfirmationModal({
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
           <h2 className="text-2xl font-black text-white">
-            {mode === 'random' ? 'Battle Random?' : `Challenge ${defenderUsername}?`}
+            {mode === 'random' ? (ranked ? 'Battle Ranked?' : 'Battle Random?') : `Challenge ${defenderUsername}?`}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'random'
-              ? 'Your team will be matched against a random opponent.'
+              ? ranked
+                ? "Your team will face the saved team of a player near your rating. Both ratings change."
+                : 'Your team will be matched against a random opponent.'
               : `Your challenge will be sent to ${defenderUsername}. They have 24h to respond.`}
           </p>
         </div>
@@ -1468,7 +1475,7 @@ export default function TeamBuilderUI({
           <p className="text-xs uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
             <Crown size={12} className="text-yellow-400" /> Select League Mode
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {(Object.keys(LEAGUE_CONFIG) as LeagueMode[]).map(mode => {
               const cfg = LEAGUE_CONFIG[mode];
               const isActive = leagueMode === mode;
@@ -1559,7 +1566,7 @@ export default function TeamBuilderUI({
                 )}
               >
                 <Lightning size={22} weight="fill" />
-                {loading ? 'Matchmaking...' : teamFull ? 'Battle Random' : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
+                {loading ? 'Matchmaking...' : teamFull ? (leagueMode === 'RANKED' ? 'Battle Ranked' : 'Battle Random') : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
               </motion.button>
             )}
             
@@ -1744,6 +1751,7 @@ export default function TeamBuilderUI({
           <ConfirmationModal
             slots={slots}
             mode="random"
+            ranked={leagueMode === 'RANKED'}
             onConfirm={handleConfirmRandom}
             onCancel={() => setShowConfirmRandom(false)}
             loading={loading || submitting}

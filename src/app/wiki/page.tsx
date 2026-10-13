@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE, WILDCARD_EXCHANGE_RATE } from '@/lib/fragments';
+import { RANK_TIERS } from '@/lib/ranks';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
@@ -10,6 +11,7 @@ import {
   DEF_MITIGATION_K,
   FRIEND_BATTLE_LEAGUE,
   LEAGUES,
+  RANKED_DEFENSE_WIN_BITS,
   UPSET_BONUS,
   LEAGUE_MODES,
   LOYALTY_MILESTONES,
@@ -62,6 +64,7 @@ const DAILY_CLAIM_XP = 20;
 
 const LEAGUE_TITLE_COLOR: Record<string, string> = {
   OPEN: 'text-white',
+  RANKED: 'text-orange-300',
   COMMON: 'text-green-400',
   BALANCED: 'text-blue-400',
   DIVERSITY: 'text-purple-400',
@@ -492,7 +495,7 @@ export default function WikiPage() {
               </h2>
               
               <p className="mb-6 text-slate-300">
-                League battles are against a computer team that follows the same restrictions as yours. They pay BITS and XP but never change your rating.
+                League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don&apos;t need to be online), and both ratings move. A saved team that holds earns its owner {RANKED_DEFENSE_WIN_BITS} BITS. Ranks: {RANK_TIERS.map(t => `${t.name} ${t.min > 0 ? t.min + '+' : ''}`.trim()).join(' · ')}.
               </p>
               <div className="space-y-4">
                 {LEAGUE_MODES.map((mode) => {
@@ -513,7 +516,7 @@ export default function WikiPage() {
                   <h3 className="text-lg font-bold text-orange-400 mb-2">Friend Challenges (PvP)</h3>
                   <p className="text-sm text-slate-300 mb-2">
                     Challenge a friend with any 3 cards; they have 24 hours to answer with their own team, and only see how many cards and which rarities you sent.
-                    A card can only be in one pending challenge at a time. PvP is the only way to change your <strong>rating</strong> (ELO, everyone starts at {STARTING_RATING}, K = {RATING_K_FACTOR}).
+                    A card can only be in one pending challenge at a time. Friend challenges and Ranked are the only ways to change your <strong>rating</strong> (ELO, everyone starts at {STARTING_RATING}, K = {RATING_K_FACTOR}).
                   </p>
                   <p className="text-xs font-mono text-orange-400">
                     Win: {LEAGUES[FRIEND_BATTLE_LEAGUE].winBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].winXp} XP | Loss: {LEAGUES[FRIEND_BATTLE_LEAGUE].lossBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].lossXp} XP (both players)
@@ -736,7 +739,7 @@ export default function WikiPage() {
                   { t: 'Fragment', d: 'Currency earned from dupes, used in the Forge to craft specific cards.' },
                   { t: 'HP', d: 'Health Points. Reaching 0 means defeat.' },
                   { t: 'Legendary', d: `The highest rarity tier (${RARITY_STAT_MULTIPLIER.Legendary}x stat multiplier). Very low pull rates.` },
-                  { t: 'Rating', d: `PvP-only ELO score shown on the leaderboard. Starts at ${STARTING_RATING}.` },
+                  { t: 'Rating', d: `PvP ELO score (Ranked and friend challenges) shown on the leaderboard, with a rank from Bronze to Diamond. Starts at ${STARTING_RATING}.` },
                   { t: 'Mid', d: 'The second card slot in a team.' },
                   { t: 'Momentum', d: 'ATK/DEF bonus activated after a single card defeats 2 enemies in a row.' },
                   { t: 'Opener', d: 'The first card slot. Enters battle first.' },

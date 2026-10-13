@@ -14,7 +14,10 @@ import { useSearchParams } from 'next/navigation';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
 import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
-import type { BattleRewards } from '@/lib/battleConfig';
+import type { BattleRewards, LeagueMode } from '@/lib/battleConfig';
+import { RankBadge } from '@/components/RankBadge';
+
+type RankedResult = { opponent: string | null; rating: { before: number; after: number } | null };
 
 // Types
 interface TurnEvent {
@@ -332,7 +335,10 @@ function BattleReplay({
   battleStats,
   loyaltyUnlocks,
   achievementsUnlocked,
+  ranked,
 }: {
+  /** Ranked battles: the opponent's name and the player's rating before / after. */
+  ranked?: RankedResult | null;
   log: TurnLog[];
   challengerTeam: TeamCard[];
   defenderTeam: TeamCard[];
@@ -535,8 +541,24 @@ function BattleReplay({
             <h2 className={clsx('text-5xl font-black', winnerSide === 'CHALLENGER' ? 'text-yellow-400' : 'text-red-400')}>
               {winnerSide === 'CHALLENGER' ? 'VICTORY!' : 'DEFEAT'}
             </h2>
-            {leagueMode && leagueMode !== 'OPEN' && (
+            {leagueMode && leagueMode !== 'OPEN' && leagueMode !== 'RANKED' && (
               <p className="text-xs text-slate-500 mt-2 uppercase tracking-wider">{leagueMode} League</p>
+            )}
+            {ranked && (
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <p className="text-xs text-slate-400 uppercase tracking-wider">Ranked{ranked.opponent ? ` vs ${ranked.opponent}` : ''}</p>
+                {ranked.rating && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-mono text-slate-400">{ranked.rating.before}</span>
+                    <span className="text-slate-500">→</span>
+                    <span className="font-mono font-bold text-white">{ranked.rating.after}</span>
+                    <span className={`font-mono font-bold ${ranked.rating.after >= ranked.rating.before ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      ({ranked.rating.after >= ranked.rating.before ? '+' : ''}{ranked.rating.after - ranked.rating.before})
+                    </span>
+                    <RankBadge rating={ranked.rating.after} showRating={false} />
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </motion.div>
@@ -1013,7 +1035,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
 
   const [tab, setTab] = useState<Tab>(challengeParam ? 'Challenge' : 'Quick Battle');
   const [loading, setLoading] = useState(false);
-  const [leagueMode, setLeagueMode] = useState<'OPEN'|'COMMON'|'BALANCED'|'DIVERSITY'|'LEGENDARY'>('OPEN');
+  const [leagueMode, setLeagueMode] = useState<LeagueMode>('OPEN');
 
   // Replay state
   const [replayData, setReplayData] = useState<{
@@ -1025,6 +1047,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     battleStats?: any[];
     loyaltyUnlocks?: any[];
     achievementsUnlocked?: AchievementUnlockNotice[];
+    ranked?: RankedResult | null;
   } | null>(null);
 
   // Challenge state
@@ -1097,6 +1120,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           battleStats: data.battleStats,
           loyaltyUnlocks: data.loyaltyUnlocks,
           achievementsUnlocked: data.achievementsUnlocked,
+          ranked: data.ranked ?? null,
         });
       } else {
         toast.error(data.error || 'Battle failed to initiate.');
@@ -1196,6 +1220,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           defenderTeam={replayData.defenderTeam}
           winnerSide={replayData.winnerSide}
           rewards={replayData.rewards}
+          ranked={replayData.ranked}
           onReset={resetBattle}
           userId={userId}
           leagueMode={leagueMode}

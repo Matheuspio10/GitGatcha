@@ -14,7 +14,7 @@
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 13 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 167 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 169 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -61,7 +61,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
-| **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
+| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44) · falta: **temporadas** (reset suave, recompensas, colocação) e desafios melhores (revanche, link, aposta) (3.1) | 2 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
@@ -206,6 +206,15 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Tela `/bits`** (link "History" no painel de BITS do menu): cada ganho e gasto com motivo, detalhe, valor e saldo, 50 por página.
 - **`scripts/check-bits-ledger.ts`**: confere, só lendo, se o histórico de cada jogador soma o saldo.
 
+### Onda 5 — elos e Ranked "fantasma" (PR #44)
+- **Elos** (`src/lib/ranks.ts`, `RankBadge`): Bronze (início, 1000) · Silver 1050+ · Gold 1150+ · Platinum 1300+ · Diamond 1450+. Aparecem no ranking, no perfil, na página pública e no resultado da batalha.
+- **Ranked** (liga `RANKED` em `battleConfig.ts`, `resolveRankedBattle` em `battleService.ts`): o adversário é o **time ativo salvo** de um jogador com rating próximo (±100, abrindo para ±200, ±400 e qualquer um), pulando os últimos 3 adversários quando dá e contas sem nome de usuário. O dono do time não precisa estar online; o time dele luta descansado e não gasta stamina.
+  - Os **dois ratings mudam** (ELO); a batalha conta no `recompute-ratings` (não é `isRandom`).
+  - Recompensa: 60 BITS / 100 XP na vitória, 10 / 30 na derrota (+ zebra). Quem defende ganha **20 BITS** quando o time segura (`RANKED_DEFENSE_WIN_BITS`) e sempre recebe uma notificação com a variação de rating.
+  - Tela de resultado: "Ranked vs <jogador> · 1000 → 1016 (+16) · <elo>".
+- O seletor de ligas virou 6 colunas; botão e confirmação dizem "Battle Ranked". Notificações viraram um helper comum (`src/lib/notifications.ts`).
+- Corrigido: o pulso das sinergias no montador de time lançava erro do framer-motion (spring com 3 keyframes).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -272,8 +281,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.1 Competitivo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Sistema de elos** | Bronze → Prata → Ouro → Platina → Diamante por faixa de rating, temporadas com reset suave, partidas de colocação, recompensa por promoção e por fim de temporada | M |
-| **PvP assíncrono "fantasma"** | Batalhar contra o time ativo salvo de outros jogadores com rating parecido (±100) | M |
+| **Temporadas** | Os elos (Bronze → Diamante) já existem (PR #44). Falta: temporadas com reset suave, partidas de colocação, recompensa por promoção e por fim de temporada | M |
 | **Desafios melhores** | Só entre amigos, revanche/melhor de 3, aposta de BITS combinada, link compartilhável | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
 
@@ -333,7 +341,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Revelação uma carta por vez (Pokémon/MTG) | ✅ pack físico (2.1) e rasgável (PR #31) |
 | Verificar se a API está funcionando / mesmos devs | ✅ sorteio uniforme (1.1) |
 | O que fazer quando o usuário não tem fragmentos (Keslley) | ✅ fragmento coringa (PR #41) |
-| Sistema de elos | pendente (3.1) — rating já está correto |
+| Sistema de elos | ✅ elos e Ranked (PR #44); temporadas pendentes (3.1) |
 | Sincronizar BITS | ✅ |
 | Métodos de pagamento | pendente (Fase 4) |
 | Treinar as cartas | pendente (3.3) |
