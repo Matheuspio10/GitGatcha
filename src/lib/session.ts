@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth';
 import { prisma } from './prisma';
+import { parseOnboardingState } from './onboarding';
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
@@ -8,7 +9,7 @@ export async function getCurrentUser() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, username: true, email: true, currency: true, level: true, xp: true, image: true },
+    select: { id: true, username: true, email: true, currency: true, level: true, xp: true, image: true, onboarding: true },
   });
 
   if (!dbUser) return null;
@@ -21,5 +22,6 @@ export async function getCurrentUser() {
     level: dbUser.level,
     xp: dbUser.xp,
     image: dbUser.image || null,
+    onboarding: parseOnboardingState(dbUser.onboarding),
   };
 }

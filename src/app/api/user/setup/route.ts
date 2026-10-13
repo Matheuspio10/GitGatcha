@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { withUserLock } from '@/lib/userLock';
+import { startOnboarding } from '@/lib/onboardingService';
 
 export async function POST(req: Request) {
   try {
@@ -23,36 +25,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Username can only contain letters, numbers, and underscores.' }, { status: 400 });
     }
 
-    // Check if the username is already taken
-    const existingUser = await prisma.user.findUnique({
-      where: { username: username.toLowerCase() } // Ensure we compare strictly or uniquely
+    // Taken by ANOTHER player (case-insensitive). The player's own name doesn't count:
+    // the setup form comes pre-filled with the name generated at sign-up.
+    const taken = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' }, NOT: { id: userId } },
+      select: { id: true },
     });
-
-    if (existingUser) {
+    if (taken) {
       return NextResponse.json({ error: 'Username is already taken. Please choose another one.' }, { status: 409 });
     }
 
-    // Check strict case matches against other users since prisma might be case sensitive or insensitive depending on collation
-    const exists = await prisma.user.findFirst({
-      where: {
-        username: {
-          equals: username,
-          mode: 'insensitive'
-        }
-      }
+    // Save the username; the first time, the player also gets the starter pack
+    // and the "Getting started" checklist
+    const starterPack = await withUserLock(userId, async (tx) => {
+      const before = await tx.user.findUnique({ where: { id: userId }, select: { hasSetupProfile: true } });
+      await tx.user.update({
+        where: { id: userId },
+        data: { username: username, hasSetupProfile: true }
+      });
+      return before?.hasSetupProfile === false ? startOnboarding(tx, userId) : false;
     });
 
-    if (exists) {
-      return NextResponse.json({ error: 'Username is already taken. Please choose another one.' }, { status: 409 });
-    }
-
-    // Update the db
-    await prisma.user.update({
-      where: { id: userId },
-      data: { username: username, hasSetupProfile: true }
-    });
-
-    return NextResponse.json({ success: true, username });
+    return NextResponse.json({ success: true, username, starterPack });
   } catch (error) {
     console.error('Error setting username:', error);
     return NextResponse.json({ error: 'Internal server error while saving username.' }, { status: 500 });

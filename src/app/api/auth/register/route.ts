@@ -1,7 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { randomInt, randomUUID } from 'node:crypto';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { STARTING_BITS } from '@/lib/onboarding';
+
+/**
+ * A free username based on the e-mail's local part (usernames are unique: two
+ * "john@…" addresses must not make the second sign-up fail).
+ */
+async function availableUsername(localPart: string): Promise<string> {
+  const base = (localPart.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 14) || 'player').padEnd(3, '_');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = attempt === 0 ? base : `${base}_${randomInt(1000, 10000)}`;
+    const taken = await prisma.user.findFirst({ where: { username: { equals: candidate, mode: 'insensitive' } }, select: { id: true } });
+    if (!taken) return candidate;
+  }
+  return `player_${randomUUID().slice(0, 8)}`;
+}
 
 export async function POST(req: Request) {
   try {
@@ -28,9 +44,10 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: {
         email,
-        username: email.split('@')[0], // Extract username from email
+        // Provisional name from the e-mail; the player confirms or changes it in the setup screen
+        username: await availableUsername(email.split('@')[0]),
         password: hashedPassword,
-        currency: 500, // starting bits
+        currency: STARTING_BITS,
         xp: 0,
         level: 1
       }

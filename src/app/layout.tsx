@@ -6,6 +6,11 @@ import { getCurrentUser } from "@/lib/session";
 import { NextAuthProvider } from "@/components/Providers";
 import { LevelUpModal } from "@/components/LevelUpModal";
 import { SetupProfileModal } from "@/components/SetupProfileModal";
+import { WelcomeModal } from "@/components/WelcomeModal";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { buildEarnGuide } from "@/lib/earnGuide";
+import { getPackById } from "@/lib/packDefinitions";
+import { STARTER_PACK_ID } from "@/lib/onboarding";
 
 // Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
@@ -38,6 +43,14 @@ export default async function RootLayout({
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
           <SetupProfileModal />
+          {user?.onboarding && !user.onboarding.welcomeSeen && (
+            <WelcomeModal
+              username={user.username}
+              starterPackName={getPackById(STARTER_PACK_ID)?.name ?? 'Starter pack'}
+              guide={buildEarnGuide(user.username)}
+            />
+          )}
+          {user?.onboarding && <OnboardingChecklist />}
           <main className="container mx-auto px-4 py-8">
             {children}
           </main>

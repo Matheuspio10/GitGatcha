@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 7 migrações aplicadas, todas aditivas.
-- 143 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 8 migrações, todas aditivas.
+- 149 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 | O quê | Como está |
@@ -55,7 +55,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Onda | Tema | O que entra | Tamanho |
 |---|---|---|---|
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
-| **2** | 👋 Primeira impressão | **Onboarding** (pack inicial + tour de 4 passos ligado às primeiras missões), **pack de visitante** 🅶, **tela de boas-vindas** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 2 rodadas, M |
+| **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e tela de boas-vindas (PR #37) · falta: **pack de visitante** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 1 rodada, P–M |
 | **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
@@ -153,6 +153,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - Vencer um time de raridade média maior paga **+25% de BITS por nível de diferença, até +100%** (`UPSET_BONUS` em `battleConfig.ts`); XP não muda. Vale em todas as ligas e nos desafios entre amigos.
 - A tela de resultado mostra "Upset! +N%"; a wiki explica a regra.
 
+### Onda 2 — onboarding (PR #37)
+- **Pack inicial:** ao escolher o nome de usuário pela primeira vez, o jogador ganha **The Open Source Heroes** (Rare ou melhor garantida). Jogadores antigos não entram no onboarding (`User.onboarding` nulo, migração `20261018000000_onboarding`).
+- **Tela de boas-vindas 🅶** (`WelcomeModal`): o presente com "Open it now" e todas as formas de ganhar BITS e packs, com os números lidos das constantes (`src/lib/earnGuide.ts`).
+- **Checklist "Getting started"** (`OnboardingChecklist`, `src/lib/onboarding.ts`): abrir o pack (+50), ver a coleção (+50), montar um time de 3 (+100) e jogar a primeira batalha (+200). O progresso vem dos dados do jogo; só "viu a coleção" é guardado. Recolhe no celular, pode ser escondido.
+- **BITS iniciais unificados em 1.000** (`STARTING_BITS`): o cadastro por e-mail dava 500 e o por Google/GitHub dava 1.000. Um teste garante que o default do schema continua igual.
+- **Bugs do cadastro corrigidos:** o nome do próprio jogador não conta mais como "já em uso" na tela de configuração, e dois e-mails com o mesmo prefixo (`joao@a.com`, `joao@b.com`) não derrubam mais o segundo cadastro.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -187,9 +194,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.5 UX geral
 | Item | Esforço |
 |---|---|
-| **Onboarding:** pack inicial + tour de 4 passos (abrir pack → coleção → time → primeira batalha), ligado às primeiras missões | M |
 | **Pack de visitante 🅶:** 1 booster sem cadastro (cookie + limite por IP com `RateLimitHit`); ao se cadastrar, as cartas vão para a conta. Consome a reserva do booster | P |
-| **Tela de boas-vindas 🅶:** no primeiro login, lista todas as formas de ganhar BITS e packs (daily, missões, calendário, conquistas, indicação, compartilhar) | P |
 | Confirmação de compra com odds e "Abrir agora" direto do toast (o CDC exige transparência das odds) | P |
 | Estados vazios com ação (Coleção, Forja sem fragmentos, Amigos, Histórico) | P |
 | Skeleton de carregamento na loja | P |
