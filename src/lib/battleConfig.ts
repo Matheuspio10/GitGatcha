@@ -57,7 +57,8 @@ export const LEAGUES: Record<LeagueMode, LeagueRules> = {
     rules: '3 different primary languages required.',
     winBits: 120, winXp: 140, lossBits: 10, lossXp: 30, entryFee: 0,
   },
-  // The entry fee is paid up front and never refunded. A win must be net
+  // The entry fee is paid up front and only refunded when the battle could not
+  // be saved (api/battle/route.ts). A win must be net
   // positive (900 − 500 = +400 BITS) to justify the risk; a loss pays nothing
   // (−500 BITS). Before this the win paid 300, so the league always lost money.
   LEGENDARY: {
