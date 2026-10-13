@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 15 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 174 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 16 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 178 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -73,6 +73,9 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #45 | Reset de temporada | Metade do caminho até 1000 | `softResetRating` (`seasons.ts`) |
 | #46 | Aposta máxima em desafio | 500 BITS cada | `CHALLENGE_STAKE_MAX` (`battleConfig.ts`) |
 | #46 | Desafio direto só entre amigos | Sim (para os outros, link) | `areFriends` na rota `api/battle/challenge` |
+| #47 | Recompensas da Torre por andar | 40 · 50 · 60 · 80 · **200** · 100 · 120 · 150 · 200 · **600** (5 e 10 são chefes) | `TOWER_FLOORS` (`tower.ts`) |
+| #47 | Composição dos andares | Commons no andar 1 até 3 Legendaries no 10 | `TOWER_FLOORS` (`tower.ts`) |
+| #47 | Tentativas na Torre | Ilimitadas (só custam stamina); o ranking desempata por menos tentativas | `fightTower` (`towerService.ts`) |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -88,7 +91,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
-| **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
+| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47) · falta: **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 2+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
@@ -256,6 +259,12 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Cancelar** desafio pendente (DELETE, com reembolso) e **copiar link** na lista de enviados; **Rematch** no histórico abre o desafio contra o mesmo jogador com a mesma aposta.
 - `challengeService.ts`: `parseStake`, `areFriends`, `expireChallenges` (com reembolso, uma vez só), `cancelChallenge`, `joinChallenge` / `releaseDefender`.
 
+### Onda 6 — a Torre (PR #47)
+- **10 andares** (`TOWER_FLOORS` em `tower.ts`): de 3 Commons até 3 Legendaries, mini-chefe no 5 e chefe final no 10 (os Legendaries mais fortes do tema).
+- **Semana temática** (segunda 00:00 UTC): "The Rust Gauntlet", "The Python Gauntlet"… em rodízio (`TOWER_THEMES`). Os times de cada andar são sorteados uma vez por semana com semente e guardados (`TowerFloorTeam`), iguais para todos; você vê os adversários antes de lutar.
+- **Progresso** (`TowerRun`, migração `20261026000000_tower`): sempre o próximo andar; o primeiro clear da semana paga os BITS do andar (`tower_reward`, pelo histórico); tentativas ilimitadas, só custam stamina. **Ranking semanal**: andar mais alto, depois menos tentativas.
+- **Aba "Tower" na Arena** (`TowerPanel`), reaproveitando o montador de time (nova prop `quickAction`) e a replay; a validação do time saiu da rota de batalha para `src/lib/playerTeam.ts`.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -329,7 +338,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.2 Modos de jogo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Torre (estilo Mortal Kombat)** | ~10 andares de oponentes temáticos cada vez mais fortes ("Rust Gauntlet", chefe = Legendary famoso), recompensas por marco, ranking semanal | M |
 | **Liga pessoal estilo Cartola** | Elenco de 5 devs com orçamento; pontos semanais vêm da atividade **real** no GitHub (commits, estrelas, PRs); ligas privadas com amigos | G |
 | **Eventos semanais** | Rate-up temático, "Dev da Semana", boosters por tempo limitado | M |
 | **Sprints 🅶** | Competição diária e semanal com tema (linguagem, org, "Dev da Semana") escolhido pelo cron. O jogador não monta nada: no fim, todo mundo é pontuado pelo poder das melhores cartas do tema, **calculado na hora** (não salvar escalação). Empates dividem a posição (1, 1, 3). Topo ganha BITS | M |
@@ -389,7 +397,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Melhorar os desafios | ✅ bugs, só amigos, link, aposta, revanche, cancelar (PR #46); melhor de 3 no backlog |
 | Arrumar o ranking | ✅ |
 | Efeitos sonoros | ✅ booster/batalha; sons próprios pendentes (2.6) |
-| Modo torre (Mortal Kombat) | pendente (3.2) |
+| Modo torre (Mortal Kombat) | ✅ Torre semanal (PR #47) |
 | Melhorar as missões | ✅ diárias, semanais, de dev pelo GitHub e troca diária |
 | Ligas pessoais tipo Cartola | pendente (3.2) |
 | Áudio da batalha só inicia após clicar no som | ✅ |

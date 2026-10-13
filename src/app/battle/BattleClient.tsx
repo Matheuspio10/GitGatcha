@@ -8,19 +8,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import {
   Sword, Shield, Heart, Lightning, Trophy, Clock, Users,
-  GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText
-} from '@phosphor-icons/react';
+  GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText, Crown } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
 import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
 import type { BattleRewards, LeagueMode } from '@/lib/battleConfig';
 import { RankBadge } from '@/components/RankBadge';
+import { TowerPanel } from './TowerPanel';
 import { copyText } from '@/components/ShareButtons';
 import { challengeLink } from '@/lib/challenges';
 import { CHALLENGE_STAKE_MAX } from '@/lib/battleConfig';
 
 type RankedResult = { opponent: string | null; rating: { before: number; after: number } | null };
+
+/** What /api/battle and /api/tower answer after a battle. */
+interface BattleApiResult {
+  log: TurnLog[];
+  challengerTeam?: TeamCard[];
+  defenderTeam?: TeamCard[];
+  winnerSide: 'CHALLENGER' | 'DEFENDER';
+  rewards: BattleRewards;
+  battleStats?: unknown[];
+  loyaltyUnlocks?: unknown[];
+  achievementsUnlocked?: AchievementUnlockNotice[];
+  ranked?: RankedResult | null;
+  tower?: unknown;
+}
 
 // Types
 interface TurnEvent {
@@ -54,7 +68,7 @@ interface TeamCard {
   avatarUrl?: string | null;
 }
 
-type Tab = 'Quick Battle' | 'Challenge' | 'History';
+type Tab = 'Quick Battle' | 'Tower' | 'Challenge' | 'History';
 
 const RARITY_GLOW: Record<string, string> = {
   Common: 'ring-slate-500',
@@ -1057,6 +1071,8 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     loyaltyUnlocks?: any[];
     achievementsUnlocked?: AchievementUnlockNotice[];
     ranked?: RankedResult | null;
+    /** Tower battles show no league label. */
+    fromTower?: boolean;
   } | null>(null);
 
   // Challenge state
@@ -1103,6 +1119,27 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     avatarUrl: c.avatarUrl,
   });
 
+  /** Turns a battle API response (league, Ranked or Tower) into the replay. */
+  const showBattleResult = (data: BattleApiResult) => {
+    // Use challenger team from API so IDs match the battle log
+    const cTeam: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({
+      ...c,
+      maxHp: c.maxHp || c.hp,
+    }));
+    setReplayData({
+      log: data.log,
+      challengerTeam: cTeam,
+      defenderTeam: (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp })),
+      winnerSide: data.winnerSide,
+      rewards: data.rewards,
+      battleStats: data.battleStats,
+      loyaltyUnlocks: data.loyaltyUnlocks,
+      achievementsUnlocked: data.achievementsUnlocked,
+      ranked: data.ranked ?? null,
+      fromTower: !!data.tower,
+    });
+  };
+
   const startRandomBattle = async (cardIds: string[]) => {
     if (cardIds.length !== 3) return;
     setLoading(true);
@@ -1115,22 +1152,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       });
       const data = await res.json();
       if (data.success) {
-        // Use challenger team from API so IDs match the battle log
-        const cTeam: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({
-          ...c,
-          maxHp: c.maxHp || c.hp,
-        }));
-        setReplayData({
-          log: data.log,
-          challengerTeam: cTeam,
-          defenderTeam: (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp })),
-          winnerSide: data.winnerSide,
-          rewards: data.rewards,
-          battleStats: data.battleStats,
-          loyaltyUnlocks: data.loyaltyUnlocks,
-          achievementsUnlocked: data.achievementsUnlocked,
-          ranked: data.ranked ?? null,
-        });
+        showBattleResult(data);
       } else {
         toast.error(data.error || 'Battle failed to initiate.');
       }
@@ -1252,7 +1274,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           ranked={replayData.ranked}
           onReset={resetBattle}
           userId={userId}
-          leagueMode={leagueMode}
+          leagueMode={replayData.fromTower ? undefined : leagueMode}
           battleStats={replayData.battleStats}
           loyaltyUnlocks={replayData.loyaltyUnlocks}
           achievementsUnlocked={replayData.achievementsUnlocked}
@@ -1276,7 +1298,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
 
       {/* Tabs */}
       <div className="flex justify-center gap-2">
-        {(['Quick Battle', 'Challenge', 'History'] as Tab[]).map(t => (
+        {(['Quick Battle', 'Tower', 'Challenge', 'History'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => { setTab(t); setRespondingToId(null); }}
@@ -1287,6 +1309,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
             }`}
           >
             {t === 'Quick Battle' && <Lightning size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
+            {t === 'Tower' && <Crown size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
             {t === 'Challenge' && <Users size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
             {t === 'History' && <Clock size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
             {t}
@@ -1298,6 +1321,11 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           </button>
         ))}
       </div>
+
+      {/* ── TOWER ── */}
+      {tab === 'Tower' && (
+        <TowerPanel userCards={userCards} powerCap={powerCap} userBits={userBits} onResult={showBattleResult} />
+      )}
 
       {/* ── QUICK BATTLE ── */}
       {tab === 'Quick Battle' && (

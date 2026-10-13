@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE, WILDCARD_EXCHANGE_RATE } from '@/lib/fragments';
 import { RANK_TIERS } from '@/lib/ranks';
+import { TOWER_FLOORS } from '@/lib/tower';
 import { PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
@@ -530,6 +531,14 @@ export default function WikiPage() {
                   Beat a team of higher average rarity (Common = 0 … Legendary = 4, averaged over the 3 cards) and the win pays
                   +{Math.round(UPSET_BONUS.perTier * 100)}% BITS per tier of difference, up to +{Math.round(UPSET_BONUS.max * 100)}%.
                   Works in every league and in friend challenges; XP is unchanged.
+                </p>
+              </div>
+              <div className="mt-4 bg-slate-800/30 p-5 rounded-xl border border-orange-500/30">
+                <h3 className="text-lg font-bold text-orange-300 mb-2">The Tower</h3>
+                <p className="text-sm text-slate-300">
+                  {TOWER_FLOORS.length} floors of computer teams that get harder, with a mini-boss on floor 5 and a Legendary boss on floor {TOWER_FLOORS.length}.
+                  Every Monday (UTC) the tower gets a language theme and new teams, the same for everyone; you see the next opponents before you fight.
+                  The first clear of each floor in a week pays {TOWER_FLOORS.map(f => f.rewardBits).join(' · ')} BITS. The weekly ranking orders players by highest floor, then fewest attempts.
                 </p>
               </div>
               <p className="mt-4 text-xs text-slate-500">

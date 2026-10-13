@@ -73,6 +73,8 @@ interface TeamBuilderProps {
   setLeagueMode?: (mode: LeagueMode) => void;
   powerCap?: number;
   userBits?: number;
+  /** Overrides the quick-battle button and its confirmation (e.g. "Fight floor 3" in the Tower). */
+  quickAction?: { label: string; title: string; description: string };
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -760,7 +762,10 @@ function ConfirmationModal({
   loading,
   ranked = false,
   stake = 0,
+  action,
 }: {
+  /** Custom title / description for the quick-battle confirmation. */
+  action?: { title: string; description: string };
   slots: (TeamBuilderCard | null)[];
   mode: 'random' | 'challenge';
   /** BITS each player puts in a friend challenge (the winner takes both). */
@@ -792,11 +797,13 @@ function ConfirmationModal({
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
           <h2 className="text-2xl font-black text-white">
-            {mode === 'random' ? (ranked ? 'Battle Ranked?' : 'Battle Random?') : defenderUsername === OPEN_CHALLENGE ? 'Create a challenge link?' : `Challenge ${defenderUsername}?`}
+            {mode === 'random' ? (action ? action.title : ranked ? 'Battle Ranked?' : 'Battle Random?') : defenderUsername === OPEN_CHALLENGE ? 'Create a challenge link?' : `Challenge ${defenderUsername}?`}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'random'
-              ? ranked
+              ? action
+                ? action.description
+                : ranked
                 ? "Your team will face the saved team of a player near your rating. Both ratings change."
                 : 'Your team will be matched against a random opponent.'
               : defenderUsername === OPEN_CHALLENGE
@@ -1254,6 +1261,7 @@ export default function TeamBuilderUI({
   userCards,
   challengeUsername: initialChallengeUsername = '',
   challengeStake = 0,
+  quickAction,
   onSubmitRandom,
   onSubmitChallenge,
   loading = false,
@@ -1596,7 +1604,7 @@ export default function TeamBuilderUI({
                 )}
               >
                 <Lightning size={22} weight="fill" />
-                {loading ? 'Matchmaking...' : teamFull ? (leagueMode === 'RANKED' ? 'Battle Ranked' : 'Battle Random') : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
+                {loading ? 'Matchmaking...' : teamFull ? (quickAction?.label ?? (leagueMode === 'RANKED' ? 'Battle Ranked' : 'Battle Random')) : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
               </motion.button>
             )}
             
@@ -1782,6 +1790,7 @@ export default function TeamBuilderUI({
             slots={slots}
             mode="random"
             ranked={leagueMode === 'RANKED'}
+            action={quickAction ? { title: quickAction.title, description: quickAction.description } : undefined}
             onConfirm={handleConfirmRandom}
             onCancel={() => setShowConfirmRandom(false)}
             loading={loading || submitting}

@@ -64,6 +64,7 @@ model User {
   achievements        UserAchievement[]
   bitsTransactions    BitsTransaction[]
   seasonResults       SeasonResult[]
+  towerRuns           TowerRun[]
 
   @@index([referredById])
 }
@@ -394,4 +395,29 @@ model SeasonResult {
 
   @@unique([seasonId, userId])
   @@index([userId])
+}
+
+// A player's climb of the Tower in one week (tower.ts): floors cleared and attempts.
+model TowerRun {
+  id        String   @id @default(uuid())
+  userId    String
+  weekStart DateTime
+  cleared   Int      @default(0)
+  attempts  Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([weekStart, cleared])
+}
+
+// The opponents of one Tower floor for one week: fixed once drawn, the same for everyone.
+model TowerFloorTeam {
+  weekStart DateTime
+  floor     Int
+  theme     String
+  cardIds   String[]
+
+  @@id([weekStart, floor])
 }
