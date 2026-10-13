@@ -14,7 +14,7 @@
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 11 migrações, todas aditivas.
-- 157 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 161 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -59,7 +59,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
-| **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
+| **4** | 🃏 Coleção e economia | ✅ Repetidas contadas, Shiny em repetidas, fragmento coringa e caso Keslley (PR #41) · falta: **missões de dev pelo GitHub** 🅶, missões semanais, **histórico de BITS** (2.4) | 2 rodadas, P–M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
@@ -182,6 +182,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Comparar coleção 🅶:** botão em cada amigo abre "They have, you don't" / "You have, they don't" (`/api/friends/compare`, só entre amigos aceitos, as 120 mais raras de cada lado), com link para a página pública de cada carta.
 - **Ranking Colecionador 🅶:** aba "Collectors" no ranking. Pontos por carta única: Common 1 · Uncommon 2 · Rare 5 · Epic 12 · Legendary 30 (`collectorScore.ts`), somados num SQL só. O bônus por set fica para quando existirem sets (3.3).
 
+### Onda 4 — repetidas e fragmentos (PR #41)
+- **Repetidas contadas:** puxar uma carta que já tem soma 1 em `UserCard.quantity` (x2, x3… na carta; "Total Pulls" da coleção soma as repetidas). Os 29 registros antigos de repetidas não dizem qual carta era, então a contagem vale daqui para frente.
+- **Shiny em repetidas:** toda puxada rola os mesmos 5% (`SHINY_CHANCE`); uma repetida de carta não-Shiny a transforma em Shiny ("Duplicate turned Shiny!" na revelação). A forja usa a mesma constante.
+- **Fragmento coringa** (`src/lib/fragments.ts`): 3 fragmentos de qualquer linguagem → 1 coringa (`/api/forge/exchange`). Na invocação, a linguagem paga primeiro e os coringas completam (`planFragmentPayment`).
+- **Caso Keslley:** a forja recusava devs **sem linguagem principal** ("Developer lacks a primary language"). Agora eles são invocáveis, pagos só com coringas.
+- **Constantes de fragmentos** (`DUPLICATE_FRAGMENTS`, `PACK_DROP_CHANCE`, `PACK_DROP_FRAGMENTS`, `SHINY_CHANCE`) saíram do `boosterService` para `fragments.ts`; a wiki usa as mesmas (e deixou de dizer que todo booster solta fragmentos: é 15%).
+- **"Comprar carta da wishlist" já existia:** a forja invoca qualquer dev do GitHub com fragmentos + BITS. "Wishlist aumenta chance" não foi feito (feriria a regra de ouro 1).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -205,11 +213,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Item | Esforço |
 |---|---|
 | Missões semanais, botão de resgatar e 1 troca por dia | M |
-| **Alívio de fragmentos:** fragmento coringa (troca 3:1), escolher a linguagem do drop, wishlist aumenta chance. Resolve "usuário sem fragmentos (caso Keslley)" | P |
-| **Comprar carta da wishlist 🅶** ("cherry-pick"): fragmentos compram um dev **específico**, a ~5× o valor de reciclagem. Só devs que já existem em `Card` ou que já saíram para o jogador (evita "compre o Torvalds"). É compra, não sorteio, então não fere a regra 1. Depende de "Contar duplicatas" | P |
 | **Missões de dev 🅶:** grupo de missões diárias para quem conectou o GitHub — commit, abrir PR/issue, revisar PR ou comentar hoje. Uma chamada a `GET /users/{login}/events/public`; **verificar de novo no resgate** (anti-trapaça). Só eventos públicos, a API pode atrasar algumas horas. Protótipo dos dados da liga estilo Cartola | P |
-| Shiny também pode sair em duplicatas | P |
-| Contar duplicatas (`UserCard.quantity` nunca incrementa; "Total Pulls" = cartas únicas) | P |
 | Níveis desbloqueiam algo além de packs (modos, molduras, títulos) | M |
 | Histórico de BITS (tabela de transações), base para auditoria e pagamento | M |
 
@@ -315,7 +319,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|
 | Revelação uma carta por vez (Pokémon/MTG) | ✅ pack físico (2.1) e rasgável (PR #31) |
 | Verificar se a API está funcionando / mesmos devs | ✅ sorteio uniforme (1.1) |
-| O que fazer quando o usuário não tem fragmentos (Keslley) | pendente (2.4 alívio de fragmentos) |
+| O que fazer quando o usuário não tem fragmentos (Keslley) | ✅ fragmento coringa (PR #41) |
 | Sistema de elos | pendente (3.1) — rating já está correto |
 | Sincronizar BITS | ✅ |
 | Métodos de pagamento | pendente (Fase 4) |

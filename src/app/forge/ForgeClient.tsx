@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { WILDCARD, WILDCARD_EXCHANGE_RATE, maxWildcardsFrom, needsWildcards, planFragmentPayment } from '@/lib/fragments';
 import { EmptyState } from '@/components/EmptyState';
 import { Card } from '@/components/Card';
 import { useSession } from 'next-auth/react';
@@ -152,9 +153,14 @@ export default function ForgeClient() {
   const reqFragments = searchResult?.cost?.fragments || 0;
   const reqBits = searchResult?.cost?.bits || 0;
   const lang = searchResult?.stats?.primaryLanguage || 'Unknown';
-  const ownedFragments = fragments[lang] || 0;
-  
-  const hasFragments = ownedFragments >= reqFragments;
+  const onlyWildcards = needsWildcards(lang);
+  const ownedFragments = onlyWildcards ? 0 : fragments[lang] || 0;
+  const ownedWildcards = fragments[WILDCARD] || 0;
+  // Language fragments first, wildcards for the rest (null = can't cover it)
+  const payment = planFragmentPayment(fragments, lang, reqFragments);
+  const usableFragments = Math.min(reqFragments, ownedFragments + ownedWildcards);
+
+  const hasFragments = !!payment;
   const hasBits = currency >= reqBits;
   const canInvoke = hasFragments && hasBits;
 
@@ -173,8 +179,8 @@ export default function ForgeClient() {
 
     return (
       <div className="flex flex-wrap gap-2">
-        {activeFragments.map(([l, count]) => {
-          const colorClass = LANG_COLORS[l] || LANG_COLORS.Unknown;
+        {activeFragments.sort(([a], [b]) => (a === WILDCARD ? -1 : b === WILDCARD ? 1 : 0)).map(([l, count]) => {
+          const colorClass = l === WILDCARD ? 'bg-amber-400/15 text-amber-200 border-amber-400/40' : LANG_COLORS[l] || LANG_COLORS.Unknown;
           return (
             <div key={l} className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${colorClass} shadow-md`}>
               <span>{l}</span>
@@ -229,6 +235,7 @@ export default function ForgeClient() {
         <div className="mt-6 pt-4 border-t border-slate-800">
           <h3 className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-3">Your Fragment Wallet</h3>
           {renderWallet()}
+          <WildcardExchange fragments={fragments} onDone={fetchWallet} />
         </div>
       </div>
 
@@ -314,16 +321,22 @@ export default function ForgeClient() {
                     <div className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${LANG_COLORS[lang]?.split(' ')[0] || 'bg-slate-500'}`}></div>
                       <div>
-                        <div className="font-bold">{lang} Fragments</div>
-                        <div className="text-xs text-slate-400">Required: {reqFragments}</div>
+                        <div className="font-bold">{onlyWildcards ? 'Wildcard' : lang} Fragments</div>
+                        <div className="text-xs text-slate-400">
+                          Required: {reqFragments}
+                          {onlyWildcards ? ' · no primary language, paid with wildcards' : ownedWildcards > 0 ? ` · wildcards cover what ${lang} lacks` : ''}
+                        </div>
+                        {payment && payment.fromWildcard > 0 && (
+                          <div className="text-xs text-amber-300">Uses {payment.fromLanguage > 0 ? `${payment.fromLanguage} ${lang} + ` : ''}{payment.fromWildcard} wildcard</div>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className={`font-black text-lg ${hasFragments ? 'text-green-400' : 'text-red-400'}`}>
-                        {ownedFragments} / {reqFragments}
+                        {usableFragments} / {reqFragments}
                       </div>
                       {!hasFragments && (
-                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">Deficit: {reqFragments - ownedFragments}</div>
+                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">Deficit: {reqFragments - usableFragments}</div>
                       )}
                     </div>
                   </div>
@@ -351,7 +364,7 @@ export default function ForgeClient() {
                   <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden mb-6">
                     <div 
                       className="h-full bg-gradient-to-r from-orange-600 to-yellow-400 transition-all duration-1000"
-                      style={{ width: `${Math.min(100, (ownedFragments / reqFragments) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (usableFragments / reqFragments) * 100)}%` }}
                     />
                   </div>
 
@@ -496,6 +509,58 @@ export default function ForgeClient() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+/** Trade WILDCARD_EXCHANGE_RATE fragments of a language for one wildcard (pays any language). */
+function WildcardExchange({ fragments, onDone }: { fragments: Record<string, number>; onDone: () => void }) {
+  const languages = Object.keys(fragments).filter(l => maxWildcardsFrom(fragments, l) > 0);
+  const [language, setLanguage] = useState('');
+  const [amount, setAmount] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const selected = languages.includes(language) ? language : languages[0] ?? '';
+  const max = selected ? maxWildcardsFrom(fragments, selected) : 0;
+  const wildcards = Math.min(Math.max(1, amount), Math.max(1, max));
+
+  if (languages.length === 0) return null;
+
+  const exchange = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/forge/exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: selected, wildcards }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Exchange failed');
+      toast.success(`+${wildcards} wildcard fragment${wildcards === 1 ? '' : 's'}`);
+      onDone();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-sm">
+      <span className="font-bold text-amber-200">Wildcards</span>
+      <span className="text-xs text-slate-400">{WILDCARD_EXCHANGE_RATE} fragments of any language → 1 wildcard, which pays for any developer (even ones with no language).</span>
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <select value={selected} onChange={e => setLanguage(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label="Language to trade">
+          {languages.map(l => <option key={l} value={l}>{l} ({fragments[l]})</option>)}
+        </select>
+        <input
+          type="number" min={1} max={max} value={wildcards}
+          onChange={e => setAmount(Number(e.target.value))}
+          className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label="Wildcards to get"
+        />
+        <button onClick={exchange} disabled={busy} className="rounded-lg bg-amber-500/20 px-3 py-1.5 font-bold text-amber-100 hover:bg-amber-500/30 disabled:opacity-50">
+          {busy ? '…' : `Trade ${wildcards * WILDCARD_EXCHANGE_RATE} → ${wildcards}`}
+        </button>
+      </div>
     </div>
   );
 }
