@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { missionRequiredCount } from '@/lib/missionUtils';
 import { notifyAchievements } from '@/lib/achievementToast';
 import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
 import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
 import { PITY_THRESHOLD } from '@/lib/pity';
 import { PackOdds } from '@/components/PackOdds';
+import { MissionsPanel, type MissionInfo } from './MissionsPanel';
 import {
   Code,
   Trophy,
@@ -20,7 +20,6 @@ import {
   Coin,
   Gift,
   CheckCircle,
-  Circle,
   Package,
   ChartBar,
   CaretDown,
@@ -293,29 +292,22 @@ function refreshBits() {
   window.dispatchEvent(new Event('bits:refresh'));
 }
 
-interface UserMissionInfo {
-  id: string;
-  progress: number;
-  completed: boolean;
-  /** Progress needed to complete (added by getUserMissions). */
-  required?: number;
-  mission: { description: string; reward: number; type: string; targetValue: string | null };
-}
-
-/** Progress needed to finish a mission ("0 / 1" rather than "0 / Rare"). */
-function requiredFor(um: UserMissionInfo): number {
-  return typeof um.required === 'number'
-    ? um.required
-    : missionRequiredCount(um.mission?.type ?? '', um.mission?.targetValue);
-}
 
 export default function StoreClient({ 
   userCurrency,
   initialMissions,
   missionsResetInMs,
+  weeklyResetInMs,
+  canRerollMission,
+  githubConnected,
+  profileHref,
 }: { 
   userCurrency: number;
-  initialMissions: UserMissionInfo[];
+  initialMissions: MissionInfo[];
+  weeklyResetInMs: number;
+  canRerollMission: boolean;
+  githubConnected: boolean;
+  profileHref: string;
   /**
    * Time left until the next daily mission refresh (midnight UTC), measured on
    * the server: counting down from it works even when the device clock is off.
@@ -734,51 +726,13 @@ export default function StoreClient({
           )}
         </div>
         
-        {initialMissions.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl border border-dashed border-slate-700 bg-slate-900/50">
-            <p className="text-slate-400">No missions assigned right now. Check back tomorrow!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {initialMissions.map((um) => (
-              <div 
-                key={um.id} 
-                className={`p-6 rounded-2xl border backdrop-blur-sm transition-all ${
-                  um.completed 
-                    ? 'border-green-500/30 bg-green-500/5' 
-                    : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className={`font-bold ${um.completed ? 'text-green-400' : 'text-white'}`}>
-                    {um.mission.description}
-                  </h3>
-                  {um.completed ? (
-                    <CheckCircle className="text-green-500" size={24} weight="fill" />
-                  ) : (
-                    <Circle className="text-slate-600" size={24} weight="regular" />
-                  )}
-                </div>
-                
-                <div className="flex justify-between items-end mt-6 pt-4 border-t border-white/5">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Reward</span>
-                    <span className="text-yellow-400 font-bold flex items-center gap-1.5">
-                      +{um.mission.reward} Bits
-                    </span>
-                  </div>
-                  
-                  <div className="text-right">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider block mb-1">Progress</span>
-                    <span className="font-mono text-sm bg-black/40 px-2 py-1 rounded text-slate-300">
-                      {Math.min(um.progress, requiredFor(um))} / {requiredFor(um)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <MissionsPanel
+          missions={initialMissions}
+          canReroll={canRerollMission}
+          githubConnected={githubConnected}
+          weeklyResetInMs={weeklyResetInMs}
+          profileHref={profileHref}
+        />
       </section>
     </div>
   );

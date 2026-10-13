@@ -330,6 +330,14 @@ export async function getTokenOwnerLogin(token: string): Promise<string | null> 
   }
 }
 
+/** The user's latest public events (newest first; GitHub may show them a few minutes late). */
+export async function fetchPublicEvents(login: string, token?: string): Promise<{ type: string; created_at: string; payload?: { action?: string } }[]> {
+  if (!isValidGitHubLogin(login)) return [];
+  const { data } = await coreGet<{ type: string; created_at: string; payload?: { action?: string } }[]>(
+    `/users/${encodeURIComponent(login)}/events/public?per_page=100`, token);
+  return Array.isArray(data) ? data : [];
+}
+
 /** Full card stats for a developer, or `null` if the account doesn't exist / isn't a user. */
 export async function fetchGitHubUserStats(username: string, token?: string): Promise<DevStats | null> {
   if (!isValidGitHubLogin(username)) return null;

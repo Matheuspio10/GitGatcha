@@ -3,7 +3,7 @@
  * the reward constants, so the text never drifts from the real numbers).
  */
 import { LOGIN_CALENDAR_DAYS, LOGIN_CALENDAR_REWARDS } from './loginCalendar';
-import { DAILY_MISSION_COUNT } from './missionUtils';
+import { DAILY_MISSION_COUNT, WEEKLY_MISSION_COUNT } from './missionUtils';
 import { UPSET_BONUS } from './battleConfig';
 import { ACHIEVEMENTS } from './achievementUtils';
 import { GITHUB_LINK_BONUS } from './githubLink';
@@ -25,7 +25,7 @@ export function buildEarnGuide(username: string): EarnWay[] {
   return [
     { icon: 'checklist', title: 'Getting started', text: `The checklist in the corner pays ${ONBOARDING_TOTAL_BITS} BITS for your first steps.`, href: '/inventory' },
     { icon: 'calendar', title: 'Daily reward', text: `Claim it in the Store every day: ${first.bits} to ${last.bits} BITS over a ${LOGIN_CALENDAR_DAYS}-day streak${last.packName ? `, plus ${last.packName} on day ${LOGIN_CALENDAR_DAYS}` : ''}.`, href: '/store' },
-    { icon: 'target', title: 'Daily missions', text: `${DAILY_MISSION_COUNT} new missions every day at midnight UTC, each paying BITS.`, href: '/store' },
+    { icon: 'target', title: 'Missions', text: `${DAILY_MISSION_COUNT} new missions every day (swap one if you don't like it), ${WEEKLY_MISSION_COUNT} bigger ones every week, and a dev mission for real GitHub activity once you connect GitHub.`, href: '/store' },
     { icon: 'swords', title: 'Battles', text: `Battles pay BITS and XP (most leagues pay a little even on a loss). Beat a stronger team for up to +${Math.round(UPSET_BONUS.max * 100)}% BITS.`, href: '/battle' },
     { icon: 'level', title: 'Level ups', text: 'XP from packs and battles levels you up, and new levels give BITS and free boosters.', href: '/inventory' },
     { icon: 'trophy', title: 'Achievements', text: `${ACHIEVEMENTS.length} achievements with Bronze, Silver and Gold rewards.`, href: `/profile/${encodeURIComponent(username)}` },

@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 11 migrações, todas aditivas.
-- 161 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 12 migrações, todas aditivas.
+- 165 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -59,7 +59,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
-| **4** | 🃏 Coleção e economia | ✅ Repetidas contadas, Shiny em repetidas, fragmento coringa e caso Keslley (PR #41) · falta: **missões de dev pelo GitHub** 🅶, missões semanais, **histórico de BITS** (2.4) | 2 rodadas, P–M |
+| **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42) · falta: **histórico de BITS** (2.4) | 1 rodada, M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
@@ -190,6 +190,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Constantes de fragmentos** (`DUPLICATE_FRAGMENTS`, `PACK_DROP_CHANCE`, `PACK_DROP_FRAGMENTS`, `SHINY_CHANCE`) saíram do `boosterService` para `fragments.ts`; a wiki usa as mesmas (e deixou de dizer que todo booster solta fragmentos: é 15%).
 - **"Comprar carta da wishlist" já existia:** a forja invoca qualquer dev do GitHub com fragmentos + BITS. "Wishlist aumenta chance" não foi feito (feriria a regra de ouro 1).
 
+### Onda 4 — missões semanais e de dev (PR #42)
+- **Períodos de missão** (`UserMission.period`, migração `20261022000000_mission_periods`): cada um tem o próprio conjunto, trocado quando o período vira (`ensureMissions` em `economyService.ts`).
+  - **daily:** 3 por dia, como antes.
+  - **weekly:** 2 por semana, renovadas segunda 00:00 UTC (`WEEKLY_MISSION_POOL`: 10 boosters, 8 vitórias, 3 Epic+, 10 Rare+; 800–1000 BITS). Contam os mesmos eventos das diárias.
+  - **dev 🅶:** 1 por dia, só para quem conectou o GitHub (`DEV_MISSION_POOL`: commit, abrir PR, abrir issue, revisar PR, comentar; 150–200 BITS). O botão "Check GitHub" busca `GET /users/{login}/events/public` com o token do jogador e paga uma vez se a atividade de hoje (UTC) estiver lá (`githubActivityDone`). Só atividade pública; o GitHub pode demorar alguns minutos.
+- **Troca diária:** 1 missão diária não concluída pode ser trocada por dia (`User.missionRerollAt`, `/api/missions/reroll`).
+- A seção de missões da loja virou `MissionsPanel` (hoje · esta semana · dev). As missões continuam pagando sozinhas ao completar; só a de dev tem botão, porque precisa consultar o GitHub.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -212,8 +220,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.4 Economia e progressão (restante)
 | Item | Esforço |
 |---|---|
-| Missões semanais, botão de resgatar e 1 troca por dia | M |
-| **Missões de dev 🅶:** grupo de missões diárias para quem conectou o GitHub — commit, abrir PR/issue, revisar PR ou comentar hoje. Uma chamada a `GET /users/{login}/events/public`; **verificar de novo no resgate** (anti-trapaça). Só eventos públicos, a API pode atrasar algumas horas. Protótipo dos dados da liga estilo Cartola | P |
 | Níveis desbloqueiam algo além de packs (modos, molduras, títulos) | M |
 | Histórico de BITS (tabela de transações), base para auditoria e pagamento | M |
 
@@ -328,7 +334,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Arrumar o ranking | ✅ |
 | Efeitos sonoros | ✅ booster/batalha; sons próprios pendentes (2.6) |
 | Modo torre (Mortal Kombat) | pendente (3.2) |
-| Melhorar as missões | ✅ diárias; semanais pendentes (2.4) |
+| Melhorar as missões | ✅ diárias, semanais, de dev pelo GitHub e troca diária |
 | Ligas pessoais tipo Cartola | pendente (3.2) |
 | Áudio da batalha só inicia após clicar no som | ✅ |
 | Melhorar os achievements | ✅ |
