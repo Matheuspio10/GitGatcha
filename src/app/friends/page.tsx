@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { UserAvatar } from '@/components/UserAvatar';
 import Link from 'next/link';
-import { Users, UserPlus, Check, X, Shield, Sword } from '@phosphor-icons/react';
+import { Users, UserPlus, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons/react';
+import { InvitePanel } from '@/components/InvitePanel';
+import { CompareCollection } from '@/components/CompareCollection';
 
 export default function FriendsPage() {
   const { data: session } = useSession();
@@ -18,6 +20,8 @@ export default function FriendsPage() {
   const [outgoing, setOutgoing] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  // Friend whose collection is being compared with yours
+  const [comparing, setComparing] = useState<string | null>(null);
 
   useEffect(() => {
     if (session) {
@@ -118,6 +122,10 @@ export default function FriendsPage() {
             </form>
           </div>
 
+          {session?.user?.username && <InvitePanel username={session.user.username} />}
+
+          <CompareCollection username={comparing} onClose={() => setComparing(null)} />
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Friends List (Main Col) */}
@@ -151,6 +159,13 @@ export default function FriendsPage() {
                         </Link>
                         
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setComparing(friendConnection.user.username)}
+                            className="bg-slate-700 hover:bg-indigo-600/20 hover:text-indigo-300 text-slate-300 border border-slate-600 hover:border-indigo-500/50 p-2 rounded-lg transition-all"
+                            title="Compare collections"
+                          >
+                            <ArrowsLeftRight size={20} weight="bold" />
+                          </button>
                           <button 
                             onClick={() => handleChallenge(friendConnection.user.username)}
                             className="bg-slate-700 hover:bg-rose-600/20 hover:text-rose-400 text-slate-300 border border-slate-600 hover:border-rose-500/50 p-2 rounded-lg transition-all"

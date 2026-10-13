@@ -1,4 +1,7 @@
-import { Trophy, Medal, Sword, Shield, Star, Users, Globe } from '@phosphor-icons/react/dist/ssr';
+import { Trophy, Medal, Sword, Shield, Star, Users, Globe, Cards } from '@phosphor-icons/react/dist/ssr';
+import { Prisma } from '@prisma/client';
+import { RARITY_ORDER } from '@/lib/rarity';
+import { COLLECTOR_POINTS, collectorPointsLegend } from '@/lib/collectorScore';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
@@ -83,6 +86,76 @@ async function attachImages(rows: LeaderboardRow[]) {
   });
   const byId = new Map(images.map(i => [i.id, i.image]));
   for (const r of rows) r.image = byId.get(r.id) || null;
+}
+
+interface CollectorRow {
+  id: string;
+  name: string;
+  image: string | null;
+  points: number;
+  uniqueCards: number;
+  legendaries: number;
+}
+
+/** Collector ranking: points per unique card weighted by rarity, summed in one query. */
+async function loadCollectors(): Promise<CollectorRow[]> {
+  const pointsCase = Prisma.join(RARITY_ORDER.map(r => Prisma.sql`WHEN ${r} THEN ${COLLECTOR_POINTS[r]}`), ' ');
+  const rows = await prisma.$queryRaw<{ id: string; points: number; uniqueCards: number; legendaries: number }[]>`
+    SELECT uc."userId" AS id,
+           SUM(CASE c."rarity" ${pointsCase} ELSE 0 END)::int AS points,
+           COUNT(*)::int AS "uniqueCards",
+           (COUNT(*) FILTER (WHERE c."rarity" = 'Legendary'))::int AS legendaries
+    FROM "UserCard" uc
+    JOIN "Card" c ON c."id" = uc."cardId"
+    GROUP BY uc."userId"
+    ORDER BY points DESC, "uniqueCards" DESC
+    LIMIT ${GLOBAL_LIMIT}
+  `;
+  const users = await prisma.user.findMany({
+    where: { id: { in: rows.map(r => r.id) } },
+    select: { id: true, username: true, name: true, image: true },
+  });
+  const byId = new Map(users.map(u => [u.id, u]));
+  return rows
+    .filter(r => byId.get(r.id)?.username)
+    .map(r => {
+      const u = byId.get(r.id)!;
+      return { ...r, name: u.username || u.name || 'Anonymous', image: u.image || null };
+    });
+}
+
+function CollectorTable({ rows, currentUserId }: { rows: CollectorRow[]; currentUserId?: string }) {
+  return (
+    <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+      <table className="w-full table-fixed text-left">
+        <thead>
+          <tr className="border-b border-slate-800 text-slate-400">
+            <th className="w-16 px-5 py-4 font-bold text-xs uppercase tracking-wider">Rank</th>
+            <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">Player</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider">Points</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden sm:table-cell">Unique</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">Legendary</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={r.id} className={`border-b border-slate-800/50 ${r.id === currentUserId ? 'bg-indigo-500/10' : 'hover:bg-slate-800/30'}`}>
+              <td className="px-5 py-4"><RankBadge index={i} /></td>
+              <td className="px-5 py-4">
+                <Link href={`/u/${encodeURIComponent(r.name)}`} className="flex items-center gap-3 min-w-0">
+                  <LeaderboardAvatar username={r.name} image={r.image} />
+                  <span className="truncate font-bold text-white">{r.name}</span>
+                </Link>
+              </td>
+              <td className="px-5 py-4 font-mono font-bold text-emerald-300">{r.points}</td>
+              <td className="px-5 py-4 text-slate-300 hidden sm:table-cell">{r.uniqueCards}</td>
+              <td className="px-5 py-4 text-yellow-300 hidden md:table-cell">{r.legendaries}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function RankBadge({ index }: { index: number }) {
@@ -170,11 +243,15 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   const currentUser = await getCurrentUser();
   const { tab } = await searchParams;
   const showRivals = tab === 'rivals' && !!currentUser;
+  const showCollectors = tab === 'collectors';
 
-  const counts = await getBattleCounts();
+  const collectors = showCollectors ? await loadCollectors() : [];
+  const counts = showCollectors ? new Map<string, BattleCounts>() : await getBattleCounts();
 
   let rows: LeaderboardRow[];
-  if (showRivals) {
+  if (showCollectors) {
+    rows = [];
+  } else if (showRivals) {
     // Rivals = accepted friends (either direction) + you
     const friendships = await prisma.friendship.findMany({
       where: { status: 'ACCEPTED', OR: [{ userId: currentUser.id }, { friendId: currentUser.id }] },
@@ -210,7 +287,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       </div>
 
       <div className="flex justify-center gap-2">
-        <Link href="/leaderboard" className={tabClass(!showRivals)}>
+        <Link href="/leaderboard" className={tabClass(!showRivals && !showCollectors)}>
           <Globe size={16} weight="fill" /> Global
         </Link>
         {currentUser && (
@@ -218,15 +295,27 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             <Users size={16} weight="fill" /> Rivals
           </Link>
         )}
+        <Link href="/leaderboard?tab=collectors" className={tabClass(showCollectors)}>
+          <Cards size={16} weight="fill" /> Collectors
+        </Link>
       </div>
 
-      <LeaderboardTable
+      {showCollectors && (
+        <>
+          <p className="text-center text-xs text-slate-500">
+            Points per unique card: {collectorPointsLegend()}. No battles needed.
+          </p>
+          <CollectorTable rows={collectors} currentUserId={currentUser?.id} />
+        </>
+      )}
+
+      {!showCollectors && <LeaderboardTable
         rows={rows}
         currentUserId={currentUser?.id}
         accent={showRivals ? 'border-orange-500/20' : 'border-slate-800'}
-      />
+      />}
 
-      {rows.length === 0 && (
+      {!showCollectors && rows.length === 0 && (
         <div className="p-12 text-center text-slate-500">
           No players found. Be the first to join the battle!
         </div>

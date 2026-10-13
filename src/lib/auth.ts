@@ -6,6 +6,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { grantGithubLinkRewards } from '@/lib/githubLink';
+import { payReferralSafe } from '@/lib/referralService';
 import { getClientIp, rateLimit } from '@/lib/rateLimit';
 
 export const authOptions: NextAuthOptions = {
@@ -139,6 +140,8 @@ export const authOptions: NextAuthOptions = {
       } catch (err) {
         console.error('[Auth] GitHub link rewards failed:', (err as Error).message);
       }
+      // An invited player connecting GitHub pays the referral (never throws)
+      await payReferralSafe(user.id);
     },
   },
   pages: {

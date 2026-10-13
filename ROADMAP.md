@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 10 migrações, todas aditivas.
-- 152 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 11 migrações, todas aditivas.
+- 157 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -58,7 +58,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|---|---|
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
-| **3** | 📣 Crescimento | ✅ Carta e perfil compartilháveis, README da Signature e bônus de compartilhar (PR #39) · falta: **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 1 rodada, P–M |
+| **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
@@ -177,6 +177,11 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Bônus único de compartilhar:** 100 BITS na primeira vez (`SHARE_BONUS`, coluna `shareBonusGranted`, migração `20261020000000_share_bonus`).
 - `Card.tsx` passou a ter `'use client'` (usa hooks e agora aparece em páginas de servidor). `metadataBase` no layout vem de `siteUrl()` (`NEXT_PUBLIC_SITE_URL` › `VERCEL_PROJECT_PRODUCTION_URL` › `NEXTAUTH_URL`).
 
+### Onda 3 — indicação, comparar coleção, colecionadores (PR #40)
+- **Indicação de amigos 🅶** (`referral.ts`, `referralService.ts`): o código é o nome de usuário, num link `/try?ref=<nome>` (leva ao pack grátis). O `?ref` fica num cookie por 30 dias (`ReferralCapture`) e preenche o campo "Invited by" do modal de nome. Ao escolher o nome, **só contas novas** guardam quem convidou (`User.referredById`, sem autoindicação, uma vez só; migração `20261021000000_referrals`). Quando o indicado **conecta o GitHub** (evento `linkAccount`, ou na hora se entrou com GitHub), os dois ganham **200 BITS** (`REFERRAL_BONUS`); quem convidou recebe por no máximo **10** indicações (`REFERRAL_CAP`). Pagamento atômico com as duas linhas travadas, e notificação para os dois. Painel "Invite friends" em Amigos, com o link e as contagens.
+- **Comparar coleção 🅶:** botão em cada amigo abre "They have, you don't" / "You have, they don't" (`/api/friends/compare`, só entre amigos aceitos, as 120 mais raras de cada lado), com link para a página pública de cada carta.
+- **Ranking Colecionador 🅶:** aba "Collectors" no ranking. Pontos por carta única: Common 1 · Uncommon 2 · Rare 5 · Epic 12 · Legendary 30 (`collectorScore.ts`), somados num SQL só. O bônus por set fica para quando existirem sets (3.3).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -254,7 +259,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **PvP assíncrono "fantasma"** | Batalhar contra o time ativo salvo de outros jogadores com rating parecido (±100) | M |
 | **Desafios melhores** | Só entre amigos, revanche/melhor de 3, aposta de BITS combinada, link compartilhável | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
-| **Ranking Colecionador 🅶** | Segunda aba do ranking por pontos de coleção (cartas únicas ponderadas por raridade, bônus por set). Dá lugar a quem não joga PvP | P |
 
 ### 3.2 Modos de jogo
 | Feature | Descrição | Esforço |
@@ -277,8 +281,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|---|
 | Presentear cartas | Só cartas ganhas, com taxa em BITS | M |
 | Trocas entre jogadores | Depois do presente; sem valor em dinheiro | G |
-| **Indicação de amigos 🅶** | Código = username; os dois ganham; teto de 10 por pessoa; sem autoindicação; indicado só uma vez (chave única). Pagar só quando o indicado **conectar o GitHub** (contas por e-mail facilitam fraude). Dentro de `withUserLock` | P |
-| **Comparar coleção 🅶** | Em Amigos: "cartas que ele tem e você não" — prepara presentes e trocas | P |
 | Feed de atividade de amigos | "Fulano tirou uma Legendary" | M |
 
 ### 3.5 Visual de batalha
