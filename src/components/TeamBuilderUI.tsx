@@ -18,6 +18,7 @@ import {
   TYPE_ADVANTAGE_MULTIPLIER,
   TYPE_DISADVANTAGE_MULTIPLIER,
   type LeagueMode,
+  CHALLENGE_TTL_HOURS,
 } from '@/lib/battleConfig';
 // battleResolver only imports battleConfig (no prisma / server code), so it is client-safe.
 import { getCardType, getTypeMultiplier, type CardType } from '@/lib/battleResolver';
@@ -31,6 +32,7 @@ export interface TeamBuilderCard extends CardProps {
 }
 
 export type { LeagueMode };
+import { OPEN_CHALLENGE } from '@/lib/challenges';
 
 // Rewards, fees and rules come from battleConfig (same numbers the server pays and the wiki shows)
 const LEAGUE_STYLE: Record<LeagueMode, { icon: string; color: string; border: string; bg: string }> = {
@@ -59,6 +61,8 @@ export const LEAGUE_CONFIG = Object.fromEntries(
 interface TeamBuilderProps {
   userCards: TeamBuilderCard[];
   challengeUsername?: string;
+  /** Stake shown in the challenge confirmation. */
+  challengeStake?: number;
   onSubmitRandom: (cardIds: string[]) => void;
   onSubmitChallenge: (cardIds: string[], defenderUsername: string) => void;
   loading?: boolean;
@@ -755,9 +759,12 @@ function ConfirmationModal({
   onCancel,
   loading,
   ranked = false,
+  stake = 0,
 }: {
   slots: (TeamBuilderCard | null)[];
   mode: 'random' | 'challenge';
+  /** BITS each player puts in a friend challenge (the winner takes both). */
+  stake?: number;
   /** Ranked: the opponent is another player's saved team, and the rating changes. */
   ranked?: boolean;
   defenderUsername?: string;
@@ -785,14 +792,19 @@ function ConfirmationModal({
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
           <h2 className="text-2xl font-black text-white">
-            {mode === 'random' ? (ranked ? 'Battle Ranked?' : 'Battle Random?') : `Challenge ${defenderUsername}?`}
+            {mode === 'random' ? (ranked ? 'Battle Ranked?' : 'Battle Random?') : defenderUsername === OPEN_CHALLENGE ? 'Create a challenge link?' : `Challenge ${defenderUsername}?`}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'random'
               ? ranked
                 ? "Your team will face the saved team of a player near your rating. Both ratings change."
                 : 'Your team will be matched against a random opponent.'
-              : `Your challenge will be sent to ${defenderUsername}. They have 24h to respond.`}
+              : defenderUsername === OPEN_CHALLENGE
+                ? `Anyone with the link can accept it within ${CHALLENGE_TTL_HOURS}h. You'll get the link to share.`
+                : `Your challenge will be sent to ${defenderUsername}. They have ${CHALLENGE_TTL_HOURS}h to respond.`}
+            {mode === 'challenge' && stake > 0 && (
+              <span className="mt-2 block font-bold text-yellow-300">Stake: {stake} BITS each, winner takes {stake * 2}. Refunded if nobody accepts.</span>
+            )}
           </p>
         </div>
 
@@ -937,6 +949,17 @@ function FriendModal({
             autoFocus
           />
         </div>
+
+        <button
+          onClick={() => onSelect(OPEN_CHALLENGE)}
+          className="shrink-0 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-dashed border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10 text-left transition-colors"
+        >
+          <span className="text-xl">🔗</span>
+          <span>
+            <span className="block text-sm font-bold text-white">Anyone with a link</span>
+            <span className="block text-xs text-slate-400">Get a link to share anywhere; the first player to accept fights you.</span>
+          </span>
+        </button>
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 custom-scrollbar">
           {loading ? (
@@ -1230,6 +1253,7 @@ function loadSession<T>(key: string, fallback: T): T {
 export default function TeamBuilderUI({
   userCards,
   challengeUsername: initialChallengeUsername = '',
+  challengeStake = 0,
   onSubmitRandom,
   onSubmitChallenge,
   loading = false,
@@ -1405,6 +1429,12 @@ export default function TeamBuilderUI({
 
   const handleChallengeClick = () => {
     if (!teamFull) return;
+    // Rematch: the opponent is already known
+    if (initialChallengeUsername) {
+      setPendingChallengeUsername(initialChallengeUsername);
+      setShowConfirmChallenge(true);
+      return;
+    }
     setShowFriendModal(true);
   };
 
@@ -1769,6 +1799,7 @@ export default function TeamBuilderUI({
             slots={slots}
             mode="challenge"
             defenderUsername={pendingChallengeUsername}
+            stake={challengeStake}
             onConfirm={handleConfirmChallenge}
             onCancel={() => setShowConfirmChallenge(false)}
             loading={loading || submitting}

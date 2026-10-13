@@ -13,8 +13,8 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 14 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 173 testes (`npm test`), `tsc` sem erros, lint com 102 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 15 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 174 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
@@ -51,6 +51,32 @@
 
 ---
 
+## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
+
+Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a constante indicada.
+
+| PR | Decisão | Padrão no ar | Onde mudar |
+|---|---|---|---|
+| #39 | Bônus do primeiro compartilhamento | 100 BITS | `SHARE_BONUS` (`shareBonus.ts`) |
+| #40 | Indicação de amigos | 200 BITS cada, teto de 10 indicações pagas | `REFERRAL_BONUS`, `REFERRAL_CAP` (`referral.ts`) |
+| #40 | Pesos do Ranking Colecionador | Common 1 · Uncommon 2 · Rare 5 · Epic 12 · Legendary 30 | `COLLECTOR_POINTS` (`collectorScore.ts`) |
+| #41 | Troca de fragmento coringa | 3 fragmentos → 1 coringa | `WILDCARD_EXCHANGE_RATE` (`fragments.ts`) |
+| #41 | Repetida que rola Shiny | A carta vira Shiny (outra opção: dar algo extra) | `addCardToUser` (`boosterService.ts`) |
+| #42 | Missões semanais / de dev | 800–1000 / 150–200 BITS | `WEEKLY_MISSION_POOL`, `DEV_MISSION_POOL` (`missionUtils.ts`) |
+| #42 | Troca de missão diária | 1 por dia | `rerollDailyMission` (`economyService.ts`) |
+| #42 | Botão de resgatar missões | Não feito: missões pagam sozinhas ao completar | — |
+| #44 | Faixas dos elos | Silver 1050 · Gold 1150 · Platinum 1300 · Diamond 1450 | `RANK_TIERS` (`ranks.ts`) |
+| #44 | Recompensas do Ranked | 60 BITS vitória / 10 derrota; defesa que segura +20 | `LEAGUES.RANKED`, `RANKED_DEFENSE_WIN_BITS` (`battleConfig.ts`) |
+| #44 | Time atacado perde rating mesmo offline? | Sim (ELO normal dos dois lados) | `resolveRankedBattle` (`battleService.ts`) |
+| #45 | Promoção de elo na temporada | Silver +100 · Gold +200 · Platinum +400 · Diamond +800 | `PROMOTION_BITS` (`seasons.ts`) |
+| #45 | Fim de temporada | Pelo **pico**: Bronze +100 … Diamond +1200 | `SEASON_REWARD_BITS` (`seasons.ts`) |
+| #45 | Reset de temporada | Metade do caminho até 1000 | `softResetRating` (`seasons.ts`) |
+| #46 | Aposta máxima em desafio | 500 BITS cada | `CHALLENGE_STAKE_MAX` (`battleConfig.ts`) |
+| #46 | Desafio direto só entre amigos | Sim (para os outros, link) | `areFriends` na rota `api/battle/challenge` |
+| #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
+
+---
+
 ## 🌊 Ondas de melhorias (ordem sugerida)
 
 Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–3 rodadas (uma PR por rodada). Os números entre parênteses apontam para a seção do backlog.
@@ -61,7 +87,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
-| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45) · falta: desafios melhores (revanche, link, aposta) e partidas de colocação (3.1) | 1 rodada, M |
+| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | **Torre estilo Mortal Kombat**, **Sprints** 🅶, eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 3+ rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
@@ -223,6 +249,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Interface:** faixa da temporada no ranking (tempo restante, seu pico, tabela de recompensas), temporadas passadas no perfil e na página pública, regra na wiki.
 - **Partidas de colocação** ficaram para depois: mudam o K por jogador e quebrariam o `recompute-ratings`.
 
+### Onda 5 — desafios melhores (PR #46)
+- **Só entre amigos:** a API passou a exigir amizade aceita no desafio direto (antes só a interface filtrava).
+- **Desafio por link:** "Anyone with a link" no modal de amigo cria um desafio aberto (`Battle.isOpen`, sem defensor); a página pública `/challenge/<id>` mostra quem desafia, as raridades do time, a aposta e o botão de aceitar (ou criar conta). O primeiro a aceitar leva (`joinChallenge`, atômico).
+- **Aposta** (`Battle.stake`, 0–500 BITS, migração `20261025000000_challenge_stakes`): quem desafia paga ao criar, quem aceita paga ao aceitar, o vencedor leva o dobro (`challenge_payout`). Expirado ou cancelado devolve (`challenge_refund`); se a batalha falhar depois do aceite, a aposta de quem aceitou volta. Tudo pelo histórico de BITS.
+- **Cancelar** desafio pendente (DELETE, com reembolso) e **copiar link** na lista de enviados; **Rematch** no histórico abre o desafio contra o mesmo jogador com a mesma aposta.
+- `challengeService.ts`: `parseStake`, `areFriends`, `expireChallenges` (com reembolso, uma vez só), `cancelChallenge`, `joinChallenge` / `releaseDefender`.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -290,7 +323,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Feature | Descrição | Esforço |
 |---|---|---|
 | **Partidas de colocação** | As temporadas existem (PR #45). Falta: K maior nas primeiras partidas da temporada; exige o `recompute-ratings` entender temporadas | P |
-| **Desafios melhores** | Só entre amigos, revanche/melhor de 3, aposta de BITS combinada, link compartilhável | M |
+| **Melhor de 3** | Os desafios já têm link, aposta e revanche (PR #46). Falta a série melhor de 3 | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
 
 ### 3.2 Modos de jogo
@@ -353,7 +386,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Sincronizar BITS | ✅ |
 | Métodos de pagamento | pendente (Fase 4) |
 | Treinar as cartas | pendente (3.3) |
-| Melhorar os desafios | ✅ bugs/exploits; resto em 3.1 |
+| Melhorar os desafios | ✅ bugs, só amigos, link, aposta, revanche, cancelar (PR #46); melhor de 3 no backlog |
 | Arrumar o ranking | ✅ |
 | Efeitos sonoros | ✅ booster/batalha; sons próprios pendentes (2.6) |
 | Modo torre (Mortal Kombat) | pendente (3.2) |

@@ -372,6 +372,12 @@ async function finishFriendBattle(
     },
   });
 
+  // The winner takes both stakes (the battle is COMPLETED above, so this runs once)
+  if (battle.stake > 0 && winnerId) {
+    const loserName = (challengerWon ? battle.defender?.username : battle.challenger?.username) ?? 'a friend';
+    await addBits(winnerId, battle.stake * 2, 'challenge_payout', { detail: `Stakes vs ${loserName}` });
+  }
+
   // Grant rewards to both players
   await addBits(battle.challengerId, challengerRewards.bits, 'battle_reward', { detail: `Friend challenge ${challengerWon ? 'win' : 'loss'}` });
   const challengerXpResult = await grantXP(battle.challengerId, challengerRewards.xp);

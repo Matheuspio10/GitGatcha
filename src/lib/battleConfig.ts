@@ -83,6 +83,11 @@ export const RANKED_DEFENSE_WIN_BITS = 20;
 /** A player's last N Ranked opponents are skipped when finding the next one (when possible). */
 export const RANKED_RECENT_OPPONENTS = 3;
 
+/** Most BITS each player can put in a friend challenge (the winner takes both stakes). */
+export const CHALLENGE_STAKE_MAX = 500;
+/** Hours a challenge waits for an answer before it expires (stakes go back). */
+export const CHALLENGE_TTL_HOURS = 24;
+
 /** Friend challenges always use these rewards (no entry fee, no restrictions). */
 export const FRIEND_BATTLE_LEAGUE: LeagueMode = 'OPEN';
 
