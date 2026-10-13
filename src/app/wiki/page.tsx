@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE, WILDCARD_EXCHANGE_RATE } from '@/lib/fragments';
 import { RANK_TIERS } from '@/lib/ranks';
 import { TOWER_FLOORS } from '@/lib/tower';
+import { DAILY_SPRINT_LANGUAGES, SPRINT_TEAM_SIZE, WEEKLY_SPRINT_FAMILIES, sprintRewardsLegend } from '@/lib/sprints';
 import { PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
@@ -540,6 +541,17 @@ export default function WikiPage() {
                   Every Monday (UTC) the tower gets a language theme and new teams, the same for everyone; you see the next opponents before you fight.
                   The first clear of each floor in a week pays {TOWER_FLOORS.map(f => f.rewardBits).join(' · ')} BITS. The weekly ranking orders players by highest floor, then fewest attempts.
                 </p>
+              </div>
+              <div className="mt-4 bg-slate-800/30 p-5 rounded-xl border border-cyan-500/30">
+                <h3 className="text-lg font-bold text-cyan-300 mb-2">Sprints</h3>
+                <p className="text-sm text-slate-300">
+                  Two competitions with a theme, with nothing to set up: when one ends, every player is scored by the power (ATK + DEF + HP) of their {SPRINT_TEAM_SIZE} strongest cards of the theme.
+                  Only cards you had before the end count, and tied scores share the place (1, 1, 3). See them in Rankings → Sprints.
+                </p>
+                <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
+                  <li><strong>Daily Sprint</strong> (midnight to midnight UTC): one language, in rotation ({DAILY_SPRINT_LANGUAGES.join(', ')}). BITS: {sprintRewardsLegend('daily')}.</li>
+                  <li><strong>Weekly Sprint</strong> (Monday to Monday UTC): a family of languages ({WEEKLY_SPRINT_FAMILIES.map(f => f.name).join(', ')}). BITS: {sprintRewardsLegend('weekly')}.</li>
+                </ul>
               </div>
               <p className="mt-4 text-xs text-slate-500">
                 Balanced League cap: {BALANCED_POWER_CAP_MULTIPLIER}× the average power of every card in the game; the Arena shows the current value.

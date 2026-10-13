@@ -65,6 +65,7 @@ model User {
   bitsTransactions    BitsTransaction[]
   seasonResults       SeasonResult[]
   towerRuns           TowerRun[]
+  sprintResults       SprintResult[]
 
   @@index([referredById])
 }
@@ -420,4 +421,34 @@ model TowerFloorTeam {
   cardIds   String[]
 
   @@id([weekStart, floor])
+}
+
+// A daily or weekly Sprint (sprints.ts): its theme is fixed when the row is created; closedAt once paid.
+model Sprint {
+  id       String    @id // "daily:2026-10-13", "weekly:2026-10-12"
+  kind     String
+  theme    String
+  startsAt DateTime
+  endsAt   DateTime
+  closedAt DateTime?
+
+  results SprintResult[]
+
+  @@index([closedAt, endsAt])
+}
+
+// Where a player finished a closed Sprint (the top SPRINT_RESULTS_KEPT) and what it paid.
+model SprintResult {
+  sprintId   String
+  userId     String
+  position   Int
+  score      Int
+  rewardBits Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  sprint Sprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sprintId, userId])
+  @@index([userId])
 }

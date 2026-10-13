@@ -1,4 +1,4 @@
-import { Trophy, Medal, Sword, Shield, Star, Users, Globe, Cards } from '@phosphor-icons/react/dist/ssr';
+import { Trophy, Medal, Sword, Shield, Star, Users, Globe, Cards, Lightning } from '@phosphor-icons/react/dist/ssr';
 import { Prisma } from '@prisma/client';
 import { RARITY_ORDER } from '@/lib/rarity';
 import { COLLECTOR_POINTS, collectorPointsLegend } from '@/lib/collectorScore';
@@ -11,6 +11,9 @@ import { LeaderboardAvatar } from './LeaderboardAvatar';
 import { RankBadge as TierBadge } from '@/components/RankBadge';
 import { SeasonBanner } from '@/components/SeasonBanner';
 import { getCurrentSeason } from '@/lib/seasonService';
+import { getSprintsState } from '@/lib/sprintService';
+import { SprintBoard } from '@/components/SprintBoard';
+import { SPRINT_TEAM_SIZE } from '@/lib/sprints';
 
 const GLOBAL_LIMIT = 50;
 
@@ -253,12 +256,15 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   ]);
   const showRivals = tab === 'rivals' && !!currentUser;
   const showCollectors = tab === 'collectors';
+  const showSprints = tab === 'sprints';
+  const noBattleTable = showCollectors || showSprints;
 
   const collectors = showCollectors ? await loadCollectors() : [];
-  const counts = showCollectors ? new Map<string, BattleCounts>() : await getBattleCounts();
+  const sprints = showSprints ? await getSprintsState(currentUser?.id ?? null, now) : [];
+  const counts = noBattleTable ? new Map<string, BattleCounts>() : await getBattleCounts();
 
   let rows: LeaderboardRow[];
-  if (showCollectors) {
+  if (noBattleTable) {
     rows = [];
   } else if (showRivals) {
     // Rivals = accepted friends (either direction) + you
@@ -295,10 +301,10 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         </p>
       </div>
 
-      {season && !showCollectors && <SeasonBanner season={season} now={now} viewer={viewerSeason} />}
+      {season && !noBattleTable && <SeasonBanner season={season} now={now} viewer={viewerSeason} />}
 
-      <div className="flex justify-center gap-2">
-        <Link href="/leaderboard" className={tabClass(!showRivals && !showCollectors)}>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Link href="/leaderboard"className={tabClass(!showRivals && !noBattleTable)}>
           <Globe size={16} weight="fill" /> Global
         </Link>
         {currentUser && (
@@ -309,7 +315,19 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         <Link href="/leaderboard?tab=collectors" className={tabClass(showCollectors)}>
           <Cards size={16} weight="fill" /> Collectors
         </Link>
+        <Link href="/leaderboard?tab=sprints" className={tabClass(showSprints)}>
+          <Lightning size={16} weight="fill" /> Sprints
+        </Link>
       </div>
+
+      {showSprints && (
+        <>
+          <p className="text-center text-xs text-slate-500">
+            Nothing to set up: when a sprint ends, everyone is scored by their {SPRINT_TEAM_SIZE} strongest cards of the theme. Ties share the place.
+          </p>
+          {sprints.map(s => <SprintBoard key={s.kind} sprint={s} now={now} viewerId={currentUser?.id} />)}
+        </>
+      )}
 
       {showCollectors && (
         <>
@@ -320,13 +338,13 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         </>
       )}
 
-      {!showCollectors && <LeaderboardTable
+      {!noBattleTable && <LeaderboardTable
         rows={rows}
         currentUserId={currentUser?.id}
         accent={showRivals ? 'border-orange-500/20' : 'border-slate-800'}
       />}
 
-      {!showCollectors && rows.length === 0 && (
+      {!noBattleTable && rows.length === 0 && (
         <div className="p-12 text-center text-slate-500">
           No players found. Be the first to join the battle!
         </div>
