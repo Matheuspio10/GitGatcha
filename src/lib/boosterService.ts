@@ -7,6 +7,8 @@ import { getPlayerGithubToken, getRecentPulls, recordPulls, samplerForToken } fr
 import { refillReserve, reserveDeficit, takeFromReserve } from './boosterReserve';
 import { isRarity, Rarity, rarityForSlot } from './rarity';
 import { asArray, asRecord, withUserLock } from './userLock';
+import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE } from './fragments';
+export { SHINY_CHANCE };
 import { applyPity, packsUntilPity, pityCounterUpdate, PITY_THRESHOLD } from './pity';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
@@ -40,13 +42,6 @@ export function ensureMinimumRarity(rarities: string[], minRarity: string): stri
   return rarities;
 }
 
-const FRAGMENTS_PER_RARITY: Record<string, number> = {
-  'Common': 5,
-  'Uncommon': 10,
-  'Rare': 20,
-  'Epic': 40,
-  'Legendary': 80
-};
 
 /** No card could be drawn or granted. Thrown before anything reached the player. */
 export class EmptyPackError extends Error {
@@ -121,6 +116,7 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
         isShiny: userCardResult.isShiny,
         userCardId: userCardResult.id,
         isDuplicate: userCardResult.isDuplicate,
+        shinyUpgrade: userCardResult.shinyUpgrade,
         fragmentsEarned: userCardResult.fragmentsEarned
       });
     } catch (err) {
@@ -146,7 +142,7 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
 
   // Handle 15% Pack Drop for Fragments
   let packDropFragments = null;
-  if (secureMathRandom() < 0.15 && newCards.length > 0) {
+  if (secureMathRandom() < PACK_DROP_CHANCE && newCards.length > 0) {
     // Determine language mapping
     let dropLang = pack?.themeLanguage;
     if (!dropLang) {
@@ -164,7 +160,7 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
     }
 
     if (dropLang && dropLang !== 'Unknown') {
-      const dropAmount = 20; // Example standard pack drop amount
+      const dropAmount = PACK_DROP_FRAGMENTS;
       packDropFragments = {
         language: dropLang,
         amount: dropAmount
@@ -377,18 +373,24 @@ export async function upsertCard(dev: DevStats, fresh: boolean) {
 export async function addCardToUser(userId: string, card: { id: string; rarity: string; primaryLanguage: string | null }) {
   // Locked: two parallel openings must not both create the same card for the player
   const result = await withUserLock(userId, async (tx) => {
+    // Every pull rolls for Shiny, duplicates included: a duplicate can turn the card Shiny
+    const rolledShiny = secureMathRandom() < SHINY_CHANCE;
     const existingCard = await tx.userCard.findFirst({ where: { userId, cardId: card.id } });
     if (!existingCard) {
-      const isShiny = secureMathRandom() < 0.05;
-      const newCard = await tx.userCard.create({ data: { userId, cardId: card.id, isShiny } });
-      return { isShiny, id: newCard.id, isDuplicate: false, fragmentsEarned: 0 };
+      const newCard = await tx.userCard.create({ data: { userId, cardId: card.id, isShiny: rolledShiny } });
+      return { isShiny: rolledShiny, id: newCard.id, isDuplicate: false, shinyUpgrade: false, fragmentsEarned: 0 };
     }
-    return { isShiny: existingCard.isShiny, id: existingCard.id, isDuplicate: true, fragmentsEarned: 0 };
+    const shinyUpgrade = rolledShiny && !existingCard.isShiny;
+    await tx.userCard.update({
+      where: { id: existingCard.id },
+      data: { quantity: { increment: 1 }, ...(shinyUpgrade ? { isShiny: true } : {}) },
+    });
+    return { isShiny: existingCard.isShiny || shinyUpgrade, id: existingCard.id, isDuplicate: true, shinyUpgrade, fragmentsEarned: 0 };
   });
 
   const lang = card.primaryLanguage || 'Unknown';
   if (result.isDuplicate && lang !== 'Unknown') {
-    const amount = FRAGMENTS_PER_RARITY[card.rarity] || 5;
+    const amount = DUPLICATE_FRAGMENTS[card.rarity] || DUPLICATE_FRAGMENTS.Common;
     await addFragments(userId, lang, amount, `Duplicate - ${card.rarity} ${lang} card`);
     return { ...result, fragmentsEarned: amount };
   }

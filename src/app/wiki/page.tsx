@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE, WILDCARD_EXCHANGE_RATE } from '@/lib/fragments';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
@@ -608,8 +609,10 @@ export default function WikiPage() {
                 <p>The <Link href="/forge" className="text-indigo-400 hover:underline">Forge</Link> allows you to bypass the Gacha randomness and directly craft the exact developer card you want.</p>
                 <ul>
                   <li><strong>Searching:</strong> Type any valid GitHub username to pull that developer&apos;s live stats into the app.</li>
-                  <li><strong>Fragments:</strong> Crafting requires Language Fragments matching the target developer&apos;s primary language, plus BITS. The cost depends on the card&apos;s rarity: {RARITY_ORDER.map(r => `${r} ${INVOCATION_COSTS[r].fragments} fragments + ${INVOCATION_COSTS[r].bits} BITS`).join(' · ')}.</li>
-                  <li><strong>Earning Fragments:</strong> Every booster you open drops Language Fragments for the most common language among its cards.</li>
+                  <li><strong>Fragments:</strong> Crafting requires Language Fragments matching the target developer&apos;s primary language (wildcards cover any shortfall), plus BITS. The cost depends on the card&apos;s rarity: {RARITY_ORDER.map(r => `${r} ${INVOCATION_COSTS[r].fragments} fragments + ${INVOCATION_COSTS[r].bits} BITS`).join(' · ')}.</li>
+                  <li><strong>Earning Fragments:</strong> Pulling a card you already have counts it (x2, x3…) and gives fragments of its language: {RARITY_ORDER.map(r => `${r} ${DUPLICATE_FRAGMENTS[r]}`).join(' · ')}. Each booster also has a {Math.round(PACK_DROP_CHANCE * 100)}% chance to drop {PACK_DROP_FRAGMENTS} fragments of its theme (or most common) language.</li>
+                  <li><strong>Wildcards:</strong> Trade {WILDCARD_EXCHANGE_RATE} fragments of any language for 1 wildcard fragment. Wildcards pay for any language, and they are the only way to craft developers with no primary language.</li>
+                  <li><strong>Shiny:</strong> Every pull has a {Math.round(SHINY_CHANCE * 100)}% chance to be Shiny, duplicates included: a duplicate can turn your card Shiny.</li>
                   <li><strong>Wishlist:</strong> Add developers to your Wishlist to easily track your fragment progress towards acquiring them.</li>
                 </ul>
               </div>

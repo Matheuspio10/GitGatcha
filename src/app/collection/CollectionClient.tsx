@@ -161,7 +161,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
 
   // Global Collection Stats calculations
   const totalUnique = localCards.length;
-  const totalPulls = localCards.reduce((acc, card) => acc + (1 + (card.shards || 0)), 0);
+  // Every pull of a card, duplicates included (UserCard.quantity)
+  const totalPulls = localCards.reduce((acc, card) => acc + (card.quantity || 1), 0);
 
   const rarityCounts = useMemo(() => {
     const counts = { Legendary: 0, Epic: 0, Rare: 0, Uncommon: 0, Common: 0 };
@@ -209,7 +210,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
           comparison = a.hp - b.hp;
           break;
         case 'COUNT':
-          comparison = (a.shards || 0) - (b.shards || 0);
+          comparison = (a.quantity || 1) - (b.quantity || 1);
           break;
         case 'LOYALTY':
           comparison = (a.loyaltyCount || 0) - (b.loyaltyCount || 0);
@@ -423,7 +424,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                   </tr>
                 ) : (
                   paginatedData.map(card => {
-                    const qty = 1 + (card.shards || 0);
+                    const qty = card.quantity || 1;
                     const rarityColor = RARITY_COLORS[card.rarity] || '#fff';
                     const abbr = RARITY_ABBR[card.rarity] || 'UNK';
                     const loyaltyCount = card.loyaltyCount || 0;
@@ -511,7 +512,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
               >
                  <Card
                    {...card}
-                   quantity={1 + (card.shards || 0)}
+                   quantity={card.quantity || 1}
                    disableLink={true}
                    loyaltyTier={card.loyaltyTier}
                    loyaltyCount={card.loyaltyCount}
@@ -537,7 +538,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                <div className="pointer-events-none scale-90 sm:scale-100 xl:scale-110 origin-top mb-2 sm:mb-4 xl:mb-12">
                  <Card
                    {...selectedCard}
-                   quantity={1 + (selectedCard.shards || 0)}
+                   quantity={selectedCard.quantity || 1}
                    disableLink={true}
                    loyaltyTier={selectedCard.loyaltyTier}
                    loyaltyCount={selectedCard.loyaltyCount}

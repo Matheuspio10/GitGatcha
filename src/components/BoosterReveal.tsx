@@ -15,7 +15,7 @@ import {
   preloadBoosterSounds,
 } from '@/lib/boosterAudio';
 
-type RevealCard = CardProps & { isDuplicate?: boolean; fragmentsEarned?: number };
+type RevealCard = CardProps & { isDuplicate?: boolean; shinyUpgrade?: boolean; fragmentsEarned?: number };
 
 export interface BoosterPackTheme {
   gradient?: string;
@@ -988,7 +988,7 @@ export function BoosterReveal({
   const caption =
     !inPack && currentCard && isCurrentRevealed
       ? currentCard.isDuplicate
-        ? `Duplicate · +${currentCard.fragmentsEarned ?? 0} ${currentCard.primaryLanguage || ''} fragments`
+        ? `${currentCard.shinyUpgrade ? 'Duplicate turned Shiny!' : 'Duplicate'} · +${currentCard.fragmentsEarned ?? 0} ${currentCard.primaryLanguage || ''} fragments`
         : 'New card for your collection!'
       : null;
 

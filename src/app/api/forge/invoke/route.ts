@@ -5,6 +5,7 @@ import { randomInt } from 'node:crypto';
 import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
 import { fetchGitHubUserStats, isValidGitHubLogin, toCardData } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
+import { SHINY_CHANCE, WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
@@ -22,14 +23,11 @@ export async function POST(req: Request) {
 
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });
-    if (!stats.primaryLanguage || stats.primaryLanguage === 'Unknown') {
-      return NextResponse.json({ error: 'Developer lacks a primary language' }, { status: 400 });
-    }
-
     const { fragments, bits } = getInvocationCost(stats.rarity);
 
     const userId = session.user.id;
-    const lang = stats.primaryLanguage;
+    // Developers with no primary language are paid with wildcard fragments only
+    const lang = stats.primaryLanguage || 'Unknown';
 
     let newCardStats;
     try {
@@ -41,7 +39,8 @@ export async function POST(req: Request) {
         if (!user) throw new UserFacingError('User not found', 404);
 
         const userFragments = asRecord(user.fragments);
-        if ((userFragments[lang] || 0) < fragments) throw new UserFacingError('Not enough fragments');
+        const payment = planFragmentPayment(userFragments, lang, fragments);
+        if (!payment) throw new UserFacingError('Not enough fragments');
         if (user.currency < bits) throw new UserFacingError('Not enough BITS');
 
         let card = await tx.card.findUnique({ where: { githubUsername: stats.githubUsername } });
@@ -50,14 +49,14 @@ export async function POST(req: Request) {
         }
         if (!card) card = await tx.card.create({ data: toCardData(stats) });
 
-        userFragments[lang] -= fragments;
         const logs = asArray(user.fragmentLogs);
-        logs.unshift({
-          date: new Date().toISOString(),
-          source: `Invocation - ${stats.name || username}`,
-          language: lang,
-          amount: -fragments
-        });
+        const spend = (language: string, amount: number) => {
+          if (amount <= 0) return;
+          userFragments[language] = (userFragments[language] || 0) - amount;
+          logs.unshift({ date: new Date().toISOString(), source: `Invocation - ${stats.name || username}`, language, amount: -amount });
+        };
+        spend(lang, payment.fromLanguage);
+        spend(WILDCARD, payment.fromWildcard);
 
         await tx.user.update({
           where: { id: userId },
@@ -68,7 +67,7 @@ export async function POST(req: Request) {
           }
         });
 
-        const isShiny = randomInt(0, 100) < 5;
+        const isShiny = randomInt(0, 1_000_000) < SHINY_CHANCE * 1_000_000;
         const userCard = await tx.userCard.create({
           data: { userId, cardId: card.id, isShiny }
         });
