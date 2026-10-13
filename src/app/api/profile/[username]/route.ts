@@ -40,6 +40,7 @@ export async function GET(
         ]
       },
       include: {
+        seasonResults: { select: { seasonId: true, peakRating: true }, orderBy: { seasonId: 'desc' }, take: 12 },
         cards: {
             include: {
                 card: true,
@@ -235,6 +236,7 @@ export async function GET(
             bio: userProfile.bio || null,
             bannerImage: userProfile.bannerImage || null,
             preferredLanguage: userProfile.preferredLanguage || null,
+            seasons: userProfile.seasonResults,
         },
         stats: {
             totalCards,

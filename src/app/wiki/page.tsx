@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE, WILDCARD_EXCHANGE_RATE } from '@/lib/fragments';
 import { RANK_TIERS } from '@/lib/ranks';
+import { PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
@@ -495,7 +496,7 @@ export default function WikiPage() {
               </h2>
               
               <p className="mb-6 text-slate-300">
-                League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don&apos;t need to be online), and both ratings move. A saved team that holds earns its owner {RANKED_DEFENSE_WIN_BITS} BITS. Ranks: {RANK_TIERS.map(t => `${t.name} ${t.min > 0 ? t.min + '+' : ''}`.trim()).join(' · ')}.
+                League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don&apos;t need to be online), and both ratings move. A saved team that holds earns its owner {RANKED_DEFENSE_WIN_BITS} BITS. Ranks: {RANK_TIERS.map(t => `${t.name} ${t.min > 0 ? t.min + '+' : ''}`.trim()).join(' · ')}. Seasons last a calendar month (UTC): the first time you reach a rank in a season pays {RANK_TIERS.filter(t => PROMOTION_BITS[t.id] > 0).map(t => `${t.name} +${PROMOTION_BITS[t.id]}`).join(' · ')} BITS, and at the end everyone who played PvP gets BITS for their peak rank ({RANK_TIERS.map(t => `${t.name} +${SEASON_REWARD_BITS[t.id]}`).join(' · ')}) before every rating moves halfway back to {STARTING_RATING}.
               </p>
               <div className="space-y-4">
                 {LEAGUE_MODES.map((mode) => {

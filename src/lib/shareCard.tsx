@@ -103,6 +103,7 @@ export async function getShareProfile(username: string) {
     select: {
       id: true, username: true, image: true, level: true, rating: true, createdAt: true,
       cards: { select: { edition: true, isShiny: true, card: true } },
+      seasonResults: { select: { seasonId: true, tier: true, peakRating: true }, orderBy: { seasonId: 'desc' }, take: 12 },
     },
   });
   if (!user?.username) return null;
@@ -128,6 +129,7 @@ export async function getShareProfile(username: string) {
     byRarity,
     topCards: ranked.filter(uc => uc.edition !== SIGNATURE_EDITION).slice(0, 6).map(withTitle),
     signatureCard: signature ? withTitle(signature) : null,
+    seasons: user.seasonResults,
   };
 }
 
