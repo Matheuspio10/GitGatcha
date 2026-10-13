@@ -32,6 +32,9 @@ export default async function Home() {
           <Link href="/login?register=true" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all hover:-translate-y-0.5 text-center">
             Register Account
           </Link>
+          <Link href="/try" className="w-full font-bold py-3 px-4 rounded-xl border border-commit/50 text-commit hover:bg-commit/10 transition-all hover:-translate-y-0.5 text-center">
+            Open a free pack first (no sign-up)
+          </Link>
         </div>
       </div>
     </div>

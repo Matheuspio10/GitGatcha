@@ -71,6 +71,7 @@ async function updateState(userId: string, change: (state: OnboardingState) => O
 export const markWelcomeSeen = (userId: string) => updateState(userId, s => ({ ...s, welcomeSeen: true }));
 export const markCollectionSeen = (userId: string) => updateState(userId, s => ({ ...s, collectionSeen: true }));
 export const dismissOnboarding = (userId: string) => updateState(userId, s => ({ ...s, dismissed: true }));
+export const recordGuestCards = (userId: string, count: number) => updateState(userId, s => ({ ...s, guestCards: count }));
 
 /** Pays a finished step once. Progress is read outside the lock (it only grows); the claim is atomic. */
 export async function claimOnboardingStep(userId: string, stepId: OnboardingStepId): Promise<number> {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { EmptyState } from '@/components/EmptyState';
 import { Card } from '@/components/Card';
 import { useSession } from 'next-auth/react';
 import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin, BookOpenText } from '@phosphor-icons/react';
@@ -161,7 +162,14 @@ export default function ForgeClient() {
   const renderWallet = () => {
     const activeFragments = Object.entries(fragments).filter(([_, count]) => count > 0);
     
-    if (activeFragments.length === 0) return <div className="text-slate-500 text-sm">No fragments yet. Open packs to find some!</div>;
+    if (activeFragments.length === 0) return (
+      <EmptyState
+        compact
+        title="No fragments yet"
+        text="Duplicate cards and some pack drops turn into fragments of their language. Collect enough and forge the developer you want."
+        actions={[{ label: 'Open a pack', href: '/inventory' }, { label: 'Visit the store', href: '/store' }]}
+      />
+    );
 
     return (
       <div className="flex flex-wrap gap-2">

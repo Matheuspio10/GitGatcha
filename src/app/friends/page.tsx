@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { EmptyState } from '@/components/EmptyState';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
@@ -127,10 +128,12 @@ export default function FriendsPage() {
                 </h2>
                 
                 {friends.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 bg-slate-800/20 rounded-xl border border-dashed border-slate-700">
-                    You haven't formed any alliances yet.
-                    <br /> Search for players to add them as friends!
-                  </div>
+                  <EmptyState
+                    compact
+                    title="No friends yet"
+                    text="Friends can challenge each other to PvP battles, the only way to climb the rating. Search a username above, or find players in the rankings."
+                    actions={[{ label: 'Browse the rankings', href: '/leaderboard' }]}
+                  />
                 ) : (
                   <div className="space-y-3">
                     {friends.map((friendConnection) => (

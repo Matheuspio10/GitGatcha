@@ -13,10 +13,12 @@
 
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 8 migrações, todas aditivas.
-- 149 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 9 migrações, todas aditivas.
+- 152 testes (`npm test`), `tsc` sem erros, lint com 103 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
+> Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
+
 | O quê | Como está |
 |---|---|
 | Banco de **desenvolvimento** | Branch `dev` do Neon (`ep-weathered-hill…`). `.env` e `.env.local` apontam para ela. `npm run dev`, Prisma CLI e testes locais usam essa cópia. |
@@ -55,7 +57,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Onda | Tema | O que entra | Tamanho |
 |---|---|---|---|
 | **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
-| **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e tela de boas-vindas (PR #37) · falta: **pack de visitante** 🅶, confirmação de compra com odds, estados vazios com ação, skeleton da loja (2.5) | 1 rodada, P–M |
+| **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | **Carta e perfil compartilháveis** com `og:image` e "Copiar para o README" da Signature 🅶, **indicação de amigos** 🅶, **comparar coleção** 🅶 (3.4), **Ranking Colecionador** 🅶 (3.1) | 2 rodadas, P–M |
 | **4** | 🃏 Coleção e economia | Contar duplicatas → Shiny em duplicatas → **alívio de fragmentos** (caso Keslley) → **comprar carta da wishlist** 🅶; **missões de dev pelo GitHub** 🅶; missões semanais; **histórico de BITS** (2.4) | 2–3 rodadas, P–M |
 | **5** | ⚔️ Competitivo | **Elos com temporadas** + **PvP assíncrono "fantasma"**, desafios melhores (revanche, link, aposta) (3.1) | 2–3 rodadas, M |
@@ -160,6 +162,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **BITS iniciais unificados em 1.000** (`STARTING_BITS`): o cadastro por e-mail dava 500 e o por Google/GitHub dava 1.000. Um teste garante que o default do schema continua igual.
 - **Bugs do cadastro corrigidos:** o nome do próprio jogador não conta mais como "já em uso" na tela de configuração, e dois e-mails com o mesmo prefixo (`joao@a.com`, `joao@b.com`) não derrubam mais o segundo cadastro.
 
+### Onda 2 — pack de visitante e loja (PR #38)
+- **Pack de visitante 🅶** (`/try`, botão na página inicial): 1 Mystery Box sem cadastro, com o sorteio uniforme normal (reserva → GitHub → carta existente, via `drawPackDevs`, compartilhado com os boosters). As cartas ficam numa `GuestPull` (migração `20261019000000_guest_pull`) com o id num cookie httpOnly por 7 dias; ao escolher o nome de usuário, **só contas novas** recebem as cartas (`claimGuestPull`), e a tela de boas-vindas avisa. Limites: o mesmo cookie não sorteia de novo, 3 por IP por dia, 120 por hora no total.
+- **Confirmação de compra:** custo, saldo depois e a chance de vir pelo menos uma carta de cada raridade **naquele pack** (`packAtLeastOdds` em `rarity.ts`, componente `PackOdds`), com o pity; botões "Buy" e "Buy & open" (`/inventory?open=<pack>`). O toast pós-compra virou "Open now".
+- **Odds na abertura:** o inventário mostrava odds escritas à mão (e "??? Unknown Odds" na Mystery Box); agora usa o mesmo `PackOdds`, calculado das constantes.
+- **Estados vazios com ação** (`EmptyState`): coleção vazia ou busca sem resultado, forja sem fragmentos, amigos, histórico de batalhas.
+- **Skeleton** na grade de packs enquanto o catálogo carrega.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -194,10 +203,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.5 UX geral
 | Item | Esforço |
 |---|---|
-| **Pack de visitante 🅶:** 1 booster sem cadastro (cookie + limite por IP com `RateLimitHit`); ao se cadastrar, as cartas vão para a conta. Consome a reserva do booster | P |
-| Confirmação de compra com odds e "Abrir agora" direto do toast (o CDC exige transparência das odds) | P |
-| Estados vazios com ação (Coleção, Forja sem fragmentos, Amigos, Histórico) | P |
-| Skeleton de carregamento na loja | P |
 | Notificações: limitar e limpar a lista, que cresce sem fim | P |
 | **Português (PT-BR)** com next-intl, mantendo o inglês | G |
 

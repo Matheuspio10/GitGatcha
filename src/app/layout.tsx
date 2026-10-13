@@ -47,6 +47,7 @@ export default async function RootLayout({
             <WelcomeModal
               username={user.username}
               starterPackName={getPackById(STARTER_PACK_ID)?.name ?? 'Starter pack'}
+              guestCards={user.onboarding.guestCards ?? 0}
               guide={buildEarnGuide(user.username)}
             />
           )}

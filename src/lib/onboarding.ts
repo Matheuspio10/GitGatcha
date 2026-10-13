@@ -45,6 +45,8 @@ export interface OnboardingState {
   collectionSeen?: boolean;
   claimed?: OnboardingStepId[];
   dismissed?: boolean;
+  /** Cards of the free pack opened as a visitor that joined the account (shown on the welcome screen). */
+  guestCards?: number;
 }
 
 /** Facts about the player's account that complete the steps. */
@@ -87,6 +89,7 @@ export function parseOnboardingState(value: unknown): OnboardingState | null {
     collectionSeen: v.collectionSeen === true,
     claimed: Array.isArray(v.claimed) ? (v.claimed.filter(id => ids.includes(id as string)) as OnboardingStepId[]) : [],
     dismissed: v.dismissed === true,
+    guestCards: typeof v.guestCards === 'number' ? v.guestCards : 0,
   };
 }
 

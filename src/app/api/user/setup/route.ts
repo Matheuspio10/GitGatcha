@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { withUserLock } from '@/lib/userLock';
-import { startOnboarding } from '@/lib/onboardingService';
+import { recordGuestCards, startOnboarding } from '@/lib/onboardingService';
+import { cookies } from 'next/headers';
+import { GUEST_COOKIE, claimGuestPull } from '@/lib/guestPack';
 
 export async function POST(req: Request) {
   try {
@@ -46,7 +48,16 @@ export async function POST(req: Request) {
       return before?.hasSetupProfile === false ? startOnboarding(tx, userId) : false;
     });
 
-    return NextResponse.json({ success: true, username, starterPack });
+    // A visitor's free pack (opened on /try before signing up) joins the new account
+    let guestCards = 0;
+    if (starterPack) {
+      const cookieStore = await cookies();
+      guestCards = await claimGuestPull(userId, cookieStore.get(GUEST_COOKIE)?.value);
+      cookieStore.delete(GUEST_COOKIE);
+      if (guestCards > 0) await recordGuestCards(userId, guestCards);
+    }
+
+    return NextResponse.json({ success: true, username, starterPack, guestCards });
   } catch (error) {
     console.error('Error setting username:', error);
     return NextResponse.json({ error: 'Internal server error while saving username.' }, { status: 500 });
