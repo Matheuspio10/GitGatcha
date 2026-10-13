@@ -2,6 +2,13 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import {
   MISSION_POOL,
+  WEEKLY_MISSION_POOL,
+  WEEKLY_MISSION_COUNT,
+  DEV_MISSION_POOL,
+  githubActivityDone,
+  needsNewSet,
+  nextWeeklyReset,
+  utcWeekStart,
   missionMatchesEvent,
   missionRequiredCount,
   needsNewMissions,
@@ -95,5 +102,42 @@ describe('pickDailyMissions', () => {
     assert.ok(MISSION_POOL.length >= 15);
     assert.strictEqual(new Set(MISSION_POOL.map(m => m.description)).size, MISSION_POOL.length);
     for (const m of MISSION_POOL) assert.ok(missionRequiredCount(m.type, m.targetValue) >= 1);
+  });
+});
+
+describe('weekly and dev missions', () => {
+  test('weeks start on Monday 00:00 UTC', () => {
+    // 2026-10-15 is a Thursday
+    assert.strictEqual(utcWeekStart(new Date('2026-10-15T13:00:00Z')).toISOString(), '2026-10-12T00:00:00.000Z');
+    assert.strictEqual(utcWeekStart(new Date('2026-10-12T00:00:00Z')).toISOString(), '2026-10-12T00:00:00.000Z');
+    assert.strictEqual(utcWeekStart(new Date('2026-10-18T23:59:59Z')).toISOString(), '2026-10-12T00:00:00.000Z');
+    assert.strictEqual(nextWeeklyReset(new Date('2026-10-15T13:00:00Z')).toISOString(), '2026-10-19T00:00:00.000Z');
+  });
+
+  test('a set from before the period is replaced', () => {
+    const week = utcWeekStart(new Date('2026-10-15T13:00:00Z'));
+    assert.strictEqual(needsNewSet([], week), true);
+    assert.strictEqual(needsNewSet([new Date('2026-10-12T08:00:00Z')], week), false);
+    assert.strictEqual(needsNewSet([new Date('2026-10-11T23:00:00Z')], week), true);
+  });
+
+  test('GitHub activity must match the type, the action and today', () => {
+    const today = new Date('2026-10-13T00:00:00Z');
+    const events = [
+      { type: 'PushEvent', created_at: '2026-10-12T22:00:00Z' },
+      { type: 'PullRequestEvent', created_at: '2026-10-13T09:00:00Z', payload: { action: 'closed' } },
+      { type: 'IssuesEvent', created_at: '2026-10-13T10:00:00Z', payload: { action: 'opened' } },
+    ];
+    assert.strictEqual(githubActivityDone(events, 'PushEvent', today), false); // yesterday
+    assert.strictEqual(githubActivityDone(events, 'PullRequestEvent:opened', today), false); // wrong action
+    assert.strictEqual(githubActivityDone(events, 'IssuesEvent:opened', today), true);
+    assert.strictEqual(githubActivityDone(events, null, today), false);
+  });
+
+  test('every pool mission has a sensible target', () => {
+    for (const m of [...WEEKLY_MISSION_POOL, ...DEV_MISSION_POOL]) {
+      assert.ok(m.reward > 0 && m.targetValue);
+    }
+    assert.ok(WEEKLY_MISSION_POOL.length >= WEEKLY_MISSION_COUNT);
   });
 });

@@ -9,7 +9,10 @@ import { RARITY_ORDER, isRarity } from './rarity';
  * - COLLECT_LANGUAGE: a language, optionally with a count, e.g. "Python" or "Python:2"
  */
 
-export type MissionType = 'OPEN_BOOSTER' | 'WIN_BATTLE' | 'COLLECT_RARITY' | 'COLLECT_LANGUAGE';
+export type MissionType = 'OPEN_BOOSTER' | 'WIN_BATTLE' | 'COLLECT_RARITY' | 'COLLECT_LANGUAGE' | 'GITHUB_ACTIVITY';
+
+/** daily: 3 a day · weekly: 2 a week (Monday 00:00 UTC) · dev: 1 a day of real GitHub activity, for players who connected GitHub. */
+export type MissionPeriod = 'daily' | 'weekly' | 'dev';
 
 export interface MissionDefinition {
   description: string;
@@ -39,7 +42,62 @@ export const MISSION_POOL: MissionDefinition[] = [
   { description: 'Get a Rust Dev', type: 'COLLECT_LANGUAGE', reward: 200, targetValue: 'Rust' },
 ];
 
+/** Longer goals with bigger rewards, renewed every Monday 00:00 UTC. */
+export const WEEKLY_MISSION_COUNT = 2;
+export const WEEKLY_MISSION_POOL: MissionDefinition[] = [
+  { description: 'Open 10 Boosters this week', type: 'OPEN_BOOSTER', reward: 1000, targetValue: '10' },
+  { description: 'Win 8 Battles this week', type: 'WIN_BATTLE', reward: 1000, targetValue: '8' },
+  { description: 'Collect 3 Epic or better Cards this week', type: 'COLLECT_RARITY', reward: 1000, targetValue: 'Epic:3' },
+  { description: 'Collect 10 Rare or better Cards this week', type: 'COLLECT_RARITY', reward: 800, targetValue: 'Rare:10' },
+];
+
+/**
+ * Dev missions: real public GitHub activity today (UTC), checked against
+ * GET /users/{login}/events/public when the player claims. targetValue is the
+ * event type, optionally with the payload action ("PullRequestEvent:opened").
+ */
+export const DEV_MISSION_POOL: MissionDefinition[] = [
+  { description: 'Push a commit to GitHub today', type: 'GITHUB_ACTIVITY', reward: 150, targetValue: 'PushEvent' },
+  { description: 'Open a pull request today', type: 'GITHUB_ACTIVITY', reward: 200, targetValue: 'PullRequestEvent:opened' },
+  { description: 'Open an issue today', type: 'GITHUB_ACTIVITY', reward: 150, targetValue: 'IssuesEvent:opened' },
+  { description: 'Review a pull request today', type: 'GITHUB_ACTIVITY', reward: 200, targetValue: 'PullRequestReviewEvent' },
+  { description: 'Comment on an issue or pull request today', type: 'GITHUB_ACTIVITY', reward: 150, targetValue: 'IssueCommentEvent' },
+];
+
+export interface GitHubPublicEvent {
+  type: string;
+  created_at: string;
+  payload?: { action?: string };
+}
+
+/** Whether one of the events is the dev mission's activity, done on the UTC day starting at `dayStart`. */
+export function githubActivityDone(events: readonly GitHubPublicEvent[], targetValue: string | null | undefined, dayStart: Date): boolean {
+  if (!targetValue) return false;
+  const [type, action] = targetValue.split(':');
+  return events.some(e =>
+    e.type === type &&
+    (!action || e.payload?.action === action) &&
+    new Date(e.created_at).getTime() >= dayStart.getTime());
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Monday 00:00 UTC of the week that contains `date`. */
+export function utcWeekStart(date: Date): Date {
+  const day = utcDayStart(date);
+  const sinceMonday = (day.getUTCDay() + 6) % 7;
+  return new Date(day.getTime() - sinceMonday * DAY_MS);
+}
+
+/** When the weekly missions next refresh (next Monday 00:00 UTC). */
+export function nextWeeklyReset(now: Date = new Date()): Date {
+  return new Date(utcWeekStart(now).getTime() + 7 * DAY_MS);
+}
+
+/** A set assigned before the current period started (day or week) must be replaced. */
+export function needsNewSet(assignedAt: Date[], periodStart: Date): boolean {
+  return assignedAt.length === 0 || assignedAt.some(d => d.getTime() < periodStart.getTime());
+}
 
 /** Midnight UTC of the day that contains `date`. */
 export function utcDayStart(date: Date): Date {

@@ -39,6 +39,8 @@ model User {
   // and whether the referral BITS were paid (when this account connected GitHub)
   referredById       String?
   referralRewardPaid Boolean @default(false)
+  // Last time the player swapped one of their daily missions (1 swap per UTC day)
+  missionRerollAt    DateTime?
   // Consecutive daily-reward claims (resets when a day is skipped); drives the 7-day login calendar
   loginStreak        Int      @default(0)
   // Packs opened since the last Legendary card (pity counter)
@@ -170,6 +172,8 @@ model UserMission {
   missionId String
   progress  Int      @default(0)
   completed Boolean  @default(false)
+  // "daily" (3 a day), "weekly" (2 a week) or "dev" (1 a day of real GitHub activity)
+  period    String   @default("daily")
   createdAt DateTime @default(now())
 
   @@index([userId])
