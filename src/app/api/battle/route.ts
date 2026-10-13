@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addBits, spendBits } from '@/lib/bitsLedger';
 import { prisma } from '@/lib/prisma';
-import { resolveRandomBattle, getBalancedPowerCap, NoOpponentError } from '@/lib/battleService';
+import { resolveRandomBattle, resolveRankedBattle, getBalancedPowerCap, NoOpponentError, NoRankedOpponentError } from '@/lib/battleService';
 import { LEAGUES, isLeagueMode } from '@/lib/battleConfig';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { syncAchievementsSafe } from '@/lib/achievementService';
@@ -117,9 +117,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // Ranked: the opponent is another player's saved team, and the rating moves
+    let ranked: { opponent: string | null; rating: { before: number; after: number } | null } | null = null;
     let result: Awaited<ReturnType<typeof resolveRandomBattle>>;
     try {
-      result = await resolveRandomBattle(userId, cTeamCards, leagueMode, { powerCap });
+      if (leagueMode === 'RANKED') {
+        const r = await resolveRankedBattle(userId, cTeamCards);
+        ranked = { opponent: r.opponent, rating: r.rating };
+        result = r;
+      } else {
+        result = await resolveRandomBattle(userId, cTeamCards, leagueMode, { powerCap });
+      }
     } catch (err) {
       // resolveRandomBattle only throws before the battle is saved (no opponent,
       // database error…): the battle never happened, so the entry fee goes back
@@ -153,10 +161,11 @@ export async function POST(req: Request) {
       battleStats: result.battleStats || [],
       loyaltyUnlocks: result.loyaltyUnlocks || [],
       achievementsUnlocked,
+      ranked,
     });
 
   } catch (error) {
-    if (error instanceof NoOpponentError) {
+    if (error instanceof NoOpponentError || error instanceof NoRankedOpponentError) {
       return NextResponse.json({ error: error.message }, { status: 503 });
     }
     console.error('Battle error:', error);

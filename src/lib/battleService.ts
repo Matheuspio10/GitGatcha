@@ -6,13 +6,17 @@ import { resolve3v3Battle, BattleCard, BattleResult, getCardType } from './battl
 import { spendCardStamina } from './staminaService';
 import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
 import { grantXP } from './xpService';
-import { lockUser } from './userLock';
+import { lockUser, withUserLock } from './userLock';
+import { pushNotification } from './notifications';
+import { RANKED_SEARCH_WINDOWS } from './ranks';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
   FRIEND_BATTLE_LEAGUE,
   LEAGUES,
   getLeagueRewards,
   isLeagueMode,
+  RANKED_DEFENSE_WIN_BITS,
+  RANKED_RECENT_OPPONENTS,
   upsetBonusPct,
   withUpsetBonus,
 } from './battleConfig';
@@ -96,18 +100,27 @@ async function pickRandomOpponents(playerId: string, leagueMode: string, powerCa
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
+export interface RatingChange {
+  winner: { before: number; after: number };
+  loser: { before: number; after: number };
+}
+
 /** Applies a rated PvP result to both players, reading their current ratings under a lock. */
-async function applyPvpRating(winnerId: string, loserId: string) {
-  await prisma.$transaction(async (tx) => {
+async function applyPvpRating(winnerId: string, loserId: string): Promise<RatingChange | null> {
+  return prisma.$transaction(async (tx) => {
     // Always lock in the same order so two simultaneous results can't deadlock
     for (const id of [winnerId, loserId].sort()) await lockUser(tx, id);
     const players = await tx.user.findMany({ where: { id: { in: [winnerId, loserId] } }, select: { id: true, rating: true } });
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
-    if (!winner || !loser) return;
+    if (!winner || !loser) return null;
     const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
     await tx.user.update({ where: { id: winnerId }, data: { rating: newWinnerRating } });
     await tx.user.update({ where: { id: loserId }, data: { rating: newLoserRating } });
+    return {
+      winner: { before: winner.rating, after: newWinnerRating },
+      loser: { before: loser.rating, after: newLoserRating },
+    };
   });
 }
 
@@ -419,5 +432,158 @@ async function finishFriendBattle(
     challengerTeam: cTeam,
     defenderTeam: dTeam,
     loyaltyUnlocks,
+  };
+}
+
+
+// ─── Ranked (ghost PvP) ──────────────────────────────────────────────────────
+
+const asJson = (value: unknown) => value as Prisma.InputJsonValue;
+
+/** Thrown before anything is written when no player has a saved team to fight. */
+export class NoRankedOpponentError extends Error {
+  constructor() {
+    super('No ranked opponent available right now. Try again later.');
+  }
+}
+
+/**
+ * A random player near `rating` whose saved active team has 3 cards, skipping
+ * the challenger's last opponents when possible. The window widens (±100,
+ * ±200, ±400, anyone) while nobody qualifies.
+ */
+async function findRankedOpponent(userId: string, rating: number): Promise<{ id: string; username: string | null } | null> {
+  const recent = await prisma.battle.findMany({
+    where: { challengerId: userId, leagueMode: 'RANKED', defenderId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    take: RANKED_RECENT_OPPONENTS,
+    select: { defenderId: true },
+  });
+  const recentIds = recent.map(b => b.defenderId as string);
+
+  for (const skipRecent of [true, false]) {
+    const exclude = [userId, ...(skipRecent ? recentIds : [])];
+    for (const window of RANKED_SEARCH_WINDOWS) {
+      const near = Number.isFinite(window) ? Prisma.sql`ABS(u."rating" - ${rating}) <= ${window}` : Prisma.sql`TRUE`;
+      const rows = await prisma.$queryRaw<{ id: string; username: string | null }[]>`
+        SELECT u."id", u."username" FROM "User" u
+        WHERE u."id" NOT IN (${Prisma.join(exclude)}) AND ${near} AND u."username" IS NOT NULL
+          AND (SELECT COUNT(*) FROM "UserCard" uc WHERE uc."userId" = u."id" AND uc."in_active_team" = true) >= 3
+        ORDER BY random()
+        LIMIT 1
+      `;
+      if (rows[0]) return rows[0];
+    }
+  }
+  return null;
+}
+
+type RankedCardData = { id: string; name: string; atk: number; def: number; hp: number; rarity: string; primaryLanguage: string | null; avatarUrl: string | null };
+
+function toBattleCard(c: RankedCardData, stamina: number, loyaltyTier: string): BattleCard {
+  return {
+    id: c.id, name: c.name, atk: c.atk, def: c.def, hp: c.hp, maxHp: c.hp, stamina,
+    rarity: c.rarity as BattleCard['rarity'], primaryLanguage: c.primaryLanguage, type: getCardType(c), avatarUrl: c.avatarUrl, loyaltyTier,
+  };
+}
+
+/**
+ * Ranked battle: the challenger's team against the saved active team of a
+ * player near their rating, who doesn't need to be online. Both ratings move
+ * (ELO), the defender's cards don't spend stamina, and the defender is told the
+ * result (plus a few BITS when their team holds).
+ */
+/** A challenger card as the battle route builds it (id = the UserCard id). */
+export type RankedTeamCard = RankedCardData & { stamina?: number; loyaltyTier?: string };
+
+export async function resolveRankedBattle(challengerId: string, challengerTeamCards: RankedTeamCard[]) {
+  const challenger = await prisma.user.findUnique({ where: { id: challengerId }, select: { rating: true, username: true } });
+  if (!challenger) throw new NoRankedOpponentError();
+  const opponent = await findRankedOpponent(challengerId, challenger.rating);
+  if (!opponent) throw new NoRankedOpponentError();
+
+  const defenderCards = await prisma.userCard.findMany({
+    where: { userId: opponent.id, inActiveTeam: true },
+    include: { card: true },
+    take: 3,
+  });
+  if (defenderCards.length < 3) throw new NoRankedOpponentError();
+
+  const cTeam = challengerTeamCards.map(c => toBattleCard(c, c.stamina ?? 100, c.loyaltyTier || 'none'));
+  // The ghost team fights fresh: its owner isn't there to rest it
+  const dTeam = defenderCards.map(uc => toBattleCard({ ...uc.card, id: uc.id }, 100, uc.loyaltyTier || 'none'));
+
+  const battleResult = resolve3v3Battle(cTeam, dTeam);
+  const playerWon = battleResult.winner === 'CHALLENGER';
+  const rewards = withUpsetBonus(calculateRewards(playerWon, 'RANKED'), playerWon ? upsetBonusPct(cTeam, dTeam) : 0);
+  const battleStats = buildBattleStats(battleResult, cTeam);
+  const who = challenger.username ?? 'A player';
+  const against = opponent.username ?? 'a player';
+
+  const battle = await prisma.$transaction(async (tx) => {
+    const created = await tx.battle.create({
+      data: {
+        challengerId,
+        defenderId: opponent.id,
+        challengerTeam: asJson(cTeam),
+        defenderTeam: asJson(dTeam),
+        log: asJson(battleResult.log),
+        status: 'COMPLETED',
+        isRandom: false,
+        leagueMode: 'RANKED',
+        battleStats: asJson(battleStats),
+        winnerId: playerWon ? challengerId : opponent.id,
+        rewardBits: rewards.bits,
+        completedAt: new Date(),
+      },
+    });
+    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: `Ranked ${playerWon ? 'win' : 'loss'} vs ${against}` });
+    return created;
+  });
+
+  const afterBattle = async <T>(label: string, fallback: T, fn: () => Promise<T>): Promise<T> => {
+    try {
+      return await fn();
+    } catch (err) {
+      console.error(`[Ranked ${battle.id}] ${label} failed:`, (err as Error).message);
+      return fallback;
+    }
+  };
+
+  const ratingChange = await afterBattle('Rating', null, () =>
+    applyPvpRating(playerWon ? challengerId : opponent.id, playerWon ? opponent.id : challengerId));
+  const xpResult = await afterBattle('XP', null, () => grantXP(challengerId, rewards.xp));
+  await afterBattle('Stamina', undefined, () => spendCardStamina(challengerTeamCards.map(c => c.id)));
+  const unlocksMap = await afterBattle('Loyalty', new Map<string, MilestoneUnlock[]>(), () => processPostBattleCardStats(cTeam.map(c => {
+    const state = battleResult.challengerTeamState.find(cs => cs.id === c.id);
+    return { userCardId: c.id, damageDealt: state?.statsDealtDamage || 0, won: playerWon, critsLanded: state?.statsCritsLanded || 0, passivesTriggered: state?.statsPassivesTriggered || 0 };
+  })));
+
+  // Tell the defender how their saved team did (and pay the defense)
+  await afterBattle('Defender', undefined, () => withUserLock(opponent.id, async (tx) => {
+    const mine = ratingChange ? (playerWon ? ratingChange.loser : ratingChange.winner) : null;
+    const delta = mine ? mine.after - mine.before : 0;
+    const signed = `${delta >= 0 ? '+' : ''}${delta}`;
+    if (!playerWon) await addBits(opponent.id, RANKED_DEFENSE_WIN_BITS, 'battle_reward', { tx, detail: `Ranked defense vs ${who}` });
+    await pushNotification(tx, opponent.id, 'ranked_defense', playerWon
+      ? `${who} beat your saved team in Ranked (${signed} rating).`
+      : `Your saved team held against ${who} in Ranked (${signed} rating, +${RANKED_DEFENSE_WIN_BITS} BITS).`, '/battle');
+  }));
+
+  const rating = ratingChange ? (playerWon ? ratingChange.winner : ratingChange.loser) : null;
+  return {
+    battle,
+    challengerTeam: cTeam,
+    defenderTeam: dTeam,
+    winnerSide: battleResult.winner,
+    rewards,
+    xpResult,
+    log: battleResult.log,
+    battleStats,
+    loyaltyUnlocks: cTeam
+      .map(c => ({ cardId: c.id, cardName: c.name, milestones: unlocksMap.get(c.id) ?? [] }))
+      .filter(u => u.milestones.length > 0),
+    opponent: opponent.username,
+    rating,
   };
 }

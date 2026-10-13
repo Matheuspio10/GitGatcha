@@ -8,6 +8,7 @@ import { getCurrentUser } from '@/lib/session';
 import { sortLeaderboard } from '@/lib/leaderboard';
 import { STARTING_RATING } from '@/lib/battleConfig';
 import { LeaderboardAvatar } from './LeaderboardAvatar';
+import { RankBadge as TierBadge } from '@/components/RankBadge';
 
 const GLOBAL_LIMIT = 50;
 
@@ -212,7 +213,7 @@ function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRo
                 </Link>
               </td>
               <td className="px-3 sm:px-5 py-4">
-                <span className="text-yellow-400 font-bold font-mono">{u.rating}</span>
+                <TierBadge rating={u.rating} />
               </td>
               <td className="px-5 py-4 hidden md:table-cell">
                 <span className="text-green-400 font-bold">{u.totalWins}</span>
@@ -282,7 +283,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
         </h1>
         <p className="text-slate-400 text-base sm:text-lg">The most legendary developers in the repository.</p>
         <p className="text-slate-500 text-xs mt-2">
-          Rating only changes in friend challenges (PvP). Ties: PvP wins, then battles played, then oldest account.
+          Rating only changes in PvP: Ranked battles and friend challenges. Ties: PvP wins, then battles played, then oldest account.
         </p>
       </div>
 

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { UserAvatar } from '@/components/UserAvatar';
 import { ShareButtons } from '@/components/ShareButtons';
+import { RankBadge } from '@/components/RankBadge';
 import { RARITY_HEX, getShareProfile, siteUrl } from '@/lib/shareCard';
 import { getCurrentUser } from '@/lib/session';
 
@@ -38,7 +39,9 @@ export default async function PublicProfilePage({ params }: Props) {
         <UserAvatar username={profile.username} image={profile.image} size="lg" />
         <div className="flex-1">
           <h1 className="font-display text-3xl font-extrabold text-white">{profile.username}</h1>
-          <p className="text-slate-400">Level {profile.level} · Rating {profile.rating} · {profile.uniqueCards} developers collected</p>
+          <p className="flex flex-wrap items-center justify-center gap-2 text-slate-400 sm:justify-start">
+            Level {profile.level} · <RankBadge rating={profile.rating} /> · {profile.uniqueCards} developers collected
+          </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs font-mono sm:justify-start">
             {Object.entries(profile.byRarity).map(([rarity, count]) => (
               <span key={rarity} style={{ color: RARITY_HEX[rarity] }}>{rarity} {count}</span>

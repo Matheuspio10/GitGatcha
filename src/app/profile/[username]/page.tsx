@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { AchievementView } from '@/lib/achievementUtils';
 import { notifyAchievements } from '@/lib/achievementToast';
 import { claimShareBonus, copyText } from '@/components/ShareButtons';
+import { RankBadge } from '@/components/RankBadge';
 
 interface FriendInfo {
   id: string;
@@ -292,10 +293,7 @@ export default function ProfilePage() {
                     <Star weight="fill" className="text-yellow-500" />
                     Level {profile.user.level}
                   </span>
-                  <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs font-bold text-indigo-400">
-                    <Trophy weight="fill" />
-                    {profile.user.rating} Rating
-                  </span>
+                  <RankBadge rating={profile.user.rating} className="px-3 py-1" />
                   {profile.hasLegendaryBondPrestige && (
                     <span className="flex items-center gap-1.5 px-3 py-1 bg-pink-500/10 border border-pink-500/30 rounded-full text-xs font-bold text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.3)] animate-pulse">
                       <Sparkle weight="fill" />
