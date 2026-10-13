@@ -14,7 +14,7 @@
 ### Estado atual
 - **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 8 migrações, todas aditivas.
-- 148 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 149 testes (`npm test`), `tsc` sem erros, lint com 104 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 | O quê | Como está |
