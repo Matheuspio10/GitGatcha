@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 13/10/2026, depois das rodadas de identidade visual, títulos nas cartas e booster rasgável (PRs #27–#32). O backlog está organizado em **ondas** (ver "Ondas de melhorias").
+> Atualizado em 13/10/2026, ao fim da Torre (PR #47). Ondas 1 a 5 completas; onda 6 em andamento (Torre pronta). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -12,12 +12,14 @@
 ## 👉 Como continuar (leia primeiro)
 
 ### Estado atual
-- **Tudo do backlog das Fases 0, 1 e 2.1–2.4 está entregue e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a identidade visual, os títulos nas cartas e a abertura de booster rasgável.
+- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre da onda 6. Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 16 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - 178 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
-> Conta de teste local (branch dev): credenciais em `.env.local` (`TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`, ignorado pelo git). O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005, volte para a 3005 depois de entrar.
+> **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
+>
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -50,6 +52,31 @@
 | `node --env-file=.env.prod scripts/seed-changelog.js` | Seed do changelog (cria entradas novas) |
 
 ---
+
+## ▶️ Próximo passo
+
+**Onda 6 (modos e cartas), rodadas que faltam**, uma PR por rodada:
+1. **Sprints 🅶 + eventos semanais (3.2):** competição diária/semanal com tema (linguagem, org, "Dev da Semana") escolhido pelo cron; todos pontuados pelo poder das melhores cartas do tema, calculado na hora; empates dividem a posição; topo ganha BITS (pelo `addBits`). Eventos: rate-up temático anunciado (cuidado com a regra de ouro 1: viés tem que ser explícito), "Dev da Semana", booster por tempo limitado.
+2. **Treinar cartas (3.3):** BITS + repetidas/fragmentos sobem níveis (+2% por nível, teto por raridade). Mexe nos status da batalha, não na fórmula de geração: não sobe `STAT_VERSION`, mas precisa entrar no `resolve3v3Battle` (como a fidelidade) e no simulador.
+3. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
+
+Depois: **onda 7** (celular, acessibilidade, PT-BR), **onda 8** (engenharia de fundo, pode intercalar), **onda 9** (grandes apostas e monetização).
+
+**Pendências do dono (fora do código):**
+- Configurar o backup diário: chave `age` + `BACKUP_AGE_RECIPIENT` + `BACKUP_DATABASE_URL` no GitHub ([`docs/backup.md`](docs/backup.md)). Sem isso o workflow "Database backup" falha.
+- Rodar uma vez a conferência do histórico de BITS em produção (só leitura): `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts`.
+- Responder a tabela "Decisões pendentes" abaixo.
+
+**Como trabalhamos (para o próximo chat):**
+- Conversa em português; código e interface em inglês. Uma rodada = uma branch + uma PR com descrição em português; **merge só com OK do dono e com o CI verde** (esperar o "Types, lint, tests and build" passar).
+- Testar no navegador do app com o servidor de dev e o banco de dev; escrever em produção só com OK explícito.
+- Decisões de produto (valores, regras) **não travam a rodada**: entra o padrão sensato e a decisão vai para a tabela abaixo.
+- Atualizar este ROADMAP ao fim de cada rodada (estado, concluído, backlog, decisões).
+
+**Lições (não repetir):**
+- **Nunca** passar uma URL de banco real como `--shadow-database-url` do Prisma: ele limpa o banco (apagou o dev em 13/10/2026). Para conferir schema × migrações, escrever o SQL da migração à mão e aplicar com `npx prisma migrate deploy` no dev.
+- Scripts de edição longos com apóstrofos dentro de heredoc no Bash do Windows quebram; gravar o script num arquivo e rodar com `python arquivo.py`.
+- `git push`/merge de PR antes do CI terminar já aconteceu uma vez (#39); conferir o status antes.
 
 ## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
 
