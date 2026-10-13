@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { spendBits } from '@/lib/bitsLedger';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -28,13 +29,8 @@ export async function POST(req: Request) {
     }
 
     const updatedUserCard = await withUserLock(userId, async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: userId }, select: { currency: true } });
-      if (!user || user.currency < 100) return null;
-
-      await tx.user.update({
-        where: { id: userId },
-        data: { currency: { decrement: 100 } }
-      });
+      const paid = await spendBits(userId, 100, 'stamina_recover', { tx });
+      if (paid === null) return null;
 
       return tx.userCard.update({
         where: { id: userCardId },

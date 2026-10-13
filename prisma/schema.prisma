@@ -59,6 +59,7 @@ model User {
   battlesAsChallenger Battle[] @relation("Challenger")
   battlesAsDefender   Battle[] @relation("Defender")
   achievements        UserAchievement[]
+  bitsTransactions    BitsTransaction[]
 
   @@index([referredById])
 }
@@ -340,4 +341,20 @@ model GuestPull {
   claimedAt   DateTime?
 
   @@index([createdAt])
+}
+
+// Every change to a player's BITS (append-only), written in the same transaction
+// as the balance change (src/lib/bitsLedger.ts). Amount is signed.
+model BitsTransaction {
+  id           String   @id @default(uuid())
+  userId       String
+  amount       Int
+  balanceAfter Int
+  reason       String
+  detail       String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

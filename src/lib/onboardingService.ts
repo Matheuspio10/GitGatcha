@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { addBits } from './bitsLedger';
 import { prisma } from './prisma';
 import { Tx, UserFacingError, asArray, withUserLock } from './userLock';
 import { getPackById } from './packDefinitions';
@@ -91,10 +92,8 @@ export async function claimOnboardingStep(userId: string, stepId: OnboardingStep
     if (!state) throw new UserFacingError('Onboarding is not active for this account', 404);
     if (state.claimed?.includes(stepId)) throw new UserFacingError('Reward already claimed', 409);
     const next: OnboardingState = { ...state, claimed: [...(state.claimed ?? []), stepId] };
-    await tx.user.update({
-      where: { id: userId },
-      data: { onboarding: asJson(next), currency: { increment: step.rewardBits } },
-    });
+    await tx.user.update({ where: { id: userId }, data: { onboarding: asJson(next) } });
+    await addBits(userId, step.rewardBits, 'onboarding', { tx, detail: step.title });
     return step.rewardBits;
   });
 }

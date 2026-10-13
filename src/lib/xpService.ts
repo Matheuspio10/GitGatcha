@@ -1,4 +1,5 @@
 import { lockUser, withUserLock, Tx } from './userLock';
+import { addBits, type BitsReason } from './bitsLedger';
 
 // ─── Level Progression ──────────────────────────────────────────────────
 // XP required to reach level N: 100 * N^1.5 (rounded down)
@@ -152,8 +153,15 @@ import { v4 as uuidv4 } from 'uuid';
  * Adds XP (and optionally BITS) and hands out level-up rewards.
  * Pass `tx` when the caller is already inside `withUserLock`; otherwise it takes the lock itself.
  */
-export async function grantXP(userId: string, amount: number, additionalCurrency: number = 0, tx?: Tx): Promise<GrantXPResult> {
-  if (!tx) return withUserLock(userId, (t) => grantXP(userId, amount, additionalCurrency, t));
+export async function grantXP(
+  userId: string,
+  amount: number,
+  additionalCurrency: number = 0,
+  tx?: Tx,
+  currencyReason: BitsReason = 'mission',
+  currencyDetail?: string,
+): Promise<GrantXPResult> {
+  if (!tx) return withUserLock(userId, (t) => grantXP(userId, amount, additionalCurrency, t, currencyReason, currencyDetail));
   await lockUser(tx, userId);
 
   const user = await tx.user.findUnique({
@@ -199,7 +207,6 @@ export async function grantXP(userId: string, amount: number, additionalCurrency
   const data: Record<string, unknown> = {
     xp: newXP,
     level: newLevel,
-    currency: { increment: levelUpCoins + additionalCurrency },
   };
 
   if (levelUps.length > 0) {
@@ -223,6 +230,9 @@ export async function grantXP(userId: string, amount: number, additionalCurrency
   }
 
   await tx.user.update({ where: { id: userId }, data: data as any });
+  // BITS through the ledger (same transaction)
+  await addBits(userId, additionalCurrency, currencyReason, { tx, detail: currencyDetail });
+  await addBits(userId, levelUpCoins, 'level_up', { tx, detail: `Level ${levelUps.map(r => r.level).join(', ')}` });
 
   return {
     previousXP,

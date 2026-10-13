@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { addBits } from '@/lib/bitsLedger';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { randomInt } from 'node:crypto';
@@ -61,11 +62,11 @@ export async function POST(req: Request) {
         await tx.user.update({
           where: { id: userId },
           data: {
-            currency: { decrement: bits },
             fragments: userFragments,
             fragmentLogs: logs
           }
         });
+        await addBits(userId, -bits, 'forge', { tx, detail: stats.name || username });
 
         const isShiny = randomInt(0, 1_000_000) < SHINY_CHANCE * 1_000_000;
         const userCard = await tx.userCard.create({

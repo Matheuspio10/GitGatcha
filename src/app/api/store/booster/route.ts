@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { addBits } from '@/lib/bitsLedger';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -44,14 +45,12 @@ export async function POST(req: Request) {
         source: 'purchase',
       };
 
-      return tx.user.update({
+      await tx.user.update({
         where: { id: userId },
-        data: {
-          currency: { decrement: pack.cost },
-          inventory: [...asArray<InventoryItem>(user.inventory), newItem] as unknown as Prisma.InputJsonValue,
-        },
-        select: { currency: true },
+        data: { inventory: [...asArray<InventoryItem>(user.inventory), newItem] as unknown as Prisma.InputJsonValue },
       });
+      const currency = await addBits(userId, -pack.cost, 'pack_purchase', { tx, detail: pack.name });
+      return { currency };
     });
 
     if (!result) {

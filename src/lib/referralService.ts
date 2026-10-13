@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { addBits } from './bitsLedger';
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
 import { Tx, asArray } from './userLock';
@@ -52,17 +53,18 @@ export async function payReferralIfEligible(userId: string): Promise<boolean> {
     for (const id of [userId, referrerId].sort()) await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${id} FOR UPDATE`;
     const claimed = await tx.user.updateMany({
       where: { id: userId, referralRewardPaid: false },
-      data: { referralRewardPaid: true, currency: { increment: REFERRAL_BONUS } },
+      data: { referralRewardPaid: true },
     });
     if (claimed.count === 0) return false;
 
     const referrer = await tx.user.findUnique({ where: { id: referrerId }, select: { username: true } });
+    await addBits(userId, REFERRAL_BONUS, 'referral', { tx, detail: `Invited by ${referrer?.username ?? 'a friend'}` });
     await notify(tx, userId, `Welcome bonus: +${REFERRAL_BONUS} BITS for joining with ${referrer?.username ?? 'a friend'}'s invite.`);
 
     // Paid referrals before this one (this one already has the flag)
     const paidBefore = (await tx.user.count({ where: { referredById: referrerId, referralRewardPaid: true } })) - 1;
     if (referrerStillPaid(paidBefore)) {
-      await tx.user.update({ where: { id: referrerId }, data: { currency: { increment: REFERRAL_BONUS } } });
+      await addBits(referrerId, REFERRAL_BONUS, 'referral', { tx, detail: `${user.username ?? 'A friend'} joined` });
       await notify(tx, referrerId, `${user.username ?? 'Your friend'} joined with your invite: +${REFERRAL_BONUS} BITS!`);
     }
     return true;

@@ -115,6 +115,7 @@ export async function advanceMissionProgress(userId: string, type: string, targe
 
     let totalCurrencyGained = 0;
     let totalXPGained = 0;
+    const completedNames: string[] = [];
 
     for (const um of activeMissions) {
       // e.g. looking for "Python" but we opened "JavaScript", or a Common for "Collect a Rare"
@@ -135,11 +136,12 @@ export async function advanceMissionProgress(userId: string, type: string, targe
       if (isComplete) {
         totalCurrencyGained += um.mission.reward;
         totalXPGained += XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE;
+        completedNames.push(um.mission.description);
       }
     }
 
     if (totalXPGained > 0 || totalCurrencyGained > 0) {
-      await grantXP(userId, totalXPGained, totalCurrencyGained, tx);
+      await grantXP(userId, totalXPGained, totalCurrencyGained, tx, 'mission', completedNames.join(', '));
     }
   });
 }
@@ -169,7 +171,7 @@ export async function checkDevMission(userId: string): Promise<{ done: boolean; 
     const row = await tx.userMission.findUnique({ where: { id: dev.id }, include: userMissionInclude });
     if (!row || row.completed) return { done: true, login };
     await tx.userMission.update({ where: { id: row.id }, data: { progress: 1, completed: true } });
-    await grantXP(userId, XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE, row.mission.reward, tx);
+    await grantXP(userId, XP_AMOUNTS.COMPLETE_DAILY_CHALLENGE, row.mission.reward, tx, 'mission', row.mission.description);
     return { done: true, reward: row.mission.reward, login };
   });
 }
@@ -196,13 +198,6 @@ export async function rerollDailyMission(userId: string, userMissionId: string) 
     await tx.userMission.update({ where: { id: target.id }, data: { missionId, progress: 0 } });
     await tx.user.update({ where: { id: userId }, data: { missionRerollAt: now } });
     return replacement;
-  });
-}
-
-export async function grantCurrency(userId: string, amount: number) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { currency: { increment: amount } }
   });
 }
 
@@ -247,7 +242,7 @@ export async function claimDailyReward(userId: string) {
     const reward = rewardForDay(day);
 
     // XP (and the BITS) first: a level-up may add boosters to the inventory, read it afterwards
-    const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK, reward.bits, tx);
+    const xpResult = await grantXP(userId, XP_AMOUNTS.LOGIN_STREAK, reward.bits, tx, 'daily_login', `Day ${day}`);
 
     let packGranted: InventoryItem | null = null;
     const data: Prisma.UserUpdateInput = { lastDailyClaimAt: now, loginStreak: day };

@@ -7,6 +7,7 @@
  *    player, so only the real owner of the account can hold it.
  */
 import { prisma } from './prisma';
+import { addBits } from './bitsLedger';
 import { fetchGitHubUserStats, getTokenOwnerLogin, toCardData } from './githubService';
 import { withUserLock } from './userLock';
 
@@ -14,9 +15,10 @@ export const GITHUB_LINK_BONUS = 300;
 export const SIGNATURE_EDITION = 'signature';
 
 export async function grantGithubLinkRewards(userId: string, token: string | null | undefined) {
-  await prisma.user.updateMany({
-    where: { id: userId, githubBonusGranted: false },
-    data: { githubBonusGranted: true, currency: { increment: GITHUB_LINK_BONUS } },
+  // The flag and the BITS change together, once
+  await prisma.$transaction(async (tx) => {
+    const { count } = await tx.user.updateMany({ where: { id: userId, githubBonusGranted: false }, data: { githubBonusGranted: true } });
+    if (count === 1) await addBits(userId, GITHUB_LINK_BONUS, 'github_link', { tx });
   });
 
   if (token) await grantSignatureCard(userId, token);
