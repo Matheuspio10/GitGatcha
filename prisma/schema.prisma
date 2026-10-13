@@ -317,3 +317,15 @@ model UserAchievement {
 
   @@id([userId, achievementId, tier])
 }
+
+// A free booster opened by a visitor without an account (landing page). The
+// cards go to the account created afterwards with the cookie holding `id`.
+model GuestPull {
+  id          String    @id @default(uuid())
+  cardIds     String[]
+  createdAt   DateTime  @default(now())
+  claimedById String?
+  claimedAt   DateTime?
+
+  @@index([createdAt])
+}

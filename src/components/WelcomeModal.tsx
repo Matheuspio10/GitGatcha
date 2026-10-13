@@ -25,7 +25,7 @@ const ICONS: Record<EarnIcon, React.ElementType> = {
  * Shown once, right after a new player picks their username: the starter pack
  * gift and every way to earn BITS and packs.
  */
-export function WelcomeModal({ username, starterPackName, guide }: { username: string; starterPackName: string; guide: EarnWay[] }) {
+export function WelcomeModal({ username, starterPackName, guestCards, guide }: { username: string; starterPackName: string; guestCards: number; guide: EarnWay[] }) {
   const [open, setOpen] = useState(true);
   const router = useRouter();
   const openButton = useRef<HTMLButtonElement>(null);
@@ -79,6 +79,9 @@ export function WelcomeModal({ username, starterPackName, guide }: { username: s
               <div className="flex-1">
                 <p className="font-bold text-white">{starterPackName}</p>
                 <p className="text-sm text-slate-300">Your starter pack is in the inventory, with a Rare or better guaranteed.</p>
+                {guestCards > 0 && (
+                  <p className="mt-1 text-sm text-commit">The {guestCards} developers from your free pack are already in your collection.</p>
+                )}
               </div>
               <button onClick={() => close('/inventory')} ref={openButton} className="btn-brand w-full sm:w-auto px-5 py-2.5 font-bold text-white">
                 Open it now

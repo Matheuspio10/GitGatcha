@@ -9,6 +9,7 @@ import { notifyAchievements } from '@/lib/achievementToast';
 import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
 import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
 import { PITY_THRESHOLD } from '@/lib/pity';
+import { PackOdds } from '@/components/PackOdds';
 import {
   Code,
   Trophy,
@@ -214,6 +215,79 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
   );
 }
 
+/** Asks before spending BITS: cost, balance after and the pack's real odds. */
+function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
+  pack: PackInfo | null;
+  currency: number;
+  pityDue: boolean;
+  busy: boolean;
+  onCancel: () => void;
+  onBuy: (openNow: boolean) => void;
+}) {
+  return (
+    <AnimatePresence>
+      {pack && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          role="dialog" aria-modal="true" aria-labelledby="buy-title"
+          onClick={onCancel}
+          onKeyDown={e => { if (e.key === 'Escape') onCancel(); }}
+        >
+          <motion.div
+            initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="buy-title" className="text-2xl font-black text-white">
+              Buy <span style={{ color: pack.visualTheme.textColor }}>{pack.name}</span>?
+            </h3>
+            <p className="mt-1 text-sm text-slate-400">{pack.noPreview ? 'Contents are a surprise, the odds are not.' : pack.description}</p>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-xl bg-slate-800/60 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500">Cost</div>
+                <div className="font-mono font-bold text-yellow-300">{pack.cost} BITS</div>
+              </div>
+              <div className="rounded-xl bg-slate-800/60 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500">You will have</div>
+                <div className={`font-mono font-bold ${currency >= pack.cost ? 'text-white' : 'text-red-400'}`}>
+                  {currency >= pack.cost ? `${currency - pack.cost} BITS` : `${pack.cost - currency} BITS short`}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-800/30 p-3">
+              <PackOdds pack={pack} pityDue={pityDue} />
+            </div>
+
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button onClick={onCancel} className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-2.5 font-bold text-white hover:bg-slate-700">
+                Cancel
+              </button>
+              <button
+                onClick={() => onBuy(false)}
+                disabled={busy || currency < pack.cost}
+                className="flex-1 rounded-xl border border-indigo-500/60 py-2.5 font-bold text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-50"
+              >
+                Buy
+              </button>
+              <button
+                onClick={() => onBuy(true)}
+                disabled={busy || currency < pack.cost}
+                className="btn-brand flex-1 py-2.5 font-bold text-white disabled:opacity-50"
+                autoFocus
+              >
+                Buy &amp; open
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /** Tells the Navbar (and anything else listening) to re-fetch the BITS balance. */
 function refreshBits() {
   window.dispatchEvent(new Event('bits:refresh'));
@@ -262,10 +336,13 @@ export default function StoreClient({
   const [highlightPackId, setHighlightPackId] = useState<string | null>(null);
   
   // Notification state
-  const [purchaseNotification, setPurchaseNotification] = useState<{ packName: string } | null>(null);
+  const [purchaseNotification, setPurchaseNotification] = useState<{ packName: string; packId: string } | null>(null);
+  // Pack waiting for the purchase confirmation (cost, balance after, odds)
+  const [confirmPack, setConfirmPack] = useState<PackInfo | null>(null);
   const router = useRouter();
 
   // Fetch packs catalog
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   useEffect(() => {
     fetch('/api/store/packs')
       .then(res => res.json())
@@ -273,7 +350,8 @@ export default function StoreClient({
         setPacks(data.packs || []);
         setCategories(data.categories || []);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setCatalogLoaded(true));
   }, []);
 
   // Deep link: `#pack-<id>` opens the pack's category, scrolls to it and highlights it
@@ -391,7 +469,8 @@ export default function StoreClient({
     }
   };
 
-  const handlePurchasePack = async (pack: PackInfo) => {
+  const handlePurchasePack = async (pack: PackInfo, openNow = false) => {
+    setConfirmPack(null);
     if (currency < pack.cost) {
       toast.error('Not enough Bits!');
       return;
@@ -408,8 +487,12 @@ export default function StoreClient({
       
       if (data.success) {
         setCurrency(data.newCurrency);
-        setPurchaseNotification({ packName: data.packName });
         refreshBits();
+        if (openNow) {
+          router.push(`/inventory?open=${encodeURIComponent(pack.id)}`);
+          return;
+        }
+        setPurchaseNotification({ packName: data.packName, packId: pack.id });
         
         // Auto hide notification
         setTimeout(() => {
@@ -452,14 +535,23 @@ export default function StoreClient({
               </div>
             </div>
             <button
-              onClick={() => router.push('/inventory')}
+              onClick={() => router.push(`/inventory?open=${encodeURIComponent(purchaseNotification.packId)}`)}
               className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors whitespace-nowrap"
             >
-              Go to Inventory →
+              Open now →
             </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <PurchaseConfirm
+        pack={confirmPack}
+        currency={currency}
+        pityDue={!!pity && pity.packsUntilGuaranteed <= 1}
+        busy={loading}
+        onCancel={() => setConfirmPack(null)}
+        onBuy={openNow => confirmPack && handlePurchasePack(confirmPack, openNow)}
+      />
 
       {/* Header */}
       <div className="text-center space-y-4">
@@ -529,7 +621,12 @@ export default function StoreClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-16"
+        aria-busy={!catalogLoaded}
       >
+        {/* Skeleton while the catalog loads */}
+        {!catalogLoaded && Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="mx-auto w-full max-w-[280px] aspect-[2/3] rounded-2xl border-4 border-slate-800 bg-slate-900/60 animate-pulse" aria-hidden />
+        ))}
         {filteredPacks.map(pack => (
           <motion.div
             key={pack.id}
@@ -539,7 +636,7 @@ export default function StoreClient({
             className={`group cursor-pointer relative mx-auto w-full max-w-[280px] rounded-2xl transition-shadow ${highlightPackId === pack.id ? 'ring-4 ring-indigo-400 ring-offset-4 ring-offset-slate-950 animate-pulse' : ''}`}
             onClick={() => {
               if (loading) return;
-              handlePurchasePack(pack);
+              setConfirmPack(pack);
             }}
           >
             {/* The Pack Shape */}

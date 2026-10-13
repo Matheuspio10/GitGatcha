@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardProps } from '@/components/Card';
 import { BoosterReveal } from '@/components/BoosterReveal';
+import { PackOdds } from '@/components/PackOdds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
 import { toast } from 'react-hot-toast';
@@ -74,6 +75,18 @@ export default function InventoryClient({ userId }: { userId: string }) {
   useEffect(() => {
     fetchInventory();
   }, []);
+
+  // `/inventory?open=<packId>` ("Buy & open" in the store): once loaded, go straight to the open confirmation
+  const openParamHandled = useRef(false);
+  useEffect(() => {
+    if (loading || openParamHandled.current) return;
+    openParamHandled.current = true;
+    const openId = new URLSearchParams(window.location.search).get('open');
+    if (!openId) return;
+    const toOpen = packs.find(p => p.packId === openId);
+    if (toOpen) setSelectedPack(toOpen);
+    router.replace('/inventory', { scroll: false });
+  }, [loading, packs, router]);
 
   const checkWishlistProgress = (data: { packDropFragments?: { language: string, amount: number }, cards: { isDuplicate?: boolean, primaryLanguage?: string }[] }) => {
     fetch('/api/forge/wallet').then(res => res.json()).then(wallet => {
@@ -332,22 +345,8 @@ export default function InventoryClient({ userId }: { userId: string }) {
                   </div>
                 )}
                 
-                <div className="flex flex-col gap-1 mt-3">
-                  <span className="text-slate-300 font-medium text-sm mb-1">Rarity Distribution:</span>
-                  {selectedPack.noPreview ? (
-                    <div className="text-sm font-black text-purple-400 animate-pulse">??? Unknown Odds</div>
-                  ) : selectedPack.allCommon ? (
-                    <div className="text-sm text-slate-400">100% Common Junk</div>
-                  ) : selectedPack.cardCount === 5 ? (
-                    <ul className="text-xs text-slate-400 space-y-1 ml-1">
-                      <li><span className="text-slate-200">Slot 1 & 2:</span> 100% Common</li>
-                      <li><span className="text-slate-200">Slot 3:</span> 70% Common, 30% Uncommon</li>
-                      <li><span className="text-slate-200">Slot 4:</span> 60% Uncommon, 40% Rare</li>
-                      <li><span className="text-slate-200">Slot 5:</span> <span className="text-blue-400">55% Rare</span>, <span className="text-purple-400">30% Epic</span>, <span className="text-yellow-400">15% Legendary</span></li>
-                    </ul>
-                  ) : (
-                    <div className="text-sm text-yellow-400 font-bold">Guaranteed ±{selectedPack.guaranteedMinRarity} pulls</div>
-                  )}
+                <div className="mt-3">
+                  <PackOdds pack={selectedPack} />
                 </div>
               </div>
 

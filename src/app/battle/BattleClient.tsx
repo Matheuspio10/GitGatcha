@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { EmptyState } from '@/components/EmptyState';
 import { Card, CardProps } from '@/components/Card';
 import TeamBuilderUI, { TeamBuilderCard } from '@/components/TeamBuilderUI';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1362,10 +1363,12 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       {tab === 'History' && (
         <div className="max-w-3xl mx-auto space-y-4">
           {history.length === 0 ? (
-            <div className="text-center py-16 text-slate-500">
-              <Clock size={48} className="mx-auto mb-4 opacity-40" />
-              <p>No battles yet. Start your first fight!</p>
-            </div>
+            <EmptyState
+              icon={<Clock size={40} />}
+              title="No battles yet"
+              text="Pick 3 cards and fight the computer in any league. Every battle pays BITS and XP."
+              actions={[{ label: 'Start a battle', onClick: () => setTab('Quick Battle') }]}
+            />
           ) : (
             history.map((battle: any) => {
               const isChallenger = battle.challengerId === userId;

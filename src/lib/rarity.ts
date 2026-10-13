@@ -77,6 +77,26 @@ export function averagePullRates(): Record<Rarity, number> {
   return rates;
 }
 
+/**
+ * Chance that a pack holds at least one card of each rarity or better, before
+ * the star bonus (shown before buying and opening). A guaranteed minimum makes
+ * every rarity up to it certain; all-Common packs only hold Commons.
+ */
+export function packAtLeastOdds(pack: { cardCount: number; guaranteedMinRarity?: string | null; allCommon?: boolean }): Record<Rarity, number> {
+  const minIdx = pack.guaranteedMinRarity ? RARITY_ORDER.indexOf(pack.guaranteedMinRarity as Rarity) : -1;
+  return Object.fromEntries(RARITY_ORDER.map((rarity, idx) => {
+    if (pack.allCommon) return [rarity, idx === 0 ? 1 : 0];
+    if (idx <= minIdx) return [rarity, 1];
+    let none = 1;
+    for (let slot = 0; slot < pack.cardCount; slot++) {
+      const odds = BOOSTER_SLOT_ODDS[Math.min(slot, BOOSTER_SLOT_ODDS.length - 1)];
+      const atLeast = RARITY_ORDER.slice(idx).reduce((sum, r) => sum + (odds[r] ?? 0), 0);
+      none *= 1 - atLeast;
+    }
+    return [rarity, 1 - none];
+  })) as Record<Rarity, number>;
+}
+
 export function followerBandRarity(followers: number): Rarity {
   for (let i = RARITY_ORDER.length - 1; i >= 0; i--) {
     const rarity = RARITY_ORDER[i];

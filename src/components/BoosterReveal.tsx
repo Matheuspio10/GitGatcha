@@ -31,6 +31,8 @@ interface BoosterRevealProps {
   /** Shown on the sealed pack before it is torn open */
   packName?: string;
   packTheme?: BoosterPackTheme | null;
+  /** Label of the button on the summary screen. */
+  completeLabel?: string;
 }
 
 const RARITY_VALUES: Record<string, number> = {
@@ -730,6 +732,7 @@ export function BoosterReveal({
   onComplete,
   packName = 'Booster',
   packTheme,
+  completeLabel = 'Add to collection',
 }: BoosterRevealProps) {
   const reduceMotion = useReducedMotion();
   const isTouch = useIsTouchDevice();
@@ -960,7 +963,7 @@ export function BoosterReveal({
             onClick={onComplete}
             className="px-10 py-4 rounded-2xl bg-slate-100 hover:bg-white border border-white text-slate-900 font-extrabold tracking-[0.15em] text-sm uppercase transition-all shadow-[0_4px_20px_rgba(255,255,255,0.3),inset_0_2px_4px_rgba(255,255,255,1)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.5)] hover:-translate-y-1 active:translate-y-0 active:shadow-md"
           >
-            Add to collection
+            {completeLabel}
           </button>
         </motion.div>
       </motion.div>

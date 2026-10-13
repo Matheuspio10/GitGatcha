@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { EmptyState } from '@/components/EmptyState';
 import toast from 'react-hot-toast';
 import { CardProps, Card } from '@/components/Card';
 import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText } from '@phosphor-icons/react';
@@ -130,6 +131,19 @@ function LoyaltyProgressBar({ count, tier }: { count: number; tier: string }) {
         />
       </div>
     </div>
+  );
+}
+
+/** Empty collection (go open packs) or a search/filter with no match (clear the search). */
+function CollectionEmpty({ hasCards, onClear }: { hasCards: boolean; onClear: () => void }) {
+  return hasCards ? (
+    <EmptyState title="No cards match your search" text="Try another name, or clear the search to see every card." actions={[{ label: 'Clear search', onClick: onClear }]} compact />
+  ) : (
+    <EmptyState
+      title="Your collection is empty"
+      text="Every developer you pull from a booster lands here. Open a pack to meet your first ones."
+      actions={[{ label: 'Open a pack', href: '/inventory' }, { label: 'Visit the store', href: '/store' }]}
+    />
   );
 }
 
@@ -402,8 +416,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
               <tbody className="divide-y divide-slate-800/50">
                 {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                      No records found in the database.
+                    <td colSpan={8} className="px-6 py-6">
+                      <CollectionEmpty hasCards={localCards.length > 0} onClear={() => { setSearch(''); setPage(1); }} />
                     </td>
                   </tr>
                 ) : (
@@ -484,8 +498,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(256px,1fr))] justify-items-center gap-x-5 gap-y-8">
           {paginatedData.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-500 bg-black border border-slate-800 rounded-xl">
-              No records found in the database.
+            <div className="col-span-full w-full">
+              <CollectionEmpty hasCards={localCards.length > 0} onClear={() => { setSearch(''); setPage(1); }} />
             </div>
           ) : (
             paginatedData.map(card => (

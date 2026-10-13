@@ -15,11 +15,11 @@ const secureMathRandom = () => randomInt(0, 0xffffffff) / 0xffffffff;
 
 // ─── Rarity Slot Generation ─────────────────────────────────────────────
 
-function getRaritiesForSlots(count: number): string[] {
+export function getRaritiesForSlots(count: number): string[] {
   return Array.from({ length: count }, (_, i) => rarityForSlot(i, secureMathRandom()));
 }
 
-function ensureMinimumRarity(rarities: string[], minRarity: string): string[] {
+export function ensureMinimumRarity(rarities: string[], minRarity: string): string[] {
   const minIdx = RARITY_ORDER.indexOf(minRarity);
   const hasMinimum = rarities.some(r => RARITY_ORDER.indexOf(r) >= minIdx);
 
@@ -106,51 +106,7 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
   const exclude = await getRecentPulls(userId, effectivePackId);
   // Live draws spend the player's own GitHub quota when they connected GitHub
   const sampler = samplerForToken(await getPlayerGithubToken(userId));
-  let githubDown = false;
-
-  // 1. reserve (pre-drawn, instant)  2. live uniform draw  3. last resort: an existing card
-  const drawSlot = async (slotRarity: string): Promise<{ dev: DevStats | null; source: CardSource }> => {
-    const rarity: Rarity = isRarity(slotRarity) ? slotRarity : 'Common';
-    try {
-      const reserved = await takeFromReserve(effectivePackId, rarity, exclude);
-      if (reserved) return { dev: reserved, source: 'reserve' };
-    } catch (err) {
-      console.error(`[Booster] Reserve unavailable (${effectivePackId}/${rarity}):`, (err as Error).message);
-    }
-    if (!githubDown) {
-      try {
-        const dev = await sampler.drawDev(pool, rarity, exclude);
-        if (dev) return { dev, source: 'github' };
-      } catch (err) {
-        if (err instanceof GitHubUnavailableError) githubDown = true;
-        console.error(`[Booster] GitHub draw failed (${effectivePackId}/${rarity}):`, (err as Error).message);
-      }
-    }
-    return { dev: await drawFromExistingCards(pool, rarity, exclude), source: 'fallback' };
-  };
-
-  // Slots are drawn in parallel (GitHub search calls are still queued and spaced in githubService)
-  const slots = await Promise.all(pickedRarities.map(drawSlot));
-
-  const drawn: DevStats[] = [];
-  const sources: CardSource[] = [];
-  for (const [i, slot] of slots.entries()) {
-    let { dev, source } = slot;
-    // Parallel draws can't see each other: redraw the rare same-dev collision
-    const isTaken = (d: DevStats | null) => !!d && drawn.some(x => x.githubUsername === d.githubUsername);
-    for (let retry = 0; isTaken(dev) && retry < 2; retry++) {
-      ({ dev, source } = await drawSlot(pickedRarities[i]));
-    }
-    if (!dev || isTaken(dev)) continue;
-    exclude.add(dev.githubUsername.toLowerCase());
-    drawn.push(dev);
-    sources.push(source);
-  }
-
-  const fallbackCount = sources.filter(s => s === 'fallback').length;
-  if (fallbackCount > 0) {
-    console.warn(`[Booster] ${fallbackCount}/${pickedRarities.length} cards of ${effectivePackId} were reused existing cards (GitHub unavailable, reserve empty)`);
-  }
+  const { drawn, sources } = await drawPackDevs(effectivePackId, pool, pickedRarities, exclude, sampler);
 
   // From here on the player is receiving cards: errors are logged, never thrown, so the
   // caller can't refund a pack that was already (partly) granted.
@@ -268,7 +224,6 @@ export async function getPityStatus(userId: string) {
   return { packsSinceLegendary, packsUntilGuaranteed: packsUntilPity(packsSinceLegendary), threshold: PITY_THRESHOLD };
 }
 
-type CardSource = 'reserve' | 'github' | 'fallback';
 
 /**
  * Last resort when the reserve is empty and GitHub can't answer (rate limit,
@@ -304,18 +259,80 @@ async function drawFromExistingCards(pool: PoolFilter, rarity: Rarity, exclude: 
   };
 }
 
+export type CardSource = 'reserve' | 'github' | 'fallback';
+
+/**
+ * Draws one developer per rarity slot, all different and not in `exclude`:
+ * 1. the booster's reserve (pre-drawn, instant)  2. a live uniform draw on
+ * GitHub  3. last resort, an existing card. Shared by the player and guest packs.
+ */
+export async function drawPackDevs(
+  effectivePackId: string,
+  pool: PoolFilter,
+  pickedRarities: string[],
+  exclude: Set<string>,
+  sampler: ReturnType<typeof samplerForToken>,
+): Promise<{ drawn: DevStats[]; sources: CardSource[] }> {
+  let githubDown = false;
+  const drawSlot = async (slotRarity: string): Promise<{ dev: DevStats | null; source: CardSource }> => {
+    const rarity: Rarity = isRarity(slotRarity) ? slotRarity : 'Common';
+    try {
+      const reserved = await takeFromReserve(effectivePackId, rarity, exclude);
+      if (reserved) return { dev: reserved, source: 'reserve' };
+    } catch (err) {
+      console.error(`[Booster] Reserve unavailable (${effectivePackId}/${rarity}):`, (err as Error).message);
+    }
+    if (!githubDown) {
+      try {
+        const dev = await sampler.drawDev(pool, rarity, exclude);
+        if (dev) return { dev, source: 'github' };
+      } catch (err) {
+        if (err instanceof GitHubUnavailableError) githubDown = true;
+        console.error(`[Booster] GitHub draw failed (${effectivePackId}/${rarity}):`, (err as Error).message);
+      }
+    }
+    return { dev: await drawFromExistingCards(pool, rarity, exclude), source: 'fallback' };
+  };
+
+  // Slots are drawn in parallel (GitHub search calls are still queued and spaced in githubService)
+  const slots = await Promise.all(pickedRarities.map(drawSlot));
+
+  const drawn: DevStats[] = [];
+  const sources: CardSource[] = [];
+  for (const [i, slot] of slots.entries()) {
+    let { dev, source } = slot;
+    // Parallel draws can't see each other: redraw the rare same-dev collision
+    const isTaken = (d: DevStats | null) => !!d && drawn.some(x => x.githubUsername === d.githubUsername);
+    for (let retry = 0; isTaken(dev) && retry < 2; retry++) {
+      ({ dev, source } = await drawSlot(pickedRarities[i]));
+    }
+    if (!dev || isTaken(dev)) continue;
+    exclude.add(dev.githubUsername.toLowerCase());
+    drawn.push(dev);
+    sources.push(source);
+  }
+
+  const fallbackCount = sources.filter(s => s === 'fallback').length;
+  if (fallbackCount > 0) {
+    console.warn(`[Booster] ${fallbackCount}/${pickedRarities.length} cards of ${effectivePackId} were reused existing cards (GitHub unavailable, reserve empty)`);
+  }
+
+  return { drawn, sources };
+}
+
 /** Max reserve rows drawn per rarity after one opening (keeps the background job short). */
 const REFILL_PER_RARITY = 4;
 
 /**
  * Tops the reserve of this booster back up after an opening. Meant to run after
- * the response is sent; spends the player's own GitHub quota when connected.
+ * the response is sent; spends the player's own GitHub quota when connected
+ * (the server's for guests: userId null).
  */
-export async function refillBoosterReserve(userId: string, packId: string | undefined, budgetMs = 40_000) {
+export async function refillBoosterReserve(userId: string | null, packId: string | undefined, budgetMs = 40_000) {
   const pack = packId ? getPackById(packId) : null;
   if (!pack) return;
   const deadline = Date.now() + budgetMs;
-  const sampler = samplerForToken(await getPlayerGithubToken(userId));
+  const sampler = samplerForToken(userId ? await getPlayerGithubToken(userId) : null);
   const rarities: Rarity[] = pack.allCommon ? ['Common'] : ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
   try {
     for (const rarity of rarities) {
@@ -341,7 +358,7 @@ async function addFragments(userId: string, language: string, amount: number, so
 }
 
 /** Creates the card, or refreshes its stats when the dev was just fetched live from GitHub. */
-async function upsertCard(dev: DevStats, fresh: boolean) {
+export async function upsertCard(dev: DevStats, fresh: boolean) {
   const data = toCardData(dev);
   const existing = await prisma.card.findUnique({ where: { githubUsername: dev.githubUsername } });
   if (!existing) {
@@ -357,7 +374,7 @@ async function upsertCard(dev: DevStats, fresh: boolean) {
   return prisma.card.update({ where: { id: existing.id }, data });
 }
 
-async function addCardToUser(userId: string, card: { id: string; rarity: string; primaryLanguage: string | null }) {
+export async function addCardToUser(userId: string, card: { id: string; rarity: string; primaryLanguage: string | null }) {
   // Locked: two parallel openings must not both create the same card for the player
   const result = await withUserLock(userId, async (tx) => {
     const existingCard = await tx.userCard.findFirst({ where: { userId, cardId: card.id } });
