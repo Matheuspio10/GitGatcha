@@ -13,6 +13,7 @@ import { useSearchParams } from 'next/navigation';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
 import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
+import type { BattleRewards } from '@/lib/battleConfig';
 
 // Types
 interface TurnEvent {
@@ -335,7 +336,7 @@ function BattleReplay({
   challengerTeam: TeamCard[];
   defenderTeam: TeamCard[];
   winnerSide: 'CHALLENGER' | 'DEFENDER';
-  rewards: { bits: number; xp: number };
+  rewards: BattleRewards;
   onReset: () => void;
   userId: string;
   leagueMode?: string;
@@ -544,6 +545,15 @@ function BattleReplay({
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: 'spring' }} className="text-center">
             <motion.span animate={{ opacity: [0, 1] }} transition={{ delay: 0.5 }} className="text-yellow-400 font-black text-3xl">+{rewards.bits}</motion.span>
             <p className="text-[10px] uppercase text-slate-400 tracking-wider mt-1">Bits</p>
+            {!!rewards.upsetBonusPct && (
+              <motion.p
+                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
+                className="mt-1 text-[10px] font-bold uppercase tracking-wider text-commit"
+                title="You beat a team of higher average rarity"
+              >
+                Upset! +{Math.round(rewards.upsetBonusPct * 100)}%
+              </motion.p>
+            )}
           </motion.div>
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }} className="text-center">
             <motion.span animate={{ opacity: [0, 1] }} transition={{ delay: 0.7 }} className="text-blue-400 font-black text-3xl">+{rewards.xp}</motion.span>
@@ -1010,7 +1020,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     challengerTeam: TeamCard[];
     defenderTeam: TeamCard[];
     winnerSide: 'CHALLENGER' | 'DEFENDER';
-    rewards: { bits: number; xp: number };
+    rewards: BattleRewards;
     battleStats?: any[];
     loyaltyUnlocks?: any[];
     achievementsUnlocked?: AchievementUnlockNotice[];

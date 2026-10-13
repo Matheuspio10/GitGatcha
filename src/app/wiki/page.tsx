@@ -9,6 +9,7 @@ import {
   DEF_MITIGATION_K,
   FRIEND_BATTLE_LEAGUE,
   LEAGUES,
+  UPSET_BONUS,
   LEAGUE_MODES,
   LOYALTY_MILESTONES,
   MATCHUP_TURN_CAP,
@@ -517,6 +518,14 @@ export default function WikiPage() {
                     Win: {LEAGUES[FRIEND_BATTLE_LEAGUE].winBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].winXp} XP | Loss: {LEAGUES[FRIEND_BATTLE_LEAGUE].lossBits} BITS + {LEAGUES[FRIEND_BATTLE_LEAGUE].lossXp} XP (both players)
                   </p>
                 </div>
+              </div>
+              <div className="mt-4 bg-slate-800/30 p-5 rounded-xl border border-commit/30">
+                <h3 className="text-lg font-bold text-commit mb-2">Upset Bonus</h3>
+                <p className="text-sm text-slate-300">
+                  Beat a team of higher average rarity (Common = 0 … Legendary = 4, averaged over the 3 cards) and the win pays
+                  +{Math.round(UPSET_BONUS.perTier * 100)}% BITS per tier of difference, up to +{Math.round(UPSET_BONUS.max * 100)}%.
+                  Works in every league and in friend challenges; XP is unchanged.
+                </p>
               </div>
               <p className="mt-4 text-xs text-slate-500">
                 Balanced League cap: {BALANCED_POWER_CAP_MULTIPLIER}× the average power of every card in the game; the Arena shows the current value.
