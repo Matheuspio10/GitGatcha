@@ -157,6 +157,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Pack inicial:** ao escolher o nome de usuário pela primeira vez, o jogador ganha **The Open Source Heroes** (Rare ou melhor garantida). Jogadores antigos não entram no onboarding (`User.onboarding` nulo, migração `20261018000000_onboarding`).
 - **Tela de boas-vindas 🅶** (`WelcomeModal`): o presente com "Open it now" e todas as formas de ganhar BITS e packs, com os números lidos das constantes (`src/lib/earnGuide.ts`).
 - **Checklist "Getting started"** (`OnboardingChecklist`, `src/lib/onboarding.ts`): abrir o pack (+50), ver a coleção (+50), montar um time de 3 (+100) e jogar a primeira batalha (+200). O progresso vem dos dados do jogo; só "viu a coleção" é guardado. Recolhe no celular, pode ser escondido.
+- **BITS iniciais unificados em 1.000** (`STARTING_BITS`): o cadastro por e-mail dava 500 e o por Google/GitHub dava 1.000. Um teste garante que o default do schema continua igual.
 - **Bugs do cadastro corrigidos:** o nome do próprio jogador não conta mais como "já em uso" na tela de configuração, e dois e-mails com o mesmo prefixo (`joao@a.com`, `joao@b.com`) não derrubam mais o segundo cadastro.
 
 ### Infra (PR #25)
@@ -174,7 +175,6 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### Pontas soltas conhecidas (pequenas)
 | Item | Prioridade | Esforço |
 |---|---|---|
-| BITS iniciais diferentes: cadastro por e-mail ganha 500 (`api/auth/register`), por Google/GitHub ganha 1.000 (default do schema) — unificar | 🟡 | P |
 | Liga Diversity paga 120 sem teto de força (3 Legendaries de linguagens diferentes valem) — avaliar junto com a economia | 🟢 | P |
 | Pedir ao suporte do GitHub a remoção das refs internas das PRs #1–#18 (ainda guardam o `dev.db` antigo) | 🟡 | P |
 | Suíte de testes lenta (~90 s, simulador) — separar testes rápidos e lentos | 🟢 | P |

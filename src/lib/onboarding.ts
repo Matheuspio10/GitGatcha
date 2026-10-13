@@ -13,6 +13,13 @@
 
 export const STARTER_PACK_ID = 'open-source-heroes';
 
+/**
+ * BITS every new account starts with, whatever the sign-up method. E-mail sign-ups
+ * set it explicitly; Google/GitHub accounts get it from the User.currency default
+ * in schema.prisma, which must stay equal.
+ */
+export const STARTING_BITS = 1000;
+
 export type OnboardingStepId = 'open-pack' | 'collection' | 'team' | 'battle';
 
 export interface OnboardingStepDef {

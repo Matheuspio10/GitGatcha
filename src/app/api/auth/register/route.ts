@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { STARTING_BITS } from '@/lib/onboarding';
 
 /**
  * A free username based on the e-mail's local part (usernames are unique: two
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
         // Provisional name from the e-mail; the player confirms or changes it in the setup screen
         username: await availableUsername(email.split('@')[0]),
         password: hashedPassword,
-        currency: 500, // starting bits
+        currency: STARTING_BITS,
         xp: 0,
         level: 1
       }
