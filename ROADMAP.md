@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 13/10/2026, ao fim do treino de cartas (PR #51). Ondas 1 a 5 completas; onda 6 em andamento (Torre, Sprints, eventos semanais e treino prontos; falta coleções/sets). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 13/10/2026, ao fim das coleções e cosméticos (PR #52). **Ondas 1 a 6 completas.** O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -12,14 +12,14 @@
 ## 👉 Como continuar (leia primeiro)
 
 ### Estado atual
-- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre, os Sprints, os eventos semanais e o treino de cartas da onda 6. Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 19 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 199 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 20 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 205 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -55,10 +55,12 @@
 
 ## ▶️ Próximo passo
 
-**Onda 6 (modos e cartas), rodadas que faltam**, uma PR por rodada:
-1. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
+**Onda 7 (celular, acessibilidade e idioma)**, uma PR por rodada:
+1. **Celular:** barra de abas inferior, carta com tamanho responsivo, PWA (2.7).
+2. **Acessibilidade:** packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais, contraste AA (2.7); slider de volume e sons de Epic/Legendary (2.6).
+3. **PT-BR com next-intl**, mantendo o inglês (2.5). É a maior: toda a interface passa por chaves de tradução.
 
-Depois: **onda 7** (celular, acessibilidade, PT-BR), **onda 8** (engenharia de fundo, pode intercalar), **onda 9** (grandes apostas e monetização).
+Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes apostas e monetização).
 
 **Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
 - O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
@@ -113,6 +115,10 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #51 | Teto de treino por raridade | Common 8 · Uncommon 4 · Rare 4 · Epic 3 · Legendary 3 (+2% por nível). Medido no simulador: treino completo ≈ empata com a raridade de cima | `TRAINING_MAX_LEVEL`, `TRAINING_BONUS_PER_LEVEL` (`training.ts`) |
 | #51 | Custo do treino | Nível n = n × passo; passo Common 50 · Uncommon 100 · Rare 200 · Epic 400 · Legendary 800 BITS + n × fragmentos de uma repetida (5/10/20/40/80) | `TRAINING_BITS_PER_STEP`, `TRAINING_FRAGMENTS_PER_STEP` (`training.ts`) |
 | #51 | Teto da Liga Balanced com cartas treinadas | Conta o poder **base** (como a fidelidade já fazia) | rota `api/battle` e `TeamBuilderUI` |
+| #52 | O que é uma coleção | Uma por linguagem de combate (18), com uma vaga por raridade. "Completar o elenco de um pack" não existe: os packs sorteiam entre milhões de devs, sem lista fechada | `COLLECTION_LANGUAGES`, `collectionProgress` (`collections.ts`) |
+| #52 | Títulos e molduras | Títulos: nível 10/25/50, 1/3/10 coleções e "<Linguagem> Collector". Molduras: nível 5/10/20/35, 1 e 5 coleções | `TITLES`, `FRAMES` (`collections.ts`) |
+| #52 | Coleção completa paga BITS? | Não, só cosméticos (pagar exigiria guardar quem já recebeu) | — |
+| #52 | Níveis liberando modos | Não feito: travaria modos que hoje são livres. Os níveis liberam títulos e molduras | — |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -128,7 +134,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
-| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51) · falta: **coleções/sets** e níveis que desbloqueiam algo (3.3, 2.4) | 1 rodada, M |
+| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
@@ -325,6 +331,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Simulador:** nova seção "Fully trained team vs untrained" e um teste que segura o treino dentro da faixa.
 - **Download da carta em PNG** (pedido do dono): botão "Download PNG" no bloco da carta Signature do perfil e "PNG" no detalhe de qualquer carta na coleção (`CardDownloadButton`, usa a rota `/api/card-image/<login>` que já existia).
 
+### Onda 6 — coleções e cosméticos (PR #52)
+- **Coleções por linguagem** (`src/lib/collections.ts`): como os packs sorteiam do GitHub inteiro, não existe "elenco do pack" para completar. Cada linguagem de combate (18) vira uma coleção com 5 vagas, uma por raridade; a Forja preenche qualquer vaga. Painel **"Language sets"** na coleção, com as gemas de raridade e a %.
+- **Títulos e molduras de avatar**, liberados por nível e por coleções completas. Nada é gravado como "desbloqueado": cartas nunca saem da coleção e o nível nunca cai, então o desbloqueio é calculado na hora. Só fica gravado o que está equipado (`User.title`, `User.frame`, migração `20261030000000_profile_cosmetics`).
+- **Seletor "Title & frame"** no próprio perfil (`GET/POST /api/profile/cosmetics`; a rota recusa com 403 o que ainda está bloqueado). O título aparece abaixo do nome e a moldura em volta do avatar, no perfil e na página pública `/u/<username>`, junto com "N/18 sets".
+- Wiki explica com os números das constantes.
+- **Bug corrigido de passagem:** o mapa de IDs antigos do inventário trocava `the-fossils` (o ID real do The Fossils, que vem nas recompensas de nível) por `fossils`, que não existe, e o pack abria como genérico. Agora o mapa faz o caminho inverso e conserta quem já foi afetado.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -347,7 +360,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.4 Economia e progressão (restante)
 | Item | Esforço |
 |---|---|
-| Níveis desbloqueiam algo além de packs (modos, molduras, títulos) | M |
+| ~~Níveis desbloqueiam algo além de packs~~ | ✅ títulos e molduras (PR #52) |
 
 ### 2.5 UX geral
 | Item | Esforço |
@@ -406,7 +419,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Feature | Descrição | Esforço |
 |---|---|---|
 | ~~**Treinar cartas**~~ | ✅ PR #51 | — |
-| **Coleções/sets** | Completar o elenco de um pack dá título, moldura ou banner; mostrar % por pack | M |
+| ~~**Coleções/sets**~~ | ✅ PR #52 (por linguagem, uma vaga por raridade) | — |
 | **Wishlist ativa** | Itens da wishlist com chance levemente maior (cuidado com a regra de ouro 1: seria um viés explícito e anunciado) | P |
 | **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui. Padrão do GitPacks 🅶: a cada requisição, tentar pegar uma vaga global (`UPDATE … WHERE updated_at < agora-5min RETURNING`) e atualizar **a carta mais desatualizada**, em rodízio, sem cron. Respeitar a regra 4 (`STAT_VERSION`) | M |
 

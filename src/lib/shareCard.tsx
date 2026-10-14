@@ -4,6 +4,7 @@
  * next/og (satori), which only understands inline styles and flexbox, so the
  * card here is a simplified version of Card.tsx.
  */
+import { collectionProgress, frameById, publicFrame, publicTitle, titleById } from './collections';
 import { prisma } from './prisma';
 import { cardTitle, languageStyle, serialHash } from './cardVisuals';
 import { SIGNATURE_EDITION } from './githubLink';
@@ -101,7 +102,7 @@ export async function getShareProfile(username: string) {
   const user = await prisma.user.findFirst({
     where: { username: { equals: username, mode: 'insensitive' } },
     select: {
-      id: true, username: true, image: true, level: true, rating: true, createdAt: true,
+      id: true, username: true, image: true, level: true, rating: true, createdAt: true, title: true, frame: true,
       cards: { select: { edition: true, isShiny: true, card: true } },
       seasonResults: { select: { seasonId: true, tier: true, peakRating: true }, orderBy: { seasonId: 'desc' }, take: 12 },
     },
@@ -130,6 +131,9 @@ export async function getShareProfile(username: string) {
     topCards: ranked.filter(uc => uc.edition !== SIGNATURE_EDITION).slice(0, 6).map(withTitle),
     signatureCard: signature ? withTitle(signature) : null,
     seasons: user.seasonResults,
+    title: publicTitle(titleById(user.title)),
+    frame: publicFrame(frameById(user.frame)),
+    setsCompleted: collectionProgress(user.cards.map(uc => uc.card)).filter(s => s.complete).length,
   };
 }
 

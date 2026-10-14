@@ -10,6 +10,8 @@ import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import { TRAINING_BONUS_PER_LEVEL } from '@/lib/training';
 import { TrainingPanel } from '@/components/TrainingPanel';
 import { CardDownloadButton } from '@/components/CardDownloadButton';
+import { LanguageSets } from '@/components/LanguageSets';
+import { collectionProgress } from '@/lib/collections';
 import clsx from 'clsx';
 
 type ExtendedCard = CardProps & {
@@ -152,7 +154,7 @@ function CollectionEmpty({ hasCards, onClear }: { hasCards: boolean; onClear: ()
   );
 }
 
-export default function CollectionClient({ initialCards }: { initialCards: ExtendedCard[] }) {
+export default function CollectionClient({ initialCards, profileHref }: { initialCards: ExtendedCard[]; profileHref?: string }) {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('RARITY');
   const [sortDesc, setSortDesc] = useState(true);
@@ -178,6 +180,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
     });
     return counts;
   }, [localCards]);
+
+  const sets = useMemo(() => collectionProgress(localCards), [localCards]);
 
   const sortedAndFiltered = useMemo(() => {
     let result = [...localCards];
@@ -325,6 +329,8 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
           })}
         </div>
       </div>
+
+      <LanguageSets sets={sets} profileHref={profileHref} />
 
       {/* 2. Toolbar & Sorting */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col gap-4">

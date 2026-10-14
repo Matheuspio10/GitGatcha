@@ -20,6 +20,9 @@ import type { AchievementView } from '@/lib/achievementUtils';
 import { notifyAchievements } from '@/lib/achievementToast';
 import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { RankBadge } from '@/components/RankBadge';
+import { AvatarFrame, PlayerTitle } from '@/components/PlayerCosmetics';
+import { CosmeticsPicker } from '@/components/CosmeticsPicker';
+import type { PublicFrame, PublicTitle } from '@/lib/collections';
 
 interface FriendInfo {
   id: string;
@@ -66,7 +69,11 @@ interface ProfileData {
     bio?: string | null;
     bannerImage?: string | null;
     preferredLanguage?: string | null;
+    title?: PublicTitle | null;
+    frame?: PublicFrame | null;
   };
+  setsCompleted: number;
+  setsTotal: number;
   stats: {
     totalCards: number;
     battlesWon: number;
@@ -243,16 +250,19 @@ export default function ProfilePage() {
             <div className="relative flex flex-col md:flex-row items-center md:items-end gap-6 z-10">
               {/* Avatar */}
               <div className="relative -mt-16 md:-mt-20">
-                <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>
-                <div className="relative ring-4 ring-slate-900 rounded-full">
-                  <UserAvatar
-                    username={profile.user.username}
-                    image={profile.user.image}
-                    size="xl"
-                    showUploadHint={isOwnProfile}
-                    onClick={isOwnProfile ? () => setShowEditModal(true) : undefined}
-                  />
-                </div>
+                {!profile.user.frame && <div className="absolute -inset-1 bg-gradient-to-br from-indigo-500 via-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-500"></div>}
+                {/* The avatar's own 4px dark ring sits on top of the frame: 9px leaves a 5px band visible */}
+                <AvatarFrame frame={profile.user.frame} thickness={9}>
+                  <div className="relative ring-4 ring-slate-900 rounded-full">
+                    <UserAvatar
+                      username={profile.user.username}
+                      image={profile.user.image}
+                      size="xl"
+                      showUploadHint={isOwnProfile}
+                      onClick={isOwnProfile ? () => setShowEditModal(true) : undefined}
+                    />
+                  </div>
+                </AvatarFrame>
                 {/* Camera icon overlay for own profile */}
                 {isOwnProfile && (
                   <button
@@ -284,6 +294,8 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
+                <PlayerTitle title={profile.user.title} className="mb-2 block" />
+
                 {/* Bio */}
                 <p className="text-sm text-slate-400 mb-3 max-w-md">
                   {profile.user.bio || <span className="italic text-slate-600">No bio yet</span>}
@@ -296,6 +308,11 @@ export default function ProfilePage() {
                     Level {profile.user.level}
                   </span>
                   <RankBadge rating={profile.user.rating} className="px-3 py-1" />
+                  {profile.setsCompleted > 0 && (
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-full text-xs font-bold text-fuchsia-300" title="Language sets with a card of every rarity">
+                      {profile.setsCompleted}/{profile.setsTotal} sets
+                    </span>
+                  )}
                   {profile.user.seasons?.map(s => (
                     <span key={s.seasonId} className="inline-flex items-center gap-1 text-[10px] text-slate-500" title={`Season ${s.seasonId} peak`}>
                       S{s.seasonId} <RankBadge rating={s.peakRating} showRating={false} />
@@ -383,6 +400,10 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {isOwnProfile && (
+          <CosmeticsPicker onChange={equipped => setProfile(prev => (prev ? { ...prev, user: { ...prev.user, ...equipped } } : prev))} />
+        )}
 
         {/* ═══════════ STATS GRID — 6 Items ═══════════ */}
         <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory hide-scrollbar">

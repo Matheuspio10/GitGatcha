@@ -5,6 +5,7 @@ import { Card } from '@/components/Card';
 import { UserAvatar } from '@/components/UserAvatar';
 import { ShareButtons } from '@/components/ShareButtons';
 import { RankBadge } from '@/components/RankBadge';
+import { AvatarFrame, PlayerTitle } from '@/components/PlayerCosmetics';
 import { RARITY_HEX, getShareProfile, siteUrl } from '@/lib/shareCard';
 import { getCurrentUser } from '@/lib/session';
 
@@ -36,11 +37,15 @@ export default async function PublicProfilePage({ params }: Props) {
   return (
     <div className="mx-auto max-w-5xl py-6">
       <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-        <UserAvatar username={profile.username} image={profile.image} size="lg" />
+        <AvatarFrame frame={profile.frame}>
+          <UserAvatar username={profile.username} image={profile.image} size="lg" />
+        </AvatarFrame>
         <div className="flex-1">
           <h1 className="font-display text-3xl font-extrabold text-white">{profile.username}</h1>
+          <PlayerTitle title={profile.title} className="block" />
           <p className="flex flex-wrap items-center justify-center gap-2 text-slate-400 sm:justify-start">
             Level {profile.level} · <RankBadge rating={profile.rating} /> · {profile.uniqueCards} developers collected
+            {profile.setsCompleted > 0 && <> · {profile.setsCompleted} language set{profile.setsCompleted === 1 ? '' : 's'} complete</>}
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs font-mono sm:justify-start">
             {Object.entries(profile.byRarity).map(([rarity, count]) => (

@@ -38,6 +38,7 @@ import { PITY_THRESHOLD } from '@/lib/pity';
 import { ACHIEVEMENTS, TIER_NAMES } from '@/lib/achievementUtils';
 import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils';
 import { INVOCATION_COSTS } from '@/lib/forgeService';
+import { COLLECTION_LANGUAGES, FRAMES, TITLES } from '@/lib/collections';
 import { TRAINING_BONUS_PER_LEVEL, TRAINING_BITS_PER_STEP, TRAINING_FRAGMENTS_PER_STEP, TRAINING_MAX_LEVEL, fullTrainingCost } from '@/lib/training';
 import { 
   MagnifyingGlass, 
@@ -722,6 +723,18 @@ export default function WikiPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="bg-slate-800/30 p-6 rounded-xl border border-fuchsia-500/30 mb-6">
+                <h3 className="text-xl font-bold text-fuchsia-300 mb-3">Language sets, titles and frames</h3>
+                <p className="text-sm text-slate-300">
+                  Every combat language is a set with one slot per rarity ({COLLECTION_LANGUAGES.length} sets). Own a {RARITY_ORDER.join(', ')} card of a language and its set is complete
+                  (Collection → Language sets; the Forge can fill any slot). Sets and levels unlock profile cosmetics, equipped on your profile:
+                </p>
+                <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
+                  <li><strong>Titles</strong>: {TITLES.filter(t => !t.id.startsWith('set-')).map(t => `${t.label} (${t.requirement.toLowerCase()})`).join(', ')}, plus &quot;&lt;Language&gt; Collector&quot; for each complete set.</li>
+                  <li><strong>Avatar frames</strong>: {FRAMES.map(f => `${f.label} (${f.requirement.toLowerCase()})`).join(', ')}.</li>
+                </ul>
               </div>
 
               <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 p-6 rounded-xl border border-yellow-500/30 mb-6">
