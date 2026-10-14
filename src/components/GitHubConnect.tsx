@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Check, Copy, GithubLogo, Sparkle } from '@phosphor-icons/react';
 import { claimShareBonus, copyText } from './ShareButtons';
+import { CardDownloadButton, cardImagePath } from './CardDownloadButton';
 
 interface GitHubStatus {
   connected: boolean;
@@ -118,7 +119,7 @@ export function GitHubConnect() {
  */
 function SignatureReadme({ login, name }: { login: string; name: string }) {
   const [copied, setCopied] = useState(false);
-  const imagePath = `/api/card-image/${encodeURIComponent(login)}?edition=signature`;
+  const imagePath = cardImagePath(login, true);
 
   const copy = async () => {
     const origin = window.location.origin;
@@ -140,6 +141,11 @@ function SignatureReadme({ login, name }: { login: string; name: string }) {
           <button onClick={copy} className="inline-flex items-center gap-1.5 rounded-lg bg-fuchsia-500/20 px-2.5 py-1 text-xs font-bold text-fuchsia-100 hover:bg-fuchsia-500/30">
             {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied!' : 'Copy for README'}
           </button>
+          <CardDownloadButton
+            login={login}
+            signature
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-bold text-slate-100 hover:bg-slate-700"
+          />
           <a href={`/card/${encodeURIComponent(login)}`} target="_blank" rel="noreferrer" className="text-xs text-slate-400 underline hover:text-white self-center">
             Public page
           </a>

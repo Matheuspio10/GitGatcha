@@ -38,6 +38,7 @@ import { PITY_THRESHOLD } from '@/lib/pity';
 import { ACHIEVEMENTS, TIER_NAMES } from '@/lib/achievementUtils';
 import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils';
 import { INVOCATION_COSTS } from '@/lib/forgeService';
+import { TRAINING_BONUS_PER_LEVEL, TRAINING_BITS_PER_STEP, TRAINING_FRAGMENTS_PER_STEP, TRAINING_MAX_LEVEL, fullTrainingCost } from '@/lib/training';
 import { 
   MagnifyingGlass, 
   List, 
@@ -630,6 +631,26 @@ export default function WikiPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-6 bg-slate-800/30 p-5 rounded-xl border border-sky-500/30">
+                <h3 className="text-lg font-bold text-sky-300 mb-2">Training</h3>
+                <p className="text-sm text-slate-300">
+                  Open a card in your Collection to train it. Each level adds +{pct(TRAINING_BONUS_PER_LEVEL)} ATK, DEF and HP in every battle, on top of Loyalty.
+                  Level <em>n</em> costs <em>n</em>× a step of BITS plus fragments of the card&apos;s language (wildcards cover the rest), the same fragments duplicates give.
+                  Commons can be trained the furthest, so a favourite card keeps up; a fully trained team about evens out with an untrained team one rarity up.
+                  The Balanced League cap still counts the card&apos;s base power.
+                </p>
+                <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
+                  {RARITY_ORDER.map(r => {
+                    const full = fullTrainingCost(r);
+                    return (
+                      <li key={r}>
+                        <strong>{r}</strong>: up to level {TRAINING_MAX_LEVEL[r]} (+{pct(TRAINING_MAX_LEVEL[r] * TRAINING_BONUS_PER_LEVEL)}); step {TRAINING_BITS_PER_STEP[r]} BITS + {TRAINING_FRAGMENTS_PER_STEP[r]} fragments; full training {full.bits} BITS + {full.fragments} fragments.
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             </section>
 

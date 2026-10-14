@@ -7,6 +7,9 @@ import { CardProps, Card } from '@/components/Card';
 import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText, ShareNetwork } from '@phosphor-icons/react';
 import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
+import { TRAINING_BONUS_PER_LEVEL } from '@/lib/training';
+import { TrainingPanel } from '@/components/TrainingPanel';
+import { CardDownloadButton } from '@/components/CardDownloadButton';
 import clsx from 'clsx';
 
 type ExtendedCard = CardProps & {
@@ -19,6 +22,7 @@ type ExtendedCard = CardProps & {
   loyaltyMilestones?: any[];
   lifetimeStats?: any;
   showcaseOrder?: number | null;
+  trainingLevel?: number;
 };
 
 type SortOption = 'RARITY' | 'NAME' | 'TYPE' | 'HP' | 'ATK' | 'DEF' | 'COUNT' | 'LOYALTY';
@@ -450,6 +454,11 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                             <span className="font-medium text-slate-200">{card.name}</span>
                             <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
                             <LoyaltyBadge tier={loyaltyTier} size="sm" />
+                            {(card.trainingLevel ?? 0) > 0 && (
+                              <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300" title={`Training level ${card.trainingLevel}`}>
+                                +{Math.round((card.trainingLevel ?? 0) * TRAINING_BONUS_PER_LEVEL * 100)}%
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -570,6 +579,13 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                    Share
                  </button>
 
+                 <CardDownloadButton
+                   login={selectedCard.githubUsername}
+                   signature={selectedCard.edition === 'signature'}
+                   label="PNG"
+                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold rounded-xl transition-all text-sm"
+                 />
+
                  {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
                    <button
                      onClick={() => handleRecoverStamina(selectedCard)}
@@ -583,8 +599,19 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                </div>
              </div>
 
+             <div className="w-full max-w-md flex flex-col gap-4">
+             {/* Training (BITS + fragments → battle bonus) */}
+             <TrainingPanel
+               key={selectedCard.userCardId}
+               card={selectedCard}
+               onTrained={trainingLevel => {
+                 setSelectedCard(prev => (prev ? { ...prev, trainingLevel } : prev));
+                 setLocalCards(prev => prev.map(c => (c.userCardId === selectedCard.userCardId ? { ...c, trainingLevel } : c)));
+               }}
+             />
+
              {/* Loyalty Progress Section */}
-             <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
+             <div className="w-full bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
                <div className="flex items-center justify-between">
                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
                    <Fire size={16} weight="fill" className="text-orange-400" />
@@ -663,6 +690,7 @@ export default function CollectionClient({ initialCards }: { initialCards: Exten
                    </div>
                  </div>
                )}
+             </div>
              </div>
           </div>
         </div>

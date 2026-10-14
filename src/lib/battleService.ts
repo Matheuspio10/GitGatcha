@@ -166,6 +166,7 @@ export async function resolveRandomBattle(
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
     loyaltyTier: c.loyaltyTier || 'none',
+    trainingLevel: c.trainingLevel ?? 0,
   }));
 
   // The computer's team follows the same league rules as the player's
@@ -326,6 +327,7 @@ async function finishFriendBattle(
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
     loyaltyTier: c.loyaltyTier || 'none',
+    trainingLevel: c.trainingLevel ?? 0,
   }));
 
   const dTeam: BattleCard[] = defenderTeamCards.map(c => ({
@@ -341,6 +343,7 @@ async function finishFriendBattle(
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
     loyaltyTier: c.loyaltyTier || 'none',
+    trainingLevel: c.trainingLevel ?? 0,
   }));
 
   // Run the battle!
@@ -491,10 +494,10 @@ async function findRankedOpponent(userId: string, rating: number): Promise<{ id:
 
 type RankedCardData = { id: string; name: string; atk: number; def: number; hp: number; rarity: string; primaryLanguage: string | null; avatarUrl: string | null };
 
-function toBattleCard(c: RankedCardData, stamina: number, loyaltyTier: string): BattleCard {
+function toBattleCard(c: RankedCardData, stamina: number, loyaltyTier: string, trainingLevel = 0): BattleCard {
   return {
     id: c.id, name: c.name, atk: c.atk, def: c.def, hp: c.hp, maxHp: c.hp, stamina,
-    rarity: c.rarity as BattleCard['rarity'], primaryLanguage: c.primaryLanguage, type: getCardType(c), avatarUrl: c.avatarUrl, loyaltyTier,
+    rarity: c.rarity as BattleCard['rarity'], primaryLanguage: c.primaryLanguage, type: getCardType(c), avatarUrl: c.avatarUrl, loyaltyTier, trainingLevel,
   };
 }
 
@@ -505,7 +508,7 @@ function toBattleCard(c: RankedCardData, stamina: number, loyaltyTier: string): 
  * result (plus a few BITS when their team holds).
  */
 /** A challenger card as the battle route builds it (id = the UserCard id). */
-export type RankedTeamCard = RankedCardData & { stamina?: number; loyaltyTier?: string };
+export type RankedTeamCard = RankedCardData & { stamina?: number; loyaltyTier?: string; trainingLevel?: number };
 
 export async function resolveRankedBattle(challengerId: string, challengerTeamCards: RankedTeamCard[]) {
   // A season that just ended is closed (and ratings reset) before the battle counts
@@ -522,9 +525,9 @@ export async function resolveRankedBattle(challengerId: string, challengerTeamCa
   });
   if (defenderCards.length < 3) throw new NoRankedOpponentError();
 
-  const cTeam = challengerTeamCards.map(c => toBattleCard(c, c.stamina ?? 100, c.loyaltyTier || 'none'));
+  const cTeam = challengerTeamCards.map(c => toBattleCard(c, c.stamina ?? 100, c.loyaltyTier || 'none', c.trainingLevel ?? 0));
   // The ghost team fights fresh: its owner isn't there to rest it
-  const dTeam = defenderCards.map(uc => toBattleCard({ ...uc.card, id: uc.id }, 100, uc.loyaltyTier || 'none'));
+  const dTeam = defenderCards.map(uc => toBattleCard({ ...uc.card, id: uc.id }, 100, uc.loyaltyTier || 'none', uc.trainingLevel));
 
   const battleResult = resolve3v3Battle(cTeam, dTeam);
   const playerWon = battleResult.winner === 'CHALLENGER';

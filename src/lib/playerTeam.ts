@@ -35,6 +35,7 @@ export async function loadPlayerTeam(userId: string, cardIds: unknown) {
       primaryLanguage: uc.card.primaryLanguage,
       avatarUrl: uc.card.avatarUrl,
       loyaltyTier: uc.loyaltyTier || 'none',
+      trainingLevel: uc.trainingLevel,
     };
   });
 }
