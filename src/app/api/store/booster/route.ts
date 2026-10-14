@@ -51,6 +51,7 @@ export async function POST(req: Request) {
       };
 
       await tx.user.update({
+        select: { id: true },
         where: { id: userId },
         data: { inventory: [...asArray<InventoryItem>(user.inventory), newItem] as unknown as Prisma.InputJsonValue },
       });

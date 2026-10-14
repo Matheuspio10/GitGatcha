@@ -116,8 +116,8 @@ async function applyPvpRating(winnerId: string, loserId: string): Promise<Rating
     const loser = players.find(p => p.id === loserId);
     if (!winner || !loser) return null;
     const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
-    await tx.user.update({ where: { id: winnerId }, data: { rating: newWinnerRating } });
-    await tx.user.update({ where: { id: loserId }, data: { rating: newLoserRating } });
+    await tx.user.update({ select: { id: true }, where: { id: winnerId }, data: { rating: newWinnerRating } });
+    await tx.user.update({ select: { id: true }, where: { id: loserId }, data: { rating: newLoserRating } });
     // Season: battles played, peak rating and first-time rank promotions
     await recordSeasonProgress(tx, winnerId, newWinnerRating);
     await recordSeasonProgress(tx, loserId, newLoserRating);

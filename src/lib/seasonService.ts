@@ -80,6 +80,7 @@ export async function recordSeasonProgress(tx: Tx, userId: string, newRating: nu
   if (!user) return;
   const reached = ranksReached(user.seasonPeakRating, newRating);
   await tx.user.update({
+    select: { id: true },
     where: { id: userId },
     data: { seasonBattles: { increment: 1 }, seasonPeakRating: Math.max(user.seasonPeakRating, newRating) },
   });

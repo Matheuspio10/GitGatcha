@@ -63,6 +63,7 @@ export async function POST(req: Request) {
         spend(WILDCARD, payment.fromWildcard);
 
         await tx.user.update({
+          select: { id: true },
           where: { id: userId },
           data: {
             fragments: userFragments,

@@ -28,6 +28,7 @@ export async function POST(req: Request) {
     const newSeen = Array.from(new Set([...currentSeen, ...entryIds]));
 
     await prisma.user.update({
+      select: { id: true },
       where: { id: userId },
       data: {
         seenChangelogs: newSeen,

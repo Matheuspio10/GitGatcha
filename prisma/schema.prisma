@@ -135,6 +135,10 @@ model Card {
   owners         UserCard[]
   battlesAsChallenger Battle[] @relation("ChallengerCard")
   battlesAsDefender   Battle[] @relation("DefenderCard")
+
+  // Fallback draws, Sprints and the Dev of the Week filter by these
+  @@index([rarity, primaryLanguage])
+  @@index([primaryLanguage])
 }
 
 model UserCard {
@@ -219,6 +223,12 @@ model Battle {
   challengerCard   Card?         @relation("ChallengerCard", fields: [challengerCardId], references: [id])
   defenderCard     Card?         @relation("DefenderCard", fields: [defenderCardId], references: [id])
   rounds           BattleRound[]
+
+  // History, pending challenges, win counts and challenge expiry
+  @@index([challengerId, status])
+  @@index([defenderId, status])
+  @@index([winnerId])
+  @@index([status, expiresAt])
 }
 
 model BattleRound {
@@ -245,6 +255,8 @@ model Friendship {
   friend    User     @relation("FriendRequests", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
+  // Incoming requests and friend lists (the unique index covers userId)
+  @@index([friendId, status])
 }
 
 model ChangelogEntry {

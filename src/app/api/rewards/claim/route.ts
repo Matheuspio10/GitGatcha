@@ -15,7 +15,7 @@ export async function POST() {
     const found = await withUserLock(userId, async (tx) => {
       const dbUser = await tx.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!dbUser) return false;
-      await tx.user.update({ where: { id: userId }, data: { pendingRewards: [] } });
+      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { pendingRewards: [] } });
       return true;
     });
 

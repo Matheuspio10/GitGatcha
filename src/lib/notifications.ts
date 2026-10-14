@@ -11,5 +11,5 @@ export async function pushNotification(tx: Tx, userId: string, type: string, mes
   if (!user) return;
   const notifications = asArray(user.notifications);
   notifications.push({ id: randomUUID(), type, message, actionUrl, timestamp: new Date().toISOString(), read: false });
-  await tx.user.update({ where: { id: userId }, data: { notifications: notifications as Prisma.InputJsonValue } });
+  await tx.user.update({ select: { id: true }, where: { id: userId }, data: { notifications: notifications as Prisma.InputJsonValue } });
 }

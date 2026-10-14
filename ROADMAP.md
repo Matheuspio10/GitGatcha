@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da terceira parte do PT-BR (PR #57). **Ondas 1 a 7 completas.** O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da primeira rodada da onda 8 (PR #58). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -13,7 +13,7 @@
 
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 20 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - 213 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
@@ -35,7 +35,8 @@
 3. **Moeda e campos JSON do usuário só mudam dentro de `withUserLock`** (`src/lib/userLock.ts`). Nada lento, como chamadas ao GitHub, dentro da trava. **BITS só mudam por `addBits` / `spendBits`** (`src/lib/bitsLedger.ts`), que gravam o histórico na mesma transação; um teste falha se outro arquivo mexer em `currency` direto.
 4. **Ao mudar a fórmula de status, os multiplicadores ou as regras do pool**, subir `STAT_VERSION` (`src/lib/cardStats.ts`) e rodar `scripts/recalculate-cards.ts --apply` logo depois do deploy.
 5. **Escrita em produção só com aprovação do dono** e sempre com `--env-file=.env.prod`. Migrações devem ser aditivas; o deploy de produção as aplica.
-6. Números de jogo vivem em `src/lib/rarity.ts`, `battleConfig.ts`, `cardStats.ts`, `loginCalendar.ts`, `pity.ts` e `achievementUtils.ts`. A **wiki é gerada deles**; não duplicar números na UI.
+6. **Consultas ao `User` pedem só as colunas que usam** (`select`). A linha inteira carrega o banner em base64 e todos os JSON, e um `update` sem `select` devolve tudo isso. O hash da senha é omitido de toda consulta pelo client (`src/lib/prisma.ts`); só o login por senha e a checagem de desconectar o GitHub pedem `select: { password: true }`.
+7. Números de jogo vivem em `src/lib/rarity.ts`, `battleConfig.ts`, `cardStats.ts`, `loginCalendar.ts`, `pity.ts` e `achievementUtils.ts`. A **wiki é gerada deles**; não duplicar números na UI.
 
 ### Scripts úteis
 | Comando | Para quê |
@@ -55,7 +56,12 @@
 
 ## ▶️ Próximo passo
 
-**Onda 8 (engenharia de fundo)**, uma PR por rodada, na ordem que fizer mais sentido (ver 2.8): índices e `select` nas consultas quentes; zod nas rotas; Sentry/logs e CSP; `proxy.ts`; testes de concorrência; reduzir o lint; e o que sobrou do PT-BR (textos gravados no banco em inglês, mensagens de erro das APIs; ver 2.5). Upgrade Prisma/Auth.js e JSON → tabelas são maiores e pedem planejamento.
+**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58). Próximas, em ordem sugerida:
+1. **Validação com zod** nas rotas que recebem corpo (compra, abertura, treino, forja, desafios, perfil), com mensagens de erro já traduzíveis (fecha parte do PT-BR que sobrou, 2.5).
+2. **Headers de segurança e CSP** no `next.config.ts` (começar com CSP em modo report-only) e otimização de imagens.
+3. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
+4. **Reduzir o lint** (98 erros, quase todos `any`).
+5. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco.
 
 Depois: **onda 9** (grandes apostas e monetização).
 
@@ -353,8 +359,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Contraste AA:** o `slate-500` (texto secundário em 196 lugares) foi de 57% para 64% de luminosidade: 5,9:1 no fundo e 5,4:1 nos painéis (antes 4,5 e 4,1). Os textos em `slate-600` (2,8:1) passaram para `slate-500`.
 - **Som:** botão de som no topo com volume (salvo no navegador) e mudo, ligado ao ganho mestre do `audioManager`. Epic e Legendary ganharam sons próprios sintetizados por cima do de Rare: arpejo subindo no Epic, arpejo com acorde sustentado e brilho no Legendary.
 
+### Onda 8 — banco e segurança, rodada 1 (PR #58)
+- **Senha fora por padrão:** o client do Prisma omite `User.password` de toda consulta (`omit` global). Só o login por senha (que agora devolve o usuário **sem** o hash ao NextAuth; antes o hash ia junto no objeto do `authorize`) e a checagem de desconectar o GitHub pedem a senha com `select`.
+- **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
+- **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
+- **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
 ### Onda 7 — PT-BR, parte 3: dados do jogo e wiki (PR #57)
-- **Como funciona** (`src/i18n/gameText.ts`): os catálogos continuam em inglês em `src/lib` (servidor, testes e banco usam esse texto) e são traduzidos **onde aparecem**, pelo id do item (`packs.<id>.name`, `achievements.<id>.name`, `leagues.<MODO>.rules`…), com o inglês do código como reserva. Números vêm das constantes como `{variáveis}`, então a wiki e as cartas continuam seguindo `src/lib` (regra de ouro 6). Regras no `docs/i18n.md`.
+- **Como funciona** (`src/i18n/gameText.ts`): os catálogos continuam em inglês em `src/lib` (servidor, testes e banco usam esse texto) e são traduzidos **onde aparecem**, pelo id do item (`packs.<id>.name`, `achievements.<id>.name`, `leagues.<MODO>.rules`…), com o inglês do código como reserva. Números vêm das constantes como `{variáveis}`, então a wiki e as cartas continuam seguindo `src/lib` (regra de ouro 7). Regras no `docs/i18n.md`.
 - **Feito em duas fases, por 10 agentes:** primeiro os catálogos (4 namespaces novos: `gamePacks`, `gameAchievements`, `gameBattle`, `game`; ~440 chaves, cada um conferido por script contra o texto do código), depois as telas (cada agente com arquivos exclusivos) e a wiki inteira (~190 chaves).
 - **Traduzido:** nomes, descrições e filtros dos packs (inclusive os de evento, "Pack da Semana Web"); missões (reconstruídas pelo tipo e alvo, porque a descrição fica gravada em inglês); conquistas, níveis, marcos de lealdade, títulos e molduras; regras das ligas, passivas (texto longo e curto da carta), elos, Torre, Sprints (com a legenda "1º 200 · 2º 120…"); títulos e motivos das cartas (também no PNG e nas prévias para redes sociais); primeiros passos, guia de BITS e motivos do histórico; o aviso de conquista desbloqueada (`useNotifyAchievements`); e a wiki inteira.
 - **Mudanças no inglês, de propósito:** a liga Legendary aparece como "LEGENDARY ONLY" (o nome oficial) no resultado; cosméticos e tiers de lealdade com inicial maiúscula; a recompensa de nível "JavaScript Coven" passa a mostrar o nome da loja, "The JavaScript Coven". Na wiki, alguns números que estavam escritos no texto agora vêm das constantes (desafio em 24 h, PHP em 1 HP, andar do mini-chefe).
@@ -424,13 +436,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|
 | Testes de concorrência (compra, abertura, daily, desafio) contra a branch dev | M |
 | Mover JSON (inventário, notificações, fragmentos) para tabelas próprias | G |
-| Índices restantes: `Battle(defenderId,status)`, `Battle(challengerId)`, `Friendship(friendId,status)`, `Card(rarity,primaryLanguage)` | P |
-| `select` nas consultas quentes (rotas ainda carregam banner em base64 e hash da senha) | P |
+| ~~Índices restantes~~ | ✅ PR #58 |
+| ~~`select` nas consultas quentes~~ | ✅ PR #58 (e a senha omitida por padrão) |
 | Validação com zod em todas as rotas | M |
 | Sentry/logs estruturados + registrar os headers de limite do GitHub | P |
 | `next.config.ts`: otimização de imagens e headers de segurança (CSP) | P |
-| Reduzir os 109 erros de lint (quase todos `any`) | M |
-| Migrar `middleware.ts` para `proxy.ts` (aviso do Next 16) | P |
+| Reduzir os 98 erros de lint (quase todos `any`) | M |
+| ~~Migrar `middleware.ts` para `proxy.ts`~~ | ✅ PR #58 |
 | Atualizar Prisma 6 → 7/8 e next-auth v4 → Auth.js v5 (planejar) | M |
 
 ---

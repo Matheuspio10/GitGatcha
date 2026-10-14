@@ -11,7 +11,8 @@ import { payReferralSafe } from '@/lib/referralService';
 import { getClientIp, rateLimit } from '@/lib/rateLimit';
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  // The adapter is typed for a plain client; the global `omit: password` only drops a column it never reads
+  adapter: PrismaAdapter(prisma as unknown as Parameters<typeof PrismaAdapter>[0]) as any,
   session: {
     strategy: 'jwt',
   },
@@ -43,8 +44,10 @@ export const authOptions: NextAuthOptions = {
         ]);
         if (!byEmailAndIp.ok || !byIp.ok) throw new Error('TooManyAttempts');
 
+        // The only query that loads the password hash (omitted everywhere else, see prisma.ts)
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email },
+          select: { id: true, email: true, name: true, username: true, image: true, password: true },
         });
 
         if (!user || !user.password) return null;
@@ -52,7 +55,10 @@ export const authOptions: NextAuthOptions = {
         const passwordsMatch = await bcrypt.compare(credentials.password, user.password);
         if (!passwordsMatch) return null;
 
-        return user;
+        // Never hand the hash to NextAuth (it would travel into the JWT callback)
+        const { password: _hash, ...safeUser } = user;
+        void _hash;
+        return safeUser;
       }
     })
   ],

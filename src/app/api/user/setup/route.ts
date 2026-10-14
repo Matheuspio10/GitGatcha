@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     const starterPack = await withUserLock(userId, async (tx) => {
       const before = await tx.user.findUnique({ where: { id: userId }, select: { hasSetupProfile: true } });
       await tx.user.update({
+        select: { id: true },
         where: { id: userId },
         data: { username: username, hasSetupProfile: true }
       });
