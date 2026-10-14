@@ -77,6 +77,7 @@ Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes 
 - **Nunca** passar uma URL de banco real como `--shadow-database-url` do Prisma: ele limpa o banco (apagou o dev em 13/10/2026). Para conferir schema × migrações, escrever o SQL da migração à mão e aplicar com `npx prisma migrate deploy` no dev.
 - Scripts de edição longos com apóstrofos dentro de heredoc no Bash do Windows quebram; gravar o script num arquivo e rodar com `python arquivo.py`.
 - `git push`/merge de PR antes do CI terminar já aconteceu uma vez (#39); conferir o status antes.
+- **Ao adicionar dependência, gerar o lock com o npm do CI** (Node 22 → npm 10): `npx -y npm@10.9.2 install --package-lock-only`. O npm 11 local omite dependências opcionais que o `npm ci` do CI exige, e o CI falha no Install (aconteceu na #55).
 
 ## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
 
