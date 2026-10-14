@@ -6,7 +6,7 @@ import { resolve3v3Battle, BattleCard, BattleResult, getCardType } from './battl
 import { spendCardStamina } from './staminaService';
 import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
 import { grantXP } from './xpService';
-import { lockUser, withUserLock } from './userLock';
+import { lockUser, withUserLock, UserFacingError } from './userLock';
 import { pushNotification } from './notifications';
 import { closeDueSeasons, recordSeasonProgress } from './seasonService';
 import { RANKED_SEARCH_WINDOWS } from './ranks';
@@ -289,15 +289,15 @@ export async function resolveFriendBattle(
   await closeDueSeasons();
   const battle = await findBattleWithPlayers(battleId);
 
-  if (!battle) throw new Error('Battle not found');
-  if (battle.status !== 'PENDING') throw new Error('Battle is not pending');
+  if (!battle) throw new UserFacingError('challenge.battleNotFound', 404);
+  if (battle.status !== 'PENDING') throw new UserFacingError('challenge.noLongerPending');
 
   // Claim the battle atomically: two parallel accepts must not both resolve it and pay rewards twice
   const claimed = await prisma.battle.updateMany({
     where: { id: battleId, status: 'PENDING' },
     data: { status: 'RESOLVING' },
   });
-  if (claimed.count === 0) throw new Error('Battle is not pending');
+  if (claimed.count === 0) throw new UserFacingError('challenge.noLongerPending');
 
   try {
     return await finishFriendBattle(battle, defenderTeamCards);

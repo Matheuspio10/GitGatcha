@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { prisma } from './prisma';
+import { apiError } from './apiResponse';
 import { rateLimitKey, secondsUntilWindowEnd, windowStartFor } from './clientKey';
 
 export { getClientIp, rateLimitKey } from './clientKey';
@@ -52,12 +52,12 @@ export async function rateLimit(key: string, limit: number, windowSeconds: numbe
   }
 }
 
-/** Standard 429 response for a rejected request. */
+/** Standard 429 response for a rejected request, in the player's language. */
 export function tooManyRequests(retryAfter: number) {
-  return NextResponse.json(
-    { error: `Too many requests. Please try again in ${retryAfter}s.`, retryAfter },
-    { status: 429, headers: { 'Retry-After': String(retryAfter) } },
-  );
+  return apiError('common.tooManyRequests', 429, { seconds: retryAfter }, {
+    extra: { retryAfter },
+    headers: { 'Retry-After': String(retryAfter) },
+  });
 }
 
 /**

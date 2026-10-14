@@ -2,27 +2,48 @@ import { NextResponse } from 'next/server';
 import { addBits, spendBits } from '@/lib/bitsLedger';
 import { prisma } from '@/lib/prisma';
 import { resolveRandomBattle, resolveRankedBattle, getBalancedPowerCap, NoOpponentError, NoRankedOpponentError } from '@/lib/battleService';
-import { LEAGUES, isLeagueMode } from '@/lib/battleConfig';
+import { LEAGUES, isLeagueMode, type LeagueMode } from '@/lib/battleConfig';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { syncAchievementsSafe } from '@/lib/achievementService';
 import { getServerSession } from 'next-auth';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { authOptions } from '@/lib/auth';
-import { loadPlayerTeam } from '@/lib/playerTeam';
-import { UserFacingError } from '@/lib/userLock';
+import { loadPlayerTeam, teamCardIdsSchema } from '@/lib/playerTeam';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { getGameText } from '@/i18n/gameText.server';
+import { getLocale } from 'next-intl/server';
+import { z } from 'zod';
+
+const bodySchema = z.object({
+  cardIds: teamCardIdsSchema,
+  leagueMode: z.string({ error: 'battle.unknownLeague' }).max(50, { error: 'battle.unknownLeague' }).optional(),
+});
+
+/** League name and a list of rarities in the player's language, for the error messages (English if there is no locale). */
+async function leagueText(mode: LeagueMode) {
+  try {
+    const [game, locale] = await Promise.all([getGameText('gameBattle'), getLocale()]);
+    const list = new Intl.ListFormat(locale, { type: 'conjunction' });
+    return { label: game(`leagues.${mode}.label`, LEAGUES[mode].label), list: (items: readonly string[]) => list.format(items) };
+  } catch {
+    return { label: LEAGUES[mode].label, list: (items: readonly string[]) => items.join(' and ') };
+  }
+}
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const limited = await enforceRateLimit(req, 'battle-start', 20, 60, userId);
     if (limited) return limited;
 
-    const { cardIds, leagueMode = 'OPEN' } = await req.json();
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { cardIds, leagueMode = 'OPEN' } = body.data;
     if (!isLeagueMode(leagueMode)) {
-        return NextResponse.json({ error: 'Unknown league' }, { status: 400 });
+        return apiError('battle.unknownLeague');
     }
     const league = LEAGUES[leagueMode];
 
@@ -30,35 +51,36 @@ export async function POST(req: Request) {
     const cTeamCards = await loadPlayerTeam(userId, cardIds);
 
     const userObj = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true }});
-    if (!userObj) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!userObj) return apiError('common.userNotFound', 404);
 
     // League Validations
     let powerCap: number | undefined;
     if (league.allowedRarities && cTeamCards.some(c => !league.allowedRarities!.includes(c.rarity))) {
-      return NextResponse.json({ error: `This league only allows ${league.allowedRarities.join(' and ')} cards` }, { status: 400 });
+      const text = await leagueText(leagueMode);
+      return apiError('battle.raritiesNotAllowed', 400, { rarities: text.list(league.allowedRarities) });
     }
     if (leagueMode === 'BALANCED') {
       powerCap = await getBalancedPowerCap();
       const teamPower = cTeamCards.reduce((acc, c) => acc + c.atk + c.def + c.hp, 0);
       if (teamPower > powerCap) {
-        return NextResponse.json({ error: `Team power (${teamPower}) exceeds Balanced League cap (${powerCap})` }, { status: 400 });
+        return apiError('battle.balancedCap', 400, { power: teamPower, cap: powerCap });
       }
     } else if (leagueMode === 'DIVERSITY') {
       const langs = new Set(cTeamCards.map(c => c.primaryLanguage).filter(l => l && l !== 'Unknown'));
       if (langs.size < 3) {
-        return NextResponse.json({ error: 'Diversity League requires exactly 3 different primary languages and no empty languages' }, { status: 400 });
+        return apiError('battle.diversityLanguages');
       }
     }
 
     const entryFee = league.entryFee;
     if (entryFee > 0) {
       if (userObj.currency < entryFee) {
-        return NextResponse.json({ error: `Insufficient BITS for ${league.label} entry fee (${entryFee} required)` }, { status: 400 });
+        return apiError('battle.entryFee', 400, { league: (await leagueText(leagueMode)).label, fee: entryFee });
       }
       // Conditional spend: parallel requests can't push the balance below zero
       const charged = await spendBits(userId, entryFee, 'league_entry', { detail: league.label });
       if (charged === null) {
-        return NextResponse.json({ error: `Insufficient BITS for ${league.label} entry fee (${entryFee} required)` }, { status: 400 });
+        return apiError('battle.entryFee', 400, { league: (await leagueText(leagueMode)).label, fee: entryFee });
       }
     }
 
@@ -110,13 +132,8 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    if (error instanceof UserFacingError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    if (error instanceof NoOpponentError || error instanceof NoRankedOpponentError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
-    }
-    console.error('Battle error:', error);
-    return NextResponse.json({ error: 'Failed to initiate battle' }, { status: 500 });
+    if (error instanceof NoOpponentError) return apiError('battle.noOpponent', 503);
+    if (error instanceof NoRankedOpponentError) return apiError('battle.noRankedOpponent', 503);
+    return routeError(error, 'battle.startFailed', 'Battle error');
   }
 }

@@ -12,7 +12,7 @@ export function parseStake(value: unknown): number {
   if (value === undefined || value === null || value === '') return 0;
   const stake = Number(value);
   if (!Number.isInteger(stake) || stake < 0 || stake > CHALLENGE_STAKE_MAX) {
-    throw new UserFacingError(`The stake must be a whole number from 0 to ${CHALLENGE_STAKE_MAX} BITS`);
+    throw new UserFacingError('challenge.invalidStake', 400, { max: CHALLENGE_STAKE_MAX });
   }
   return stake;
 }
@@ -52,9 +52,9 @@ export async function expireChallenges(now = new Date()): Promise<number> {
 /** The challenger withdraws a pending challenge (stake back). */
 export async function cancelChallenge(battleId: string, userId: string) {
   const battle = await prisma.battle.findUnique({ where: { id: battleId }, select: { challengerId: true, status: true } });
-  if (!battle || battle.challengerId !== userId) throw new UserFacingError('Challenge not found', 404);
-  if (battle.status !== 'PENDING') throw new UserFacingError('This challenge was already answered or closed');
-  if (!(await closePending(battleId, 'CANCELLED', 'Challenge cancelled'))) throw new UserFacingError('This challenge was already answered or closed');
+  if (!battle || battle.challengerId !== userId) throw new UserFacingError('challenge.notFound', 404);
+  if (battle.status !== 'PENDING') throw new UserFacingError('challenge.alreadyClosed');
+  if (!(await closePending(battleId, 'CANCELLED', 'Challenge cancelled'))) throw new UserFacingError('challenge.alreadyClosed');
 }
 
 /**
@@ -66,17 +66,17 @@ export async function joinChallenge(battleId: string, userId: string) {
     where: { id: battleId },
     select: { challengerId: true, defenderId: true, isOpen: true, stake: true, status: true },
   });
-  if (!battle || battle.status !== 'PENDING') throw new UserFacingError('This challenge is no longer open', 400);
-  if (battle.challengerId === userId) throw new UserFacingError('You cannot accept your own challenge');
+  if (!battle || battle.status !== 'PENDING') throw new UserFacingError('challenge.noLongerOpen', 400);
+  if (battle.challengerId === userId) throw new UserFacingError('challenge.ownChallenge');
 
   let claimed = false;
   if (battle.defenderId !== userId) {
-    if (!battle.isOpen || battle.defenderId) throw new UserFacingError('You are not the defender of this battle', 403);
+    if (!battle.isOpen || battle.defenderId) throw new UserFacingError('challenge.notDefender', 403);
     const { count } = await prisma.battle.updateMany({
       where: { id: battleId, status: 'PENDING', defenderId: null },
       data: { defenderId: userId },
     });
-    if (count === 0) throw new UserFacingError('Someone else accepted this challenge first', 409);
+    if (count === 0) throw new UserFacingError('challenge.alreadyAccepted', 409);
     claimed = true;
   }
 
@@ -84,7 +84,7 @@ export async function joinChallenge(battleId: string, userId: string) {
     const paid = await spendBits(userId, battle.stake, 'challenge_stake', { detail: 'Accepted a challenge' });
     if (paid === null) {
       if (claimed) await prisma.battle.updateMany({ where: { id: battleId, defenderId: userId, status: 'PENDING' }, data: { defenderId: null } });
-      throw new UserFacingError(`You need ${battle.stake} BITS to match the stake`);
+      throw new UserFacingError('challenge.stakeToMatch', 400, { stake: battle.stake });
     }
   }
   return { stake: battle.stake, claimed };

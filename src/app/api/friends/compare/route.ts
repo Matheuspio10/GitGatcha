@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { apiError } from '@/lib/apiResponse';
 
 const RARITY_RANK: Record<string, number> = { Legendary: 0, Epic: 1, Rare: 2, Uncommon: 3, Common: 4 };
 const LIST_LIMIT = 120;
@@ -13,15 +14,15 @@ const LIST_LIMIT = 120;
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
 
   const username = new URL(req.url).searchParams.get('username');
-  if (!username) return NextResponse.json({ error: 'username is required' }, { status: 400 });
+  if (!username) return apiError('friends.usernameRequired');
   const friend = await prisma.user.findFirst({
     where: { username: { equals: username, mode: 'insensitive' } },
     select: { id: true, username: true },
   });
-  if (!friend) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+  if (!friend) return apiError('friends.playerNotFound', 404);
 
   const friendship = await prisma.friendship.findFirst({
     where: {
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
     },
     select: { id: true },
   });
-  if (!friendship) return NextResponse.json({ error: 'You can only compare collections with friends' }, { status: 403 });
+  if (!friendship) return apiError('friends.compareFriendsOnly', 403);
 
   const cardSelect = { id: true, githubUsername: true, name: true, rarity: true, avatarUrl: true, primaryLanguage: true } as const;
   const [mine, theirs] = await Promise.all([

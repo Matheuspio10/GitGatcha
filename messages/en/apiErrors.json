@@ -1,0 +1,189 @@
+{
+  "common": {
+    "unauthorized": "Unauthorized",
+    "invalidRequest": "Invalid request",
+    "tooManyRequests": "Too many requests. Please try again in {seconds}s.",
+    "notEnoughBits": "Not enough BITS",
+    "notEnoughFragments": "Not enough fragments",
+    "userNotFound": "User not found",
+    "internal": "Internal server error"
+  },
+  "store": {
+    "packRequired": "Pack ID required",
+    "packNotFound": "Pack not found",
+    "eventPackOffSale": "This event pack is no longer on sale",
+    "purchaseFailed": "Failed to purchase pack",
+    "dailyStatusFailed": "Failed to check daily status",
+    "dailyAlreadyClaimed": "Daily reward already claimed",
+    "dailyClaimFailed": "Failed to claim daily reward",
+    "pityFailed": "Failed to load pity status"
+  },
+  "inventory": {
+    "packNotInInventory": "Pack not found in inventory",
+    "emptyPack": "Could not draw any card right now. The pack is back in your inventory, try again in a few minutes.",
+    "openFailed": "Failed to open pack. If it was taken, it is back in your inventory.",
+    "fetchFailed": "Failed to fetch inventory"
+  },
+  "collection": {
+    "cardRequired": "Card required",
+    "cardNotInCollection": "Card not found in your collection",
+    "fullyTrained": "{name} is already fully trained",
+    "trainingFailed": "Training failed",
+    "userCardIdMissing": "Missing userCardId",
+    "cardNotOwned": "Card not found or unowned"
+  },
+  "forge": {
+    "usernameRequired": "Username required",
+    "invalidUsername": "Invalid GitHub username",
+    "devNotFound": "Developer not found",
+    "alreadyOwned": "You already own this developer",
+    "invocationFailed": "Invocation failed",
+    "searchFailed": "Search failed",
+    "walletFailed": "Failed to fetch wallet",
+    "exchangeInvalid": "Choose a language and how many wildcards",
+    "notEnoughLanguageFragments": "Not enough {language} fragments",
+    "exchangeFailed": "Exchange failed",
+    "wishlistFull": "Wishlist is full (max {max})",
+    "alreadyInWishlist": "Already in wishlist",
+    "noPrimaryLanguage": "Developer lacks a primary language",
+    "wishlistAddFailed": "Failed to add to wishlist",
+    "wishlistRemoveFailed": "Failed to remove from wishlist"
+  },
+  "profile": {
+    "bioTooLong": "Bio must be {max} characters or less",
+    "noValidFields": "No valid fields to update",
+    "unknownBannerPreset": "Unknown banner preset.",
+    "bannerColor": "Banner color must be a hex color like #1e1b4b.",
+    "usernameRequired": "Username is required",
+    "unknownTitle": "Unknown title",
+    "unknownFrame": "Unknown frame",
+    "locked": "Locked: {requirement}",
+    "avatar": {
+      "format": "Avatar image must be a PNG, JPEG or WebP image.",
+      "tooLarge": "Avatar image is too large (max {maxKb} KB). Please use a smaller image.",
+      "corrupt": "Avatar image is not a valid image.",
+      "invalid": "Avatar image is invalid.",
+      "external": "Avatar image must be uploaded from your device; external links are not allowed."
+    },
+    "banner": {
+      "format": "Banner image must be a PNG, JPEG or WebP image.",
+      "tooLarge": "Banner image is too large (max {maxKb} KB). Please use a smaller image.",
+      "corrupt": "Banner image is not a valid image.",
+      "invalid": "Banner image is invalid.",
+      "external": "Banner image must be uploaded from your device; external links are not allowed."
+    }
+  },
+  "battle": {
+    "unknownLeague": "Unknown league",
+    "raritiesNotAllowed": "This league only allows {rarities} cards",
+    "balancedCap": "Team power ({power}) exceeds Balanced League cap ({cap})",
+    "diversityLanguages": "Diversity League requires exactly 3 different primary languages and no empty languages",
+    "entryFee": "Insufficient BITS for {league} entry fee ({fee} required)",
+    "noOpponent": "Not enough cards available for a battle in this league",
+    "noRankedOpponent": "No ranked opponent available right now. Try again later.",
+    "startFailed": "Failed to initiate battle",
+    "historyFailed": "Failed to fetch battle history"
+  },
+  "challenge": {
+    "playerNotFound": "Player not found",
+    "cannotChallengeSelf": "You cannot challenge yourself",
+    "friendsOnly": "You can only challenge your friends. Send a challenge link instead.",
+    "cardBusy": "{name} is already in a pending challenge. Wait for it to resolve or pick another card.",
+    "invalidStake": "The stake must be a whole number from 0 to {max} BITS",
+    "stakeNotAffordable": "You need {stake} BITS for this stake",
+    "stakeToMatch": "You need {stake} BITS to match the stake",
+    "createFailed": "Failed to create challenge",
+    "fetchFailed": "Failed to fetch challenges",
+    "battleNotFound": "Battle not found",
+    "noLongerPending": "Battle is no longer pending",
+    "expired": "Challenge has expired",
+    "notDefender": "You are not the defender of this battle",
+    "noLongerOpen": "This challenge is no longer open",
+    "ownChallenge": "You cannot accept your own challenge",
+    "alreadyAccepted": "Someone else accepted this challenge first",
+    "respondFailed": "Failed to respond to challenge",
+    "notFound": "Challenge not found",
+    "alreadyClosed": "This challenge was already answered or closed",
+    "cancelFailed": "Could not cancel the challenge"
+  },
+  "tower": {
+    "notReady": "The tower is not ready yet: not enough cards in the game",
+    "alreadyConquered": "You already conquered The {theme} Gauntlet this week. A new tower opens on Monday.",
+    "loadFailed": "Could not load the tower",
+    "fightFailed": "The tower battle failed"
+  },
+  "team": {
+    "exactlyThree": "You must select exactly 3 cards for your team",
+    "duplicateCard": "You cannot use the same card twice in a team",
+    "cardsNotOwned": "One or more cards not found in your collection",
+    "cardExhausted": "Card {name} is exhausted and cannot battle",
+    "buildFailed": "Error building team",
+    "invalidPayload": "Invalid payload",
+    "fetchFailed": "Failed to fetch active team",
+    "updateFailed": "Failed to update active team"
+  },
+  "missions": {
+    "missionIdRequired": "userMissionId is required",
+    "alreadySwapped": "You already swapped a mission today",
+    "notFound": "Mission not found",
+    "alreadyDone": "This mission is already done",
+    "noSwapOption": "No other mission to swap to",
+    "swapFailed": "Could not swap the mission",
+    "connectGitHub": "Connect your GitHub account to get dev missions",
+    "githubReconnect": "GitHub no longer accepts your connection. Reconnect it in your profile.",
+    "githubBusy": "GitHub is busy right now. Try again in a minute.",
+    "checkFailed": "Could not check GitHub"
+  },
+  "rewards": {
+    "claimFailed": "Failed to claim rewards"
+  },
+  "guest": {
+    "forVisitors": "The free pack is for visitors. Your boosters are in the inventory.",
+    "openFailed": "Could not open the pack right now. Try again in a few minutes."
+  },
+  "changelog": {
+    "invalidInput": "Invalid input"
+  },
+  "achievements": {
+    "loadFailed": "Failed to load achievements"
+  },
+  "friends": {
+    "requestIdRequired": "Request ID is required",
+    "requestNotFound": "Friend request not found",
+    "cannotAccept": "Unauthorized to accept this request",
+    "alreadyAccepted": "Friend request already accepted",
+    "friendshipIdRequired": "Friendship ID is required",
+    "friendshipNotFound": "Friendship not found",
+    "cannotRemove": "Unauthorized to remove this friend",
+    "targetRequired": "Target username is required",
+    "cannotAddSelf": "Cannot send a friend request to yourself",
+    "targetNotFound": "Target user not found",
+    "alreadyRequested": "Friend request already sent or users are already friends",
+    "usernameRequired": "username is required",
+    "playerNotFound": "Player not found",
+    "compareFriendsOnly": "You can only compare collections with friends"
+  },
+  "user": {
+    "usernameLength": "Username must be between 3 and 20 characters.",
+    "usernameChars": "Username can only contain letters, numbers, and underscores.",
+    "usernameTaken": "Username is already taken. Please choose another one.",
+    "setupFailed": "Internal server error while saving username.",
+    "githubOnlySignIn": "GitHub is your only way to sign in, so it cannot be disconnected."
+  },
+  "auth": {
+    "invalidInput": "Invalid input",
+    "emailExists": "Email already exists"
+  },
+  "onboarding": {
+    "unknownStep": "Unknown step",
+    "unknownAction": "Unknown action",
+    "notActive": "Onboarding is not active for this account",
+    "finishStepFirst": "Finish this step first",
+    "alreadyClaimed": "Reward already claimed",
+    "failed": "Something went wrong"
+  },
+  "notifications": {
+    "updateFailed": "Failed to update notifications"
+  },
+  "referrals": {}
+}

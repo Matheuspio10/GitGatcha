@@ -3,9 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { addBits } from '@/lib/bitsLedger';
 import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { idSchema } from '@/lib/validation';
+import { z } from 'zod';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { maxTrainingLevel, trainingCost } from '@/lib/training';
+
+const bodySchema = z.object({ userCardId: idSchema.optional() }).optional();
 
 /**
  * Trains one of the player's cards one level: BITS plus fragments of the card's
@@ -15,17 +20,14 @@ import { maxTrainingLevel, trainingCost } from '@/lib/training';
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
   const limited = await enforceRateLimit(req, 'card-train', 30, 60, userId);
   if (limited) return limited;
 
-  let userCardId: unknown;
-  try {
-    ({ userCardId } = await req.json());
-  } catch {
-    // No body or invalid JSON
-  }
-  if (typeof userCardId !== 'string') return NextResponse.json({ error: 'Card required' }, { status: 400 });
+  const body = await readBody(req, bodySchema);
+  if (!body.ok) return body.response;
+  const userCardId = body.data?.userCardId;
+  if (!userCardId) return apiError('collection.cardRequired');
 
   try {
     const result = await withUserLock(userId, async (tx) => {
@@ -33,19 +35,19 @@ export async function POST(req: Request) {
         where: { id: userCardId, userId },
         select: { id: true, trainingLevel: true, card: { select: { name: true, rarity: true, primaryLanguage: true } } },
       });
-      if (!userCard) throw new UserFacingError('Card not found in your collection', 404);
+      if (!userCard) throw new UserFacingError('collection.cardNotInCollection', 404);
 
       const { card } = userCard;
       const cost = trainingCost(userCard.trainingLevel, card.rarity);
-      if (!cost) throw new UserFacingError(`${card.name} is already fully trained`);
+      if (!cost) throw new UserFacingError('collection.fullyTrained', 400, { name: card.name });
 
       const user = await tx.user.findUnique({ where: { id: userId }, select: { currency: true, fragments: true, fragmentLogs: true } });
-      if (!user) throw new UserFacingError('User not found', 404);
+      if (!user) throw new UserFacingError('common.userNotFound', 404);
       const wallet = asRecord(user.fragments);
       const lang = card.primaryLanguage || 'Unknown';
       const payment = planFragmentPayment(wallet, lang, cost.fragments);
-      if (!payment) throw new UserFacingError('Not enough fragments');
-      if (user.currency < cost.bits) throw new UserFacingError('Not enough BITS');
+      if (!payment) throw new UserFacingError('common.notEnoughFragments');
+      if (user.currency < cost.bits) throw new UserFacingError('common.notEnoughBits');
 
       const level = userCard.trainingLevel + 1;
       const logs = asArray(user.fragmentLogs);
@@ -71,8 +73,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ success: true, ...result });
   } catch (err) {
-    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
-    console.error('Training error:', err);
-    return NextResponse.json({ error: 'Training failed' }, { status: 500 });
+    return routeError(err, 'collection.trainingFailed', 'Training error');
   }
 }

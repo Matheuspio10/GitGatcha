@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { getAchievementViews, syncAchievementsSafe } from '@/lib/achievementService';
 import { collectionProgress } from '@/lib/collections';
 import { equippedCosmetics } from '@/lib/cosmeticsService';
+import { apiError } from '@/lib/apiResponse';
 
 function computeWinStreak(battles: any[], userId: string): number {
   let maxStreak = 0;
@@ -29,7 +30,7 @@ export async function GET(
     const resolvedParams = await params;
     
     if (!resolvedParams.username) {
-      return NextResponse.json({ error: 'Username is required' }, { status: 400 });
+      return apiError('profile.usernameRequired');
     }
 
     const username = decodeURIComponent(resolvedParams.username);
@@ -98,7 +99,7 @@ export async function GET(
     }) as any;
 
     if (!userProfile) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiError('common.userNotFound', 404);
     }
 
     // Calculate derived stats
@@ -266,6 +267,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

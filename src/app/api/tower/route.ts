@@ -1,24 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { UserFacingError } from '@/lib/userLock';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { loadPlayerTeam } from '@/lib/playerTeam';
+import { loadPlayerTeam, teamCardIdsSchema } from '@/lib/playerTeam';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
 import { fightTower, getTowerState } from '@/lib/towerService';
 import { advanceMissionProgress } from '@/lib/economyService';
 import { syncAchievementsSafe } from '@/lib/achievementService';
+
+const bodySchema = z.object({ cardIds: teamCardIdsSchema });
 
 /** This week's tower: theme, your progress, the next floor and the ranking. */
 export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
   try {
     return NextResponse.json(await getTowerState(userId));
   } catch (err) {
-    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
-    console.error('Tower state error:', err);
-    return NextResponse.json({ error: 'Could not load the tower' }, { status: 500 });
+    return routeError(err, 'tower.loadFailed', 'Tower state error');
   }
 }
 
@@ -26,11 +27,13 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
   const limited = await enforceRateLimit(req, 'battle-start', 20, 60, userId);
   if (limited) return limited;
+  const body = await readBody(req, bodySchema);
+  if (!body.ok) return body.response;
+  const { cardIds } = body.data;
   try {
-    const { cardIds } = await req.json();
     const team = await loadPlayerTeam(userId, cardIds);
     const result = await fightTower(userId, team);
     if (result.winnerSide === 'CHALLENGER') {
@@ -39,8 +42,6 @@ export async function POST(req: Request) {
     const achievementsUnlocked = await syncAchievementsSafe(userId);
     return NextResponse.json({ success: true, ...result, achievementsUnlocked });
   } catch (err) {
-    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
-    console.error('Tower fight error:', err);
-    return NextResponse.json({ error: 'The tower battle failed' }, { status: 500 });
+    return routeError(err, 'tower.fightFailed', 'Tower fight error');
   }
 }

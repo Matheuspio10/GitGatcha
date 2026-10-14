@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { idSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const bodySchema = z.object({ requestId: idSchema.optional() }).optional();
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession();
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('common.unauthorized', 401);
     }
 
-    const { requestId } = await req.json();
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const requestId = body.data?.requestId;
 
     if (!requestId) {
-      return NextResponse.json({ error: 'Request ID is required' }, { status: 400 });
+      return apiError('friends.requestIdRequired');
     }
 
     const currentUser = await prisma.user.findUnique({
@@ -21,7 +28,7 @@ export async function POST(req: Request) {
     });
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiError('common.userNotFound', 404);
     }
 
     // Find the pending request where the current user is the friendId (recipient)
@@ -30,15 +37,15 @@ export async function POST(req: Request) {
     });
 
     if (!friendship) {
-      return NextResponse.json({ error: 'Friend request not found' }, { status: 404 });
+      return apiError('friends.requestNotFound', 404);
     }
 
     if (friendship.friendId !== currentUser.id) {
-      return NextResponse.json({ error: 'Unauthorized to accept this request' }, { status: 403 });
+      return apiError('friends.cannotAccept', 403);
     }
 
     if (friendship.status === 'ACCEPTED') {
-      return NextResponse.json({ error: 'Friend request already accepted' }, { status: 400 });
+      return apiError('friends.alreadyAccepted');
     }
 
     // Update status to ACCEPTED
@@ -50,6 +57,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, friendship: updatedFriendship });
   } catch (error) {
     console.error('Error accepting friend request:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

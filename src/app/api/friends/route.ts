@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
+import { apiError } from '@/lib/apiResponse';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
   try {
     const session = await getServerSession();
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('common.unauthorized', 401);
     }
 
     const currentUser = await prisma.user.findUnique({
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
     });
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiError('common.userNotFound', 404);
     }
 
     // Get where user sent request and it was accepted, or where user received request and accepted it
@@ -85,6 +86,6 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error('Error fetching friends:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

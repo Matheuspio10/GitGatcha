@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiError } from '@/lib/apiResponse';
 
 // GET: Fetch battle history for the current user
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const { searchParams } = new URL(req.url);
     const take = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
@@ -48,6 +49,6 @@ export async function GET(req: Request) {
 
   } catch (error) {
     console.error('Battle history error:', error);
-    return NextResponse.json({ error: 'Failed to fetch battle history' }, { status: 500 });
+    return apiError('battle.historyFailed', 500);
   }
 }

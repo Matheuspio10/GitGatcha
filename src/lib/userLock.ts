@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
+import type { ApiErrorCode, ErrorValues } from './validation';
 
 export type Tx = Prisma.TransactionClient;
 
@@ -29,10 +30,14 @@ export async function lockUser(tx: Tx, userId: string) {
   await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
 }
 
-/** Thrown inside a locked block to abort the transaction with a message for the client. */
+/**
+ * Thrown inside a locked block to abort the transaction with a message for the
+ * client. `code` is a key of messages/<locale>/apiErrors.json; the route answers
+ * it in the player's language (`routeError` in apiResponse.ts).
+ */
 export class UserFacingError extends Error {
-  constructor(message: string, public status = 400) {
-    super(message);
+  constructor(public code: ApiErrorCode, public status = 400, public values?: ErrorValues) {
+    super(code);
   }
 }
 

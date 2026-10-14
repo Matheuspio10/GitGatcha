@@ -7,8 +7,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
 import { getCardStamina } from '@/lib/staminaService';
-import { UserFacingError } from '@/lib/userLock';
 import { cancelChallenge, expireChallenges, joinChallenge, releaseDefender } from '@/lib/challengeService';
+import { teamCardIdsSchema } from '@/lib/playerTeam';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+const bodySchema = z.object({ cardIds: teamCardIdsSchema });
 
 // POST: Defender responds to a challenge with their 3-card team
 export async function POST(
@@ -18,25 +22,23 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const { id: battleId } = await params;
-    const { cardIds } = await req.json();
-
-    if (!Array.isArray(cardIds) || cardIds.length !== 3) {
-      return NextResponse.json({ error: 'You must select exactly 3 cards for your team' }, { status: 400 });
-    }
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { cardIds } = body.data;
 
     // The battle must still be waiting; an expired one is closed (stake refunded)
     const battle = await prisma.battle.findUnique({ where: { id: battleId } });
-    if (!battle) return NextResponse.json({ error: 'Battle not found' }, { status: 404 });
-    if (battle.status !== 'PENDING') return NextResponse.json({ error: 'Battle is no longer pending' }, { status: 400 });
+    if (!battle) return apiError('challenge.battleNotFound', 404);
+    if (battle.status !== 'PENDING') return apiError('challenge.noLongerPending');
     if (battle.expiresAt && battle.expiresAt < new Date()) {
       await expireChallenges();
-      return NextResponse.json({ error: 'Challenge has expired' }, { status: 400 });
+      return apiError('challenge.expired');
     }
     if (battle.defenderId !== userId && !(battle.isOpen && !battle.defenderId)) {
-      return NextResponse.json({ error: 'You are not the defender of this battle' }, { status: 403 });
+      return apiError('challenge.notDefender', 403);
     }
 
     // Verify defender owns all 3 cards
@@ -47,7 +49,7 @@ export async function POST(
     });
 
     const requiredCounts: Record<string, number> = {};
-    for (const id of cardIds as string[]) {
+    for (const id of cardIds) {
       requiredCounts[id] = (requiredCounts[id] || 0) + 1;
     }
 
@@ -58,17 +60,17 @@ export async function POST(
 
     for (const [id, count] of Object.entries(requiredCounts)) {
       if (!ownedCounts[id] || ownedCounts[id] < count) {
-        return NextResponse.json({ error: 'One or more cards not found in your collection' }, { status: 404 });
+        return apiError('team.cardsNotOwned', 404);
       }
     }
 
     const orderedCards = cardIds.map(id => userCards.find(uc => uc.cardId === id));
-    if (orderedCards.some(uc => !uc)) return NextResponse.json({ error: 'Error building team' }, { status: 500 });
+    if (orderedCards.some(uc => !uc)) return apiError('team.buildFailed', 500);
 
     // Same exhaustion rule as battles against the computer, on the recovered value
     for (const uc of orderedCards) {
       if (getCardStamina(uc!) === 0) {
-        return NextResponse.json({ error: `Card ${uc!.card.name} is exhausted and cannot battle` }, { status: 400 });
+        return apiError('team.cardExhausted', 400, { name: uc!.card.name });
       }
     }
 
@@ -137,9 +139,7 @@ export async function POST(
     });
 
   } catch (error) {
-    if (error instanceof UserFacingError) return NextResponse.json({ error: error.message }, { status: error.status });
-    console.error('Challenge response error:', error);
-    return NextResponse.json({ error: 'Failed to respond to challenge: ' + (error as Error).message }, { status: 500 });
+    return routeError(error, 'challenge.respondFailed', 'Challenge response error');
   }
 }
 
@@ -150,14 +150,12 @@ export async function DELETE(
 ) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
   const { id } = await params;
   try {
     await cancelChallenge(id, userId);
     return NextResponse.json({ success: true });
   } catch (err) {
-    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
-    console.error('Challenge cancel error:', err);
-    return NextResponse.json({ error: 'Could not cancel the challenge' }, { status: 500 });
+    return routeError(err, 'challenge.cancelFailed', 'Challenge cancel error');
   }
 }

@@ -4,26 +4,32 @@ import { authOptions } from '@/lib/auth';
 import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { WILDCARD, WILDCARD_EXCHANGE_RATE, maxWildcardsFrom } from '@/lib/fragments';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+const bodySchema = z.object({
+  language: z.string({ error: 'forge.exchangeInvalid' }).min(1, { error: 'forge.exchangeInvalid' }).max(100, { error: 'forge.exchangeInvalid' }),
+  wildcards: z.number({ error: 'forge.exchangeInvalid' }).int({ error: 'forge.exchangeInvalid' }).min(1, { error: 'forge.exchangeInvalid' }).max(1_000_000, { error: 'forge.exchangeInvalid' }),
+}, { error: 'forge.exchangeInvalid' });
 
 /** Buys `wildcards` wildcard fragments with WILDCARD_EXCHANGE_RATE× as many fragments of `language`. */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
   const limited = await enforceRateLimit(req, 'forge-exchange', 30, 60, userId);
   if (limited) return limited;
 
-  const { language, wildcards } = await req.json();
-  if (typeof language !== 'string' || !Number.isInteger(wildcards) || wildcards < 1) {
-    return NextResponse.json({ error: 'Choose a language and how many wildcards' }, { status: 400 });
-  }
+  const body = await readBody(req, bodySchema);
+  if (!body.ok) return body.response;
+  const { language, wildcards } = body.data;
 
   try {
     const fragments = await withUserLock(userId, async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, select: { fragments: true, fragmentLogs: true } });
-      if (!user) throw new UserFacingError('User not found', 404);
+      if (!user) throw new UserFacingError('common.userNotFound', 404);
       const wallet = asRecord(user.fragments);
-      if (wildcards > maxWildcardsFrom(wallet, language)) throw new UserFacingError(`Not enough ${language} fragments`);
+      if (wildcards > maxWildcardsFrom(wallet, language)) throw new UserFacingError('forge.notEnoughLanguageFragments', 400, { language });
 
       const spent = wildcards * WILDCARD_EXCHANGE_RATE;
       wallet[language] -= spent;
@@ -37,8 +43,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ success: true, fragments });
   } catch (err) {
-    if (err instanceof UserFacingError) return NextResponse.json({ error: err.message }, { status: err.status });
-    console.error('Exchange error:', err);
-    return NextResponse.json({ error: 'Exchange failed' }, { status: 500 });
+    return routeError(err, 'forge.exchangeFailed', 'Exchange error');
   }
 }

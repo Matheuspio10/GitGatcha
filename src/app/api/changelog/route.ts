@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { apiError } from '@/lib/apiResponse';
 
 export async function GET() {
   try {
@@ -30,6 +31,6 @@ export async function GET() {
     return NextResponse.json({ entries, seenChangelogs });
   } catch (error) {
     console.error('Error fetching changelogs:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

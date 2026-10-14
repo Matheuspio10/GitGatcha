@@ -1,0 +1,189 @@
+{
+  "common": {
+    "unauthorized": "Não autorizado",
+    "invalidRequest": "Pedido inválido",
+    "tooManyRequests": "Muitas tentativas. Tente de novo em {seconds}s.",
+    "notEnoughBits": "BITS insuficientes",
+    "notEnoughFragments": "Fragmentos insuficientes",
+    "userNotFound": "Usuário não encontrado",
+    "internal": "Erro interno do servidor"
+  },
+  "store": {
+    "packRequired": "Informe o pack",
+    "packNotFound": "Pack não encontrado",
+    "eventPackOffSale": "Este pack de evento não está mais à venda",
+    "purchaseFailed": "Não deu para comprar o pack",
+    "dailyStatusFailed": "Não deu para ver a recompensa diária",
+    "dailyAlreadyClaimed": "Você já resgatou a recompensa diária",
+    "dailyClaimFailed": "Não deu para resgatar a recompensa diária",
+    "pityFailed": "Não deu para carregar a garantia"
+  },
+  "inventory": {
+    "packNotInInventory": "Pack não encontrado no inventário",
+    "emptyPack": "Não deu para sortear nenhuma carta agora. O pack voltou para o inventário; tente de novo em alguns minutos.",
+    "openFailed": "Não deu para abrir o pack. Se ele foi usado, já voltou para o inventário.",
+    "fetchFailed": "Não deu para carregar o inventário"
+  },
+  "collection": {
+    "cardRequired": "Informe a carta",
+    "cardNotInCollection": "Carta não encontrada na sua coleção",
+    "fullyTrained": "{name} já está com o treino completo",
+    "trainingFailed": "O treino falhou",
+    "userCardIdMissing": "Informe a carta",
+    "cardNotOwned": "Carta não encontrada ou não é sua"
+  },
+  "forge": {
+    "usernameRequired": "Informe o nome de usuário",
+    "invalidUsername": "Nome de usuário do GitHub inválido",
+    "devNotFound": "Dev não encontrado",
+    "alreadyOwned": "Você já tem este dev",
+    "invocationFailed": "A invocação falhou",
+    "searchFailed": "A busca falhou",
+    "walletFailed": "Não deu para carregar seus fragmentos",
+    "exchangeInvalid": "Escolha uma linguagem e quantos coringas",
+    "notEnoughLanguageFragments": "Fragmentos de {language} insuficientes",
+    "exchangeFailed": "A troca falhou",
+    "wishlistFull": "Sua lista de desejos está cheia (máx. {max})",
+    "alreadyInWishlist": "Já está na sua lista de desejos",
+    "noPrimaryLanguage": "Este dev não tem uma linguagem principal",
+    "wishlistAddFailed": "Não deu para adicionar à lista de desejos",
+    "wishlistRemoveFailed": "Não deu para tirar da lista de desejos"
+  },
+  "profile": {
+    "bioTooLong": "A bio pode ter no máximo {max} caracteres",
+    "noValidFields": "Nenhum campo válido para atualizar",
+    "unknownBannerPreset": "Banner predefinido desconhecido.",
+    "bannerColor": "A cor do banner precisa ser hexadecimal, como #1e1b4b.",
+    "usernameRequired": "Informe o nome de usuário",
+    "unknownTitle": "Título desconhecido",
+    "unknownFrame": "Moldura desconhecida",
+    "locked": "Bloqueado: {requirement}",
+    "avatar": {
+      "format": "A imagem do avatar precisa ser PNG, JPEG ou WebP.",
+      "tooLarge": "A imagem do avatar é grande demais (máx. {maxKb} KB). Use uma imagem menor.",
+      "corrupt": "A imagem do avatar não é uma imagem válida.",
+      "invalid": "A imagem do avatar é inválida.",
+      "external": "A imagem do avatar precisa ser enviada do seu dispositivo; links externos não são permitidos."
+    },
+    "banner": {
+      "format": "A imagem do banner precisa ser PNG, JPEG ou WebP.",
+      "tooLarge": "A imagem do banner é grande demais (máx. {maxKb} KB). Use uma imagem menor.",
+      "corrupt": "A imagem do banner não é uma imagem válida.",
+      "invalid": "A imagem do banner é inválida.",
+      "external": "A imagem do banner precisa ser enviada do seu dispositivo; links externos não são permitidos."
+    }
+  },
+  "battle": {
+    "unknownLeague": "Liga desconhecida",
+    "raritiesNotAllowed": "Esta liga só aceita cartas {rarities}",
+    "balancedCap": "O poder do time ({power}) passa do limite da Liga Equilibrada ({cap})",
+    "diversityLanguages": "A Liga Diversidade exige 3 linguagens principais diferentes e nenhuma vazia",
+    "entryFee": "BITS insuficientes para a taxa de entrada de {league} ({fee} necessários)",
+    "noOpponent": "Não há cartas suficientes para uma batalha nesta liga",
+    "noRankedOpponent": "Nenhum oponente de Ranked disponível agora. Tente de novo mais tarde.",
+    "startFailed": "Não deu para iniciar a batalha",
+    "historyFailed": "Não deu para carregar o histórico de batalhas"
+  },
+  "challenge": {
+    "playerNotFound": "Jogador não encontrado",
+    "cannotChallengeSelf": "Você não pode desafiar a si mesmo",
+    "friendsOnly": "Você só pode desafiar seus amigos. Envie um link de desafio.",
+    "cardBusy": "{name} já está em um desafio pendente. Espere ele terminar ou escolha outra carta.",
+    "invalidStake": "A aposta precisa ser um número inteiro de 0 a {max} BITS",
+    "stakeNotAffordable": "Você precisa de {stake} BITS para essa aposta",
+    "stakeToMatch": "Você precisa de {stake} BITS para cobrir a aposta",
+    "createFailed": "Não deu para criar o desafio",
+    "fetchFailed": "Não deu para carregar os desafios",
+    "battleNotFound": "Batalha não encontrada",
+    "noLongerPending": "A batalha não está mais pendente",
+    "expired": "O desafio expirou",
+    "notDefender": "Você não é o defensor desta batalha",
+    "noLongerOpen": "Este desafio não está mais aberto",
+    "ownChallenge": "Você não pode aceitar o seu próprio desafio",
+    "alreadyAccepted": "Outra pessoa aceitou este desafio primeiro",
+    "respondFailed": "Não deu para responder ao desafio",
+    "notFound": "Desafio não encontrado",
+    "alreadyClosed": "Este desafio já foi respondido ou encerrado",
+    "cancelFailed": "Não deu para cancelar o desafio"
+  },
+  "tower": {
+    "notReady": "A Torre ainda não está pronta: faltam cartas no jogo",
+    "alreadyConquered": "Você já conquistou a Torre {theme} esta semana. Uma nova Torre abre na segunda-feira.",
+    "loadFailed": "Não deu para carregar a Torre",
+    "fightFailed": "A batalha da Torre falhou"
+  },
+  "team": {
+    "exactlyThree": "Escolha exatamente 3 cartas para o seu time",
+    "duplicateCard": "Você não pode usar a mesma carta duas vezes no time",
+    "cardsNotOwned": "Uma ou mais cartas não estão na sua coleção",
+    "cardExhausted": "A carta {name} está exausta e não pode batalhar",
+    "buildFailed": "Erro ao montar o time",
+    "invalidPayload": "Dados inválidos",
+    "fetchFailed": "Não deu para carregar o time ativo",
+    "updateFailed": "Não deu para atualizar o time ativo"
+  },
+  "missions": {
+    "missionIdRequired": "Informe a missão",
+    "alreadySwapped": "Você já trocou uma missão hoje",
+    "notFound": "Missão não encontrada",
+    "alreadyDone": "Esta missão já foi concluída",
+    "noSwapOption": "Não há outra missão para trocar",
+    "swapFailed": "Não deu para trocar a missão",
+    "connectGitHub": "Conecte sua conta do GitHub para receber missões de dev",
+    "githubReconnect": "O GitHub não aceita mais sua conexão. Reconecte no seu perfil.",
+    "githubBusy": "O GitHub está ocupado agora. Tente de novo em um minuto.",
+    "checkFailed": "Não deu para verificar o GitHub"
+  },
+  "rewards": {
+    "claimFailed": "Não deu para resgatar as recompensas"
+  },
+  "guest": {
+    "forVisitors": "O pack grátis é para visitantes. Seus boosters estão no inventário.",
+    "openFailed": "Não deu para abrir o pack agora. Tente de novo em alguns minutos."
+  },
+  "changelog": {
+    "invalidInput": "Dados inválidos"
+  },
+  "achievements": {
+    "loadFailed": "Não deu para carregar as conquistas"
+  },
+  "friends": {
+    "requestIdRequired": "Informe o pedido de amizade",
+    "requestNotFound": "Pedido de amizade não encontrado",
+    "cannotAccept": "Você não pode aceitar este pedido",
+    "alreadyAccepted": "Este pedido de amizade já foi aceito",
+    "friendshipIdRequired": "Informe a amizade",
+    "friendshipNotFound": "Amizade não encontrada",
+    "cannotRemove": "Você não pode remover este amigo",
+    "targetRequired": "Informe o nome de usuário",
+    "cannotAddSelf": "Você não pode mandar um pedido de amizade para si mesmo",
+    "targetNotFound": "Usuário não encontrado",
+    "alreadyRequested": "O pedido já foi enviado ou vocês já são amigos",
+    "usernameRequired": "Informe o nome de usuário",
+    "playerNotFound": "Jogador não encontrado",
+    "compareFriendsOnly": "Você só pode comparar coleções com amigos"
+  },
+  "user": {
+    "usernameLength": "O nome de usuário precisa ter entre 3 e 20 caracteres.",
+    "usernameChars": "O nome de usuário só pode ter letras, números e underline.",
+    "usernameTaken": "Esse nome de usuário já está em uso. Escolha outro.",
+    "setupFailed": "Erro interno ao salvar o nome de usuário.",
+    "githubOnlySignIn": "O GitHub é sua única forma de entrar, então não dá para desconectar."
+  },
+  "auth": {
+    "invalidInput": "Dados inválidos",
+    "emailExists": "Este e-mail já está cadastrado"
+  },
+  "onboarding": {
+    "unknownStep": "Etapa desconhecida",
+    "unknownAction": "Ação desconhecida",
+    "notActive": "Os Primeiros passos não estão ativos nesta conta",
+    "finishStepFirst": "Conclua esta etapa primeiro",
+    "alreadyClaimed": "Você já resgatou esta recompensa",
+    "failed": "Algo deu errado"
+  },
+  "notifications": {
+    "updateFailed": "Não deu para atualizar as notificações"
+  },
+  "referrals": {}
+}

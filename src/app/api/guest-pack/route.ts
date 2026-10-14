@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/session';
 import { enforceRateLimit, rateLimit, tooManyRequests } from '@/lib/rateLimit';
 import { refillBoosterReserve } from '@/lib/boosterService';
 import { GUEST_COOKIE, GUEST_PACK_ID, GUEST_PULL_TTL_DAYS, drawGuestPack, getGuestPull } from '@/lib/guestPack';
+import { apiError } from '@/lib/apiResponse';
 
 // Covers a live draw on GitHub plus the reserve refill after the response
 export const maxDuration = 120;
@@ -18,7 +19,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     if (await getCurrentUser()) {
-      return NextResponse.json({ error: 'The free pack is for visitors. Your boosters are in the inventory.' }, { status: 400 });
+      return apiError('guest.forVisitors');
     }
 
     const cookieStore = await cookies();
@@ -43,6 +44,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ pull, alreadyOpened: false });
   } catch (error) {
     console.error('Guest pack error:', error);
-    return NextResponse.json({ error: 'Could not open the pack right now. Try again in a few minutes.' }, { status: 503 });
+    return apiError('guest.openFailed', 503);
   }
 }

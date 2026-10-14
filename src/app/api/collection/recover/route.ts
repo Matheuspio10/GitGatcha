@@ -5,19 +5,26 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { withUserLock } from '@/lib/userLock';
 import { getCardStamina, STAMINA_RECOVERY_RATE_PER_HOUR, MAX_STAMINA } from '@/lib/staminaService';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { idSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const bodySchema = z.object({ userCardId: idSchema.optional() }).optional();
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('common.unauthorized', 401);
     }
 
-    const { userCardId } = await req.json();
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const userCardId = body.data?.userCardId;
 
     if (!userCardId) {
-      return NextResponse.json({ error: 'Missing userCardId' }, { status: 400 });
+      return apiError('collection.userCardIdMissing');
     }
 
     const userCard = await prisma.userCard.findUnique({
@@ -25,7 +32,7 @@ export async function POST(req: Request) {
     });
 
     if (!userCard || userCard.userId !== userId) {
-      return NextResponse.json({ error: 'Card not found or unowned' }, { status: 403 });
+      return apiError('collection.cardNotOwned', 403);
     }
 
     const updatedUserCard = await withUserLock(userId, async (tx) => {
@@ -42,12 +49,12 @@ export async function POST(req: Request) {
     });
 
     if (!updatedUserCard) {
-      return NextResponse.json({ error: 'Insufficient BITS' }, { status: 400 });
+      return apiError('common.notEnoughBits');
     }
 
     return NextResponse.json({ success: true, updatedUserCard });
   } catch (error) {
     console.error('Instant recover error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

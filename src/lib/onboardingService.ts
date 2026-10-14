@@ -77,20 +77,20 @@ export const recordGuestCards = (userId: string, count: number) => updateState(u
 /** Pays a finished step once. Progress is read outside the lock (it only grows); the claim is atomic. */
 export async function claimOnboardingStep(userId: string, stepId: OnboardingStepId): Promise<number> {
   const step = ONBOARDING_STEPS.find(s => s.id === stepId);
-  if (!step) throw new UserFacingError('Unknown step');
+  if (!step) throw new UserFacingError('onboarding.unknownStep');
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboarding: true } });
   const current = parseOnboardingState(user?.onboarding);
-  if (!current) throw new UserFacingError('Onboarding is not active for this account', 404);
+  if (!current) throw new UserFacingError('onboarding.notActive', 404);
   if (!isStepDone(stepId, await readProgress(userId, current))) {
-    throw new UserFacingError('Finish this step first');
+    throw new UserFacingError('onboarding.finishStepFirst');
   }
 
   return withUserLock(userId, async (tx) => {
     const fresh = await tx.user.findUnique({ where: { id: userId }, select: { onboarding: true } });
     const state = parseOnboardingState(fresh?.onboarding);
-    if (!state) throw new UserFacingError('Onboarding is not active for this account', 404);
-    if (state.claimed?.includes(stepId)) throw new UserFacingError('Reward already claimed', 409);
+    if (!state) throw new UserFacingError('onboarding.notActive', 404);
+    if (state.claimed?.includes(stepId)) throw new UserFacingError('onboarding.alreadyClaimed', 409);
     const next: OnboardingState = { ...state, claimed: [...(state.claimed ?? []), stepId] };
     await tx.user.update({ select: { id: true }, where: { id: userId }, data: { onboarding: asJson(next) } });
     await addBits(userId, step.rewardBits, 'onboarding', { tx, detail: step.title });
