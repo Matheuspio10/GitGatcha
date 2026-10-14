@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { parseStake } from './challengeService';
+import { parseStake, takenByAnother } from './challengeService';
 import { CHALLENGE_STAKE_MAX } from './battleConfig';
 
 test('stakes are whole BITS from 0 to the cap; empty means no stake', () => {
@@ -12,4 +12,11 @@ test('stakes are whole BITS from 0 to the cap; empty means no stake', () => {
   for (const bad of [-1, 1.5, CHALLENGE_STAKE_MAX + 1, 'abc', NaN]) {
     assert.throws(() => parseStake(bad), /stake/i);
   }
+});
+
+test('only an open challenge taken by someone else counts as a lost race', () => {
+  assert.strictEqual(takenByAnother({ isOpen: true, defenderId: 'b' }, 'c'), true);
+  assert.strictEqual(takenByAnother({ isOpen: true, defenderId: 'b' }, 'b'), false);
+  assert.strictEqual(takenByAnother({ isOpen: true, defenderId: null }, 'c'), false);
+  assert.strictEqual(takenByAnother({ isOpen: false, defenderId: 'b' }, 'c'), false);
 });
