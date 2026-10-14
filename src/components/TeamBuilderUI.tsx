@@ -33,6 +33,7 @@ export interface TeamBuilderCard extends CardProps {
 
 export type { LeagueMode };
 import { OPEN_CHALLENGE } from '@/lib/challenges';
+import { useDialog } from '@/lib/useDialog';
 
 // Rewards, fees and rules come from battleConfig (same numbers the server pays and the wiki shows)
 const LEAGUE_STYLE: Record<LeagueMode, { icon: string; color: string; border: string; bg: string }> = {
@@ -424,6 +425,7 @@ function TeamSlot({
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={onRemove}
+          aria-label="Remove from team"
           className="absolute top-2 right-2 z-20 bg-red-600/80 hover:bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-white transition-colors backdrop-blur-sm"
         >
           <X size={12} weight="bold" />
@@ -499,9 +501,9 @@ function TeamSlot({
             <div className="text-3xl opacity-30">{SLOT_ICONS[index]}</div>
             <div>
               <p className="text-sm font-bold text-slate-500">{SLOT_LABELS[index]}</p>
-              <p className="text-[10px] text-slate-600 mt-0.5 leading-snug">{SLOT_DESCRIPTIONS[index]}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{SLOT_DESCRIPTIONS[index]}</p>
             </div>
-            <div className="text-xs text-slate-600 border border-slate-700 border-dashed rounded-lg px-2 py-1">
+            <div className="text-xs text-slate-500 border border-slate-700 border-dashed rounded-lg px-2 py-1">
               Click a card below
             </div>
           </motion.div>
@@ -573,7 +575,7 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
           ))}
         </AnimatePresence>
         {synergies.length === 0 && (
-          <span className="text-xs text-slate-600 italic">Select cards to see synergies</span>
+          <span className="text-xs text-slate-500 italic">Select cards to see synergies</span>
         )}
       </div>
     </motion.div>
@@ -779,6 +781,7 @@ function ConfirmationModal({
 }) {
   const synergies = computeSynergies(slots).filter(s => s.active);
   const filled = slots.filter(Boolean) as TeamBuilderCard[];
+  const panelRef = useDialog(true, loading ? undefined : onCancel);
 
   return (
     <motion.div
@@ -788,6 +791,10 @@ function ConfirmationModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="battle-confirm-title"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -796,7 +803,7 @@ function ConfirmationModal({
       >
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
-          <h2 className="text-2xl font-black text-white">
+          <h2 id="battle-confirm-title" className="text-2xl font-black text-white">
             {mode === 'random' ? (action ? action.title : ranked ? 'Battle Ranked?' : 'Battle Random?') : defenderUsername === OPEN_CHALLENGE ? 'Create a challenge link?' : `Challenge ${defenderUsername}?`}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
@@ -841,9 +848,9 @@ function ConfirmationModal({
                   </div>
                   <div className="text-right flex-shrink-0 text-xs">
                     <span className={isFatigued ? "text-yellow-400 font-bold" : "text-red-400"}>{Math.floor(card.atk * multiplier)}</span>
-                    <span className="text-slate-600 mx-0.5">/</span>
+                    <span className="text-slate-500 mx-0.5">/</span>
                     <span className={isFatigued ? "text-yellow-400 font-bold" : "text-blue-400"}>{Math.floor(card.def * multiplier)}</span>
-                    <span className="text-slate-600 mx-0.5">/</span>
+                    <span className="text-slate-500 mx-0.5">/</span>
                     <span className="text-green-400">{card.hp}</span>
                   </div>
                 </div>
@@ -922,6 +929,7 @@ function FriendModal({
   const filteredFriends = friends.filter(f => 
     f.user.username.toLowerCase().includes(search.toLowerCase())
   );
+  const panelRef = useDialog(true, onCancel);
 
   return (
     <motion.div
@@ -931,16 +939,20 @@ function FriendModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="friend-picker-title"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="bg-slate-900 border border-slate-700 rounded-none sm:rounded-3xl p-6 sm:max-w-sm w-full h-full sm:h-auto shadow-2xl space-y-4 flex flex-col"
       >
         <div className="flex items-center justify-between shrink-0">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
+          <h2 id="friend-picker-title" className="text-xl font-black text-white flex items-center gap-2">
             <Users size={20} className="text-orange-400" /> Challenge a Friend
           </h2>
-          <button onClick={onCancel} className="text-slate-500 hover:text-white transition-colors">
+          <button onClick={onCancel} aria-label="Close" className="text-slate-500 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -952,7 +964,7 @@ function FriendModal({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search friends..."
-            className="w-full pl-9 pr-4 py-3 rounded-xl bg-black/40 border border-slate-700 text-white placeholder:text-slate-600 focus:outline-none focus:border-orange-500/50 transition-colors"
+            className="w-full pl-9 pr-4 py-3 rounded-xl bg-black/40 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50 transition-colors"
             autoFocus
           />
         </div>
@@ -1037,6 +1049,7 @@ function FilterSheet({
   availablePacks: string[];
   onClose: () => void;
 }) {
+  const panelRef = useDialog(true, onClose);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1046,6 +1059,10 @@ function FilterSheet({
       onClick={onClose}
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filter and sort"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -1055,7 +1072,7 @@ function FilterSheet({
       >
         <div className="flex items-center justify-between">
           <p className="font-bold text-white text-lg">Filter & Sort</p>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -1229,6 +1246,7 @@ function FilterControls({
             </span>
             <select
               value={sort}
+              aria-label="Sort cards"
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="w-full pl-9 pr-4 py-3 min-h-[44px] bg-slate-800 border border-slate-700 rounded-xl text-sm font-bold text-slate-300 appearance-none focus:outline-none focus:border-orange-500/50"
             >
@@ -1472,7 +1490,7 @@ export default function TeamBuilderUI({
   if (userCards.length === 0) {
     return (
       <div className="text-center py-20 space-y-4">
-        <GameController size={64} className="mx-auto text-slate-600" />
+        <GameController size={64} className="mx-auto text-slate-500" />
         <p className="text-xl font-bold text-slate-300">You have no cards!</p>
         <p className="text-slate-500">Open some booster packs to get started.</p>
         <a
@@ -1645,7 +1663,7 @@ export default function TeamBuilderUI({
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center text-xs text-slate-600 flex items-center justify-center gap-1.5"
+          className="text-center text-xs text-slate-500 flex items-center justify-center gap-1.5"
         >
           <ArrowsVertical size={12} /> Click a card slot to remove it, pick a different one below, then re-place it.
         </motion.p>

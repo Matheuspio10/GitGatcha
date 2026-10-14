@@ -8,6 +8,7 @@ import {
   CalendarCheck, Crosshair, Sword, ArrowFatLinesUp, Trophy, GithubLogo, Hammer, ShieldStar, ListChecks, Gift, X,
 } from '@phosphor-icons/react';
 import type { EarnIcon, EarnWay } from '@/lib/earnGuide';
+import { useDialog } from '@/lib/useDialog';
 
 const ICONS: Record<EarnIcon, React.ElementType> = {
   checklist: ListChecks,
@@ -48,6 +49,7 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
     }
     if (then) router.push(then);
   };
+  const panelRef = useDialog(open, () => close());
 
   return (
     <AnimatePresence>
@@ -55,10 +57,10 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
-          role="dialog" aria-modal="true" aria-labelledby="welcome-title"
-          onKeyDown={e => { if (e.key === 'Escape') close(); }}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog" aria-modal="true" aria-labelledby="welcome-title"
             initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-6 sm:p-8 shadow-2xl"

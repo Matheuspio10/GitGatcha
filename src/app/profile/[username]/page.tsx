@@ -298,7 +298,7 @@ export default function ProfilePage() {
 
                 {/* Bio */}
                 <p className="text-sm text-slate-400 mb-3 max-w-md">
-                  {profile.user.bio || <span className="italic text-slate-600">No bio yet</span>}
+                  {profile.user.bio || <span className="italic text-slate-500">No bio yet</span>}
                 </p>
 
                 {/* Active Badges */}
@@ -345,7 +345,7 @@ export default function ProfilePage() {
                         style={{ width: `${Math.max(5, xpData.progressPercent)}%` }}
                       />
                     </div>
-                    <div className="flex justify-between items-center mt-1 text-[10px] font-medium text-slate-600">
+                    <div className="flex justify-between items-center mt-1 text-[10px] font-medium text-slate-500">
                       <span>{Math.floor(xpData.totalXP).toLocaleString()} XP</span>
                       <span>{Math.floor(xpData.xpIntoLevel).toLocaleString()} / {Math.floor(xpData.xpNeededForNext).toLocaleString()} to Lvl {xpData.currentLevel + 1}</span>
                     </div>

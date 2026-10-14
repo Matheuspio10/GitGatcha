@@ -82,15 +82,71 @@ export function playSuspenseRiser(seconds: number, legendary: boolean) {
   });
 }
 
-/** Sound when a card turns face-up. Epic/Legendary reuse the Rare sample (no dedicated files yet). */
+interface Tone {
+  freq: number;
+  /** Seconds after now. */
+  at: number;
+  /** Seconds until it fades out. */
+  dur: number;
+  gain: number;
+  type?: OscillatorType;
+}
+
+/** Plays a few short synthesized notes through the master gain. */
+function playTones(tones: Tone[]) {
+  if (isAudioMuted()) return;
+  const audio = getAudioOutput();
+  if (!audio) return;
+  const { ctx, out } = audio;
+  const t0 = ctx.currentTime;
+  for (const tone of tones) {
+    const osc = ctx.createOscillator();
+    osc.type = tone.type ?? 'triangle';
+    osc.frequency.value = tone.freq;
+    const gain = ctx.createGain();
+    const start = t0 + tone.at;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(tone.gain, start + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + tone.dur);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(start);
+    osc.stop(start + tone.dur + 0.05);
+  }
+}
+
+/** Epic: a quick rising arpeggio (E, G#, B, E) over the Rare hit. */
+function playEpicFlourish() {
+  [659.25, 830.61, 987.77, 1318.51].forEach((freq, i) => playTones([
+    { freq, at: 0.06 + i * 0.07, dur: 0.45, gain: 0.07 },
+    { freq: freq * 2, at: 0.06 + i * 0.07, dur: 0.25, gain: 0.02, type: 'sine' },
+  ]));
+}
+
+/** Legendary: a slower arpeggio into a held major chord with a high shimmer. */
+function playLegendaryFanfare() {
+  const arpeggio = [523.25, 659.25, 783.99, 1046.5];
+  playTones(arpeggio.map((freq, i) => ({ freq, at: 0.05 + i * 0.09, dur: 0.5, gain: 0.07 })));
+  // The held chord (C major, C6 on top), slightly detuned pairs for width
+  playTones([523.25, 659.25, 783.99, 1046.5].flatMap(freq => [
+    { freq, at: 0.42, dur: 1.6, gain: 0.045, type: 'sawtooth' as const },
+    { freq: freq * 1.004, at: 0.42, dur: 1.6, gain: 0.035, type: 'triangle' as const },
+  ]));
+  // Shimmer: high sparkles on top of the chord
+  playTones([2093, 2637, 3136, 2637, 4186].map((freq, i) => ({ freq, at: 0.5 + i * 0.11, dur: 0.3, gain: 0.018, type: 'sine' as const })));
+}
+
+/** Sound when a card turns face-up; Epic and Legendary add their own synthesized flourish. */
 export function playCardReveal(rarity: string) {
   switch (rarity) {
     case 'Legendary':
       playSample(SAMPLES.rare, { volume: 1, rate: 0.85 });
-      playSample(SAMPLES.chime, { volume: 0.7, delay: 0.12 });
+      playSample(SAMPLES.chime, { volume: 0.6, delay: 0.12 });
+      playLegendaryFanfare();
       break;
     case 'Epic':
       playSample(SAMPLES.rare, { volume: 1, rate: 0.92 });
+      playEpicFlourish();
       break;
     case 'Rare':
       playSample(SAMPLES.rare, { volume: 0.9 });

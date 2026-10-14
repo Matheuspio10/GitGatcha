@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { User, Warning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { REFERRAL_BONUS, REFERRAL_COOKIE } from '@/lib/referral';
+import { useDialog } from '@/lib/useDialog';
 
 export function SetupProfileModal() {
   const { data: session, status, update } = useSession();
@@ -30,6 +31,9 @@ export function SetupProfileModal() {
       setUsername(session.user.username);
     }
   }, [isTargeted, session?.user?.username]);
+
+  // Required step: no Escape, but focus stays in the form
+  const panelRef = useDialog(isTargeted);
 
   if (!isTargeted) {
     return null;
@@ -79,6 +83,10 @@ export function SetupProfileModal() {
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
       >
         <motion.div 
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="setup-profile-title"
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
@@ -93,7 +101,7 @@ export function SetupProfileModal() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-2 relative z-10">
+          <h2 id="setup-profile-title" className="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-2 relative z-10">
             Confirm Your Nickname
           </h2>
           <p className="text-slate-400 text-center mb-8 text-sm relative z-10">

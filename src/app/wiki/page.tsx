@@ -776,7 +776,7 @@ export default function WikiPage() {
                           const tier = a.tiers[i];
                           return (
                             <td key={t} className="px-4 py-3 whitespace-nowrap text-slate-300">
-                              {tier ? <>N = {tier.threshold.toLocaleString('en-US')} <span className="text-slate-500">·</span> <span className="text-orange-400">{tier.reward} BITS</span></> : <span className="text-slate-600">—</span>}
+                              {tier ? <>N = {tier.threshold.toLocaleString('en-US')} <span className="text-slate-500">·</span> <span className="text-orange-400">{tier.reward} BITS</span></> : <span className="text-slate-500">—</span>}
                             </td>
                           );
                         })}

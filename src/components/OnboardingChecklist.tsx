@@ -136,7 +136,7 @@ export function OnboardingChecklist() {
               <li key={step.id} className="flex items-start gap-3 border-t border-slate-800 px-4 py-3">
                 {step.claimed
                   ? <CheckCircle size={20} weight="fill" className="mt-0.5 shrink-0 text-commit" />
-                  : <Circle size={20} className={`mt-0.5 shrink-0 ${step.done ? 'text-commit' : 'text-slate-600'}`} />}
+                  : <Circle size={20} className={`mt-0.5 shrink-0 ${step.done ? 'text-commit' : 'text-slate-500'}`} />}
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-bold ${step.claimed ? 'text-slate-500 line-through' : 'text-white'}`}>{step.title}</p>
                   {!step.claimed && <p className="text-xs text-slate-400">{step.description}</p>}

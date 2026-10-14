@@ -58,7 +58,7 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
     `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors ${
       active ? 'border-indigo-400 bg-indigo-500/20 text-white'
         : unlocked ? 'border-slate-700 bg-slate-800/60 text-slate-200 hover:border-slate-500'
-        : 'border-slate-800 bg-slate-900/40 text-slate-600 cursor-not-allowed'
+        : 'border-slate-800 bg-slate-900/40 text-slate-500 cursor-not-allowed'
     }`;
 
   return (

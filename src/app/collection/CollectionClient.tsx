@@ -12,6 +12,7 @@ import { TrainingPanel } from '@/components/TrainingPanel';
 import { CardDownloadButton } from '@/components/CardDownloadButton';
 import { LanguageSets } from '@/components/LanguageSets';
 import { collectionProgress } from '@/lib/collections';
+import { pressable, useDialog } from '@/lib/useDialog';
 import clsx from 'clsx';
 
 type ExtendedCard = CardProps & {
@@ -123,7 +124,7 @@ function LoyaltyProgressBar({ count, tier }: { count: number; tier: string }) {
       <div className="flex justify-between items-center mb-1">
         <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Loyalty</span>
         <span className="text-[9px] font-mono text-slate-400">
-          {count} / {next.threshold} <span className="text-slate-600">→</span>{' '}
+          {count} / {next.threshold} <span className="text-slate-500">→</span>{' '}
           <span style={{ color: nextInfo.color }}>{nextInfo.title}</span>
         </span>
       </div>
@@ -163,6 +164,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
   const [selectedCard, setSelectedCard] = useState<ExtendedCard | null>(null);
   const [recovering, setRecovering] = useState(false);
   const [localCards, setLocalCards] = useState<ExtendedCard[]>(initialCards);
+  const cardDialogRef = useDialog(!!selectedCard, () => setSelectedCard(null));
   const itemsPerPage = 20;
 
   // Global Collection Stats calculations
@@ -294,7 +296,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
           </div>
           <div className="text-sm text-slate-400 font-medium px-2">
             Unique Cards: <span className="text-white font-bold text-base">{totalUnique}</span>{' '}
-            <span className="text-slate-600 mx-2">|</span>{' '}
+            <span className="text-slate-500 mx-2">|</span>{' '}
             Total Pulls: <span className="text-white font-bold text-base">{totalPulls}</span>
           </div>
         </div>
@@ -380,6 +382,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                  <button 
                   disabled={page === 1}
                   onClick={() => setPage(p => Math.max(1, p - 1))}
+                  aria-label="Previous page"
                   className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white transition-colors"
                  >
                    <CaretLeft weight="bold" />
@@ -387,6 +390,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                  <button 
                   disabled={page === totalPages}
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  aria-label="Next page"
                   className="p-1 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white transition-colors"
                  >
                    <CaretRight weight="bold" />
@@ -444,7 +448,11 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                       <tr 
                         key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
                         onClick={() => setSelectedCard(card)} 
-                        className="hover:bg-slate-900/50 transition-colors group cursor-pointer"
+                        // Rows keep their table semantics; Enter or Space opens the card like a click
+                        tabIndex={0}
+                        aria-label={`${card.name} (${card.rarity}): open details`}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCard(card); } }}
+                        className="hover:bg-slate-900/50 focus-visible:bg-slate-900/70 focus-visible:outline-2 focus-visible:outline-brand-b transition-colors group cursor-pointer"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span 
@@ -458,7 +466,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                           <div className="flex items-center gap-3">
                             <Star weight="fill" className="opacity-20 group-hover:opacity-100 transition-opacity flex-shrink-0" style={{ color: rarityColor }} size={16} />
                             <span className="font-medium text-slate-200">{card.name}</span>
-                            <span className="text-xs text-slate-600 font-mono">@{card.githubUsername}</span>
+                            <span className="text-xs text-slate-500 font-mono">@{card.githubUsername}</span>
                             <LoyaltyBadge tier={loyaltyTier} size="sm" />
                             {(card.trainingLevel ?? 0) > 0 && (
                               <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300" title={`Training level ${card.trainingLevel}`}>
@@ -522,8 +530,8 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
             paginatedData.map(card => (
               <div 
                 key={card.userCardId || `${card.githubUsername}-${Math.random()}`} 
-                onClick={() => setSelectedCard(card)} 
-                className="cursor-pointer flex justify-center w-full"
+                {...pressable(() => setSelectedCard(card), `${card.name} (${card.rarity}): open details`)}
+                className="cursor-pointer flex justify-center w-full rounded-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-b"
               >
                  <Card
                    {...card}
@@ -541,9 +549,17 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
       {/* 4. Large Card Modal with Loyalty Details */}
       {selectedCard && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto" onClick={() => setSelectedCard(null)}>
-          <div className="relative flex flex-col md:flex-row items-center md:items-start justify-center gap-6 w-full max-w-5xl my-auto" onClick={e => e.stopPropagation()}>
+          <div
+            ref={cardDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${selectedCard.name}: card details`}
+            className="relative flex flex-col md:flex-row items-center md:items-start justify-center gap-6 w-full max-w-5xl my-auto"
+            onClick={e => e.stopPropagation()}
+          >
              <button 
                onClick={() => setSelectedCard(null)}
+               aria-label="Close"
                className="absolute -top-2 right-0 md:-right-12 text-slate-400 hover:text-white transition-colors bg-black/50 p-2 rounded-full border border-slate-700 z-10"
              >
                <X size={24} />
