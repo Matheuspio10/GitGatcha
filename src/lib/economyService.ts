@@ -196,7 +196,7 @@ export async function rerollDailyMission(userId: string, userMissionId: string) 
     const [missionId] = await missionIdsFor(tx, [replacement]);
 
     await tx.userMission.update({ where: { id: target.id }, data: { missionId, progress: 0 } });
-    await tx.user.update({ where: { id: userId }, data: { missionRerollAt: now } });
+    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { missionRerollAt: now } });
     return replacement;
   });
 }

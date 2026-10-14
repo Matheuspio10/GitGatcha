@@ -229,7 +229,7 @@ export async function grantXP(
     }];
   }
 
-  await tx.user.update({ where: { id: userId }, data: data as any });
+  await tx.user.update({ select: { id: true }, where: { id: userId }, data: data as any });
   // BITS through the ledger (same transaction)
   await addBits(userId, additionalCurrency, currencyReason, { tx, detail: currencyDetail });
   await addBits(userId, levelUpCoins, 'level_up', { tx, detail: `Level ${levelUps.map(r => r.level).join(', ')}` });

@@ -33,7 +33,7 @@ export async function startOnboarding(tx: Tx, userId: string): Promise<boolean> 
     inventory.push({ packId: pack.id, packName: pack.name, acquiredAt: new Date().toISOString(), source: 'starter' });
   }
   const state: OnboardingState = { startedAt: new Date().toISOString(), claimed: [] };
-  await tx.user.update({ where: { id: userId }, data: { inventory: asJson(inventory), onboarding: asJson(state) } });
+  await tx.user.update({ select: { id: true }, where: { id: userId }, data: { inventory: asJson(inventory), onboarding: asJson(state) } });
   return true;
 }
 
@@ -65,7 +65,7 @@ async function updateState(userId: string, change: (state: OnboardingState) => O
     const user = await tx.user.findUnique({ where: { id: userId }, select: { onboarding: true } });
     const state = parseOnboardingState(user?.onboarding);
     if (!state) return;
-    await tx.user.update({ where: { id: userId }, data: { onboarding: asJson(change(state)) } });
+    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { onboarding: asJson(change(state)) } });
   });
 }
 
@@ -92,7 +92,7 @@ export async function claimOnboardingStep(userId: string, stepId: OnboardingStep
     if (!state) throw new UserFacingError('Onboarding is not active for this account', 404);
     if (state.claimed?.includes(stepId)) throw new UserFacingError('Reward already claimed', 409);
     const next: OnboardingState = { ...state, claimed: [...(state.claimed ?? []), stepId] };
-    await tx.user.update({ where: { id: userId }, data: { onboarding: asJson(next) } });
+    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { onboarding: asJson(next) } });
     await addBits(userId, step.rewardBits, 'onboarding', { tx, detail: step.title });
     return step.rewardBits;
   });

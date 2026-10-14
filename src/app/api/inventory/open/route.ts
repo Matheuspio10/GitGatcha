@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       const packIndex = inventory.findIndex(item => item.packId === packId);
       if (packIndex === -1) return null;
       const [item] = inventory.splice(packIndex, 1);
-      await tx.user.update({ where: { id: userId }, data: { inventory: inventory as unknown as Prisma.InputJsonValue } });
+      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { inventory: inventory as unknown as Prisma.InputJsonValue } });
       return item;
     });
 
@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       await withUserLock(userId, async (tx) => {
         const user = await tx.user.findUnique({ where: { id: userId }, select: { inventory: true } });
         await tx.user.update({
+          select: { id: true },
           where: { id: userId },
           data: { inventory: [...asArray<InventoryItem>(user?.inventory), takenPack] as unknown as Prisma.InputJsonValue },
         });

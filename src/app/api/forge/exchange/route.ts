@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       const date = new Date().toISOString();
       logs.unshift({ date, source: `Exchange for ${wildcards} wildcard`, language, amount: -spent });
       logs.unshift({ date, source: `Exchange from ${language}`, language: WILDCARD, amount: wildcards });
-      await tx.user.update({ where: { id: userId }, data: { fragments: wallet, fragmentLogs: logs } });
+      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: logs } });
       return wallet;
     });
     return NextResponse.json({ success: true, fragments });

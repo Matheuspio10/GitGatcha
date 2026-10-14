@@ -43,6 +43,7 @@ export async function GET() {
         const fresh = await tx.user.findUnique({ where: { id: userId }, select: { inventory: true } });
         const migrated = migrateLegacyPackIds(asArray<InventoryItem>(fresh?.inventory));
         await tx.user.update({
+          select: { id: true },
           where: { id: userId },
           data: { inventory: migrated as unknown as Prisma.InputJsonValue },
         });

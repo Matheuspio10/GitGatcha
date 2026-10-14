@@ -352,7 +352,7 @@ async function addFragments(userId: string, language: string, amount: number, so
     fragments[language] = (fragments[language] || 0) + amount;
     const logs = asArray(user.fragmentLogs);
     logs.unshift({ date: new Date().toISOString(), source, language, amount });
-    await tx.user.update({ where: { id: userId }, data: { fragments, fragmentLogs: logs } });
+    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments, fragmentLogs: logs } });
   });
 }
 

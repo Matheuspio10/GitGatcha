@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     // Get current user
     const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: { id: true, username: true },
     });
 
     if (!currentUser) {
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
     // Get target user
     const targetUser = await prisma.user.findUnique({
       where: { username: targetUsername },
+      select: { id: true },
     });
 
     if (!targetUser) {

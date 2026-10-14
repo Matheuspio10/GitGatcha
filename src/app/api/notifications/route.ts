@@ -119,6 +119,7 @@ export async function POST(request: Request) {
       }
 
       await tx.user.update({
+        select: { id: true },
         where: { id: userId },
         data: { notifications: notifications as any }
       });

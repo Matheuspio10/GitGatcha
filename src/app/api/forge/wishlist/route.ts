@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const { username } = await req.json();
     if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
     wishlist.push(wishlistItem);
 
     await prisma.user.update({
+      select: { id: true },
       where: { id: user.id },
       data: { wishlist }
     });
@@ -68,13 +69,14 @@ export async function DELETE(req: Request) {
 
     if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     let wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
     wishlist = wishlist.filter(w => w && w.username && w.username.toLowerCase() !== username.toLowerCase());
 
     await prisma.user.update({
+      select: { id: true },
       where: { id: user.id },
       data: { wishlist }
     });
