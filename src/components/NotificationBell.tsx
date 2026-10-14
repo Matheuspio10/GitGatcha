@@ -157,7 +157,7 @@ export function NotificationBell() {
   return (
     <>
       {/* Toast Notification Container */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed bottom-[calc(1.5rem+var(--bottom-nav-h))] right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
         <AnimatePresence>
           {activeToasts.map((toast) => (
             <motion.div

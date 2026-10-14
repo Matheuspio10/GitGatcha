@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 13/10/2026, ao fim das coleções e cosméticos (PR #52). **Ondas 1 a 6 completas.** O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da rodada de celular (PR #53). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -56,9 +56,8 @@
 ## ▶️ Próximo passo
 
 **Onda 7 (celular, acessibilidade e idioma)**, uma PR por rodada:
-1. **Celular:** barra de abas inferior, carta com tamanho responsivo, PWA (2.7).
-2. **Acessibilidade:** packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais, contraste AA (2.7); slider de volume e sons de Epic/Legendary (2.6).
-3. **PT-BR com next-intl**, mantendo o inglês (2.5). É a maior: toda a interface passa por chaves de tradução.
+1. **Acessibilidade:** packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais, contraste AA (2.7); slider de volume e sons de Epic/Legendary (2.6).
+2. **PT-BR com next-intl**, mantendo o inglês (2.5). É a maior: toda a interface passa por chaves de tradução.
 
 Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes apostas e monetização).
 
@@ -135,7 +134,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
-| **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
+| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53) · falta: teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
@@ -338,6 +337,12 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - Wiki explica com os números das constantes.
 - **Bug corrigido de passagem:** o mapa de IDs antigos do inventário trocava `the-fossils` (o ID real do The Fossils, que vem nas recompensas de nível) por `fossils`, que não existe, e o pack abria como genérico. Agora o mapa faz o caminho inverso e conserta quem já foi afetado.
 
+### Onda 7 — celular (PR #53)
+- **Barra de abas inferior** em telas menores que 1024px (`Navbar.tsx`): Gacha, Packs, Cards, Battle e "More", que abre o menu com todas as páginas (o botão de menu do topo saiu). Respeita a área segura do iPhone (`viewport-fit=cover`).
+  - A variável CSS `--bottom-nav-h` (`globals.css`) dá espaço embaixo do conteúdo e sobe o que é fixo no rodapé: a lista "Getting started", os avisos de notificação e o aviso de compra da loja. No desktop vale 0.
+- **PWA:** `src/app/manifest.ts` (abre na loja, tela cheia, atalhos para packs, batalha e coleção), ícones 192/512, "maskable" e o da Apple, gerados do `icon.svg` por `scripts/build-app-icons.mjs`; `theme-color` e metadados de app no iPhone. Sem service worker: o Chrome não exige mais um para instalar, e um cache mal feito mostraria dados velhos do jogo.
+- **Vazamento lateral:** varri as páginas principais em 375px e 320px. Vazavam as abas da Forja e da Arena (agora quebram linha ou rolam) e a tabela de stamina da Wiki (agora rola dentro do quadro, como as outras).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -379,9 +384,9 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|
 | Packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais | M |
 | Contraste AA (textos slate-500/600 sobre quase preto) | P |
-| Carta com tamanho responsivo (`w-[min(16rem,80vw)]`) | P |
-| Barra de abas inferior no celular | M |
-| PWA (instalar na tela inicial) | P |
+| ~~Carta com tamanho responsivo~~ | ✅ não precisou: com 256px a carta cabe até em 320px; o que vazava eram abas e uma tabela (PR #53) |
+| ~~Barra de abas inferior no celular~~ | ✅ PR #53 |
+| ~~PWA (instalar na tela inicial)~~ | ✅ PR #53 (manifest e ícones; sem service worker) |
 
 ### 2.8 Engenharia
 | Item | Esforço |

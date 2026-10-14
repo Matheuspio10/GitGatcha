@@ -105,7 +105,7 @@ export function OnboardingChecklist() {
   return (
     <motion.aside
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-4 right-4 z-40 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-slate-700 bg-slate-900/95 shadow-2xl backdrop-blur"
+      className="fixed bottom-[calc(1rem+var(--bottom-nav-h))] right-4 z-40 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-slate-700 bg-slate-900/95 shadow-2xl backdrop-blur"
       aria-label="Getting started"
     >
       <div className="flex items-center gap-2 px-4 py-3">

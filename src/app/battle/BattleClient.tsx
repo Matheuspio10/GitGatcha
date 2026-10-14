@@ -1296,13 +1296,13 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
         </a>
       </div>
 
-      {/* Tabs */}
-      <div className="flex justify-center gap-2">
+      {/* Tabs (wrap on phones) */}
+      <div className="flex flex-wrap justify-center gap-2">
         {(['Quick Battle', 'Tower', 'Challenge', 'History'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => { setTab(t); setRespondingToId(null); }}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
+            className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
               tab === t
                 ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]'
                 : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-700/60'

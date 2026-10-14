@@ -294,22 +294,22 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800/50 w-fit">
+      <div className="flex gap-1 sm:gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800/50 w-fit max-w-full overflow-x-auto">
         <button 
           onClick={() => setActiveTab('INVOKE')}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'INVOKE' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'INVOKE' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
           <Sparkle size={18} /> Invoke
         </button>
         <button 
           onClick={() => setActiveTab('WISHLIST')}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'WISHLIST' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'WISHLIST' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
           <Star size={18} /> Wishlist <span className="text-xs bg-slate-800 px-1.5 py-0.5 rounded ml-1">{wishlist.length}/5</span>
         </button>
         <button 
           onClick={() => setActiveTab('HISTORY')}
-          className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'HISTORY' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'HISTORY' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
           <ClockCounterClockwise size={18} /> History
         </button>
