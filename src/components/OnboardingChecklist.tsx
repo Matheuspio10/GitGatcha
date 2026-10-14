@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { CaretDown, CheckCircle, Circle, ListChecks, X } from '@phosphor-icons/react';
 import type { OnboardingStepId, OnboardingStepView } from '@/lib/onboarding';
 import { useTranslations } from 'next-intl';
+import { useGameText } from '@/i18n/gameText';
 
 interface Status {
   steps: OnboardingStepView[];
@@ -30,6 +31,8 @@ export function OnboardingChecklist() {
   const [collapsed, setCollapsed] = useState(false);
   const [claiming, setClaiming] = useState<OnboardingStepId | null>(null);
   const t = useTranslations('onboarding.checklist');
+  const game = useGameText('game');
+  const stepTitle = (step: OnboardingStepView) => game(`onboardingSteps.${step.id}.title`, step.title);
 
   useEffect(() => {
     // Collapsed by default on phones (it would cover half the screen), open on desktop
@@ -74,7 +77,7 @@ export function OnboardingChecklist() {
     setClaiming(step.id);
     try {
       const data = await post({ action: 'claim', step: step.id });
-      toast.success(t('claimed', { bits: data.bits, step: step.title }));
+      toast.success(t('claimed', { bits: data.bits, step: stepTitle(step) }));
       window.dispatchEvent(new Event('bits:refresh'));
       if (data.onboarding?.complete) toast.success(t('complete'), { icon: '🎉' });
       setStatus(data.onboarding);
@@ -115,7 +118,7 @@ export function OnboardingChecklist() {
           <ListChecks size={20} weight="duotone" className="text-commit" />
           <span className="flex-1">
             <span className="block text-sm font-bold text-white">{t('title')}</span>
-            <span className="block text-[11px] text-slate-400">{t('progress', { done: claimedCount, total: status.steps.length })}{collapsed && nextStep ? ` · ${t('next', { step: nextStep.title })}` : ''}</span>
+            <span className="block text-[11px] text-slate-400">{t('progress', { done: claimedCount, total: status.steps.length })}{collapsed && nextStep ? ` · ${t('next', { step: stepTitle(nextStep) })}` : ''}</span>
           </span>
           <CaretDown size={16} className={`text-slate-400 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
         </button>
@@ -140,8 +143,8 @@ export function OnboardingChecklist() {
                   ? <CheckCircle size={20} weight="fill" className="mt-0.5 shrink-0 text-commit" />
                   : <Circle size={20} className={`mt-0.5 shrink-0 ${step.done ? 'text-commit' : 'text-slate-500'}`} />}
                 <div className="min-w-0 flex-1">
-                  <p className={`text-sm font-bold ${step.claimed ? 'text-slate-500 line-through' : 'text-white'}`}>{step.title}</p>
-                  {!step.claimed && <p className="text-xs text-slate-400">{step.description}</p>}
+                  <p className={`text-sm font-bold ${step.claimed ? 'text-slate-500 line-through' : 'text-white'}`}>{stepTitle(step)}</p>
+                  {!step.claimed && <p className="text-xs text-slate-400">{game(`onboardingSteps.${step.id}.description`, step.description)}</p>}
                 </div>
                 {!step.claimed && (step.done ? (
                   <button

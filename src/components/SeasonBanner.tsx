@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl';
 import { RANK_TIERS } from '@/lib/ranks';
 import { PROMOTION_BITS, SEASON_REWARD_BITS, formatSeasonLeft } from '@/lib/seasons';
 import { RankBadge } from '@/components/RankBadge';
+import { useGameText } from '@/i18n/gameText';
 
 /** Current ranked season: time left, the viewer's peak, and what each rank pays. */
 export function SeasonBanner({ season, now, viewer }: {
@@ -10,6 +11,7 @@ export function SeasonBanner({ season, now, viewer }: {
   viewer?: { seasonPeakRating: number; seasonBattles: number } | null;
 }) {
   const t = useTranslations('leaderboard.season');
+  const battleText = useGameText('gameBattle');
   return (
     <div className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -35,7 +37,7 @@ export function SeasonBanner({ season, now, viewer }: {
           <thead>
             <tr className="text-slate-500">
               <th className="py-1 pr-3 text-left font-bold">{t('rank')}</th>
-              {RANK_TIERS.map(tier => <th key={tier.id} className="px-2 py-1 font-bold" style={{ color: tier.color }}>{tier.name}</th>)}
+              {RANK_TIERS.map(tier => <th key={tier.id} className="px-2 py-1 font-bold" style={{ color: tier.color }}>{battleText(`ranks.${tier.id}.name`, tier.name)}</th>)}
             </tr>
           </thead>
           <tbody className="font-mono text-slate-200">

@@ -5,6 +5,7 @@ import { getBitsHistory } from '@/lib/bitsLedger';
 import { bitsReasonLabel } from '@/lib/bitsReasons';
 import { EmptyState } from '@/components/EmptyState';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { getGameText } from '@/i18n/gameText.server';
 
 export async function generateMetadata() {
   const t = await getTranslations('public.bits');
@@ -19,7 +20,9 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
   if (!user) redirect('/');
   const { before } = await searchParams;
   const beforeDate = before && !Number.isNaN(Date.parse(before)) ? new Date(before) : undefined;
-  const [rows, t, locale] = await Promise.all([getBitsHistory(user.id, PAGE, beforeDate), getTranslations('public.bits'), getLocale()]);
+  const [rows, t, locale, game] = await Promise.all([
+    getBitsHistory(user.id, PAGE, beforeDate), getTranslations('public.bits'), getLocale(), getGameText('game'),
+  ]);
   const fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
@@ -42,7 +45,7 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
           {rows.map(row => (
             <li key={row.id} className="flex items-center gap-4 px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{bitsReasonLabel(row.reason)}</p>
+                <p className="truncate text-sm font-bold text-white">{game(`bitsReasons.${row.reason}`, bitsReasonLabel(row.reason))}</p>
                 <p className="truncate text-xs text-slate-500">{row.detail ? `${row.detail} · ` : ''}{fmt.format(row.createdAt)}</p>
               </div>
               <div className="text-right">

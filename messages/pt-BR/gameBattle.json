@@ -1,0 +1,211 @@
+{
+  "leagues": {
+    "OPEN": {
+      "label": "Liga Aberta",
+      "rules": "Sem restrições — use qualquer carta."
+    },
+    "RANKED": {
+      "label": "Ranked",
+      "rules": "Enfrente o time salvo de um jogador com rating perto do seu. O rating e o elo mudam; ele não precisa estar online."
+    },
+    "COMMON": {
+      "label": "Liga Common",
+      "rules": "Só cartas Common e Uncommon."
+    },
+    "BALANCED": {
+      "label": "Liga Equilibrada",
+      "rules": "O poder do time (ATK + DEF + HP) não pode passar de {mult}× o poder médio das cartas."
+    },
+    "DIVERSITY": {
+      "label": "Liga Diversidade",
+      "rules": "Exige 3 linguagens principais diferentes."
+    },
+    "LEGENDARY": {
+      "label": "Só Legendary",
+      "rules": "Só cartas Legendary."
+    }
+  },
+  "rarityScaledChance": "{common} (Common) a {legendary} (Legendary)",
+  "passives": {
+    "C / C++": {
+      "name": "Força Bruta",
+      "desc": "Os ataques ignoram {defIgnored} da DEF do oponente."
+    },
+    "C#": {
+      "name": "Acerto Crítico",
+      "desc": "A cada turno: {chance} de chance de dar um Acerto Crítico com {critMult, number}x de dano."
+    },
+    "CSS": {
+      "name": "Comportamento Indefinido",
+      "desc": "A cada turno: {doubleChance} de chance de causar Dano em Dobro; senão, {zeroChance} de chance de causar exatamente 0 de dano (cartas mais raras se comportam melhor)."
+    },
+    "Dart": {
+      "name": "Hot Reload",
+      "desc": "Uma vez por batalha, quando o HP cai abaixo de {hpThreshold}, restaura na hora {heal} do HP máximo."
+    },
+    "Go": {
+      "name": "Primeiro Golpe",
+      "desc": "Dá um golpe na carta adversária assim que ela entra em campo (bloqueado pelo Escudo de Ferro)."
+    },
+    "HTML": {
+      "name": "Degradação Graciosa",
+      "desc": "Abaixo de {hpThreshold} de HP, recebe {damageReduction} menos dano. O navegador renderiza mesmo assim."
+    },
+    "Java": {
+      "name": "Aquecimento do JIT",
+      "desc": "Começo lento: causa {firstTurnPenalty} menos dano no primeiro turno de cada confronto, depois +{perTurn} por turno, até +{maxBonus}."
+    },
+    "JavaScript": {
+      "name": "Double Callback",
+      "desc": "A cada turno: {chance} de chance de atacar de novo, causando {damageMult, number}x de dano naquele turno."
+    },
+    "Jupyter Notebook": {
+      "name": "Kernel Interativo",
+      "desc": "Cura {regen} do próprio ATK no fim de cada turno em que sobrevive e conta como carta Python para a Sinergia Python."
+    },
+    "Kotlin": {
+      "name": "Null Safety",
+      "desc": "Nunca perde mais de {maxHpPct} do HP máximo em um único turno."
+    },
+    "PHP": {
+      "name": "@ Supressão de Erros",
+      "desc": "Uma vez por batalha, um golpe que nocautearia a carta a deixa com {hp} de HP."
+    },
+    "Python": {
+      "name": "Regeneração",
+      "desc": "No fim de cada turno em que sobrevive, cura HP igual a {regen} do próprio ATK."
+    },
+    "Ruby": {
+      "name": "Última Resistência",
+      "desc": "Enquanto o HP estiver abaixo de {hpThreshold}, causa {atkMult, number}x de dano."
+    },
+    "Rust": {
+      "name": "Escudo de Ferro",
+      "desc": "Entra em campo com um escudo que bloqueia todo o dano do primeiro turno (inclusive o Primeiro Golpe de Go)."
+    },
+    "Shell": {
+      "name": "Cron Job",
+      "desc": "A cada {every} turnos de um confronto, o ataque roda duas vezes ({mult, number}x de dano)."
+    },
+    "Swift": {
+      "name": "Esquiva",
+      "desc": "A cada turno: {chance} de chance de desviar totalmente do ataque do oponente."
+    },
+    "TypeScript": {
+      "name": "Type Safety",
+      "desc": "Reduz passivamente todo dano recebido em {reduction}."
+    }
+  },
+  "cardPassives": {
+    "C": {
+      "name": "Força Bruta",
+      "desc": "Os ataques ignoram {defIgnored} da DEF do oponente."
+    },
+    "C++": {
+      "name": "Força Bruta",
+      "desc": "Os ataques ignoram {defIgnored} da DEF do oponente."
+    },
+    "C#": {
+      "name": "Acerto Crítico",
+      "desc": "{chance} de chance por turno de dar crítico com {critMult, number}x de dano."
+    },
+    "CSS": {
+      "name": "Comportamento Indefinido",
+      "desc": "A cada turno: {doubleChance} de causar 2x, {zeroChance} de causar 0."
+    },
+    "Dart": {
+      "name": "Hot Reload",
+      "desc": "Uma vez, abaixo de {hpThreshold} de HP: restaura {heal} do HP máx."
+    },
+    "Go": {
+      "name": "Primeiro Golpe",
+      "desc": "Ataca a carta adversária assim que ela entra em campo."
+    },
+    "HTML": {
+      "name": "Degradação Graciosa",
+      "desc": "Abaixo de {hpThreshold} de HP: recebe {damageReduction} menos dano."
+    },
+    "Java": {
+      "name": "Aquecimento do JIT",
+      "desc": "{firstTurnPenalty} menos dano no turno 1, depois +{perTurn}/turno (máx. +{maxBonus})."
+    },
+    "JavaScript": {
+      "name": "Double Callback",
+      "desc": "{chance} de chance por turno de atacar de novo com {damageMult, number}x de dano."
+    },
+    "Jupyter Notebook": {
+      "name": "Kernel Interativo",
+      "desc": "Cura {regen} do ATK a cada turno. Conta como Python."
+    },
+    "Kotlin": {
+      "name": "Null Safety",
+      "desc": "Nunca perde mais de {maxHpPct} do HP máx. em um turno."
+    },
+    "PHP": {
+      "name": "@ Supressão de Erros",
+      "desc": "Uma vez por batalha, sobrevive a um nocaute com {hp} de HP."
+    },
+    "Python": {
+      "name": "Regeneração",
+      "desc": "Cura {regen} do ATK no fim de cada turno."
+    },
+    "Ruby": {
+      "name": "Última Resistência",
+      "desc": "Abaixo de {hpThreshold} de HP, causa {atkMult, number}x de dano."
+    },
+    "Rust": {
+      "name": "Escudo de Ferro",
+      "desc": "Entra com um escudo que bloqueia todo o dano do primeiro turno."
+    },
+    "Shell": {
+      "name": "Cron Job",
+      "desc": "A cada {every} turnos, o ataque roda duas vezes ({mult, number}x de dano)."
+    },
+    "Swift": {
+      "name": "Esquiva",
+      "desc": "{chance} de chance por turno de desviar totalmente de um ataque."
+    },
+    "TypeScript": {
+      "name": "Type Safety",
+      "desc": "Recebe {reduction} menos dano de cada golpe."
+    },
+    "neutral": {
+      "name": "Neutro",
+      "desc": "Sem passiva de combate e sem vantagens de tipo."
+    }
+  },
+  "ranks": {
+    "bronze": { "name": "Bronze" },
+    "silver": { "name": "Prata" },
+    "gold": { "name": "Ouro" },
+    "platinum": { "name": "Platina" },
+    "diamond": { "name": "Diamante" }
+  },
+  "tower": {
+    "name": "Torre {theme}",
+    "floorTitle": {
+      "final": "Andar {floor} · Lendas de {theme} (chefe final)",
+      "mini": "Andar {floor} · Elite de {theme} (mini-chefe)",
+      "regular": "Andar {floor}"
+    }
+  },
+  "sprints": {
+    "kinds": {
+      "daily": { "label": "Sprint diária" },
+      "weekly": { "label": "Sprint semanal" }
+    },
+    "languageTheme": { "name": "Dia de {language}" },
+    "families": {
+      "family:web": { "name": "Semana Web" },
+      "family:systems": { "name": "Semana de Sistemas" },
+      "family:data": { "name": "Semana de Dados" },
+      "family:enterprise": { "name": "Semana JVM & .NET" },
+      "family:scripting": { "name": "Semana de Scripting" },
+      "family:mobile": { "name": "Semana Mobile" }
+    },
+    "rewardsLegend": {
+      "single": "{place}º {bits}",
+      "range": "{from}º–{to}º {bits}"
+    }
+  }
+}

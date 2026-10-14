@@ -86,7 +86,7 @@
   "sets": {
     "title": "Sets de linguagem",
     "summary": "{complete} de {total} completos · tenha uma carta de cada raridade de uma linguagem para completar o set e desbloquear títulos e molduras",
-    "complete": "Completo · \"{language} Collector\"",
+    "complete": "Completo · \"Colecionador de {language}\"",
     "missing": "{rarity} (faltando)",
     "forgeHint": "Falta alguma? A <link>Forja</link> invoca qualquer dev.",
     "profileHint": "Equipe o que você desbloqueou no seu <link>perfil</link>."

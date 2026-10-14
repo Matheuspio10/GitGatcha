@@ -1,0 +1,211 @@
+{
+  "leagues": {
+    "OPEN": {
+      "label": "Open League",
+      "rules": "No restrictions — use any cards."
+    },
+    "RANKED": {
+      "label": "Ranked",
+      "rules": "Fight the saved team of a player near your rating. Rating and rank change; they don't have to be online."
+    },
+    "COMMON": {
+      "label": "Common League",
+      "rules": "Common & Uncommon cards only."
+    },
+    "BALANCED": {
+      "label": "Balanced League",
+      "rules": "Team power (ATK + DEF + HP) cannot exceed {mult}× the average card power."
+    },
+    "DIVERSITY": {
+      "label": "Diversity League",
+      "rules": "3 different primary languages required."
+    },
+    "LEGENDARY": {
+      "label": "Legendary Only",
+      "rules": "Legendary cards only."
+    }
+  },
+  "rarityScaledChance": "{common} (Common) to {legendary} (Legendary)",
+  "passives": {
+    "C / C++": {
+      "name": "Raw Power",
+      "desc": "Attacks ignore {defIgnored} of the opponent's DEF."
+    },
+    "C#": {
+      "name": "Critical Hit",
+      "desc": "Each turn: {chance} chance to land a Critical Hit for {critMult, number}x damage."
+    },
+    "CSS": {
+      "name": "Undefined Behavior",
+      "desc": "Each turn: {doubleChance} chance to deal Double Damage; otherwise {zeroChance} chance to deal exactly 0 damage (rarer cards misbehave less)."
+    },
+    "Dart": {
+      "name": "Hot Reload",
+      "desc": "Once per battle, when its HP drops below {hpThreshold}, instantly restores {heal} of its max HP."
+    },
+    "Go": {
+      "name": "First Strike",
+      "desc": "Deals one hit to the opposing card as soon as it enters the field (blocked by Iron Shield)."
+    },
+    "HTML": {
+      "name": "Graceful Degradation",
+      "desc": "While below {hpThreshold} HP, takes {damageReduction} less damage. Browsers render it anyway."
+    },
+    "Java": {
+      "name": "JIT Warm-up",
+      "desc": "Slow start: deals {firstTurnPenalty} less damage on its first turn of each matchup, then +{perTurn} per turn, up to +{maxBonus}."
+    },
+    "JavaScript": {
+      "name": "Double Callback",
+      "desc": "Each turn: {chance} chance to hit again, dealing {damageMult, number}x damage that turn."
+    },
+    "Jupyter Notebook": {
+      "name": "Interactive Kernel",
+      "desc": "Heals {regen} of its ATK at the end of every turn it survives, and counts as a Python card for the Python Synergy."
+    },
+    "Kotlin": {
+      "name": "Null Safety",
+      "desc": "Never loses more than {maxHpPct} of its max HP in a single turn."
+    },
+    "PHP": {
+      "name": "@ Error Suppression",
+      "desc": "Once per battle, a hit that would knock it out leaves it at {hp} HP instead."
+    },
+    "Python": {
+      "name": "Regeneration",
+      "desc": "At the end of every turn it survives, heals for HP equal to {regen} of its ATK."
+    },
+    "Ruby": {
+      "name": "Last Stand",
+      "desc": "While its HP is below {hpThreshold}, deals {atkMult, number}x damage."
+    },
+    "Rust": {
+      "name": "Iron Shield",
+      "desc": "Enters the field with a shield that blocks all damage of its first turn (including a Go First Strike)."
+    },
+    "Shell": {
+      "name": "Cron Job",
+      "desc": "Every {every, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} turn of a matchup its attack runs twice ({mult, number}x damage)."
+    },
+    "Swift": {
+      "name": "Dodge",
+      "desc": "Each turn: {chance} chance to dodge the opponent's attack completely."
+    },
+    "TypeScript": {
+      "name": "Type Safety",
+      "desc": "Passively reduces all incoming damage by {reduction}."
+    }
+  },
+  "cardPassives": {
+    "C": {
+      "name": "Raw Power",
+      "desc": "Attacks ignore {defIgnored} of the opponent's DEF."
+    },
+    "C++": {
+      "name": "Raw Power",
+      "desc": "Attacks ignore {defIgnored} of the opponent's DEF."
+    },
+    "C#": {
+      "name": "Critical Hit",
+      "desc": "{chance} chance per turn to crit for {critMult, number}x damage."
+    },
+    "CSS": {
+      "name": "Undefined Behavior",
+      "desc": "Each turn: {doubleChance} to deal 2x, {zeroChance} to deal 0."
+    },
+    "Dart": {
+      "name": "Hot Reload",
+      "desc": "Once, below {hpThreshold} HP: restores {heal} of max HP."
+    },
+    "Go": {
+      "name": "First Strike",
+      "desc": "Hits the opposing card as soon as it enters the field."
+    },
+    "HTML": {
+      "name": "Graceful Degradation",
+      "desc": "Below {hpThreshold} HP: takes {damageReduction} less damage."
+    },
+    "Java": {
+      "name": "JIT Warm-up",
+      "desc": "{firstTurnPenalty} less damage on turn 1, then +{perTurn}/turn (max +{maxBonus})."
+    },
+    "JavaScript": {
+      "name": "Double Callback",
+      "desc": "{chance} chance per turn to hit again for {damageMult, number}x damage."
+    },
+    "Jupyter Notebook": {
+      "name": "Interactive Kernel",
+      "desc": "Heals {regen} of its ATK every turn. Counts as Python."
+    },
+    "Kotlin": {
+      "name": "Null Safety",
+      "desc": "Never loses more than {maxHpPct} of its max HP in one turn."
+    },
+    "PHP": {
+      "name": "@ Error Suppression",
+      "desc": "Once per battle, survives a knockout at {hp} HP."
+    },
+    "Python": {
+      "name": "Regeneration",
+      "desc": "Heals {regen} of its ATK at the end of every turn."
+    },
+    "Ruby": {
+      "name": "Last Stand",
+      "desc": "While below {hpThreshold} HP, deals {atkMult, number}x damage."
+    },
+    "Rust": {
+      "name": "Iron Shield",
+      "desc": "Enters with a shield that blocks all damage of its first turn."
+    },
+    "Shell": {
+      "name": "Cron Job",
+      "desc": "Every {every, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} turn its attack runs twice ({mult, number}x damage)."
+    },
+    "Swift": {
+      "name": "Dodge",
+      "desc": "{chance} chance per turn to dodge an attack completely."
+    },
+    "TypeScript": {
+      "name": "Type Safety",
+      "desc": "Takes {reduction} less damage from every hit."
+    },
+    "neutral": {
+      "name": "Neutral",
+      "desc": "No combat passive and no type matchups."
+    }
+  },
+  "ranks": {
+    "bronze": { "name": "Bronze" },
+    "silver": { "name": "Silver" },
+    "gold": { "name": "Gold" },
+    "platinum": { "name": "Platinum" },
+    "diamond": { "name": "Diamond" }
+  },
+  "tower": {
+    "name": "The {theme} Gauntlet",
+    "floorTitle": {
+      "final": "Floor {floor} · {theme} Legends (final boss)",
+      "mini": "Floor {floor} · {theme} Elite (mini-boss)",
+      "regular": "Floor {floor}"
+    }
+  },
+  "sprints": {
+    "kinds": {
+      "daily": { "label": "Daily Sprint" },
+      "weekly": { "label": "Weekly Sprint" }
+    },
+    "languageTheme": { "name": "{language} Day" },
+    "families": {
+      "family:web": { "name": "Web Week" },
+      "family:systems": { "name": "Systems Week" },
+      "family:data": { "name": "Data Week" },
+      "family:enterprise": { "name": "JVM & .NET Week" },
+      "family:scripting": { "name": "Scripting Week" },
+      "family:mobile": { "name": "Mobile Week" }
+    },
+    "rewardsLegend": {
+      "single": "{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} {bits}",
+      "range": "{from, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}–{to, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} {bits}"
+    }
+  }
+}

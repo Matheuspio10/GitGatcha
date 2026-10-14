@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { formatSeasonLeft } from '@/lib/seasons';
 import { RarityGem } from '@/components/RarityGem';
 import { useLocale, useTranslations } from 'next-intl';
+import { usePackText } from '@/i18n/packText';
 
 type FragmentWallet = Record<string, number>;
 type WishlistItem = {
@@ -58,6 +59,7 @@ export type FeaturedDevInfo = {
 export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: string; featuredDev?: FeaturedDevInfo | null }) {
   const { data: session } = useSession();
   const t = useTranslations('forge');
+  const packText = usePackText();
   const locale = useLocale();
   const [activeTab, setActiveTab] = useState<'INVOKE' | 'WISHLIST' | 'HISTORY'>('INVOKE');
   
@@ -457,7 +459,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                         <Link href={`/store#pack-${pack.id}`} key={pack.id} className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-indigo-500/50 transition-colors group cursor-pointer block">
                           <div className="w-10 h-10 rounded shadow-md" style={{ background: pack.visualTheme?.gradient }}></div>
                           <div>
-                            <div className="font-bold text-sm text-slate-200 group-hover:text-indigo-300 transition-colors line-clamp-1">{pack.name}</div>
+                            <div className="font-bold text-sm text-slate-200 group-hover:text-indigo-300 transition-colors line-clamp-1">{packText.name(pack.id, pack.name)}</div>
                             <div className="text-xs text-slate-500">{pack.cost} BITS</div>
                           </div>
                         </Link>

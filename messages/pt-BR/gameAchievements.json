@@ -1,0 +1,61 @@
+{
+  "achievements": {
+    "collector": { "name": "Colecionador", "description": "Tenha {n} cartas diferentes" },
+    "legendary_hunter": { "name": "Caçador de Legendary", "description": "{n, plural, one {Tenha {n} carta Legendary} other {Tenha {n} cartas Legendary}}" },
+    "shiny_hunter": { "name": "Caçador de Shiny", "description": "{n, plural, one {Tenha {n} carta Shiny} other {Tenha {n} cartas Shiny}}" },
+    "polyglot": { "name": "Poliglota", "description": "Colecione cartas de {n} linguagens diferentes" },
+    "bot_slayer": { "name": "Destruidor de Bots", "description": "Vença {n} batalhas rápidas" },
+    "duelist": { "name": "Duelista", "description": "{n, plural, one {Vença {n} desafio contra jogadores} other {Vença {n} desafios contra jogadores}}" },
+    "social_butterfly": { "name": "Borboleta Social", "description": "{n, plural, one {Tenha {n} amigo} other {Tenha {n} amigos}}" },
+    "veteran": { "name": "Veterano", "description": "Chegue ao nível {n} de jogador" },
+    "ride_or_die": { "name": "Juntos até o Fim", "description": "Lute {n} batalhas com uma única carta" },
+    "self_portrait": { "name": "Autorretrato", "description": "Tenha sua carta Signature (conecte o GitHub)" }
+  },
+  "tiers": {
+    "1": "Bronze",
+    "2": "Prata",
+    "3": "Ouro",
+    "fallback": "Nível {tier}"
+  },
+  "toast": {
+    "unlocked": "Conquista desbloqueada: {name} {tier}{reward, plural, =0 {} other { (+{reward} Bits)}}"
+  },
+  "loyalty": {
+    "veteran": { "title": "Veterano" },
+    "trusted": { "title": "De confiança" },
+    "reliable": { "title": "Fiel" },
+    "legendary_bond": { "title": "Laço Lendário" },
+    "eternal": { "title": "Eterno" }
+  },
+  "loyaltyCosmetics": {
+    "veteran_badge": "Insígnia de Veterano",
+    "trusted_badge": "Insígnia De confiança",
+    "gold_border": "Borda dourada",
+    "reliable_badge": "Insígnia Fiel",
+    "alt_color_scheme": "Esquema de cores alternativo",
+    "legendary_bond_badge": "Insígnia de Laço Lendário",
+    "particle_effect": "Efeito de partículas",
+    "profile_prestige": "Prestígio no perfil",
+    "eternal_badge": "Insígnia Eterna",
+    "holographic_frame": "Moldura holográfica",
+    "distinct_power_color": "Cor de poder exclusiva",
+    "unique_damage_style": "Estilo de dano único"
+  },
+  "titles": {
+    "lvl-10": { "label": "Contribuidor", "requirement": "Chegue ao nível 10" },
+    "lvl-25": { "label": "Mantenedor", "requirement": "Chegue ao nível 25" },
+    "lvl-50": { "label": "Core Team", "requirement": "Chegue ao nível 50" },
+    "sets-1": { "label": "Completista", "requirement": "Complete 1 set de linguagem" },
+    "sets-3": { "label": "Poliglota", "requirement": "Complete 3 sets de linguagem" },
+    "sets-10": { "label": "Arquivista", "requirement": "Complete 10 sets de linguagem" },
+    "languageSet": { "label": "Colecionador de {language}", "requirement": "Complete o set de {language}" }
+  },
+  "frames": {
+    "bronze": { "label": "Bronze", "requirement": "Chegue ao nível 5" },
+    "silver": { "label": "Prata", "requirement": "Chegue ao nível 10" },
+    "gold": { "label": "Ouro", "requirement": "Chegue ao nível 20" },
+    "holo": { "label": "Holo", "requirement": "Chegue ao nível 35" },
+    "spectrum": { "label": "Espectro", "requirement": "Complete 1 set de linguagem" },
+    "prism": { "label": "Prisma", "requirement": "Complete 5 sets de linguagem" }
+  }
+}

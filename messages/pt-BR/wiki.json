@@ -1,1 +1,231 @@
-{}
+{
+  "title": "Wiki do GitGacha",
+  "menu": "Menu",
+  "searchPlaceholder": "Busque na Wiki (mecânicas, habilidades, atributos...)",
+  "clearSearch": "Limpar busca",
+  "sections": {
+    "getting-started": "Primeiros passos",
+    "cards-and-rarities": "Cartas e raridades",
+    "stats-explained": "Atributos explicados",
+    "language-types": "Tipos de linguagem e vantagens",
+    "passive-abilities": "Habilidades passivas",
+    "battle-system": "Sistema de batalha",
+    "critical-hits-momentum": "Momentum",
+    "leagues-tournaments": "Ligas e torneios",
+    "stamina-system": "Sistema de stamina",
+    "loyalty-system": "Sistema de contrato de lealdade",
+    "forge-system": "Sistema da Forja",
+    "team-synergies": "Sinergias de time",
+    "daily-rewards": "Recompensas diárias, garantia e conquistas",
+    "glossary": "Glossário"
+  },
+  "gettingStarted": {
+    "intro": "Bem-vindo ao GitGacha! O GitGacha é um jogo de coleção de cartas com batalhas automáticas em que as cartas são devs de verdade, baseadas na atividade deles no GitHub.",
+    "loopTitle": "O ciclo principal do jogo",
+    "openPacks": "<b>Abra packs:</b> gaste BITS para abrir packs Gacha na <link>Loja</link> e conseguir cartas de devs.",
+    "buildTeam": "<b>Monte um time:</b> escolha 3 devs da sua coleção na <link>Arena</link>. Leve em conta as linguagens, os atributos e as sinergias.",
+    "battle": "<b>Batalhe:</b> enfrente times do computador nas ligas para ganhar BITS e XP, ou desafie amigos no PvP para subir no <link>ranking de rating</link>."
+  },
+  "cards": {
+    "intro": "As cartas são divididas em {count} níveis de raridade. A raridade de uma carta vem dos <b>seguidores</b> reais do dev no GitHub; um dev cujos repositórios juntam muitas <b>estrelas</b> sobe uma raridade de bônus. A raridade aplica um multiplicador aos atributos base da carta.",
+    "random": "Os boosters são aleatórios de verdade: dentro do tema de um booster, <em>todo</em> dev do GitHub da raridade sorteada com pelo menos um repositório público tem exatamente a mesma chance de cair — famoso ou recém-chegado, inclusive você.",
+    "pullRate": "Taxa padrão: ~{pct}% das cartas",
+    "followersOpen": "{min}+ seguidores",
+    "followersRange": "{min}–{max} seguidores",
+    "baseStats": "{followers}. Atributos base x{mult, number}.",
+    "starBonus": "Com {stars}+ estrelas, a carta sobe uma raridade."
+  },
+  "stats": {
+    "atkTitle": "Ataque (ATK)",
+    "defTitle": "Defesa (DEF)",
+    "hpTitle": "Vida (HP)",
+    "powerTitle": "Poder",
+    "atkDamage": "Dano por golpe: <code>ATK × {k} / ({k} + DEF)</code>, no mínimo 1. O ATK também define quanto as cartas Python e Jupyter Notebook regeneram.",
+    "defBlock": "Bloqueia uma parte de cada golpe: <code>DEF / ({k} + DEF)</code>. {k} de DEF corta o dano recebido pela metade, e a DEF nunca bloqueia mais de {max}. Retorno decrescente: encher de repos ajuda, mas nunca deixa uma carta imune.",
+    "hpTurnCap": "Se um único confronto durar {turns} turnos, vence a carta com a maior % de HP restante (um empate exato derruba as duas).",
+    "powerFormula": "<code>ATK + DEF + HP</code>. Usado para ordenar a coleção e para o limite de time da Liga Equilibrada.",
+    "multiplierNote": "Depois, todo atributo é multiplicado pelo multiplicador de raridade da carta (mínimo de {atk} ATK, {def} DEF e {hp} HP). As fórmulas são ajustadas com um simulador de batalhas para que a raridade importe mas zebras aconteçam, e ATK, DEF e HP decidam as lutas.",
+    "formula": {
+      "fame": {
+        "atk": "O ATK cresce com a fama: {base, number} + {scale, number} × log10(estrelas + forks + {offset, number})^{power, number}. Mais estrelas sempre dão mais ATK, com retorno decrescente.",
+        "def": "A DEF vem do conjunto da obra: {hasBase, select, yes {{base, number} + } other {}}{scale, number} × (repos + {gistWeight, number} × gists)^{exponent, number} + {followers, number} × log10(1 + seguidores). Repos e gists contam até {repoCap, number} cada.",
+        "hp": "O HP vem da experiência e do alcance: {base, number} + {years, number} × idade da conta em anos (até {maxYears, number}) + {followers, number} × log10(1 + seguidores)."
+      },
+      "impact": {
+        "atk": "O ATK vem do impacto — estrelas e forks conquistados por seguidor: impacto = (estrelas + forks + {offset, number}) / (seguidores + {offset, number}); ATK = {base, number} × impacto^{exponent, number}, entre {min, number} e {max, number}. Código com muito mais estrelas que o público do autor bate forte (um público grande já é recompensado na raridade).",
+        "def": "A DEF vem do conjunto da obra: {hasBase, select, yes {{base, number} + } other {}}{scale, number} × (repos + {gistWeight, number} × gists)^{exponent, number}. Repos e gists contam até {repoCap, number} cada.",
+        "hp": "O HP vem da experiência: {base, number} + {years, number} × idade da conta em anos (até {maxYears, number}){hasRepos, select, yes { + {repos, number} × ln(1 + repos)} other {}}{hasFollowers, select, yes { + {followers, number} × ln(1 + seguidores)} other {}}. Contas antigas aguentam muito."
+      }
+    }
+  },
+  "types": {
+    "intro": "Ter Vantagem de tipo dá um multiplicador de <good>{adv, number}x</good> no dano causado. Uma desvantagem aplica um multiplicador de <bad>{dis, number}x</bad>. CSS causa {dis, number}x contra toda linguagem com tipo; cartas Neutras (qualquer outra linguagem) não têm confrontos de tipo.",
+    "languageType": "Tipo de linguagem",
+    "strongAgainst": "Forte contra ({mult, number}x)",
+    "weakAgainst": "Fraco contra ({mult, number}x)",
+    "everything": "Tudo (menos Neutro)",
+    "none": "Nenhum"
+  },
+  "passives": {
+    "intro": "{count} linguagens têm uma passiva única que é ativada durante a batalha. As passivas de chance crescem um pouco com a raridade (Rare é a referência); azares como os turnos de dano zero do CSS ficam mais raros em cartas mais raras. Cartas de qualquer outra linguagem são Neutras."
+  },
+  "battle": {
+    "intro": "As batalhas do GitGacha são resolvidas de forma totalmente automática, 3 contra 3. As cartas lutam 1 contra 1 até uma ser derrotada; aí a próxima carta daquele time entra em campo.",
+    "slotsTitle": "As posições",
+    "opener": "<b>Abertura (posição 1):</b> entra primeiro. Boa para cartas com Primeiro Golpe ou cartas resistentes que constroem Momentum cedo.",
+    "mid": "<b>Meio (posição 2):</b> a ponte. Costuma limpar oponentes fracos ou segurar o Meio forte do adversário.",
+    "closer": "<b>Fechamento (posição 3):</b> sua carta mais forte. Entra por último para vencer a partida.",
+    "orderTitle": "Ordem das operações",
+    "orderBefore": "<b>Antes da batalha:</b> os bônus de lealdade e depois as penalidades de cansaço da stamina alteram os atributos base. As sinergias de time são aplicadas.",
+    "orderEntry": "<b>Ao entrar:</b> o {ironShield} (Rust) sobe primeiro, depois todo {firstStrike} (Go) acerta ao mesmo tempo, então não faz diferença quem desafiou quem. O escudo dura até o fim daquele turno.",
+    "orderTypes": "<b>Vantagens de tipo:</b> os multiplicadores são conferidos entre as cartas em combate.",
+    "orderDamage": "<b>Cálculo de dano:</b> as duas cartas se atacam ao mesmo tempo: <code>ATK × {k} / ({k} + DEF)</code>, alterado pelo multiplicador de tipo, pelo Momentum e pela passiva de quem ataca ({passives}).",
+    "orderDefense": "<b>Checagens de defesa:</b> {typeSafety}, {gracefulDegradation} e a Sinergia Rust reduzem o golpe; {dodge} e {ironShield} o anulam; {nullSafety} limita o dano.",
+    "orderResolution": "<b>Resolução:</b> o HP é reduzido ({errorSuppression} pode manter uma carta PHP viva com {hp} de HP). As sobreviventes ativam {hotReload} e regeneração. Uma carta com 0 de HP é derrotada e a próxima entra.",
+    "decidedTitle": "Como uma batalha é decidida",
+    "decidedLastStanding": "Vence o time que ainda tem uma carta de pé quando o outro fica sem cartas.",
+    "decidedTie": "Se as duas últimas cartas caírem no mesmo turno, ou se o limite global de turnos parar a luta, vence o time com a maior % de HP restante. Um empate exato fica com o <b>defensor</b>."
+  },
+  "momentum": {
+    "title": "Sistema de Momentum",
+    "intro": "Se uma única carta derrotar <b>2 oponentes seguidos</b> sem morrer, ela alcança o <hl>Momentum</hl>.",
+    "onFire": "Mostra um efeito <b>Em chamas</b> durante a batalha.",
+    "bonus": "Dá <b>+{one} de ATK e DEF</b> depois do 2º nocaute seguido e <b>+{two}</b> depois do 3º (uma varrida completa).",
+    "crits": "Só cartas C# dão acertos críticos; fora isso, o dano varia com os tipos, as passivas e o Momentum."
+  },
+  "leagues": {
+    "intro": "As batalhas de liga são contra um time do computador que segue as mesmas restrições que o seu e nunca mudam o seu rating. A Ranked é a exceção: o oponente é o time salvo de um jogador com rating perto do seu (ele não precisa estar online), e o rating dos dois muda. Um time salvo que resiste rende {defenseBits} BITS ao dono. Elos: {ranks}. As temporadas duram um mês do calendário (UTC): a primeira vez que você chega a um elo na temporada paga {promotions} BITS e, no fim, todo mundo que jogou PvP ganha BITS pelo maior elo alcançado ({seasonRewards}) antes de todo rating voltar metade do caminho até {startingRating}.",
+    "rewards": "Vitória: {winBits} BITS + {winXp} XP | Derrota: {lossBits} BITS + {lossXp} XP",
+    "entryFee": "| Entrada: {fee} BITS (saldo de {net} na vitória, -{loss} na derrota)",
+    "friendTitle": "Desafios entre amigos (PvP)",
+    "friendText": "Desafie um amigo com 3 cartas quaisquer; ele tem {hours} horas para responder com o próprio time e só vê quantas cartas e de quais raridades você mandou. Uma carta só pode estar em um desafio pendente por vez. Desafios entre amigos e a Ranked são as únicas formas de mudar o seu <b>rating</b> (ELO, todo mundo começa com {rating}, K = {k}).",
+    "friendRewards": "Vitória: {winBits} BITS + {winXp} XP | Derrota: {lossBits} BITS + {lossXp} XP (os dois jogadores)",
+    "upsetTitle": "Bônus de zebra",
+    "upsetText": "Vença um time de raridade média maior (Common = 0 … Legendary = {maxTier}, na média das 3 cartas) e a vitória paga +{perTier}% de BITS por nível de diferença, até +{max}%. Vale em todas as ligas e nos desafios entre amigos; o XP não muda.",
+    "towerTitle": "A Torre",
+    "towerText": "{floors} andares de times do computador cada vez mais difíceis, com um mini-chefe no andar {miniBossFloor} e um chefe Legendary no andar {finalFloor}. Toda segunda-feira (UTC) a torre ganha uma linguagem de tema e times novos, iguais para todo mundo; você vê os próximos oponentes antes de lutar. A primeira vez que você passa de cada andar na semana paga {rewards} BITS. O ranking semanal ordena os jogadores pelo andar mais alto e depois pelo menor número de tentativas.",
+    "sprintsTitle": "Sprints",
+    "sprintsText": "Duas competições com tema, sem nada para configurar: quando uma termina, cada jogador recebe uma pontuação pelo poder (ATK + DEF + HP) das suas {teamSize} cartas mais fortes do tema. Só contam as cartas que você tinha antes do fim, e pontuações empatadas dividem a posição (1, 1, 3). Veja em Rankings → Sprints.",
+    "dailySprint": "<b>{name}</b> (de meia-noite a meia-noite UTC): uma linguagem, em rodízio ({languages}). BITS: {legend}.",
+    "weeklySprint": "<b>{name}</b> (de segunda a segunda UTC): uma família de linguagens ({families}). BITS: {legend}.",
+    "eventsTitle": "Eventos semanais",
+    "eventsIntro": "Cada semana segue o tema da Sprint semanal:",
+    "eventPack": "<b>Pack do evento</b>: {count} cartas das linguagens da semana por {cost} BITS, com pelo menos uma {rarity}. À venda só naquela semana (Loja → Evento semanal); um pack comprado pode ser aberto depois. Como em todo pack, cada dev do tema tem a mesma chance.",
+    "devOfWeek": "<b>Dev da Semana</b>: uma carta do tema ({rarity} ou melhor) sorteada quando a semana começa. Invocar essa carta na Forja custa {pct}% menos fragmentos e BITS até a semana acabar.",
+    "balancedCap": "Limite da Liga Equilibrada: {mult, number}× o poder médio de todas as cartas do jogo; a Arena mostra o valor atual."
+  },
+  "stamina": {
+    "drain": "Os devs se cansam! Toda batalha (de liga ou PvP) gasta <red>{cost} de stamina</red> de cada carta usada. Conforme a stamina cai, as cartas sofrem penalidades no ATK e na DEF nas batalhas. Com 0 de stamina, elas ficam Exaustas e não podem batalhar.",
+    "recovery": "Toda carta recupera <b>{rate} de stamina por hora</b> automaticamente (até {max}), inclusive as cartas do seu time salvo. Se preferir, recupere a stamina na hora na Coleção por {cost} BITS por carta.",
+    "range": "Faixa de stamina",
+    "status": "Estado",
+    "penalty": "Penalidade na batalha",
+    "fresh": "Descansada ({pct}%)",
+    "tiring": "Cansando ({pct}%)",
+    "fatigued": "Cansada ({pct}%)",
+    "exhausted": "Exausta ({pct}%)",
+    "critical": "Crítica ({pct}%)",
+    "drained": "Totalmente esgotada",
+    "none": "Nenhuma",
+    "atkDefPenalty": "-{pct}% ATK e DEF",
+    "cannotBattle": "Não pode batalhar"
+  },
+  "loyalty": {
+    "intro": "Toda batalha que uma carta luta (vitória ou derrota) aumenta a <b>lealdade</b> dela. Ao chegar aos marcos de lealdade, a carta desbloqueia para sempre <b>multiplicadores de atributos</b> (aplicados antes de qualquer outro modificador de batalha) e cosméticos.",
+    "stat": "+{atkDef} ATK e DEF{hasHp, select, yes {, +{hp} HP} other {}}",
+    "battlesRequired": "Batalhas necessárias",
+    "trainingTitle": "Treino",
+    "trainingText": "Abra uma carta na sua Coleção para treiná-la. Cada nível dá +{bonus} de ATK, DEF e HP em toda batalha, além da lealdade. O nível <em>n</em> custa <em>n</em>× um passo de BITS mais fragmentos da linguagem da carta (os coringas cobrem o resto), os mesmos fragmentos que as repetidas dão. As Commons podem ser treinadas mais longe, então uma carta favorita acompanha o ritmo; um time totalmente treinado fica mais ou menos no nível de um time sem treino uma raridade acima. O limite da Liga Equilibrada continua contando o poder base da carta.",
+    "trainingRarity": "<b>{rarity}</b>: até o nível {maxLevel} (+{maxBonus}); passo de {stepBits} BITS + {stepFragments} fragmentos; treino completo {fullBits} BITS + {fullFragments} fragmentos."
+  },
+  "forge": {
+    "intro": "A <link>Forja</link> deixa você fugir da sorte do Gacha e criar direto a carta exata do dev que você quer.",
+    "searching": "<b>Busca:</b> digite qualquer nome de usuário válido do GitHub para trazer os atributos atuais desse dev para o app.",
+    "fragments": "<b>Fragmentos:</b> criar uma carta exige fragmentos da linguagem principal do dev escolhido (os coringas cobrem o que faltar), mais BITS. O custo depende da raridade da carta: {costs}.",
+    "cost": "{rarity} {fragments} fragmentos + {bits} BITS",
+    "earning": "<b>Como ganhar fragmentos:</b> tirar uma carta que você já tem conta como repetida (x2, x3…) e dá fragmentos da linguagem dela: {duplicates}. Cada booster também tem {chance}% de chance de dar {count} fragmentos da linguagem do tema (ou da mais comum).",
+    "wildcards": "<b>Coringas:</b> troque {rate} fragmentos de qualquer linguagem por 1 fragmento coringa. Os coringas pagam qualquer linguagem e são a única forma de criar devs sem linguagem principal.",
+    "shiny": "<b>Shiny:</b> toda carta tirada tem {chance}% de chance de ser Shiny, repetidas incluídas: uma repetida pode deixar a sua carta Shiny.",
+    "wishlist": "<b>Lista de desejos:</b> adicione devs à sua lista de desejos para acompanhar fácil o seu progresso de fragmentos até conseguir cada um."
+  },
+  "synergies": {
+    "intro": "Juntar cartas da mesma linguagem dá passivas de Sinergia poderosas para o time todo. Times variados também ganham bônus.",
+    "requires": "Exige: {requirement}",
+    "mixed": {
+      "name": "Sinergia de Time Misto",
+      "req": "3 tipos diferentes",
+      "effect": "+{atk} de ATK para TODAS as cartas do time."
+    },
+    "python": {
+      "name": "Sinergia Python",
+      "req": "2 ou 3 cartas Python / Jupyter Notebook",
+      "effect": "Os aliados regeneram HP igual a {regen} do próprio ATK a cada turno ({regenThree} com 3). Cartas Python e Jupyter curam pela taxa que for maior, a delas ou a da sinergia."
+    },
+    "rust": {
+      "name": "Sinergia Rust",
+      "req": "2 ou 3 cartas Rust",
+      "effect": "As 3 cartas recebem {reduction} menos dano ({reductionThree} com 3 cartas Rust)."
+    },
+    "js": {
+      "name": "Sinergia JS",
+      "req": "2 ou 3 cartas JS",
+      "effect": "Aliados que não são JS ganham {chance} de chance de Double Callback a cada turno ({chanceThree} com 3; as cartas JS mantêm a própria chance)."
+    },
+    "go": {
+      "name": "Sinergia Go",
+      "req": "2 ou 3 cartas Go",
+      "effect": "As 3 cartas ganham a habilidade {firstStrike} do Go."
+    }
+  },
+  "daily": {
+    "title": "Recompensas diárias (calendário de login de {days} dias)",
+    "text": "Resgate uma recompensa diária na <link>Loja</link> uma vez a cada {cooldown} horas. Resgatar de novo em até {window} horas depois do último resgate avança o seu calendário; esperar mais recomeça no dia 1. Depois do dia {days}, começa um novo ciclo. Todo resgate também dá {xp} XP.",
+    "day": "Dia {day}",
+    "pack": "+ {pack} (vai para o seu Inventário)"
+  },
+  "sets": {
+    "title": "Sets de linguagem, títulos e molduras",
+    "text": "Cada linguagem de combate é um set com um espaço por raridade ({count} sets). Tenha uma carta de cada raridade ({rarities}) de uma linguagem e o set dela fica completo (Coleção → Sets de linguagem; a Forja pode preencher qualquer espaço). Sets e níveis desbloqueiam cosméticos de perfil, equipados no seu perfil:",
+    "titles": "<b>Títulos</b>: {titles}, além de \"{collector}\" para cada set completo.",
+    "languageWord": "'<Linguagem>'",
+    "frames": "<b>Molduras de avatar</b>: {frames}."
+  },
+  "pity": {
+    "title": "Garantia de Legendary",
+    "counter": "Todo booster que você abre sem uma carta Legendary soma 1 ao seu contador de garantia.",
+    "guarantee": "Depois de <b>{count} packs seguidos</b> sem nenhuma, a última carta do seu próximo pack é <hl>Legendary garantida</hl>.",
+    "reset": "Tirar qualquer Legendary (inclusive uma promovida pelo bônus de estrelas) zera o contador.",
+    "junk": "Packs só de Common (Gaveta da Bagunça) não contam.",
+    "store": "A Loja mostra \"Legendary garantido em até N packs\" e as chances por carta."
+  },
+  "achievements": {
+    "title": "Conquistas",
+    "text": "Cada conquista tem os níveis {tiers}; cada nível paga BITS uma vez, no momento em que você chega nele. O progresso é conferido depois de abrir packs, depois das batalhas, quando você resgata a recompensa diária e quando você abre o seu próprio perfil.",
+    "tierList": "{rest} e {last}",
+    "achievement": "Conquista",
+    "requirement": "Requisito"
+  },
+  "glossary": {
+    "atk": { "term": "ATK", "def": "Atributo base de ataque. Define o dano causado." },
+    "bits": { "term": "BITS", "def": "A moeda do jogo, usada para comprar packs, criar cartas na Forja, entrar na liga Só Legendary e recuperar stamina." },
+    "closer": { "term": "Fechamento", "def": "A terceira e última posição de carta em um time." },
+    "common": { "def": "O nível de raridade mais baixo (multiplicador de atributos {mult, number}x)." },
+    "def": { "term": "DEF", "def": "Atributo base de defesa. Bloqueia DEF / ({k} + DEF) de cada golpe, até {max}." },
+    "eternal": { "def": "O nível máximo de lealdade, alcançado com {battles} batalhas." },
+    "exhausted": { "term": "Exausta", "def": "Uma carta com 0 de stamina. Não pode participar de batalhas." },
+    "fragment": { "term": "Fragmento", "def": "Moeda ganha com repetidas, usada na Forja para criar cartas específicas." },
+    "hp": { "term": "HP", "def": "Pontos de vida. Chegar a 0 significa derrota." },
+    "legendary": { "def": "O nível de raridade mais alto (multiplicador de atributos {mult, number}x). Chances muito baixas de sair." },
+    "rating": { "term": "Rating", "def": "Pontuação ELO do PvP (Ranked e desafios entre amigos) mostrada no ranking, com um elo de {lowest} a {highest}. Começa em {rating}." },
+    "mid": { "term": "Meio", "def": "A segunda posição de carta em um time." },
+    "momentum": { "term": "Momentum", "def": "Bônus de ATK/DEF ativado quando uma única carta derrota 2 inimigos seguidos." },
+    "opener": { "term": "Abertura", "def": "A primeira posição de carta. Entra na batalha primeiro." },
+    "passive": { "term": "Passiva", "def": "Uma habilidade inata própria de um tipo de linguagem." },
+    "power": { "term": "Poder", "def": "Pontuação de força que combina ATK, DEF e HP." },
+    "synergy": { "term": "Sinergia", "def": "Bônus para o time todo ao juntar cartas de tipos parecidos." },
+    "typeAdvantage": { "term": "Vantagem de tipo", "def": "Quando uma linguagem vence outra, dando {mult, number}x de dano." },
+    "veteran": { "def": "Primeiro nível de lealdade, alcançado com {battles} batalhas." },
+    "wishlist": { "term": "Lista de desejos", "def": "Recurso da Forja que mede o progresso de fragmentos para uma carta escolhida." },
+    "xp": { "term": "XP", "def": "Experiência da conta ganha em batalhas e outras atividades. Subir de nível dá boosters de recompensa." }
+  }
+}

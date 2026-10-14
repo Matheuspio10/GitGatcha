@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Bell, UserPlus, Sword, X, ArrowCircleUp, Checks } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import { packIdForEnglishName, usePackText } from '@/i18n/packText';
 
 interface Notification {
   id: string;
@@ -34,6 +35,7 @@ export function NotificationBell() {
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const t = useTranslations('notifications.bell');
+  const packText = usePackText();
 
   const fetchNotifications = async () => {
     try {
@@ -128,7 +130,11 @@ export function NotificationBell() {
   const renderLevelUpBody = (notif: Notification, isToast = false) => {
     const levels = notif.payload?.levelsCrossed || [0];
     const maxLevel = Math.max(...levels);
-    const packs = notif.payload?.packNames.join(', ') || '';
+    // The payload only keeps English names: map them back to pack ids (unknown names stay as stored)
+    const packs = notif.payload?.packNames.map(name => {
+      const id = packIdForEnglishName(name);
+      return id ? packText.name(id, name) : name;
+    }).join(', ') || '';
     const coins = notif.payload?.totalCoins || 0;
 
     return (

@@ -8,6 +8,7 @@ import { collectionProgress, frameById, publicFrame, publicTitle, titleById } fr
 import { prisma } from './prisma';
 import { cardTitle, languageStyle, serialHash } from './cardVisuals';
 import { SIGNATURE_EDITION } from './githubLink';
+import type { GameText } from '@/i18n/gameText';
 export { siteUrl } from './siteUrl';
 
 export const RARITY_HEX: Record<string, string> = {
@@ -31,8 +32,21 @@ export async function getShareCard(login: string) {
     select: { user: { select: { username: true } } },
   });
   const owners = await prisma.userCard.count({ where: { cardId: card.id } });
-  const { title, reason } = cardTitle(card, card.primaryLanguage, card.rarity, card.githubUsername);
-  return { ...card, title, titleReason: reason, signatureOwner: signature?.user.username ?? null, owners };
+  const { title, reason, ...titleMessage } = cardTitle(card, card.primaryLanguage, card.rarity, card.githubUsername);
+  return { ...card, title, titleReason: reason, titleMessage, signatureOwner: signature?.user.username ?? null, owners };
+}
+
+/**
+ * The share card with its title and reason in the viewer's language: pass `getGameText('game')`.
+ * (The README image has no locale cookie, so it stays English.)
+ */
+export function localizeShareCard(card: ShareCard, game: GameText): ShareCard {
+  const m = card.titleMessage;
+  return {
+    ...card,
+    title: game(m.titleKey, card.title, m.titleValues),
+    titleReason: m.reasonKey && card.titleReason ? game(m.reasonKey, card.titleReason, m.reasonValues) : card.titleReason,
+  };
 }
 
 /** Avatar URL that satori can fetch (a sized PNG from GitHub). */

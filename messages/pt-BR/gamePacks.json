@@ -1,0 +1,177 @@
+{
+  "packs": {
+    "javascript-coven": {
+      "name": "O Covil do JavaScript",
+      "description": "Rituais sombrios escritos em async/await. Entre se tiver coragem.",
+      "filters": "Linguagens: JavaScript, TypeScript"
+    },
+    "pythonistas": {
+      "name": "Pythonistas",
+      "description": "Mestres zen do código legível e da feitiçaria de dados.",
+      "filters": "Linguagem principal: Python"
+    },
+    "rust-or-bust": {
+      "name": "Rust or Bust",
+      "description": "Escolheram o caminho difícil. O código deles nunca quebra.",
+      "filters": "Linguagem principal: Rust"
+    },
+    "css-wizards": {
+      "name": "Magos do CSS",
+      "description": "Ninguém entende como eles fazem. Nem eles.",
+      "filters": "Linguagem principal: CSS"
+    },
+    "go-gophers": {
+      "name": "Os Gophers do Go",
+      "description": "Rápidos, simples, concorrentes. Igualzinho à linguagem.",
+      "filters": "Linguagem principal: Go"
+    },
+    "ruby-relics": {
+      "name": "Relíquias do Ruby",
+      "description": "Da era de ouro do Rails. E ainda entregando.",
+      "filters": "Linguagem principal: Ruby"
+    },
+    "cpp-ancients": {
+      "name": "Anciões do C++",
+      "description": "Já gerenciavam memória na mão antes de você nascer.",
+      "filters": "Linguagens: C, C++"
+    },
+    "open-source-heroes": {
+      "name": "Os Heróis do Open Source",
+      "description": "Constroem para todo mundo. Lendas do bem comum.",
+      "filters": "Estatísticas: >50 repos, >100 seguidores"
+    },
+    "solo-architects": {
+      "name": "Os Arquitetos Solo",
+      "description": "Entregam sozinhos. Ecossistemas inteiros feitos por uma pessoa só.",
+      "filters": "Estatísticas: >30 repos"
+    },
+    "silent-giants": {
+      "name": "Os Gigantes Silenciosos",
+      "description": "Subestimados. Desconhecidos. Imparáveis.",
+      "filters": "Estatísticas: >20 repos"
+    },
+    "maintainers": {
+      "name": "Os Mantenedores",
+      "description": "Quem segura o mundo open source para ele não desmoronar.",
+      "filters": "Estatísticas: >50 repos"
+    },
+    "github-ogs": {
+      "name": "OGs do GitHub",
+      "description": "Estavam aqui antes do hype. Antes dos quadradinhos verdes. Antes de tudo.",
+      "filters": "Era: conta criada < 2010"
+    },
+    "new-blood": {
+      "name": "Sangue Novo",
+      "description": "Contas novinhas. Trajetórias explosivas. Veja eles decolarem.",
+      "filters": "Era: conta criada > 2022"
+    },
+    "the-fossils": {
+      "name": "Os Fósseis",
+      "description": "Abandonados, mas não esquecidos. O legado deles vive no seu node_modules.",
+      "filters": "Era: conta criada < 2015, >10 repos"
+    },
+    "big-tech": {
+      "name": "Pack Big Tech",
+      "description": "A turma do crachá e do almoço grátis.",
+      "filters": "Membros públicos de Google, Microsoft, Meta, AWS, Apple, Netflix, GitHub…"
+    },
+    "indie-hackers": {
+      "name": "Indie Hackers",
+      "description": "Sem escritório. Sem chefe. Só entregando.",
+      "filters": "Estatísticas: >20 repos"
+    },
+    "brazilian-devs": {
+      "name": "Devs Brasileiros",
+      "description": "Movidos a café. Deploy às 2 da manhã. Nascidos pro corre."
+    },
+    "american-devs": {
+      "name": "Devs Americanos",
+      "description": "Do Vale do Silício para o mundo. Construindo o futuro em escala."
+    },
+    "indian-devs": {
+      "name": "Devs Indianos",
+      "description": "Um bilhão de mentes. Possibilidades infinitas. Reis do jugaad."
+    },
+    "german-devs": {
+      "name": "Devs Alemães",
+      "description": "Engenharia perfeita. Zero exceções."
+    },
+    "japanese-devs": {
+      "name": "Devs Japoneses",
+      "description": "Precisão em cada commit. Código como forma de arte."
+    },
+    "british-devs": {
+      "name": "Devs Britânicos",
+      "description": "Keep calm and push to main. Desenvolvimento movido a chá."
+    },
+    "canadian-devs": {
+      "name": "Devs Canadenses",
+      "description": "Desculpa por sermos tão bons. Educados E talentosos, chega a ser injusto."
+    },
+    "french-devs": {
+      "name": "Devs Franceses",
+      "description": "Elegância em cada algoritmo. Código com sotaque."
+    },
+    "chinese-devs": {
+      "name": "Devs Chineses",
+      "description": "Escalando para bilhões. Tudo é sistema distribuído."
+    },
+    "korean-devs": {
+      "name": "Devs Coreanos",
+      "description": "Onda K-code. Reflexos de eSports aplicados ao debug."
+    },
+    "australian-devs": {
+      "name": "Devs Australianos",
+      "description": "Programando de cabeça para baixo. Tudo por lá quer derrubar o uptime deles."
+    },
+    "legendary-drop": {
+      "name": "O Drop Lendário",
+      "description": "Absurdamente caro. Absurdamente vale a pena.",
+      "filters": "Qualquer conta"
+    },
+    "junk-drawer": {
+      "name": "A Gaveta da Bagunça",
+      "description": "Você vai ganhar um monte de cartas. Não vai conhecer nenhuma. A graça é essa.",
+      "filters": "Qualquer conta (>0 repos)"
+    },
+    "mystery-box": {
+      "name": "A Caixa Misteriosa",
+      "description": "Pode ser qualquer coisa. Pode ser um Legendary. Podem ser cinco Commons. Boa sorte.",
+      "filters": "Mistério"
+    },
+    "event-web": {
+      "description": "Navegadores, frameworks e só mais uma div. Só nesta semana."
+    },
+    "event-systems": {
+      "description": "Colados no metal e com orgulho. Só nesta semana."
+    },
+    "event-data": {
+      "description": "Notebooks, modelos e muito pandas. Só nesta semana."
+    },
+    "event-enterprise": {
+      "description": "Fábricas de fábricas, entregues no prazo. Só nesta semana."
+    },
+    "event-scripting": {
+      "description": "One-liners que rodam metade da internet. Só nesta semana."
+    },
+    "event-mobile": {
+      "description": "Direto para o bolso de todo mundo. Só nesta semana."
+    }
+  },
+  "eventPack": {
+    "name": "Pack da {theme}"
+  },
+  "filters": {
+    "region": "Região: {locations}",
+    "weeklyEvent": "Evento semanal · Linguagens: {languages}"
+  },
+  "categories": {
+    "event": "Evento semanal",
+    "language": "Linguagem & Stack",
+    "contributor": "Tipo de contribuidor",
+    "era": "Era",
+    "company": "Empresa & Origem",
+    "regional": "Regional",
+    "rarity": "Foco em raridade"
+  }
+}

@@ -6,6 +6,8 @@ import { CheckCircle, Crown, Lock, Skull, Trophy } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
 import TeamBuilderUI, { type TeamBuilderCard } from '@/components/TeamBuilderUI';
 import { formatSeasonLeft } from '@/lib/seasons';
+import { TOWER_FLOORS } from '@/lib/tower';
+import { useGameText } from '@/i18n/gameText';
 
 interface TowerState {
   name: string;
@@ -14,7 +16,7 @@ interface TowerState {
   cleared: number;
   attempts: number;
   floors: { floor: number; title: string; rewardBits: number; boss?: 'mini' | 'final'; rarities: string[] }[];
-  next: null | { floor: number; title: string; rewardBits: number; opponents: { name: string; rarity: string; primaryLanguage: string | null; avatarUrl: string | null }[] };
+  next: null | { floor: number; title: string; rewardBits: number; boss?: 'mini' | 'final'; opponents: { name: string; rarity: string; primaryLanguage: string | null; avatarUrl: string | null }[] };
   ranking: { username: string | null; cleared: number; attempts: number; isYou: boolean }[];
 }
 
@@ -34,6 +36,7 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
   onResult: (data: Awaited<ReturnType<Response['json']>>) => void;
 }) {
   const t = useTranslations('battle.tower');
+  const battleText = useGameText('gameBattle');
   const [state, setState] = useState<TowerState | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +55,11 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
       const res = await fetch('/api/tower', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardIds }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t('failed'));
-      if (data.tower?.cleared) toast.success(t('cleared', { title: data.tower.title, bits: data.rewards.bits }));
+      if (data.tower?.cleared) {
+        const floor: number = data.tower.floor;
+        const title = floorText({ floor, boss: TOWER_FLOORS[floor - 1]?.boss, title: data.tower.title });
+        toast.success(t('cleared', { title, bits: data.rewards.bits }));
+      }
       window.dispatchEvent(new Event('bits:refresh'));
       onResult(data);
       load();
@@ -63,15 +70,22 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
     }
   };
 
+  /** Tower and floor names are rebuilt from the theme and the floor (the server sends English). */
+  function floorText(f: { floor: number; boss?: 'mini' | 'final'; title: string }) {
+    return battleText(`tower.floorTitle.${f.boss ?? 'regular'}`, f.title, { floor: f.floor, theme: state?.theme ?? '' });
+  }
+
   if (!state) return <div className="h-64 animate-pulse rounded-2xl bg-slate-900/60" aria-label={t('loading')} />;
 
+  const towerName = battleText('tower.name', state.name, { theme: state.theme });
+  const nextTitle = state.next ? floorText(state.next) : '';
   const resetsIn = formatSeasonLeft(new Date(state.resetsAt).getTime() - Date.now());
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-transparent p-5">
         <p className="text-xs font-bold uppercase tracking-wider text-orange-300">{t('thisWeek', { time: resetsIn })}</p>
-        <h2 className="font-display text-2xl font-extrabold text-white">{state.name}</h2>
+        <h2 className="font-display text-2xl font-extrabold text-white">{towerName}</h2>
         <p className="text-sm text-slate-400">
           {t('progress', { cleared: state.cleared, total: state.floors.length, attempts: state.attempts })}
         </p>
@@ -83,8 +97,8 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
             <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 font-bold text-white">
-                  {state.next.title.includes('boss') ? <Skull size={18} className="text-red-400" /> : <Crown size={18} className="text-orange-300" />}
-                  {state.next.title}
+                  {state.next.boss ? <Skull size={18} className="text-red-400" /> : <Crown size={18} className="text-orange-300" />}
+                  {nextTitle}
                 </h3>
                 <span className="text-sm font-bold text-yellow-300">+{state.next.rewardBits} BITS</span>
               </div>
@@ -104,7 +118,7 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
           ) : (
             <div className="rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-6 text-center">
               <Trophy size={40} weight="fill" className="mx-auto text-yellow-400" />
-              <p className="mt-2 font-bold text-white">{t('conquered', { name: state.name })}</p>
+              <p className="mt-2 font-bold text-white">{t('conquered', { name: towerName })}</p>
               <p className="text-sm text-slate-300">{t('newTowerIn', { time: resetsIn })}</p>
             </div>
           )}
@@ -120,8 +134,8 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
               userBits={userBits}
               quickAction={{
                 label: t('fightFloor', { floor: state.next.floor }),
-                title: t('confirmTitle', { title: state.next.title }),
-                description: t('confirmText', { floor: state.next.floor, name: state.name }),
+                title: t('confirmTitle', { title: nextTitle }),
+                description: t('confirmText', { floor: state.next.floor, name: towerName }),
               }}
             />
           )}

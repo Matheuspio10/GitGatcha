@@ -61,8 +61,16 @@ const RANK_BY_RARITY: Record<string, string> = {
 
 /** Fallback when the card has no GitHub profile snapshot: "Rust Engineer", "C Overlord", "Dev Rookie". */
 function rankTitle(lang: string | null | undefined, rarity: string): string {
-  const who = lang && lang !== 'Unknown' ? lang.replace(' Notebook', '') : 'Dev';
-  return `${who} ${RANK_BY_RARITY[rarity] ?? RANK_BY_RARITY.Common}`;
+  return `${rankWho(lang)} ${RANK_BY_RARITY[rarity] ?? RANK_BY_RARITY.Common}`;
+}
+
+function rankWho(lang: string | null | undefined): string {
+  return lang && lang !== 'Unknown' ? lang.replace(' Notebook', '') : 'Dev';
+}
+
+/** Message key slug of an English title ("if err != nil" -> "if-err-nil"); the `game` namespace's `cardTitles.<slug>`. */
+export function cardTitleSlug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 /** GitHub profile snapshot stored on the card (Card columns; null when never refreshed). */
@@ -94,6 +102,8 @@ const TRAITS: {
   steps: [number, number, number, number];
   titles: [string, string, string, string];
   reason: (v: number) => string;
+  /** Placeholder values of `cardReasons.<key>` (same numbers as `reason`). */
+  reasonValues: (v: number) => CardTextValues;
   bias?: number;
   /** Lowest tier that names a card; below it the trait is ignored. */
   minLevel?: number;
@@ -106,6 +116,7 @@ const TRAITS: {
     steps: [100, 1_000, 10_000, 50_000],
     titles: ['One-Hit Wonder', 'One-Hit Wonder', 'Flagship Builder', 'Magnum Opus'],
     reason: v => `one repo with ${compact(v)} stars`,
+    reasonValues: v => ({ stars: compact(v) }),
     bias: -0.3,
   },
   {
@@ -114,6 +125,7 @@ const TRAITS: {
     steps: [100, 1_000, 10_000, 50_000],
     titles: ['Star Collector', 'Star Magnet', 'Supernova', 'Galaxy Brain'],
     reason: v => `${compact(v)} stars`,
+    reasonValues: v => ({ stars: compact(v) }),
   },
   {
     key: 'followers',
@@ -121,6 +133,7 @@ const TRAITS: {
     steps: [100, 1_000, 10_000, 50_000],
     titles: ['Has Fans', 'Influencer', 'Icon', 'Living Legend'],
     reason: v => `${compact(v)} followers`,
+    reasonValues: v => ({ followers: compact(v) }),
   },
   {
     key: 'forks',
@@ -128,6 +141,7 @@ const TRAITS: {
     steps: [50, 500, 5_000, 25_000],
     titles: ['Forkable', 'Fork Magnet', 'Upstream Hero', 'Fork Empire'],
     reason: v => `${compact(v)} forks`,
+    reasonValues: v => ({ forks: compact(v) }),
   },
   {
     key: 'repos',
@@ -135,6 +149,7 @@ const TRAITS: {
     steps: [40, 100, 180, 280],
     titles: ['Side Hustler', 'Serial Starter', 'Repo Factory', 'Repo Hoarder'],
     reason: v => `${v} public repos`,
+    reasonValues: v => ({ repos: v }),
   },
   {
     key: 'polyglot',
@@ -142,6 +157,7 @@ const TRAITS: {
     steps: [6, 10, 15, 22],
     titles: ['Language Tourist', 'Polyglot', 'Babel Coder', 'Omniglot'],
     reason: v => `${v} languages`,
+    reasonValues: v => ({ languages: v }),
     bias: 0.3, // grows with the repo count anyway
   },
   {
@@ -150,6 +166,7 @@ const TRAITS: {
     steps: [10, 50, 150, 400],
     titles: ['Snippet Keeper', 'Copy-Paste Artisan', 'Gist Librarian', 'Gist Archmage'],
     reason: v => `${v} gists`,
+    reasonValues: v => ({ gists: v }),
   },
   {
     key: 'age',
@@ -158,6 +175,7 @@ const TRAITS: {
     steps: [5, 10, 14, 17],
     titles: ['', '', 'Pre-Cloud Elder', 'Remembers SVN'],
     reason: v => `on GitHub for ${Math.floor(v)} years`,
+    reasonValues: v => ({ years: Math.floor(v) }),
     bias: 0.5,
     minLevel: 3,
   },
@@ -167,11 +185,21 @@ const TRAITS: {
  * Funny combinations that beat any trait up to tier 2 (a famous dev's real fame still wins).
  * Checked in order; the first match is the candidate.
  */
-const QUIRKS: { title: string; score: number; when: (p: Snapshot, ageYears: number) => string | null }[] = [
-  { title: 'Side Project Graveyard', score: 2.6, when: p => (p.publicRepos >= 60 && p.totalStars < p.publicRepos / 2 ? `${p.publicRepos} repos, ${p.totalStars} stars` : null) },
-  { title: 'Fork Bomb', score: 2.6, when: p => (p.totalForks >= 100 && p.totalForks > p.totalStars ? `${compact(p.totalForks)} forks, only ${compact(p.totalStars)} stars` : null) },
-  { title: 'Social Butterfly', score: 2.6, when: p => (p.followers >= 300 && p.totalStars < 30 ? `${compact(p.followers)} followers, ${p.totalStars} stars` : null) },
-  { title: 'Ancient Lurker', score: 2.4, when: (p, age) => (age >= 12 && p.publicRepos <= 3 ? `${Math.floor(age)} years on GitHub, ${p.publicRepos} repo${p.publicRepos === 1 ? '' : 's'}` : null) },
+const QUIRKS: {
+  title: string;
+  score: number;
+  when: (p: Snapshot, ageYears: number) => string | null;
+  /** Placeholder values of `cardReasons.quirks.<slug>` (same numbers as `when`). */
+  values: (p: Snapshot, ageYears: number) => CardTextValues;
+}[] = [
+  { title: 'Side Project Graveyard', score: 2.6, when: p => (p.publicRepos >= 60 && p.totalStars < p.publicRepos / 2 ? `${p.publicRepos} repos, ${p.totalStars} stars` : null),
+    values: p => ({ repos: p.publicRepos, stars: p.totalStars }) },
+  { title: 'Fork Bomb', score: 2.6, when: p => (p.totalForks >= 100 && p.totalForks > p.totalStars ? `${compact(p.totalForks)} forks, only ${compact(p.totalStars)} stars` : null),
+    values: p => ({ forks: compact(p.totalForks), stars: compact(p.totalStars) }) },
+  { title: 'Social Butterfly', score: 2.6, when: p => (p.followers >= 300 && p.totalStars < 30 ? `${compact(p.followers)} followers, ${p.totalStars} stars` : null),
+    values: p => ({ followers: compact(p.followers), stars: p.totalStars }) },
+  { title: 'Ancient Lurker', score: 2.4, when: (p, age) => (age >= 12 && p.publicRepos <= 3 ? `${Math.floor(age)} years on GitHub, ${p.publicRepos} repo${p.publicRepos === 1 ? '' : 's'}` : null),
+    values: (p, age) => ({ years: Math.floor(age), repos: p.publicRepos }) },
 ];
 
 /** Inside jokes for quiet profiles, per language, plus a generic pool. Picked by the login hash, so stable per dev. */
@@ -202,6 +230,21 @@ const GENERIC_JOKES = [
   'git push --force', 'Dark Mode Purist',
 ];
 
+export type CardTextValues = Record<string, string | number>;
+
+/**
+ * Card title and reason: the English text plus the `game` namespace keys and values to translate it
+ * (`cardTitles.<slug>` or `cardRanks.<Rarity>`; `cardReasons.<trait>` / `cardReasons.quirks.<slug>`).
+ */
+export interface CardTitle {
+  title: string;
+  reason: string | null;
+  titleKey: string;
+  titleValues?: { who: string };
+  reasonKey: string | null;
+  reasonValues?: CardTextValues;
+}
+
 /** Tier reached (0–4) plus the log-scale progress towards the next one, so ties break on how far past the threshold a dev is. */
 function traitScore(value: number, steps: readonly number[]): number {
   let level = 0;
@@ -223,8 +266,11 @@ export function cardTitle(
   rarity: string,
   login = '',
   now: number = Date.now(),
-): { title: string; reason: string | null } {
-  if (!profile?.githubCreatedAt) return { title: rankTitle(lang, rarity), reason: null };
+): CardTitle {
+  if (!profile?.githubCreatedAt) {
+    const rank = Object.prototype.hasOwnProperty.call(RANK_BY_RARITY, rarity) ? rarity : 'Common';
+    return { title: rankTitle(lang, rarity), reason: null, titleKey: `cardRanks.${rank}`, titleValues: { who: rankWho(lang) }, reasonKey: null };
+  }
   const p = {
     followers: profile.followers ?? 0,
     totalStars: profile.totalStars ?? 0,
@@ -237,24 +283,28 @@ export function cardTitle(
   } as Snapshot;
   const ageYears = Math.max(0, (now - new Date(p.githubCreatedAt as Date | string).getTime()) / (365.25 * 24 * 3600 * 1000));
 
-  let best: { score: number; title: string; reason: string } | null = null;
+  let best: { score: number; title: string; reason: string; reasonKey: string; reasonValues: CardTextValues } | null = null;
   for (const t of TRAITS) {
     const v = t.value(p, ageYears);
     const raw = traitScore(v, t.steps);
     if (raw === 0 || Math.floor(raw) < (t.minLevel ?? 1)) continue;
     const score = raw - (t.bias ?? 0);
     if (!best || score > best.score) {
-      best = { score, title: t.titles[Math.floor(raw) - 1], reason: t.reason(v) };
+      best = { score, title: t.titles[Math.floor(raw) - 1], reason: t.reason(v), reasonKey: `cardReasons.${t.key}`, reasonValues: t.reasonValues(v) };
     }
   }
   for (const q of QUIRKS) {
     const reason = q.when(p, ageYears);
     if (reason === null) continue;
-    if (!best || q.score > best.score) best = { score: q.score, title: q.title, reason };
+    if (!best || q.score > best.score) {
+      best = { score: q.score, title: q.title, reason, reasonKey: `cardReasons.quirks.${cardTitleSlug(q.title)}`, reasonValues: q.values(p, ageYears) };
+    }
     break;
   }
-  if (best) return { title: best.title, reason: best.reason };
-  if (ageYears < 1) return { title: 'Fresh Commit', reason: 'joined GitHub this year' };
+  const titled = (title: string, reason: string, reasonKey: string, reasonValues?: CardTextValues): CardTitle =>
+    ({ title, reason, titleKey: `cardTitles.${cardTitleSlug(title)}`, reasonKey, reasonValues });
+  if (best) return titled(best.title, best.reason, best.reasonKey, best.reasonValues);
+  if (ageYears < 1) return titled('Fresh Commit', 'joined GitHub this year', 'cardReasons.fresh');
   const jokes = [...(lang ? LANGUAGE_JOKES[lang] ?? [] : []), ...GENERIC_JOKES];
-  return { title: jokes[parseInt(serialHash(login || 'dev'), 16) % jokes.length], reason: 'a quiet GitHub profile' };
+  return titled(jokes[parseInt(serialHash(login || 'dev'), 16) % jokes.length], 'a quiet GitHub profile', 'cardReasons.quiet');
 }

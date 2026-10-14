@@ -52,7 +52,11 @@
     "title": "Top Developers",
     "subtitle": "Most battle-hardened cards in the collection",
     "emptyTitle": "No collection yet.",
-    "emptyText": "This user hasn't collected any developers."
+    "emptyText": "This user hasn't collected any developers.",
+    "loyalty": {
+      "unranked": "Unranked",
+      "rookie": "Rookie"
+    }
   },
   "battles": {
     "title": "Recent Battles",
@@ -60,7 +64,14 @@
     "win": "WIN",
     "loss": "LOSS",
     "yourTeam": "Your Team",
-    "opponentTeam": "Opponent Team"
+    "opponentTeam": "Opponent Team",
+    "leagues": {
+      "OPEN": "Open",
+      "COMMON": "Common",
+      "BALANCED": "Balanced",
+      "DIVERSITY": "Diversity",
+      "LEGENDARY": "Legendary"
+    }
   },
   "friends": {
     "title": "Friends",

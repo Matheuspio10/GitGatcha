@@ -263,7 +263,8 @@ export const SYNERGY = {
   jsCallbackChance: 0.10, // non-JS teammates (20% with 3 JS cards)
 } as const;
 
-const pctText = (x: number) => `${Math.round(x * 100)}%`;
+/** 0.4 → "40%" (also used to fill translated passive texts). */
+export const pctText = (x: number) => `${Math.round(x * 100)}%`;
 /** "20% (Common) to 30% (Legendary)" */
 export function rarityScaledChance(base: number, inverse = false): string {
   const at = (r: string) => (inverse ? base / PASSIVE_RARITY_MULTIPLIER[r] : base * PASSIVE_RARITY_MULTIPLIER[r]);
@@ -324,6 +325,39 @@ export function cardPassive(lang: string | null | undefined, rarity: string): { 
     case 'Swift': return { name: 'Dodge', desc: `${chance(PASSIVE.swift.dodgeChance)} chance per turn to dodge an attack completely.` };
     case 'TypeScript': return { name: 'Type Safety', desc: `Takes ${pctText(1 - PASSIVE.typescript.damageTaken)} less damage from every hit.` };
     default: return { name: 'Neutral', desc: 'No combat passive and no type matchups.' };
+  }
+}
+
+/**
+ * Message key (`gameBattle` namespace: `<key>.name`, `<key>.desc`) and the `.desc` placeholder values of
+ * cardPassive(lang, rarity), from the same constants, so translated card text follows PASSIVE.
+ */
+export function cardPassiveMessage(
+  lang: string | null | undefined,
+  rarity: string,
+): { key: string; values?: Record<string, string | number> } {
+  const m = PASSIVE_RARITY_MULTIPLIER[rarity] ?? 1;
+  const chance = (base: number) => pctText(base * m);
+  if (!isCombatLanguage(lang)) return { key: 'cardPassives.neutral' };
+  const key = `cardPassives.${lang}`;
+  switch (lang) {
+    case 'C':
+    case 'C++': return { key, values: { defIgnored: pctText(PASSIVE.rawPower.defIgnored) } };
+    case 'C#': return { key, values: { chance: chance(PASSIVE.csharp.chance), critMult: PASSIVE.csharp.critMult } };
+    case 'CSS': return { key, values: { doubleChance: chance(PASSIVE.css.doubleChance), zeroChance: pctText(PASSIVE.css.zeroChance / m) } };
+    case 'Dart': return { key, values: { hpThreshold: pctText(PASSIVE.dart.hpThreshold), heal: pctText(PASSIVE.dart.healMaxHpPct) } };
+    case 'HTML': return { key, values: { hpThreshold: pctText(PASSIVE.html.hpThreshold), damageReduction: pctText(1 - PASSIVE.html.damageTaken) } };
+    case 'Java': return { key, values: { firstTurnPenalty: pctText(1 - PASSIVE.java.firstTurnMult), perTurn: pctText(PASSIVE.java.perTurn), maxBonus: pctText(PASSIVE.java.maxBonus) } };
+    case 'JavaScript': return { key, values: { chance: chance(PASSIVE.javascript.chance), damageMult: 1 + PASSIVE.javascript.bonus } };
+    case 'Jupyter Notebook': return { key, values: { regen: pctText(PASSIVE.jupyter.regenAtkPct) } };
+    case 'Kotlin': return { key, values: { maxHpPct: pctText(PASSIVE.kotlin.maxHpPctPerTurn) } };
+    case 'PHP': return { key, values: { hp: PASSIVE.php.survivesAt } };
+    case 'Python': return { key, values: { regen: pctText(PASSIVE.python.regenAtkPct) } };
+    case 'Ruby': return { key, values: { hpThreshold: pctText(PASSIVE.ruby.hpThreshold), atkMult: PASSIVE.ruby.atkMult } };
+    case 'Shell': return { key, values: { every: PASSIVE.shell.every, mult: PASSIVE.shell.mult } };
+    case 'Swift': return { key, values: { chance: chance(PASSIVE.swift.dodgeChance) } };
+    case 'TypeScript': return { key, values: { reduction: pctText(1 - PASSIVE.typescript.damageTaken) } };
+    default: return { key }; // Go, Rust: no numbers
   }
 }
 

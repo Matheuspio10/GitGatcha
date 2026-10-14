@@ -1,1 +1,220 @@
-{}
+{
+  "missions": {
+    "daily": {
+      "OPEN_BOOSTER": "{count, plural, one {Open a Booster} other {Open # Boosters}}",
+      "WIN_BATTLE": "{count, plural, one {Win a Battle} other {Win # Battles}}",
+      "COLLECT_RARITY": "{count, plural, one {{rarity, select, Uncommon {Collect an Uncommon or better Card} Epic {Collect an Epic or better Card} other {Collect a {rarity} or better Card}}} other {Collect # {rarity} or better Cards}}",
+      "COLLECT_LANGUAGE": "{count, plural, one {{language, select, HTML {Get an HTML Dev} other {Get a {language} Dev}}} other {Get # {language} Devs}}"
+    },
+    "weekly": {
+      "OPEN_BOOSTER": "{count, plural, one {Open a Booster this week} other {Open # Boosters this week}}",
+      "WIN_BATTLE": "{count, plural, one {Win a Battle this week} other {Win # Battles this week}}",
+      "COLLECT_RARITY": "{count, plural, one {{rarity, select, Uncommon {Collect an Uncommon or better Card this week} Epic {Collect an Epic or better Card this week} other {Collect a {rarity} or better Card this week}}} other {Collect # {rarity} or better Cards this week}}",
+      "COLLECT_LANGUAGE": "{count, plural, one {{language, select, HTML {Get an HTML Dev this week} other {Get a {language} Dev this week}}} other {Get # {language} Devs this week}}"
+    },
+    "dev": {
+      "PushEvent": "Push a commit to GitHub today",
+      "PullRequestEvent_opened": "Open a pull request today",
+      "IssuesEvent_opened": "Open an issue today",
+      "PullRequestReviewEvent": "Review a pull request today",
+      "IssueCommentEvent": "Comment on an issue or pull request today"
+    }
+  },
+  "onboardingSteps": {
+    "open-pack": {
+      "title": "Open your starter pack",
+      "description": "Tear it open in your inventory: a Rare or better is guaranteed."
+    },
+    "collection": {
+      "title": "Meet your developers",
+      "description": "Look at your new cards in the collection."
+    },
+    "team": {
+      "title": "Build a team of 3",
+      "description": "Pick 3 cards in the Arena team builder."
+    },
+    "battle": {
+      "title": "Fight your first battle",
+      "description": "Take your team into any league. Win or lose, it counts."
+    }
+  },
+  "earnGuide": {
+    "gettingStarted": {
+      "title": "Getting started",
+      "text": "The checklist in the corner pays {bits} BITS for your first steps."
+    },
+    "dailyReward": {
+      "title": "Daily reward",
+      "text": "Claim it in the Store every day: {first} to {last} BITS over a {days}-day streak{hasPack, select, yes {, plus {packName} on day {days}} other {}}."
+    },
+    "missions": {
+      "title": "Missions",
+      "text": "{daily} new missions every day (swap one if you don't like it), {weekly} bigger ones every week, and a dev mission for real GitHub activity once you connect GitHub."
+    },
+    "battles": {
+      "title": "Battles",
+      "text": "Battles pay BITS and XP (most leagues pay a little even on a loss). Beat a stronger team for up to +{pct}% BITS."
+    },
+    "sprints": {
+      "title": "Sprints",
+      "text": "A daily and a weekly theme: your {teamSize} strongest cards of it are scored automatically, and the top players win up to {bits} BITS."
+    },
+    "levelUps": {
+      "title": "Level ups",
+      "text": "XP from packs and battles levels you up, and new levels give BITS and free boosters."
+    },
+    "achievements": {
+      "title": "Achievements",
+      "text": "{count} achievements with Bronze, Silver and Gold rewards."
+    },
+    "github": {
+      "title": "Connect GitHub",
+      "text": "+{bits} BITS and your own Signature card, which never drops from packs."
+    },
+    "forge": {
+      "title": "Duplicates and the Forge",
+      "text": "Repeated cards turn into fragments; spend them in the Forge on the developer you want."
+    },
+    "pity": {
+      "title": "Legendary pity",
+      "text": "A Legendary is guaranteed at least once every {packs} packs."
+    }
+  },
+  "bitsReasons": {
+    "opening_balance": "Balance when the history started",
+    "starting_bits": "Welcome BITS",
+    "pack_purchase": "Booster purchase",
+    "forge": "Forge invocation",
+    "stamina_recover": "Stamina recovery",
+    "league_entry": "League entry fee",
+    "league_refund": "League fee refunded",
+    "battle_reward": "Battle reward",
+    "mission": "Mission reward",
+    "daily_login": "Daily reward",
+    "level_up": "Level up",
+    "achievement": "Achievement",
+    "github_link": "GitHub connected",
+    "share_bonus": "First share",
+    "onboarding": "Getting started",
+    "referral": "Invite reward",
+    "rank_promotion": "Rank promotion",
+    "season_reward": "Season reward",
+    "challenge_stake": "Challenge stake",
+    "challenge_payout": "Challenge won (stakes)",
+    "challenge_refund": "Challenge stake refunded",
+    "tower_reward": "Tower floor cleared",
+    "sprint_reward": "Sprint reward",
+    "card_training": "Card training"
+  },
+  "cardTitles": {
+    "one-hit-wonder": "One-Hit Wonder",
+    "flagship-builder": "Flagship Builder",
+    "magnum-opus": "Magnum Opus",
+    "star-collector": "Star Collector",
+    "star-magnet": "Star Magnet",
+    "supernova": "Supernova",
+    "galaxy-brain": "Galaxy Brain",
+    "has-fans": "Has Fans",
+    "influencer": "Influencer",
+    "icon": "Icon",
+    "living-legend": "Living Legend",
+    "forkable": "Forkable",
+    "fork-magnet": "Fork Magnet",
+    "upstream-hero": "Upstream Hero",
+    "fork-empire": "Fork Empire",
+    "side-hustler": "Side Hustler",
+    "serial-starter": "Serial Starter",
+    "repo-factory": "Repo Factory",
+    "repo-hoarder": "Repo Hoarder",
+    "language-tourist": "Language Tourist",
+    "polyglot": "Polyglot",
+    "babel-coder": "Babel Coder",
+    "omniglot": "Omniglot",
+    "snippet-keeper": "Snippet Keeper",
+    "copy-paste-artisan": "Copy-Paste Artisan",
+    "gist-librarian": "Gist Librarian",
+    "gist-archmage": "Gist Archmage",
+    "pre-cloud-elder": "Pre-Cloud Elder",
+    "remembers-svn": "Remembers SVN",
+    "side-project-graveyard": "Side Project Graveyard",
+    "fork-bomb": "Fork Bomb",
+    "social-butterfly": "Social Butterfly",
+    "ancient-lurker": "Ancient Lurker",
+    "fresh-commit": "Fresh Commit",
+    "undefined-is-not-a-function": "undefined Is Not a Function",
+    "npm-install-everything": "npm install Everything",
+    "any-abuser": "any Abuser",
+    "ts-ignore-enjoyer": "@ts-ignore Enjoyer",
+    "indentation-enforcer": "Indentation Enforcer",
+    "pip-install-wizard": "pip install Wizard",
+    "borrow-checker-victim": "Borrow Checker Victim",
+    "rewrite-it-in-rust": "Rewrite It in Rust",
+    "if-err-nil": "if err != nil",
+    "gopher-wrangler": "Gopher Wrangler",
+    "segfault-survivor": "Segfault Survivor",
+    "malloc-without-free": "malloc Without free",
+    "template-wizard": "Template Wizard",
+    "undefined-behavior-fan": "Undefined Behavior Fan",
+    "abstractfactorybean": "AbstractFactoryBean",
+    "enterprise-edition": "Enterprise Edition",
+    "nullreference-hunter": "NullReference Hunter",
+    "visual-studio-loyalist": "Visual Studio Loyalist",
+    "still-on-php-5": "Still on PHP 5",
+    "sign-collector": "$ Sign Collector",
+    "monkey-patcher": "Monkey Patcher",
+    "rails-rider": "Rails Rider",
+    "enthusiast": "!! Enthusiast",
+    "escaped-from-java": "Escaped From Java",
+    "xcode-hostage": "Xcode Hostage",
+    "optional-unwrapper": "Optional Unwrapper",
+    "widget-stacker": "Widget Stacker",
+    "hot-reload-addict": "Hot Reload Addict",
+    "rm-rf-survivor": "rm -rf Survivor",
+    "sudo-make-me-a-sandwich": "sudo Make Me a Sandwich",
+    "is-html-a-language": "Is HTML a Language?",
+    "div-nester": "'<div>' Nester",
+    "center-that-div": "Center That Div",
+    "important-abuser": "!important Abuser",
+    "run-all-cells": "Run All Cells",
+    "notebook-necromancer": "Notebook Necromancer",
+    "works-on-my-machine": "Works On My Machine",
+    "hello-world-survivor": "Hello World Survivor",
+    "stack-overflow-tourist": "Stack Overflow Tourist",
+    "professional-googler": "Professional Googler",
+    "commit-message-fix": "Commit Message: fix",
+    "console-log-debugger": "console.log Debugger",
+    "readme-skimmer": "README Skimmer",
+    "tab-hoarder": "Tab Hoarder",
+    "friday-deployer": "Friday Deployer",
+    "merge-conflict-magnet": "Merge Conflict Magnet",
+    "todo-write-bio": "TODO: Write Bio",
+    "it-compiled-once": "It Compiled Once",
+    "git-push-force": "git push --force",
+    "dark-mode-purist": "Dark Mode Purist"
+  },
+  "cardRanks": {
+    "Common": "{who} Rookie",
+    "Uncommon": "{who} Hacker",
+    "Rare": "{who} Engineer",
+    "Epic": "{who} Architect",
+    "Legendary": "{who} Overlord"
+  },
+  "cardReasons": {
+    "flagship": "one repo with {stars} stars",
+    "stars": "{stars} stars",
+    "followers": "{followers} followers",
+    "forks": "{forks} forks",
+    "repos": "{repos} public repos",
+    "polyglot": "{languages} languages",
+    "gists": "{gists} gists",
+    "age": "on GitHub for {years} years",
+    "fresh": "joined GitHub this year",
+    "quiet": "a quiet GitHub profile",
+    "quirks": {
+      "side-project-graveyard": "{repos} repos, {stars} stars",
+      "fork-bomb": "{forks} forks, only {stars} stars",
+      "social-butterfly": "{followers} followers, {stars} stars",
+      "ancient-lurker": "{years} years on GitHub, {repos, plural, one {# repo} other {# repos}}"
+    }
+  }
+}

@@ -52,7 +52,11 @@
     "title": "Top devs",
     "subtitle": "As cartas mais calejadas de batalha da coleção",
     "emptyTitle": "Nenhuma coleção ainda.",
-    "emptyText": "Esse jogador ainda não coletou nenhum dev."
+    "emptyText": "Esse jogador ainda não coletou nenhum dev.",
+    "loyalty": {
+      "unranked": "Sem lealdade",
+      "rookie": "Novato"
+    }
   },
   "battles": {
     "title": "Batalhas recentes",
@@ -60,7 +64,14 @@
     "win": "VITÓRIA",
     "loss": "DERROTA",
     "yourTeam": "Seu time",
-    "opponentTeam": "Time do oponente"
+    "opponentTeam": "Time do oponente",
+    "leagues": {
+      "OPEN": "Aberta",
+      "COMMON": "Common",
+      "BALANCED": "Equilibrada",
+      "DIVERSITY": "Diversidade",
+      "LEGENDARY": "Legendary"
+    }
   },
   "friends": {
     "title": "Amigos",

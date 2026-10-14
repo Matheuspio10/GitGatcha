@@ -1,0 +1,61 @@
+{
+  "achievements": {
+    "collector": { "name": "Collector", "description": "Own {n} different cards" },
+    "legendary_hunter": { "name": "Legendary Hunter", "description": "Own {n} Legendary cards" },
+    "shiny_hunter": { "name": "Shiny Hunter", "description": "Own {n} Shiny cards" },
+    "polyglot": { "name": "Polyglot", "description": "Collect cards in {n} different languages" },
+    "bot_slayer": { "name": "Bot Slayer", "description": "Win {n} Quick Battles" },
+    "duelist": { "name": "Duelist", "description": "Win {n} challenges against players" },
+    "social_butterfly": { "name": "Social Butterfly", "description": "Have {n} friends" },
+    "veteran": { "name": "Veteran", "description": "Reach player level {n}" },
+    "ride_or_die": { "name": "Ride or Die", "description": "Fight {n} battles with a single card" },
+    "self_portrait": { "name": "Self Portrait", "description": "Own your Signature card (connect GitHub)" }
+  },
+  "tiers": {
+    "1": "Bronze",
+    "2": "Silver",
+    "3": "Gold",
+    "fallback": "Tier {tier}"
+  },
+  "toast": {
+    "unlocked": "Achievement unlocked: {name} {tier}{reward, plural, =0 {} other { (+{reward} Bits)}}"
+  },
+  "loyalty": {
+    "veteran": { "title": "Veteran" },
+    "trusted": { "title": "Trusted" },
+    "reliable": { "title": "Reliable" },
+    "legendary_bond": { "title": "Legendary Bond" },
+    "eternal": { "title": "Eternal" }
+  },
+  "loyaltyCosmetics": {
+    "veteran_badge": "Veteran badge",
+    "trusted_badge": "Trusted badge",
+    "gold_border": "Gold border",
+    "reliable_badge": "Reliable badge",
+    "alt_color_scheme": "Alt color scheme",
+    "legendary_bond_badge": "Legendary bond badge",
+    "particle_effect": "Particle effect",
+    "profile_prestige": "Profile prestige",
+    "eternal_badge": "Eternal badge",
+    "holographic_frame": "Holographic frame",
+    "distinct_power_color": "Distinct power color",
+    "unique_damage_style": "Unique damage style"
+  },
+  "titles": {
+    "lvl-10": { "label": "Contributor", "requirement": "Reach level 10" },
+    "lvl-25": { "label": "Maintainer", "requirement": "Reach level 25" },
+    "lvl-50": { "label": "Core Team", "requirement": "Reach level 50" },
+    "sets-1": { "label": "Completionist", "requirement": "Complete 1 language set" },
+    "sets-3": { "label": "Polyglot", "requirement": "Complete 3 language sets" },
+    "sets-10": { "label": "Archivist", "requirement": "Complete 10 language sets" },
+    "languageSet": { "label": "{language} Collector", "requirement": "Complete the {language} set" }
+  },
+  "frames": {
+    "bronze": { "label": "Bronze", "requirement": "Reach level 5" },
+    "silver": { "label": "Silver", "requirement": "Reach level 10" },
+    "gold": { "label": "Gold", "requirement": "Reach level 20" },
+    "holo": { "label": "Holo", "requirement": "Reach level 35" },
+    "spectrum": { "label": "Spectrum", "requirement": "Complete 1 language set" },
+    "prism": { "label": "Prism", "requirement": "Complete 5 language sets" }
+  }
+}

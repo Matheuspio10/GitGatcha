@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Sparkle, Star, Coins, Checks } from '@phosphor-icons/react';
 import { useDialog } from '@/lib/useDialog';
 import { useTranslations } from 'next-intl';
+import { packIdForEnglishName, usePackText } from '@/i18n/packText';
 
 interface PackReward {
   packIds: string[];
@@ -28,6 +29,12 @@ export function LevelUpModal() {
 
   const pathname = usePathname();
   const t = useTranslations('onboarding.levelUp');
+  const packText = usePackText();
+  // Rewards store English names beside the ids: show them by id (name lookup for old rows without ids)
+  const packLabel = (id: string | undefined, name: string) => {
+    const packId = id ?? packIdForEnglishName(name);
+    return packId ? packText.name(packId, name) : name;
+  };
   const { status } = useSession();
   const isAuthenticated = status === 'authenticated';
   // True while the modal is showing, so a refetch never resets an open modal
@@ -101,7 +108,7 @@ export function LevelUpModal() {
   const currentReward = pendingRewards[currentLevelIndex];
   
   // Combine all rewards for summary screen
-  const allPackNames = pendingRewards.flatMap(r => r.packNames);
+  const allPackNames = pendingRewards.flatMap(r => r.packNames.map((name, i) => packLabel(r.packIds?.[i], name)));
   const totalCoins = pendingRewards.reduce((sum, r) => sum + r.coins, 0);
 
   return (
@@ -144,7 +151,7 @@ export function LevelUpModal() {
                       <div className="w-10 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded drop-shadow-md border border-white/20 flex flex-shrink-0 items-center justify-center">
                         <Star size={18} weight="fill" className="text-yellow-300" />
                       </div>
-                      <span className="font-bold text-white flex-1">{t('booster', { pack: packName })}</span>
+                      <span className="font-bold text-white flex-1">{t('booster', { pack: packLabel(currentReward.packIds?.[i], packName) })}</span>
                     </div>
                   ))}
                   

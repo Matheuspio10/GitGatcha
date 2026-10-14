@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
+import { createTranslator } from 'next-intl';
 import { cardTitle, DevProfile, serialHash } from './cardVisuals';
+import gameEn from '../../messages/en/game.json';
 
 const NOW = Date.UTC(2026, 9, 17);
 const yearsAgo = (y: number) => new Date(NOW - y * 365.25 * 24 * 3600 * 1000);
@@ -12,7 +14,8 @@ const profile = (p: Partial<DevProfile>): DevProfile => ({
 const titleOf = (p: Partial<DevProfile>, lang = 'Rust', login = 'someone') => cardTitle(profile(p), lang, 'Rare', login, NOW).title;
 
 test('cards without a profile snapshot keep the language + rank title', () => {
-  assert.deepStrictEqual(cardTitle(null, 'Rust', 'Rare', 'x', NOW), { title: 'Rust Engineer', reason: null });
+  const { title, reason } = cardTitle(null, 'Rust', 'Rare', 'x', NOW);
+  assert.deepStrictEqual({ title, reason }, { title: 'Rust Engineer', reason: null });
   assert.strictEqual(cardTitle({ followers: 10 }, 'C', 'Legendary', 'x', NOW).title, 'C Overlord');
   assert.strictEqual(cardTitle(undefined, 'Unknown', 'Common', 'x', NOW).title, 'Dev Rookie');
 });
@@ -55,8 +58,48 @@ test('quiet profiles get a stable joke, newcomers a fresh commit', () => {
 });
 
 test('the title explains itself', () => {
-  assert.deepStrictEqual(cardTitle(profile({ totalStars: 48_200 }), 'C', 'Epic', 'x', NOW), { title: 'Supernova', reason: '48k stars' });
-  assert.deepStrictEqual(cardTitle(profile({ followers: 1_250, totalStars: 400 }), 'C', 'Epic', 'x', NOW), { title: 'Influencer', reason: '1.3k followers' });
+  const pick = ({ title, reason }: { title: string; reason: string | null }) => ({ title, reason });
+  assert.deepStrictEqual(pick(cardTitle(profile({ totalStars: 48_200 }), 'C', 'Epic', 'x', NOW)), { title: 'Supernova', reason: '48k stars' });
+  assert.deepStrictEqual(pick(cardTitle(profile({ followers: 1_250, totalStars: 400 }), 'C', 'Epic', 'x', NOW)), { title: 'Influencer', reason: '1.3k followers' });
+});
+
+test('the English game messages render exactly the English title and reason', () => {
+  const t = createTranslator({ locale: 'en', messages: { game: gameEn }, namespace: 'game' }) as unknown as {
+    has: (key: string) => boolean;
+    (key: string, values?: Record<string, string | number>): string;
+  };
+  const render = (key: string, values?: Record<string, string | number>) => {
+    assert.ok(t.has(key), `missing game message ${key}`);
+    return t(key, values);
+  };
+  const langs = ['Rust', 'Go', 'C', 'C++', 'C#', 'Java', 'JavaScript', 'TypeScript', 'Python', 'Ruby', 'PHP', 'Kotlin', 'Swift', 'Dart',
+    'Shell', 'HTML', 'CSS', 'Jupyter Notebook', 'Elixir', 'Unknown'];
+  const shapes: Partial<DevProfile>[] = [
+    {}, { githubCreatedAt: yearsAgo(0.3) }, { githubCreatedAt: yearsAgo(15) }, { githubCreatedAt: yearsAgo(17.5) },
+    { githubCreatedAt: yearsAgo(13), publicRepos: 1 }, { githubCreatedAt: yearsAgo(13), publicRepos: 3 },
+    { publicRepos: 120, totalStars: 12 }, { totalForks: 340, totalStars: 90 }, { totalForks: 34_000, totalStars: 9_000 },
+    { followers: 800, totalStars: 4 }, { followers: 1_250, totalStars: 400 }, { totalStars: 48_200 }, { totalStars: 230 },
+    { totalStars: 2_400, topRepoStars: 2_300 }, { totalStars: 210_000, topRepoStars: 190_000 }, { publicRepos: 290, totalStars: 2_000 },
+    { languageCount: 11 }, { languageCount: 25 }, { publicGists: 60 }, { publicGists: 500 }, { totalForks: 600, totalStars: 900 },
+  ];
+  let checked = 0;
+  for (const lang of langs) {
+    for (const rarity of ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic']) {
+      const c = cardTitle(null, lang, rarity, 'x', NOW);
+      assert.strictEqual(render(c.titleKey, c.titleValues), c.title);
+      assert.strictEqual(c.reasonKey, null);
+    }
+    for (const shape of shapes) {
+      for (let i = 0; i < 30; i++) {
+        const c = cardTitle(profile(shape), lang, 'Rare', `dev${i}`, NOW);
+        assert.strictEqual(render(c.titleKey, c.titleValues), c.title, c.titleKey);
+        assert.ok(c.reasonKey && c.reason);
+        assert.strictEqual(render(c.reasonKey, c.reasonValues), c.reason, c.reasonKey);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked > 0);
 });
 
 test('serial hash is stable and case-insensitive', () => {

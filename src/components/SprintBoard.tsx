@@ -2,11 +2,45 @@ import Link from 'next/link';
 import { Trophy, Medal, Timer, Lightning, Sparkle } from '@phosphor-icons/react/dist/ssr';
 import { ALL_PACKS } from '@/lib/packDefinitions';
 import { formatSeasonLeft } from '@/lib/seasons';
-import { SPRINT_REWARDS, SPRINT_TEAM_SIZE, sprintKindLabel, sprintRewardsLegend } from '@/lib/sprints';
+import { SPRINT_REWARDS, SPRINT_TEAM_SIZE, sprintKindLabel, sprintRewardsLegend, sprintThemeById, type SprintKind, type SprintTheme } from '@/lib/sprints';
 import type { SprintState } from '@/lib/sprintService';
 import type { WeeklyEvent } from '@/lib/weeklyEventService';
 import { RarityGem } from '@/components/RarityGem';
 import { useTranslations } from 'next-intl';
+import { useGameText, type GameText } from '@/i18n/gameText';
+
+/** Sprint theme name ("Web Week", "Rust Day") in the active language. */
+function themeName(battleText: GameText, theme: SprintTheme): string {
+  return theme.id.startsWith('family:')
+    ? battleText(`sprints.families.${theme.id}.name`, theme.name)
+    : battleText('sprints.languageTheme.name', theme.name, { language: theme.languages[0] ?? theme.id.replace(/^lang:/, '') });
+}
+
+/** "1st 200 · 2nd 120 · 3rd 80 · 4th–10th 30", rebuilt piece by piece from SPRINT_REWARDS. */
+function rewardsLegend(battleText: GameText, kind: SprintKind): string {
+  const fallback = sprintRewardsLegend(kind);
+  let from = 1;
+  let missing = false;
+  const legend = SPRINT_REWARDS[kind].map(r => {
+    const piece = r.upTo === from
+      ? battleText('sprints.rewardsLegend.single', '', { place: from, bits: r.bits })
+      : battleText('sprints.rewardsLegend.range', '', { from, to: r.upTo, bits: r.bits });
+    if (!piece) missing = true;
+    from = r.upTo + 1;
+    return piece;
+  }).join(' · ');
+  return missing ? fallback : legend;
+}
+
+/** Pack name by id; event packs are "<theme> Pack" with the translated sprint theme. */
+function packName(packText: GameText, battleText: GameText, pack: { id: string; name: string }): string {
+  if (pack.id.startsWith('event-')) {
+    const theme = sprintThemeById(`family:${pack.id.slice('event-'.length)}`);
+    const name = theme.id.startsWith('family:') ? themeName(battleText, theme) : pack.name.replace(/ Pack$/, '');
+    return packText('eventPack.name', pack.name, { theme: name });
+  }
+  return packText(`packs.${pack.id}.name`, pack.name);
+}
 
 function Position({ position }: { position: number }) {
   if (position === 1) return <Trophy className="text-yellow-400" size={20} weight="fill" />;
@@ -21,6 +55,8 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
   const packs = [...(event ? [{ id: event.pack.id, name: event.pack.name }] : []), ...ALL_PACKS.filter(p => p.pool.languages?.some(l => languages.includes(l)))];
   const paidPlaces = SPRINT_REWARDS[sprint.kind][SPRINT_REWARDS[sprint.kind].length - 1].upTo;
   const t = useTranslations('leaderboard.sprint');
+  const battleText = useGameText('gameBattle');
+  const packText = useGameText('gamePacks');
   const featured = event?.featuredDev;
   const accent = sprint.kind === 'daily' ? 'text-cyan-300 border-cyan-500/30 bg-cyan-500/5' : 'text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/5';
 
@@ -28,8 +64,8 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
     <section className={`rounded-2xl border p-5 space-y-4 ${accent}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider">{sprintKindLabel(sprint.kind)}</p>
-          <h2 className="text-2xl font-black text-white">{sprint.theme.name}</h2>
+          <p className="text-xs font-bold uppercase tracking-wider">{battleText(`sprints.kinds.${sprint.kind}.label`, sprintKindLabel(sprint.kind))}</p>
+          <h2 className="text-2xl font-black text-white">{themeName(battleText, sprint.theme)}</h2>
           <p className="text-xs text-slate-400">
             {t('bestCount', {
               cards: languages.length > 1 ? t('cardsInLanguages', { languages: languages.join(', ') }) : t('languageCards', { language: languages[0] }),
@@ -44,7 +80,7 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
               time: chunks => <span className="font-mono font-bold text-white">{chunks}</span>,
             })}
           </p>
-          <p className="mt-1">{t('bitsLegend', { legend: sprintRewardsLegend(sprint.kind) })}</p>
+          <p className="mt-1">{t('bitsLegend', { legend: rewardsLegend(battleText, sprint.kind) })}</p>
         </div>
       </div>
 
@@ -53,7 +89,7 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
           <Sparkle size={18} weight="fill" className="shrink-0 text-fuchsia-300" />
           <span className="min-w-0 flex-1">
             {t.rich('eventSale', {
-              pack: event.pack.name,
+              pack: packName(packText, battleText, event.pack),
               packLink: chunks => <Link href={`/store#pack-${event.pack.id}`} className="font-bold text-fuchsia-200 hover:underline">{chunks}</Link>,
             })}
             {featured && (
@@ -113,7 +149,7 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
             <p className="mt-3 text-xs text-slate-500">
               <Lightning size={12} weight="fill" className="inline" /> {t('boosters')}{' '}
               {packs.map((p, i) => (
-                <span key={p.id}>{i > 0 && ', '}<Link href={`/store#pack-${p.id}`} className="text-indigo-300 hover:underline">{p.name}</Link></span>
+                <span key={p.id}>{i > 0 && ', '}<Link href={`/store#pack-${p.id}`} className="text-indigo-300 hover:underline">{packName(packText, battleText, p)}</Link></span>
               ))}
               {t('forgeToo')}
             </p>
@@ -138,7 +174,7 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
 
       {sprint.last && (
         <p className="text-xs text-slate-500">
-          {t('last', { kind: sprint.kind, theme: sprint.last.theme.name })}{' '}
+          {t('last', { kind: sprint.kind, theme: themeName(battleText, sprint.last.theme) })}{' '}
           {sprint.last.winners.length > 0
             ? t('wonBy', { names: sprint.last.winners.map(w => w.username).join(', '), score: String(sprint.last.winners[0].score) })
             : t('nobody')}
