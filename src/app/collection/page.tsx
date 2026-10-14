@@ -49,7 +49,7 @@ export default async function CollectionPage() {
   return (
     <>
       {markCollection && <OnboardingStepMarker action="collection-seen" />}
-      <CollectionClient initialCards={cardsList} />
+      <CollectionClient initialCards={cardsList} profileHref={user.username ? `/profile/${encodeURIComponent(user.username)}` : undefined} />
     </>
   );
 }

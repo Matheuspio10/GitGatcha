@@ -14,7 +14,8 @@ const LEGACY_ID_MAP: Record<string, string> = {
   'the-solo-architects': 'solo-architects',
   'the-silent-giants': 'silent-giants',
   'the-maintainers': 'maintainers',
-  'the-fossils': 'fossils'
+  // An older version of this map sent the real id the-fossils to a pack that doesn't exist; this undoes it
+  'fossils': 'the-fossils'
 };
 
 function migrateLegacyPackIds(inventory: InventoryItem[]): InventoryItem[] {

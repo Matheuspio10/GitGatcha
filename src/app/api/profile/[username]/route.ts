@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { getAchievementViews, syncAchievementsSafe } from '@/lib/achievementService';
+import { collectionProgress } from '@/lib/collections';
+import { equippedCosmetics } from '@/lib/cosmeticsService';
 
 function computeWinStreak(battles: any[], userId: string): number {
   let maxStreak = 0;
@@ -161,6 +163,9 @@ export async function GET(
             loyaltyCount: Math.max(0, uc.loyaltyCount),
         }));
 
+    // Language sets (one slot per rarity) and the equipped title and frame
+    const sets = collectionProgress(userProfile.cards.map((uc: { card: { primaryLanguage: string | null; rarity: string } }) => uc.card));
+
     // Check for Prestige Badge
     const hasLegendaryBondPrestige = userProfile.cards.some((uc: any) => uc.loyaltyCount >= 100);
 
@@ -237,7 +242,10 @@ export async function GET(
             bannerImage: userProfile.bannerImage || null,
             preferredLanguage: userProfile.preferredLanguage || null,
             seasons: userProfile.seasonResults,
+            ...equippedCosmetics(userProfile),
         },
+        setsCompleted: sets.filter(s => s.complete).length,
+        setsTotal: sets.length,
         stats: {
             totalCards,
             battlesWon,
