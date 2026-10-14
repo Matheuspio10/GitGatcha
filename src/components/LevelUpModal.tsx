@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Sparkle, Star, Coins, Checks } from '@phosphor-icons/react';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
 
 interface PackReward {
   packIds: string[];
@@ -26,6 +27,7 @@ export function LevelUpModal() {
   const panelRef = useDialog(pendingRewards.length > 0);
 
   const pathname = usePathname();
+  const t = useTranslations('onboarding.levelUp');
   const { status } = useSession();
   const isAuthenticated = status === 'authenticated';
   // True while the modal is showing, so a refetch never resets an open modal
@@ -111,7 +113,7 @@ export function LevelUpModal() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-yellow-400/20 rounded-full blur-2xl animate-ping opacity-50 shadow-[0_0_100px_rgba(250,204,21,0.5)]"></div>
       </div>
 
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Level up rewards" className={`relative bg-slate-900 border-2 border-yellow-500/50 rounded-none sm:rounded-[2rem] p-8 md:p-12 w-full sm:max-w-lg h-full sm:h-auto overflow-y-auto sm:overflow-visible shadow-[0_0_50px_rgba(234,179,8,0.3)] transition-transform duration-500 ${isClosing ? 'scale-90 translate-y-10' : 'scale-100 translate-y-0'}`}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label={t('label')} className={`relative bg-slate-900 border-2 border-yellow-500/50 rounded-none sm:rounded-[2rem] p-8 md:p-12 w-full sm:max-w-lg h-full sm:h-auto overflow-y-auto sm:overflow-visible shadow-[0_0_50px_rgba(234,179,8,0.3)] transition-transform duration-500 ${isClosing ? 'scale-90 translate-y-10' : 'scale-100 translate-y-0'}`}>
         
         {/* Header Ribbon */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600"></div>
@@ -120,7 +122,7 @@ export function LevelUpModal() {
           <div className="text-center animate-in zoom-in duration-500">
             <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-widest flex items-center justify-center gap-2">
               <Sparkle className="text-yellow-400" />
-              Level Up!
+              {t('title')}
               <Sparkle className="text-yellow-400" />
             </h2>
             
@@ -134,7 +136,7 @@ export function LevelUpModal() {
             </div>
 
             <div className="space-y-4 mb-8">
-              <h3 className="text-lg font-bold text-slate-300">Rewards Unlocked</h3>
+              <h3 className="text-lg font-bold text-slate-300">{t('rewardsUnlocked')}</h3>
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <div className="flex flex-col gap-3">
                   {currentReward.packNames.map((packName, i) => (
@@ -142,7 +144,7 @@ export function LevelUpModal() {
                       <div className="w-10 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded drop-shadow-md border border-white/20 flex flex-shrink-0 items-center justify-center">
                         <Star size={18} weight="fill" className="text-yellow-300" />
                       </div>
-                      <span className="font-bold text-white flex-1">{packName} Booster</span>
+                      <span className="font-bold text-white flex-1">{t('booster', { pack: packName })}</span>
                     </div>
                   ))}
                   
@@ -151,7 +153,7 @@ export function LevelUpModal() {
                       <div className="w-10 h-10 bg-yellow-500/20 rounded-full border border-yellow-500/50 flex flex-shrink-0 items-center justify-center">
                         <Coins size={20} weight="fill" className="text-yellow-400" />
                       </div>
-                      <span className="font-bold text-yellow-400 flex-1">+{currentReward.coins} Bits</span>
+                      <span className="font-bold text-yellow-400 flex-1">{t('bits', { amount: currentReward.coins })}</span>
                     </div>
                   )}
 
@@ -160,7 +162,7 @@ export function LevelUpModal() {
                       <div className="w-10 h-10 bg-purple-500/20 rounded-full border border-purple-500/50 flex flex-shrink-0 items-center justify-center">
                         <Sparkle size={20} weight="fill" className="text-purple-400" />
                       </div>
-                      <span className="font-bold text-purple-400 flex-1">{currentReward.badge} Badge</span>
+                      <span className="font-bold text-purple-400 flex-1">{t('badge', { badge: currentReward.badge })}</span>
                     </div>
                   )}
                 </div>
@@ -171,24 +173,24 @@ export function LevelUpModal() {
               onClick={handleNext}
               className="w-full py-4 rounded-xl font-black text-lg bg-gradient-to-r from-yellow-400 to-amber-600 text-slate-900 border-b-4 border-amber-700 hover:brightness-110 hover:-translate-y-1 active:border-b-0 active:translate-y-1 transition-all shadow-lg"
             >
-              {currentLevelIndex < pendingRewards.length - 1 ? 'Next Level ➔' : (pendingRewards.length > 1 ? 'View Summary' : 'Claim Rewards')}
+              {currentLevelIndex < pendingRewards.length - 1 ? t('nextLevel') : (pendingRewards.length > 1 ? t('viewSummary') : t('claimRewards'))}
             </button>
             
             {pendingRewards.length > 1 && (
               <p className="text-xs text-slate-500 mt-4 font-bold tracking-wider">
-                {currentLevelIndex + 1} of {pendingRewards.length} LEVELS
+                {t('levelOf', { current: currentLevelIndex + 1, total: pendingRewards.length })}
               </p>
             )}
           </div>
         ) : (
           <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-widest">
-              Total Haul
+              {t('totalHaul')}
             </h2>
             
             <div className="bg-slate-800/80 rounded-2xl p-5 border border-slate-700 mb-8 max-h-[50vh] overflow-y-auto custom-scrollbar">
               <p className="text-sm font-bold text-slate-400 mb-4 tracking-wider uppercase">
-                Levels {pendingRewards[0].level} - {pendingRewards[pendingRewards.length - 1].level}
+                {t('levelRange', { from: pendingRewards[0].level, to: pendingRewards[pendingRewards.length - 1].level })}
               </p>
               
               <div className="flex flex-col gap-3">
@@ -206,7 +208,7 @@ export function LevelUpModal() {
                     <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center border border-yellow-500/50">
                       <Coins size={16} weight="fill" className="text-yellow-400" />
                     </div>
-                    <span className="font-bold text-sm text-yellow-400">+{totalCoins} Total Bits</span>
+                    <span className="font-bold text-sm text-yellow-400">{t('totalBits', { amount: totalCoins })}</span>
                   </div>
                 )}
               </div>
@@ -218,7 +220,7 @@ export function LevelUpModal() {
             >
               <div className="absolute inset-0 w-1/4 h-full bg-white/30 skew-x-[-20deg] -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
               <span className="relative z-10 flex items-center justify-center gap-2">
-                Claim All <Checks weight="bold" />
+                {t('claimAll')} <Checks weight="bold" />
               </span>
             </button>
           </div>

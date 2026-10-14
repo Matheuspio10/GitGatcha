@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { useTranslations } from 'next-intl';
 import { notifyAchievements } from '@/lib/achievementToast';
 import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
 import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
@@ -54,6 +55,13 @@ interface CategoryInfo {
   label: string;
 }
 
+/** Categories with a translated label (others fall back to the API label). */
+const CATEGORY_KEYS = ['event', 'language', 'contributor', 'era', 'company', 'regional', 'rarity'] as const;
+type CategoryKey = typeof CATEGORY_KEYS[number];
+function isCategoryKey(key: string): key is CategoryKey {
+  return (CATEGORY_KEYS as readonly string[]).includes(key);
+}
+
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   event: <CalendarStar weight="bold" />,
   language: <Code weight="bold" />,
@@ -73,8 +81,8 @@ function getRarityBadgeColor(rarity: string | null): string {
   }
 }
 
-function formatCountdown(ms: number): string {
-  if (ms <= 0) return 'Ready!';
+function formatCountdown(ms: number, ready: string): string {
+  if (ms <= 0) return ready;
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
@@ -102,15 +110,16 @@ interface PityStatus {
 
 /** 7-day login calendar: claimed / today / upcoming days, booster on day 7. */
 function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | null; cooldownMs: number }) {
+  const t = useTranslations('store');
   const days = streak?.days ?? LOGIN_CALENDAR_REWARDS.map(r => ({ ...r, state: 'upcoming' as const }));
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
       <div className="flex items-center justify-between gap-2 mb-2 text-xs text-slate-400 flex-wrap">
-        <span className="font-bold uppercase tracking-wider">Login Calendar</span>
+        <span className="font-bold uppercase tracking-wider">{t('calendar.title')}</span>
         {streak && (
           <span>
-            {streak.claimedDay > 0 ? `Streak: day ${streak.claimedDay} of 7` : 'Claim daily to build a streak'}
-            {streak.streakExpiresAt && !streak.canClaim ? ' · claim within 48h to keep it' : ''}
+            {streak.claimedDay > 0 ? t('calendar.streakDay', { day: streak.claimedDay }) : t('calendar.buildStreak')}
+            {streak.streakExpiresAt && !streak.canClaim ? ` · ${t('calendar.keepStreak')}` : ''}
           </span>
         )}
       </div>
@@ -129,9 +138,9 @@ function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | nu
                       ? 'border-slate-500 bg-slate-800/80 text-slate-200'
                       : 'border-slate-700 bg-slate-900/60 text-slate-400'
               }`}
-              aria-label={`Day ${d.day}: ${d.bits} Bits${d.packId ? ' and a booster' : ''} (${d.state})`}
+              aria-label={t(d.packId ? 'calendar.dayLabelBooster' : 'calendar.dayLabel', { day: d.day, bits: d.bits, state: t(`calendar.states.${d.state}`) })}
             >
-              <span className="text-[10px] font-bold uppercase tracking-wider">Day {d.day}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">{t('calendar.day', { day: d.day })}</span>
               {d.packId ? (
                 <Package size={22} weight="duotone" className="text-purple-300" />
               ) : (
@@ -140,8 +149,8 @@ function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | nu
               <span className="text-xs font-black">{d.bits}</span>
               {d.packId && <span className="text-[9px] leading-tight text-purple-300">+ {d.packName}</span>}
               {d.state === 'claimed' && <CheckCircle size={14} weight="fill" className="absolute top-1 right-1 text-green-400" />}
-              {d.state === 'today' && <span className="text-[9px] font-bold text-emerald-300 uppercase">Today</span>}
-              {isNext && <span className="text-[9px] font-mono text-slate-400">{formatCountdown(cooldownMs)}</span>}
+              {d.state === 'today' && <span className="text-[9px] font-bold text-emerald-300 uppercase">{t('calendar.today')}</span>}
+              {isNext && <span className="text-[9px] font-mono text-slate-400">{formatCountdown(cooldownMs, t('ready'))}</span>}
             </div>
           );
         })}
@@ -152,6 +161,7 @@ function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | nu
 
 /** Pity counter and the per-slot odds of a standard booster. */
 function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
+  const t = useTranslations('store.dropRates');
   const [open, setOpen] = useState(false);
   const average = averagePullRates();
   return (
@@ -162,8 +172,8 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
             <>
               <div className="text-sm font-bold text-yellow-300">
                 {pity.packsUntilGuaranteed <= 1
-                  ? 'Legendary guaranteed in your next pack!'
-                  : `Legendary guaranteed within ${pity.packsUntilGuaranteed} packs`}
+                  ? t('pityNext')
+                  : t('pityWithin', { count: pity.packsUntilGuaranteed })}
               </div>
               <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                 <div
@@ -173,7 +183,7 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
               </div>
             </>
           ) : (
-            <div className="text-sm text-slate-500">Legendary guaranteed at least every {PITY_THRESHOLD} packs</div>
+            <div className="text-sm text-slate-500">{t('pityEvery', { count: PITY_THRESHOLD })}</div>
           )}
         </div>
         <button
@@ -181,7 +191,7 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700"
           aria-expanded={open}
         >
-          <ChartBar size={14} weight="bold" /> Drop rates
+          <ChartBar size={14} weight="bold" /> {t('button')}
           <CaretDown size={12} weight="bold" className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
       </div>
@@ -190,7 +200,7 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="text-slate-500 uppercase tracking-wider">
-                <th className="py-1 pr-2 font-bold">Card</th>
+                <th className="py-1 pr-2 font-bold">{t('card')}</th>
                 {RARITY_ORDER.map(r => <th key={r} className={`py-1 px-2 font-bold ${RARITY_TEXT[r]}`}>{r}</th>)}
               </tr>
             </thead>
@@ -202,15 +212,13 @@ function DropRatesPanel({ pity }: { pity: PityStatus | null }) {
                 </tr>
               ))}
               <tr className="border-t border-slate-700 font-bold">
-                <td className="py-1 pr-2 text-slate-400 font-sans">Average</td>
+                <td className="py-1 pr-2 text-slate-400 font-sans">{t('average')}</td>
                 {RARITY_ORDER.map(r => <td key={r} className="py-1 px-2">{formatPercent(average[r])}</td>)}
               </tr>
             </tbody>
           </table>
           <p className="mt-3 text-[11px] text-slate-500 leading-relaxed">
-            Odds of each card of a booster, before the star bonus (a developer with enough stars is promoted one rarity on reveal).
-            Packs marked &quot;≥1&quot; upgrade their lowest card to that rarity. After {(pity?.threshold ?? PITY_THRESHOLD) - 1} packs in a row
-            without a Legendary, the next pack&apos;s last card is a Legendary. All-Common packs don&apos;t count towards the pity.
+            {t('footnote', { count: (pity?.threshold ?? PITY_THRESHOLD) - 1 })}
           </p>
         </div>
       )}
@@ -227,6 +235,7 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
   onCancel: () => void;
   onBuy: (openNow: boolean) => void;
 }) {
+  const t = useTranslations('store.purchase');
   const panelRef = useDialog(!!pack, onCancel);
   return (
     <AnimatePresence>
@@ -244,19 +253,19 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
             onClick={e => e.stopPropagation()}
           >
             <h3 id="buy-title" className="text-2xl font-black text-white">
-              Buy <span style={{ color: pack.visualTheme.textColor }}>{pack.name}</span>?
+              {t.rich('title', { name: pack.name, pack: chunks => <span style={{ color: pack.visualTheme.textColor }}>{chunks}</span> })}
             </h3>
-            <p className="mt-1 text-sm text-slate-400">{pack.noPreview ? 'Contents are a surprise, the odds are not.' : pack.description}</p>
+            <p className="mt-1 text-sm text-slate-400">{pack.noPreview ? t('surprise') : pack.description}</p>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-xl bg-slate-800/60 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500">Cost</div>
-                <div className="font-mono font-bold text-yellow-300">{pack.cost} BITS</div>
+                <div className="text-[11px] uppercase tracking-wider text-slate-500">{t('cost')}</div>
+                <div className="font-mono font-bold text-yellow-300">{t('bits', { amount: pack.cost })}</div>
               </div>
               <div className="rounded-xl bg-slate-800/60 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500">You will have</div>
+                <div className="text-[11px] uppercase tracking-wider text-slate-500">{t('youWillHave')}</div>
                 <div className={`font-mono font-bold ${currency >= pack.cost ? 'text-white' : 'text-red-400'}`}>
-                  {currency >= pack.cost ? `${currency - pack.cost} BITS` : `${pack.cost - currency} BITS short`}
+                  {currency >= pack.cost ? t('bits', { amount: currency - pack.cost }) : t('short', { amount: pack.cost - currency })}
                 </div>
               </div>
             </div>
@@ -267,14 +276,14 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <button onClick={onCancel} className="flex-1 rounded-xl border border-slate-700 bg-slate-800 py-2.5 font-bold text-white hover:bg-slate-700">
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={() => onBuy(false)}
                 disabled={busy || currency < pack.cost}
                 className="flex-1 rounded-xl border border-indigo-500/60 py-2.5 font-bold text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-50"
               >
-                Buy
+                {t('buy')}
               </button>
               <button
                 onClick={() => onBuy(true)}
@@ -282,7 +291,7 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
                 className="btn-brand flex-1 py-2.5 font-bold text-white disabled:opacity-50"
                 autoFocus
               >
-                Buy &amp; open
+                {t('buyAndOpen')}
               </button>
             </div>
           </motion.div>
@@ -339,6 +348,7 @@ export default function StoreClient({
   // Pack waiting for the purchase confirmation (cost, balance after, odds)
   const [confirmPack, setConfirmPack] = useState<PackInfo | null>(null);
   const router = useRouter();
+  const t = useTranslations('store');
 
   // Fetch packs catalog
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -450,9 +460,9 @@ export default function StoreClient({
         setCurrency(data.newCurrency);
         setDailyCooldown(data.streak?.remainingMs || 24 * 60 * 60 * 1000);
         if (data.streak) setStreak(data.streak);
-        toast.success(`${data.day ? `Day ${data.day}: ` : ''}+${data.amount ?? 100} Bits claimed!`);
+        toast.success(data.day ? t('daily.claimedDay', { day: data.day, amount: data.amount ?? 100 }) : t('daily.claimed', { amount: data.amount ?? 100 }));
         if (data.packGranted) {
-          toast.success(`${data.packGranted.packName} added to your inventory!`, { icon: '📦' });
+          toast.success(t('daily.packGranted', { pack: data.packGranted.packName }), { icon: '📦' });
         }
         refreshBits();
         notifyAchievements(data.achievementsUnlocked);
@@ -461,11 +471,11 @@ export default function StoreClient({
         if (data.streak) setStreak(data.streak);
         setDailyCooldown(data.remainingMs);
       } else {
-        toast.error(data.error || 'Failed to claim daily reward');
+        toast.error(data.error || t('daily.failed'));
       }
     } catch (e) {
       console.error(e);
-      toast.error('Network error');
+      toast.error(t('errors.network'));
     } finally {
       setClaimingDaily(false);
     }
@@ -474,7 +484,7 @@ export default function StoreClient({
   const handlePurchasePack = async (pack: PackInfo, openNow = false) => {
     setConfirmPack(null);
     if (currency < pack.cost) {
-      toast.error('Not enough Bits!');
+      toast.error(t('errors.notEnoughBits'));
       return;
     }
     
@@ -503,11 +513,11 @@ export default function StoreClient({
         
         router.refresh();
       } else {
-        toast.error(data.error || 'Failed to purchase');
+        toast.error(data.error || t('errors.purchaseFailed'));
       }
     } catch(e) {
       console.error(e);
-      toast.error('Network error');
+      toast.error(t('errors.network'));
     } finally {
       setLoading(false);
     }
@@ -532,15 +542,15 @@ export default function StoreClient({
                 <CheckCircle weight="fill" size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-white">Purchase Successful</h4>
-                <p className="text-sm text-slate-400">{purchaseNotification.packName} added to your inventory.</p>
+                <h4 className="font-bold text-white">{t('purchase.successTitle')}</h4>
+                <p className="text-sm text-slate-400">{t('purchase.successText', { pack: purchaseNotification.packName })}</p>
               </div>
             </div>
             <button
               onClick={() => router.push(`/inventory?open=${encodeURIComponent(purchaseNotification.packId)}`)}
               className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors whitespace-nowrap"
             >
-              Open now →
+              {t('purchase.openNow')}
             </button>
           </motion.div>
         )}
@@ -558,9 +568,9 @@ export default function StoreClient({
       {/* Header */}
       <div className="text-center space-y-4">
         <h1 className="text-5xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500">
-          The Repository
+          {t('header.title')}
         </h1>
-        <p className="text-xl text-slate-400">Summon new developers to your team.</p>
+        <p className="text-xl text-slate-400">{t('header.subtitle')}</p>
         
         <div className="flex items-center justify-center gap-4 flex-wrap mt-6">
           {/* Balance */}
@@ -581,12 +591,12 @@ export default function StoreClient({
           >
             <Gift size={20} weight="bold" />
             {dailyCooldown === -1 
-              ? 'Checking...' 
+              ? t('daily.checking')
               : dailyCooldown > 0 
-                ? `Daily: ${formatCountdown(dailyCooldown)}` 
+                ? t('daily.cooldown', { time: formatCountdown(dailyCooldown, t('ready')) })
                 : claimingDaily 
-                  ? 'Claiming...' 
-                  : `Claim Day ${streak?.nextDay ?? 1}: ${streak?.nextReward.bits ?? 100} Bits${streak?.nextReward.packId ? ' + Pack' : ''}`
+                  ? t('daily.claiming')
+                  : t(streak?.nextReward.packId ? 'daily.claimWithPack' : 'daily.claim', { day: streak?.nextDay ?? 1, bits: streak?.nextReward.bits ?? 100 })
             }
           </button>
         </div>
@@ -610,7 +620,7 @@ export default function StoreClient({
           >
             <span className="flex items-center gap-2">
               {CATEGORY_ICONS[cat.key]} 
-              {cat.label}
+              {isCategoryKey(cat.key) ? t(`categories.${cat.key}`) : cat.label}
             </span>
           </button>
         ))}
@@ -639,7 +649,7 @@ export default function StoreClient({
             {...pressable(() => {
               if (loading) return;
               setConfirmPack(pack);
-            }, `${pack.name}: ${pack.cardCount} cards for ${pack.cost} BITS`)}
+            }, t('pack.ariaLabel', { name: pack.name, count: pack.cardCount, cost: pack.cost }))}
           >
             {/* The Pack Shape */}
             <div 
@@ -677,17 +687,17 @@ export default function StoreClient({
                   className="text-[10px] font-bold uppercase tracking-[0.3em] mb-6 bg-slate-900/40 backdrop-blur-sm border border-white/20 px-3 py-1 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" 
                   style={{ color: pack.visualTheme.textColor }}
                 >
-                  {pack.cardCount} Cards
+                  {t('pack.cards', { count: pack.cardCount })}
                 </div>
                 {/* Event packs leave the store when the Weekly Sprint ends */}
                 {pack.category === 'event' && eventEndsAt !== null && (
                   <div className="-mt-4 mb-4 rounded-full bg-slate-950/80 border border-white/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-lg">
-                    On sale for {formatSeasonLeft(eventEndsAt - Date.now())}
+                    {t('pack.onSale', { time: formatSeasonLeft(eventEndsAt - Date.now()) })}
                   </div>
                 )}
                 
                 <p className="text-sm font-medium leading-snug line-clamp-4 mix-blend-luminosity opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" style={{ color: pack.visualTheme.textColor }}>
-                  {pack.noPreview ? '??? Unknown Contents' : pack.description}
+                  {pack.noPreview ? t('pack.unknownContents') : pack.description}
                 </p>
               </div>
 
@@ -698,7 +708,7 @@ export default function StoreClient({
                       className="text-[10px] font-black uppercase tracking-[0.2em] py-1 border-y border-white/20"
                       style={{ backgroundColor: getRarityBadgeColor(pack.guaranteedMinRarity), color: '#000' }}
                     >
-                      ≥1 {pack.guaranteedMinRarity}
+                      {t('pack.atLeastOne', { rarity: pack.guaranteedMinRarity })}
                     </div>
                   )}
                   {pack.allCommon && (
@@ -708,7 +718,7 @@ export default function StoreClient({
                   )}
                   {pack.noPreview && (
                     <div className="text-[10px] font-black uppercase tracking-[0.2em] py-1 bg-purple-600 text-purple-50 border-y border-purple-400/50 animate-pulse">
-                      Mystery
+                      {t('pack.mystery')}
                     </div>
                   )}
               </div>
@@ -733,11 +743,11 @@ export default function StoreClient({
       <section className="mt-12 mb-24 pt-12 border-t border-white/10">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
           <h2 className="text-3xl font-bold flex items-center gap-3">
-            Daily Standup <span className="text-sm font-normal text-slate-400 px-3 py-1 bg-slate-800 rounded-full border border-slate-700">Missions</span>
+            {t('missions.title')} <span className="text-sm font-normal text-slate-400 px-3 py-1 bg-slate-800 rounded-full border border-slate-700">{t('missions.badge')}</span>
           </h2>
           {missionResetMs !== null && (
             <span className="text-sm text-slate-400 font-mono">
-              New missions in {missionResetMs > 0 ? formatCountdown(missionResetMs) : 'a moment...'}
+              {missionResetMs > 0 ? t('missions.newIn', { time: formatCountdown(missionResetMs, t('ready')) }) : t('missions.newSoon')}
             </span>
           )}
         </div>

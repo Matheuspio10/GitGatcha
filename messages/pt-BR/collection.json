@@ -1,0 +1,124 @@
+{
+  "stats": {
+    "title": "Estatísticas da coleção",
+    "wiki": "Saiba mais na Wiki",
+    "uniqueCards": "Cartas únicas:",
+    "totalPulls": "Total de cartas puxadas:"
+  },
+  "toolbar": {
+    "listView": "Ver em lista",
+    "gridView": "Ver em grade",
+    "sortBy": "Ordenar por:",
+    "page": "Página",
+    "of": "de {total}",
+    "previousPage": "Página anterior",
+    "nextPage": "Próxima página",
+    "search": "Buscar por título..."
+  },
+  "sort": {
+    "rarity": "RARIDADE",
+    "name": "NOME",
+    "type": "TIPO",
+    "hp": "HP",
+    "atk": "ATK",
+    "def": "DEF",
+    "count": "QTD",
+    "loyalty": "LEALDADE"
+  },
+  "table": {
+    "rank": "Raridade",
+    "title": "Título (Usuário)",
+    "type": "Tipo",
+    "hp": "HP",
+    "atk": "ATK",
+    "def": "DEF",
+    "stamina": "STM",
+    "loyalty": "Lealdade",
+    "count": "QTD",
+    "openDetails": "{name} ({rarity}): ver detalhes",
+    "trainingLevel": "Nível de treino {level}",
+    "coreType": "Tipo principal de combate",
+    "neutralType": "Conta como Neutro em combate",
+    "neutral": "(Neutro)"
+  },
+  "empty": {
+    "noMatchTitle": "Nenhuma carta encontrada",
+    "noMatchText": "Tente outro nome ou limpe a busca para ver todas as cartas.",
+    "clearSearch": "Limpar busca",
+    "emptyTitle": "Sua coleção está vazia",
+    "emptyText": "Todo dev que você tirar de um booster vem parar aqui. Abra um pack para conhecer os primeiros.",
+    "openPack": "Abrir um pack",
+    "visitStore": "Ir para a loja"
+  },
+  "loyalty": {
+    "tiers": {
+      "veteran": "Veterano",
+      "trusted": "De confiança",
+      "reliable": "Fiel",
+      "legendary_bond": "Laço Lendário",
+      "eternal": "Eterno"
+    },
+    "maxed": "♾️ ETERNO",
+    "battles": "{count, plural, one {# batalha} other {# batalhas}}",
+    "label": "Lealdade",
+    "contract": "Contrato de lealdade",
+    "milestones": "Marcos",
+    "threshold": "({count, plural, one {# batalha} other {# batalhas}})",
+    "left": "{count, plural, one {falta #} other {faltam #}}",
+    "lifetime": "Estatísticas totais",
+    "damageDealt": "Dano causado",
+    "battlesWon": "Batalhas vencidas",
+    "critsLanded": "Críticos acertados",
+    "passivesUsed": "Passivas usadas"
+  },
+  "dialog": {
+    "label": "{name}: detalhes da carta",
+    "close": "Fechar",
+    "openProfile": "Abrir perfil",
+    "share": "Compartilhar",
+    "shareTitle": "Copiar um link público desta carta (com imagem de prévia)",
+    "linkCopied": "Link da carta copiado",
+    "recovering": "Recuperando...",
+    "cure": "Curar (100)",
+    "recoverFailed": "Não deu para recuperar a stamina",
+    "genericError": "Ocorreu um erro"
+  },
+  "sets": {
+    "title": "Sets de linguagem",
+    "summary": "{complete} de {total} completos · tenha uma carta de cada raridade de uma linguagem para completar o set e desbloquear títulos e molduras",
+    "complete": "Completo · \"{language} Collector\"",
+    "missing": "{rarity} (faltando)",
+    "forgeHint": "Falta alguma? A <link>Forja</link> invoca qualquer dev.",
+    "profileHint": "Equipe o que você desbloqueou no seu <link>perfil</link>."
+  },
+  "training": {
+    "title": "Treino",
+    "level": "Nível <b>{level}</b> / {max}",
+    "bonus": "+{percent} atributos",
+    "nextLevel": "Próximo nível: ATK {atk} → <b>{nextAtk}</b> · DEF {def} → <b>{nextDef}</b> · HP {hp} → <b>{nextHp}</b> em batalha (antes da lealdade).",
+    "fragments": "Fragmentos de {language}",
+    "wildcardFragments": "Fragmentos coringa",
+    "usesWildcard": "usa {count, plural, one {# coringa} other {# coringas}}",
+    "training": "Treinando...",
+    "trainTo": "Treinar até o nível {level}",
+    "notEnough": "Fragmentos ou BITS insuficientes",
+    "hint": "Cartas repetidas e drops de packs dão fragmentos; coringas valem para qualquer linguagem. A Forja mostra sua carteira.",
+    "maxed": "Treino completo: +{percent} de ATK, DEF e HP em toda batalha.",
+    "failed": "O treino falhou",
+    "success": "{name} chegou ao nível de treino {level}!"
+  },
+  "download": {
+    "label": "Baixar PNG",
+    "title": "Salvar esta carta como imagem"
+  },
+  "cosmetics": {
+    "heading": "Título e moldura",
+    "showAll": "Mostrar todos os títulos de set",
+    "title": "Título",
+    "frame": "Moldura do avatar",
+    "none": "Nenhum",
+    "locked": "Bloqueado: {requirement}",
+    "frameLabel": "Moldura {label}",
+    "updateFailed": "Não deu para atualizar"
+  }
+}

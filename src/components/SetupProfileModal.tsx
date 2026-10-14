@@ -7,10 +7,12 @@ import { User, Warning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { REFERRAL_BONUS, REFERRAL_COOKIE } from '@/lib/referral';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
 
 export function SetupProfileModal() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
+  const t = useTranslations('onboarding.setupProfile');
   
   // Wait until we are sure they are authenticated, and only show if they explicitely haven't setup their profile.
   const isTargeted = status === 'authenticated' && session?.user && session.user.hasSetupProfile === false;
@@ -56,7 +58,7 @@ export function SetupProfileModal() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to update username.');
+        throw new Error(data.error || t('failed'));
       }
 
       // Update the client session token completely
@@ -102,17 +104,17 @@ export function SetupProfileModal() {
           </div>
 
           <h2 id="setup-profile-title" className="text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-2 relative z-10">
-            Confirm Your Nickname
+            {t('title')}
           </h2>
           <p className="text-slate-400 text-center mb-8 text-sm relative z-10">
-            Welcome! To ensure a fair ranking and friend system, all accounts must actively reserve a unique unchangeable nickname. 
+            {t('intro')}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
             
             <div>
               <label className="block text-slate-300 font-bold mb-2 text-sm" htmlFor="username">
-                Nickname
+                {t('nickname')}
               </label>
               <input
                 id="username"
@@ -121,17 +123,17 @@ export function SetupProfileModal() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 font-medium text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                placeholder="e.g. CodeMaster99"
+                placeholder={t('nicknamePlaceholder')}
                 autoComplete="off"
               />
               <p className="text-xs text-slate-500 mt-2">
-                Only letters, numbers, and underscores. (3-20 characters)
+                {t('nicknameHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-slate-300 font-bold mb-2 text-sm" htmlFor="referral">
-                Invited by <span className="font-normal text-slate-500">(optional)</span>
+                {t.rich('invitedBy', { optional: chunks => <span className="font-normal text-slate-500">{chunks}</span> })}
               </label>
               <input
                 id="referral"
@@ -139,11 +141,11 @@ export function SetupProfileModal() {
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 font-medium text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                placeholder="A friend's nickname"
+                placeholder={t('invitedByPlaceholder')}
                 autoComplete="off"
               />
               <p className="text-xs text-slate-500 mt-2">
-                You both get {REFERRAL_BONUS} BITS when you connect your GitHub account.
+                {t('referralBonus', { bonus: REFERRAL_BONUS })}
               </p>
             </div>
 
@@ -162,10 +164,10 @@ export function SetupProfileModal() {
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Saving...
+                  {t('saving')}
                 </div>
               ) : (
-                'Claim Nickname'
+                t('submit')
               )}
             </button>
           </form>

@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import { formatSeasonLeft } from '@/lib/seasons';
 import { RarityGem } from '@/components/RarityGem';
+import { useLocale, useTranslations } from 'next-intl';
 
 type FragmentWallet = Record<string, number>;
 type WishlistItem = {
@@ -56,6 +57,8 @@ export type FeaturedDevInfo = {
 
 export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: string; featuredDev?: FeaturedDevInfo | null }) {
   const { data: session } = useSession();
+  const t = useTranslations('forge');
+  const locale = useLocale();
   const [activeTab, setActiveTab] = useState<'INVOKE' | 'WISHLIST' | 'HISTORY'>('INVOKE');
   
   const [fragments, setFragments] = useState<FragmentWallet>({});
@@ -101,10 +104,10 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       if (res.ok) {
         setSearchResult(data);
       } else {
-        toast.error(data.error || 'Developer not found');
+        toast.error(data.error || t('toasts.notFound'));
       }
     } catch (e) {
-      toast.error('Search failed');
+      toast.error(t('toasts.searchFailed'));
     } finally {
       setIsSearching(false);
     }
@@ -141,12 +144,12 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
         setRevealedCard(data.card);
         fetchWallet(); // Refresh balances
         window.dispatchEvent(new Event('bits:refresh')); // Sync Navbar BITS
-        toast.success(`Successfully invoked ${data.card.name}!`);
+        toast.success(t('toasts.invoked', { name: data.card.name }));
       } else {
-        toast.error(data.error || 'Invocation failed');
+        toast.error(data.error || t('toasts.invokeFailed'));
       }
     } catch (e) {
-      toast.error('Invocation failed');
+      toast.error(t('toasts.invokeFailed'));
     } finally {
       setIsInvoking(false);
     }
@@ -169,12 +172,12 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       const data = await res.json();
       if (res.ok) {
         setWishlist(data.wishlist);
-        toast.success(isWished ? 'Removed from Wishlist' : 'Added to Wishlist');
+        toast.success(isWished ? t('toasts.wishlistRemoved') : t('toasts.wishlistAdded'));
       } else {
-        toast.error(data.error || 'Wishlist update failed');
+        toast.error(data.error || t('toasts.wishlistFailed'));
       }
     } catch (e) {
-      toast.error('Wishlist update failed');
+      toast.error(t('toasts.wishlistFailed'));
     }
   };
 
@@ -200,9 +203,9 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
     if (activeFragments.length === 0) return (
       <EmptyState
         compact
-        title="No fragments yet"
-        text="Duplicate cards and some pack drops turn into fragments of their language. Collect enough and forge the developer you want."
-        actions={[{ label: 'Open a pack', href: '/inventory' }, { label: 'Visit the store', href: '/store' }]}
+        title={t('emptyWallet.title')}
+        text={t('emptyWallet.text')}
+        actions={[{ label: t('emptyWallet.openPack'), href: '/inventory' }, { label: t('emptyWallet.visitStore'), href: '/store' }]}
       />
     );
 
@@ -212,7 +215,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
           const colorClass = l === WILDCARD ? 'bg-amber-400/15 text-amber-200 border-amber-400/40' : LANG_COLORS[l] || LANG_COLORS.Unknown;
           return (
             <div key={l} className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${colorClass} shadow-md`}>
-              <span>{l}</span>
+              <span>{l === WILDCARD ? t('wildcard') : l}</span>
               <span className="bg-black/20 px-1.5 rounded">{count}</span>
             </div>
           );
@@ -226,7 +229,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] animate-in fade-in zoom-in duration-500">
         <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 mb-8 drop-shadow-[0_0_15px_rgba(252,211,77,0.5)]">
-          Invocation Successful!
+          {t('reveal.title')}
         </h2>
         <div className="scale-125 mb-12 relative group">
           <div className="absolute inset-0 bg-yellow-400/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
@@ -236,7 +239,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
           onClick={() => { setRevealedCard(null); setSearchResult(null); setSearchQuery(''); }}
           className="px-8 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl"
         >
-          Return to Forge
+          {t('reveal.back')}
         </button>
       </div>
     );
@@ -252,17 +255,17 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
             <Hammer size={24} weight="fill" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white">The Forge</h1>
+            <h1 className="text-2xl font-black text-white">{t('header.title')}</h1>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-1">
-              <p className="text-slate-400 text-sm">Combine Language Fragments with BITS to invoke specific developers.</p>
+              <p className="text-slate-400 text-sm">{t('header.subtitle')}</p>
               <a href="/wiki#forge-system" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 font-medium bg-indigo-500/10 px-2 py-1 rounded-lg w-fit">
-                <BookOpenText size={14} weight="bold" /> Learn more in the Wiki
+                <BookOpenText size={14} weight="bold" /> {t('header.wikiLink')}
               </a>
             </div>
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-slate-800">
-          <h3 className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-3">Your Fragment Wallet</h3>
+          <h3 className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-3">{t('header.wallet')}</h3>
           {renderWallet()}
           <WildcardExchange fragments={fragments} onDone={fetchWallet} />
         </div>
@@ -274,21 +277,21 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {featuredDev.avatarUrl ? <img src={featuredDev.avatarUrl} alt="" className="h-14 w-14 rounded-full border-2 border-fuchsia-400/60" /> : <span className="h-14 w-14 rounded-full bg-slate-700" />}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Dev of the Week · {featuredDev.discountPercent}% off</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">{t('featured.label', { percent: featuredDev.discountPercent })}</p>
             <p className="flex items-center gap-2 text-lg font-black text-white">
               <RarityGem rarity={featuredDev.rarity} size={14} title={featuredDev.rarity} />
               <span className="truncate">{featuredDev.name}</span>
               <span className="text-sm font-normal text-slate-400">@{featuredDev.githubUsername}</span>
             </p>
             <p className="text-xs text-slate-400">
-              Fragments and BITS cost {featuredDev.discountPercent}% less at the Forge for {formatSeasonLeft(featuredDev.endsInMs)} more, until the Weekly Sprint ends.
+              {t('featured.text', { percent: featuredDev.discountPercent, time: formatSeasonLeft(featuredDev.endsInMs) })}
             </p>
           </div>
           <button
             onClick={() => forgeDev(featuredDev.githubUsername)}
             className="shrink-0 rounded-xl bg-fuchsia-600 px-5 py-2.5 font-bold text-white transition-colors hover:bg-fuchsia-500"
           >
-            See the price
+            {t('featured.cta')}
           </button>
         </div>
       )}
@@ -299,19 +302,19 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
           onClick={() => setActiveTab('INVOKE')}
           className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'INVOKE' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
-          <Sparkle size={18} /> Invoke
+          <Sparkle size={18} /> {t('tabs.invoke')}
         </button>
         <button 
           onClick={() => setActiveTab('WISHLIST')}
           className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'WISHLIST' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
-          <Star size={18} /> Wishlist <span className="text-xs bg-slate-800 px-1.5 py-0.5 rounded ml-1">{wishlist.length}/5</span>
+          <Star size={18} /> {t('tabs.wishlist')} <span className="text-xs bg-slate-800 px-1.5 py-0.5 rounded ml-1">{wishlist.length}/5</span>
         </button>
         <button 
           onClick={() => setActiveTab('HISTORY')}
           className={`flex items-center gap-2 px-3 sm:px-6 py-2 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'HISTORY' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
         >
-          <ClockCounterClockwise size={18} /> History
+          <ClockCounterClockwise size={18} /> {t('tabs.history')}
         </button>
       </div>
 
@@ -322,18 +325,18 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
           {/* Search Column */}
           <div className="lg:col-span-5 flex flex-col gap-4">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <h2 className="font-bold text-lg mb-4">Search Developer</h2>
+              <h2 className="font-bold text-lg mb-4">{t('search.title')}</h2>
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="GitHub username..."
+                  placeholder={t('search.placeholder')}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button 
                   type="submit"
-                  aria-label="Search"
+                  aria-label={t('search.button')}
                   disabled={isSearching}
                   className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white rounded-xl px-4 flex items-center justify-center transition-colors"
                 >
@@ -346,13 +349,13 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center flex-1">
                 <div className="w-full flex justify-between items-center mb-6">
                   <h3 className="font-bold text-slate-300">
-                    Target Acquired
-                    {searchResult.featured && <span className="ml-2 rounded-full bg-fuchsia-500/20 px-2 py-0.5 text-xs font-bold text-fuchsia-300">Dev of the Week</span>}
+                    {t('search.targetAcquired')}
+                    {searchResult.featured && <span className="ml-2 rounded-full bg-fuchsia-500/20 px-2 py-0.5 text-xs font-bold text-fuchsia-300">{t('featured.badge')}</span>}
                   </h3>
                   <button 
                     onClick={() => toggleWishlist(searchResult.stats.githubUsername)}
                     className="text-slate-400 hover:text-yellow-400 transition-colors"
-                    title="Toggle Wishlist"
+                    title={t('search.toggleWishlist')}
                   >
                     <Star size={24} weight={wishlist.some(w => w.username.toLowerCase() === searchResult.stats.githubUsername.toLowerCase()) ? "fill" : "regular"} className={wishlist.some(w => w.username.toLowerCase() === searchResult.stats.githubUsername.toLowerCase()) ? "text-yellow-400" : ""} />
                   </button>
@@ -371,7 +374,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                 
                 <div className="border border-slate-800 bg-slate-950/50 rounded-xl p-5">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Sparkle className="text-orange-400" /> Invocation Requirements
+                    <Sparkle className="text-orange-400" /> {t('requirements.title')}
                   </h3>
                   
                   {/* Fragments Row */}
@@ -379,14 +382,14 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                     <div className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${LANG_COLORS[lang]?.split(' ')[0] || 'bg-slate-500'}`}></div>
                       <div>
-                        <div className="font-bold">{onlyWildcards ? 'Wildcard' : lang} Fragments</div>
+                        <div className="font-bold">{onlyWildcards ? t('requirements.wildcardFragments') : t('requirements.langFragments', { lang })}</div>
                         <div className="text-xs text-slate-400">
-                          Required: {reqFragments}
-                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">(<s>{searchResult.fullCost.fragments}</s> Dev of the Week)</span>}
-                          {onlyWildcards ? ' · no primary language, paid with wildcards' : ownedWildcards > 0 ? ` · wildcards cover what ${lang} lacks` : ''}
+                          {t('requirements.required', { amount: reqFragments })}
+                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">{t.rich('featured.fullCost', { amount: searchResult.fullCost.fragments, s: chunks => <s>{chunks}</s> })}</span>}
+                          {onlyWildcards ? ` · ${t('requirements.noLanguage')}` : ownedWildcards > 0 ? ` · ${t('requirements.wildcardsCover', { lang })}` : ''}
                         </div>
                         {payment && payment.fromWildcard > 0 && (
-                          <div className="text-xs text-amber-300">Uses {payment.fromLanguage > 0 ? `${payment.fromLanguage} ${lang} + ` : ''}{payment.fromWildcard} wildcard</div>
+                          <div className="text-xs text-amber-300">{payment.fromLanguage > 0 ? t('requirements.usesMixed', { count: payment.fromLanguage, lang, wildcards: payment.fromWildcard }) : t('requirements.usesWildcards', { wildcards: payment.fromWildcard })}</div>
                         )}
                       </div>
                     </div>
@@ -395,7 +398,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                         {usableFragments} / {reqFragments}
                       </div>
                       {!hasFragments && (
-                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">Deficit: {reqFragments - usableFragments}</div>
+                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">{t('requirements.deficit', { amount: reqFragments - usableFragments })}</div>
                       )}
                     </div>
                   </div>
@@ -407,8 +410,8 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                       <div>
                         <div className="font-bold">BITS</div>
                         <div className="text-xs text-slate-400">
-                          Required: {reqBits}
-                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">(<s>{searchResult.fullCost.bits}</s> Dev of the Week)</span>}
+                          {t('requirements.required', { amount: reqBits })}
+                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">{t.rich('featured.fullCost', { amount: searchResult.fullCost.bits, s: chunks => <s>{chunks}</s> })}</span>}
                         </div>
                       </div>
                     </div>
@@ -417,7 +420,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                         {currency} / {reqBits}
                       </div>
                       {!hasBits && (
-                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">Deficit: {reqBits - currency}</div>
+                        <div className="text-xs text-red-400/70 uppercase font-bold tracking-wider">{t('requirements.deficit', { amount: reqBits - currency })}</div>
                       )}
                     </div>
                   </div>
@@ -436,7 +439,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                     disabled={!canInvoke || isInvoking}
                     className={`w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest transition-all ${canInvoke ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_30px_rgba(249,115,22,0.6)] hover:scale-[1.02]' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
                   >
-                    {isInvoking ? 'Invoking...' : canInvoke ? 'Invoke Developer' : 'Missing Requirements'}
+                    {isInvoking ? t('requirements.invoking') : canInvoke ? t('requirements.invoke') : t('requirements.missing')}
                   </button>
                 </div>
 
@@ -444,10 +447,10 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                 {searchResult.recommendedPacks && searchResult.recommendedPacks.length > 0 && (
                   <div className="border border-indigo-500/20 bg-indigo-950/10 rounded-xl p-5 flex-1">
                     <h4 className="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">
-                       Recommendation: Farm {lang} Fragments
+                       {t('recommendation.title', { lang })}
                     </h4>
                     <p className="text-xs text-slate-400 mb-4 tracking-wide leading-relaxed">
-                      Open these packs to earn {lang} fragments from direct drops and duplicate conversions:
+                      {t('recommendation.text', { lang })}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       {searchResult.recommendedPacks.map((pack: any) => (
@@ -466,9 +469,9 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
             ) : (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-full flex flex-col items-center justify-center text-center opacity-70">
                 <MagnifyingGlass size={48} className="text-slate-700 mb-4" />
-                <h3 className="text-xl font-bold text-slate-500 mb-2">Awaiting Target</h3>
+                <h3 className="text-xl font-bold text-slate-500 mb-2">{t('search.awaitingTitle')}</h3>
                 <p className="text-slate-500 text-sm max-w-sm">
-                  Search for a developer by GitHub username to see their invocation requirements and stats card.
+                  {t('search.awaitingText')}
                 </p>
               </div>
             )}
@@ -479,11 +482,11 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       {/* WISHLIST TAB */}
       {activeTab === 'WISHLIST' && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h2 className="font-bold text-xl mb-6">Your Wishlist</h2>
+          <h2 className="font-bold text-xl mb-6">{t('wishlist.title')}</h2>
           {wishlist.length === 0 ? (
             <div className="text-center py-12 border border-slate-800 border-dashed rounded-xl">
               <Star size={48} className="mx-auto text-slate-700 mb-4" />
-              <div className="text-slate-400">Your wishlist is empty. Search for developers and click the star icon to track them here!</div>
+              <div className="text-slate-400">{t('wishlist.empty')}</div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -493,7 +496,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                 return (
                   <div key={w.username} className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col relative group">
                     <button onClick={() => toggleWishlist(w.username)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 z-10">
-                      Remove
+                      {t('wishlist.remove')}
                     </button>
                     <div className="flex items-center gap-4 mb-4">
                       <img src={w.avatarUrl} alt={w.username} className="w-12 h-12 rounded-full border border-slate-700" />
@@ -519,7 +522,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                       }}
                       className="mt-4 w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-bold transition-colors"
                     >
-                      View in Forge
+                      {t('wishlist.view')}
                     </button>
                   </div>
                 );
@@ -532,31 +535,31 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       {/* HISTORY TAB */}
       {activeTab === 'HISTORY' && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h2 className="font-bold text-xl mb-6">Fragment History</h2>
+          <h2 className="font-bold text-xl mb-6">{t('history.title')}</h2>
           {logs.length === 0 ? (
             <div className="text-center py-12 border border-slate-800 border-dashed rounded-xl">
               <ClockCounterClockwise size={48} className="mx-auto text-slate-700 mb-4" />
-              <div className="text-slate-400">No fragment activity yet.</div>
+              <div className="text-slate-400">{t('history.empty')}</div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-800 text-xs uppercase tracking-wider text-slate-500">
-                    <th className="p-4 font-bold">Date</th>
-                    <th className="p-4 font-bold">Log Source</th>
-                    <th className="p-4 font-bold">Language</th>
-                    <th className="p-4 font-bold text-right">Amount</th>
+                    <th className="p-4 font-bold">{t('history.date')}</th>
+                    <th className="p-4 font-bold">{t('history.source')}</th>
+                    <th className="p-4 font-bold">{t('history.language')}</th>
+                    <th className="p-4 font-bold text-right">{t('history.amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.map((log, i) => (
                     <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                      <td className="p-4 text-sm text-slate-400">{new Date(log.date).toLocaleString()}</td>
+                      <td className="p-4 text-sm text-slate-400">{new Date(log.date).toLocaleString(locale)}</td>
                       <td className="p-4 text-sm font-medium">{log.source}</td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded text-xs border ${LANG_COLORS[log.language] || LANG_COLORS.Unknown}`}>
-                          {log.language}
+                          {log.language === WILDCARD ? t('wildcard') : log.language}
                         </span>
                       </td>
                       <td className={`p-4 text-right font-black ${log.amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -581,6 +584,7 @@ function WildcardExchange({ fragments, onDone }: { fragments: Record<string, num
   const [language, setLanguage] = useState('');
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState(false);
+  const t = useTranslations('forge.exchange');
   const selected = languages.includes(language) ? language : languages[0] ?? '';
   const max = selected ? maxWildcardsFrom(fragments, selected) : 0;
   const wildcards = Math.min(Math.max(1, amount), Math.max(1, max));
@@ -596,8 +600,8 @@ function WildcardExchange({ fragments, onDone }: { fragments: Record<string, num
         body: JSON.stringify({ language: selected, wildcards }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Exchange failed');
-      toast.success(`+${wildcards} wildcard fragment${wildcards === 1 ? '' : 's'}`);
+      if (!res.ok) throw new Error(data.error || t('failed'));
+      toast.success(t('success', { count: wildcards }));
       onDone();
     } catch (err) {
       toast.error((err as Error).message);
@@ -608,19 +612,19 @@ function WildcardExchange({ fragments, onDone }: { fragments: Record<string, num
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-sm">
-      <span className="font-bold text-amber-200">Wildcards</span>
-      <span className="text-xs text-slate-400">{WILDCARD_EXCHANGE_RATE} fragments of any language → 1 wildcard, which pays for any developer (even ones with no language).</span>
+      <span className="font-bold text-amber-200">{t('title')}</span>
+      <span className="text-xs text-slate-400">{t('text', { rate: WILDCARD_EXCHANGE_RATE })}</span>
       <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-        <select value={selected} onChange={e => setLanguage(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label="Language to trade">
+        <select value={selected} onChange={e => setLanguage(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label={t('languageLabel')}>
           {languages.map(l => <option key={l} value={l}>{l} ({fragments[l]})</option>)}
         </select>
         <input
           type="number" min={1} max={max} value={wildcards}
           onChange={e => setAmount(Number(e.target.value))}
-          className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label="Wildcards to get"
+          className="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-white" aria-label={t('amountLabel')}
         />
         <button onClick={exchange} disabled={busy} className="rounded-lg bg-amber-500/20 px-3 py-1.5 font-bold text-amber-100 hover:bg-amber-500/30 disabled:opacity-50">
-          {busy ? '…' : `Trade ${wildcards * WILDCARD_EXCHANGE_RATE} → ${wildcards}`}
+          {busy ? '…' : t('trade', { cost: wildcards * WILDCARD_EXCHANGE_RATE, wildcards })}
         </button>
       </div>
     </div>

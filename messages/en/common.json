@@ -1,0 +1,27 @@
+{
+  "card": {
+    "serial": "Card serial",
+    "shinyStamp": "SHINY",
+    "signatureStamp": "SIGNATURE",
+    "rarityLevel": "{rarity} ({level} of 5)",
+    "exhausted": "Exhausted",
+    "fatigued": "Fatigued",
+    "stamina": "Stamina",
+    "attack": "Attack",
+    "defense": "Defense",
+    "hp": "HP",
+    "shiny": "Shiny",
+    "signature": "Signature",
+    "openGithub": "{card}: open GitHub profile"
+  },
+  "share": {
+    "copyPrompt": "Copy this link:",
+    "firstShareBonus": "+{bits} BITS for your first share!",
+    "copied": "Copied!",
+    "copyLink": "Copy link",
+    "postOnX": "Post on X",
+    "share": "Share…"
+  },
+  "rankBadge": "{tier} rank (rating {rating})",
+  "frame": "{label} frame"
+}

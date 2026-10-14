@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { SpeakerHigh, SpeakerLow, SpeakerSlash } from '@phosphor-icons/react';
+import { useTranslations } from 'next-intl';
 import { playSample, useAudioMuted, useAudioVolume } from '@/lib/audioManager';
 
 /** Header button with the game's sound settings: volume slider and mute. */
@@ -11,6 +12,7 @@ export function SoundControl() {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
   const sliderId = useId();
+  const t = useTranslations('nav.sound');
 
   // Close on Escape or a click outside (a popover, not a modal: the page stays usable)
   useEffect(() => {
@@ -33,7 +35,7 @@ export function SoundControl() {
     <div ref={wrapper} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        aria-label={silent ? 'Sound: off' : `Sound: ${percent}%`}
+        aria-label={silent ? t('off') : t('level', { percent })}
         aria-expanded={open}
         className="flex min-h-[44px] min-w-[44px] items-center justify-center text-slate-400 transition-colors hover:text-white"
       >
@@ -42,8 +44,8 @@ export function SoundControl() {
       {open && (
         <div className="absolute right-0 top-full z-[60] mt-2 w-60 rounded-xl border border-slate-700 bg-slate-900 p-4 shadow-2xl">
           <div className="flex items-center justify-between">
-            <label htmlFor={sliderId} className="text-sm font-bold text-white">Volume</label>
-            <span className="font-mono text-xs text-slate-400">{isMuted ? 'muted' : `${percent}%`}</span>
+            <label htmlFor={sliderId} className="text-sm font-bold text-white">{t('volume')}</label>
+            <span className="font-mono text-xs text-slate-400">{isMuted ? t('muted') : `${percent}%`}</span>
           </div>
           <input
             id={sliderId}
@@ -64,7 +66,7 @@ export function SoundControl() {
             aria-pressed={isMuted}
             className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-800 py-2 text-sm font-bold text-slate-200 transition-colors hover:bg-slate-700"
           >
-            {isMuted ? 'Turn sound on' : 'Mute all sounds'}
+            {isMuted ? t('turnOn') : t('muteAll')}
           </button>
         </div>
       )}

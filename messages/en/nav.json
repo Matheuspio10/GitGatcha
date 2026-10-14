@@ -1,0 +1,59 @@
+{
+  "home": "GitGacha home",
+  "language": "Language",
+  "links": {
+    "store": "Gacha",
+    "inventory": "Inventory",
+    "collection": "Collection",
+    "forge": "Forge",
+    "battle": "Battle",
+    "leaderboard": "Rankings",
+    "friends": "Friends",
+    "wiki": "Wiki"
+  },
+  "tabs": {
+    "store": "Gacha",
+    "inventory": "Packs",
+    "collection": "Cards",
+    "battle": "Battle",
+    "more": "More",
+    "moreLabel": "More: open the menu",
+    "main": "Main"
+  },
+  "login": "Login / Register",
+  "logout": "Logout",
+  "menu": "Menu",
+  "closeMenu": "Close the menu",
+  "viewProfile": "View Profile",
+  "bitsButton": "{amount} BITS: how to earn more",
+  "bitsUnit": "Bits",
+  "bits": {
+    "title": "Your BITS",
+    "balance": "Current balance",
+    "history": "History",
+    "howToEarn": "How to earn BITS",
+    "close": "Close",
+    "daily": "Daily reward",
+    "dailyText": "Claim free BITS once a day in the Gacha shop.",
+    "dailyCta": "Go to Gacha",
+    "missions": "Daily missions",
+    "missionsText": "Finish missions for bonus BITS. They refresh every day.",
+    "missionsCta": "See missions",
+    "battles": "Battles",
+    "battlesText": "Win battles and league matches to earn BITS.",
+    "battlesCta": "Start a battle",
+    "levels": "Level-ups",
+    "levelsText": "Leveling up grants rewards, including BITS and boosters.",
+    "levelsCta": "Read the wiki",
+    "buySoon": "Buy BITS — coming soon.",
+    "buySoonText": "BITS can't be bought with real money yet."
+  },
+  "sound": {
+    "off": "Sound: off",
+    "level": "Sound: {percent}%",
+    "volume": "Volume",
+    "muted": "muted",
+    "turnOn": "Turn sound on",
+    "muteAll": "Mute all sounds"
+  }
+}

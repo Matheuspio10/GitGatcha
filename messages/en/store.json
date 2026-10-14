@@ -1,0 +1,107 @@
+{
+  "header": {
+    "title": "The Repository",
+    "subtitle": "Summon new developers to your team."
+  },
+  "ready": "Ready!",
+  "daily": {
+    "checking": "Checking...",
+    "cooldown": "Daily: {time}",
+    "claiming": "Claiming...",
+    "claim": "Claim Day {day}: {bits} Bits",
+    "claimWithPack": "Claim Day {day}: {bits} Bits + Pack",
+    "claimed": "+{amount} Bits claimed!",
+    "claimedDay": "Day {day}: +{amount} Bits claimed!",
+    "packGranted": "{pack} added to your inventory!",
+    "failed": "Failed to claim daily reward"
+  },
+  "errors": {
+    "network": "Network error",
+    "notEnoughBits": "Not enough Bits!",
+    "purchaseFailed": "Failed to purchase"
+  },
+  "calendar": {
+    "title": "Login Calendar",
+    "streakDay": "Streak: day {day} of 7",
+    "buildStreak": "Claim daily to build a streak",
+    "keepStreak": "claim within 48h to keep it",
+    "day": "Day {day}",
+    "dayLabel": "Day {day}: {bits} Bits ({state})",
+    "dayLabelBooster": "Day {day}: {bits} Bits and a booster ({state})",
+    "today": "Today",
+    "states": {
+      "claimed": "claimed",
+      "today": "today",
+      "upcoming": "upcoming"
+    }
+  },
+  "dropRates": {
+    "pityNext": "Legendary guaranteed in your next pack!",
+    "pityWithin": "Legendary guaranteed within {count} packs",
+    "pityEvery": "Legendary guaranteed at least every {count} packs",
+    "button": "Drop rates",
+    "card": "Card",
+    "average": "Average",
+    "footnote": "Odds of each card of a booster, before the star bonus (a developer with enough stars is promoted one rarity on reveal). Packs marked \"≥1\" upgrade their lowest card to that rarity. After {count} packs in a row without a Legendary, the next pack's last card is a Legendary. All-Common packs don't count towards the pity."
+  },
+  "purchase": {
+    "title": "Buy <pack>{name}</pack>?",
+    "surprise": "Contents are a surprise, the odds are not.",
+    "cost": "Cost",
+    "youWillHave": "You will have",
+    "bits": "{amount} BITS",
+    "short": "{amount} BITS short",
+    "cancel": "Cancel",
+    "buy": "Buy",
+    "buyAndOpen": "Buy & open",
+    "successTitle": "Purchase Successful",
+    "successText": "{pack} added to your inventory.",
+    "openNow": "Open now →"
+  },
+  "categories": {
+    "event": "Weekly Event",
+    "language": "Language & Stack",
+    "contributor": "Contributor Type",
+    "era": "Era",
+    "company": "Company & Origin",
+    "regional": "Regional",
+    "rarity": "Rarity-Focused"
+  },
+  "pack": {
+    "ariaLabel": "{name}: {count, plural, one {# card} other {# cards}} for {cost} BITS",
+    "cards": "{count, plural, one {# Card} other {# Cards}}",
+    "onSale": "On sale for {time}",
+    "unknownContents": "??? Unknown Contents",
+    "atLeastOne": "≥1 {rarity}",
+    "mystery": "Mystery"
+  },
+  "odds": {
+    "title": "Chance of at least one…",
+    "allCommon": "Every card is a Common.",
+    "summary": "{count, plural, one {# card} other {# cards}}{hasMin, select, yes {, at least one {rarity} or better guaranteed} other {}}{pity, select, yes {, and your pity makes the last one a Legendary} other {}}.",
+    "starNote": "Odds before the star bonus: a developer with enough stars is promoted one rarity."
+  },
+  "missions": {
+    "title": "Daily Standup",
+    "badge": "Missions",
+    "newIn": "New missions in {time}",
+    "newSoon": "New missions in a moment...",
+    "today": "Today",
+    "todaySwap": "Today · you can swap one mission",
+    "thisWeek": "This week",
+    "newOnesIn": "· new ones in {time}",
+    "dev": "Dev mission",
+    "swapTitle": "Swap this mission (once a day)",
+    "swapLabel": "Swap this mission",
+    "checking": "Checking…",
+    "checkGithub": "Check GitHub",
+    "devHelp": "Do it on your real GitHub account (public activity only), then press Check GitHub. Resets at midnight UTC.",
+    "devEmpty": "Your dev mission shows up here.",
+    "connect": "Connect your GitHub account to get a daily dev mission (push a commit, open a PR, review…) that pays BITS. <link>Connect it in your profile</link>.",
+    "newMission": "New mission: {description}",
+    "githubReward": "+{reward} BITS for your GitHub activity!",
+    "notYet": "Not on GitHub yet. Only public activity counts and it can take a few minutes to show up.",
+    "notYetLogin": "Not on GitHub yet for @{login}. Only public activity counts and it can take a few minutes to show up.",
+    "error": "Something went wrong"
+  }
+}

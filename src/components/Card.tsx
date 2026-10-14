@@ -8,6 +8,7 @@ import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtil
 import { useHoloGyro } from '@/lib/holoTilt';
 import { cardPassive } from '@/lib/battleConfig';
 import { cardTitle, languageStyle, rarityLevel, serialHash, RARITY_ORDER, type DevProfile } from '@/lib/cardVisuals';
+import { useTranslations } from 'next-intl';
 
 export type CardProps = {
   id?: string;
@@ -85,6 +86,7 @@ export function Card({
   edition,
   ...profile
 }: CardProps) {
+  const t = useTranslations('common.card');
   const isSignature = edition === 'signature';
   const tier = loyaltyTier || 'none';
   const loyalty = LOYALTY_VISUALS[tier] || {};
@@ -172,7 +174,7 @@ export function Card({
                   @{githubUsername} · <em>{title.title}</em>
                 </div>
               </div>
-              <div className="gg-serial" title="Card serial">{isSignature ? '1/1' : `#${hash}`}</div>
+              <div className="gg-serial" title={t('serial')}>{isSignature ? '1/1' : `#${hash}`}</div>
             </div>
 
             {/* Art: avatar in a rarity-coloured window, language emblem, rarity commit graph */}
@@ -184,10 +186,10 @@ export function Card({
                   <div className="absolute inset-0 grid place-items-center font-display text-5xl text-white/30">{(name || '?')[0]}</div>
                 )}
                 {useRarityFrame && rarityKey === 'Legendary' && <div aria-hidden className="gg-rays" />}
-                {isShiny && !isSignature && <span className="gg-stamp">SHINY</span>}
+                {isShiny && !isSignature && <span className="gg-stamp">{t('shinyStamp')}</span>}
                 {isSignature && (
                   <>
-                    <span className="gg-stamp">SIGNATURE</span>
+                    <span className="gg-stamp">{t('signatureStamp')}</span>
                     <span className="absolute z-[4] right-2.5 bottom-3 -rotate-[8deg] font-script text-3xl text-white pointer-events-none" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>
                       {githubUsername}
                     </span>
@@ -200,7 +202,7 @@ export function Card({
                 )}
               </div>
               <div className="gg-hex absolute z-[3] top-[7px] left-[7px] drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]" title={primaryLanguage}>{lang.abbr}</div>
-              <div className="gg-graph" title={rarityKey} aria-label={`${rarityKey} (${level} of 5)`}>{graph}</div>
+              <div className="gg-graph" title={rarityKey} aria-label={t('rarityLevel', { rarity: rarityKey, level })}>{graph}</div>
             </div>
 
             {/* Combat passive */}
@@ -223,7 +225,7 @@ export function Card({
               <div className="relative z-10 mt-2">
                 <div className="flex justify-between items-center mb-1 font-mono text-[10px] font-bold uppercase tracking-wider">
                   <span className={currentStamina < 60 ? 'text-yellow-500' : 'text-slate-400'}>
-                    {exhausted ? 'Exhausted' : currentStamina < 60 ? 'Fatigued' : 'Stamina'}
+                    {exhausted ? t('exhausted') : currentStamina < 60 ? t('fatigued') : t('stamina')}
                   </span>
                   <span className={currentStamina < 60 ? 'text-red-400' : currentStamina < 80 ? 'text-yellow-400' : 'text-green-400'}>{currentStamina}/100</span>
                 </div>
@@ -238,15 +240,15 @@ export function Card({
 
             {/* ATK / DEF / HP */}
             <div className="relative z-10 grid grid-cols-3 gap-[5px] mt-2">
-              <div className="gg-stat gg-chamfer" style={{ '--sc': '#ff5a5f' } as React.CSSProperties} title="Attack">
+              <div className="gg-stat gg-chamfer" style={{ '--sc': '#ff5a5f' } as React.CSSProperties} title={t('attack')}>
                 <Sword size={14} weight="fill" color="#ff5a5f" />
                 <b className={clsx(fatigued && 'text-red-400', isEternal && 'text-cyan-300')}>{displayAtk}</b>
               </div>
-              <div className="gg-stat gg-chamfer" style={{ '--sc': '#4f9dff' } as React.CSSProperties} title="Defense">
+              <div className="gg-stat gg-chamfer" style={{ '--sc': '#4f9dff' } as React.CSSProperties} title={t('defense')}>
                 <Shield size={14} weight="fill" color="#4f9dff" />
                 <b className={clsx(fatigued && 'text-blue-300', isEternal && 'text-cyan-300')}>{displayDef}</b>
               </div>
-              <div className="gg-stat gg-chamfer" style={{ '--sc': '#3ddc97' } as React.CSSProperties} title="HP">
+              <div className="gg-stat gg-chamfer" style={{ '--sc': '#3ddc97' } as React.CSSProperties} title={t('hp')}>
                 <Heart size={14} weight="fill" color="#3ddc97" />
                 <b className={clsx(isEternal && 'text-cyan-300')}>{hp}</b>
               </div>
@@ -254,7 +256,7 @@ export function Card({
 
             <div className="gg-foot relative z-10">
               <span>GITGACHA</span>
-              <b>{isSignature ? 'SIGNATURE' : rarityKey.toUpperCase()}{isShiny && !isSignature ? ' ✦' : ''}</b>
+              <b>{isSignature ? t('signatureStamp') : rarityKey.toUpperCase()}{isShiny && !isSignature ? ' ✦' : ''}</b>
             </div>
 
             {/* Effects */}
@@ -298,7 +300,7 @@ export function Card({
       whileHover={{ scale: 1.04, translateY: -2 }}
       className={cardClasses}
       style={cardStyle}
-      aria-label={`${name}, ${rarityKey}${isShiny ? ' Shiny' : ''}${isSignature ? ' Signature' : ''}: open GitHub profile`}
+      aria-label={t('openGithub', { card: `${name}, ${rarityKey}${isShiny ? ` ${t('shiny')}` : ''}${isSignature ? ` ${t('signature')}` : ''}` })}
       {...pointer}
     >
       {cardContent}

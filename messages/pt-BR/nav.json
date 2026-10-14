@@ -1,0 +1,59 @@
+{
+  "home": "Página inicial do GitGacha",
+  "language": "Idioma",
+  "links": {
+    "store": "Gacha",
+    "inventory": "Inventário",
+    "collection": "Coleção",
+    "forge": "Forja",
+    "battle": "Batalha",
+    "leaderboard": "Rankings",
+    "friends": "Amigos",
+    "wiki": "Wiki"
+  },
+  "tabs": {
+    "store": "Gacha",
+    "inventory": "Packs",
+    "collection": "Cartas",
+    "battle": "Batalha",
+    "more": "Mais",
+    "moreLabel": "Mais: abrir o menu",
+    "main": "Principal"
+  },
+  "login": "Entrar / Criar conta",
+  "logout": "Sair",
+  "menu": "Menu",
+  "closeMenu": "Fechar o menu",
+  "viewProfile": "Ver perfil",
+  "bitsButton": "{amount} BITS: como ganhar mais",
+  "bitsUnit": "Bits",
+  "bits": {
+    "title": "Seus BITS",
+    "balance": "Saldo atual",
+    "history": "Histórico",
+    "howToEarn": "Como ganhar BITS",
+    "close": "Fechar",
+    "daily": "Recompensa diária",
+    "dailyText": "Pegue BITS de graça uma vez por dia na loja do Gacha.",
+    "dailyCta": "Ir para o Gacha",
+    "missions": "Missões diárias",
+    "missionsText": "Complete missões para ganhar BITS extras. Elas renovam todo dia.",
+    "missionsCta": "Ver missões",
+    "battles": "Batalhas",
+    "battlesText": "Vença batalhas e partidas de liga para ganhar BITS.",
+    "battlesCta": "Começar uma batalha",
+    "levels": "Subir de nível",
+    "levelsText": "Subir de nível dá recompensas, como BITS e boosters.",
+    "levelsCta": "Ler a wiki",
+    "buySoon": "Comprar BITS — em breve.",
+    "buySoonText": "Ainda não dá para comprar BITS com dinheiro de verdade."
+  },
+  "sound": {
+    "off": "Som: desligado",
+    "level": "Som: {percent}%",
+    "volume": "Volume",
+    "muted": "mudo",
+    "turnOn": "Ligar o som",
+    "muteAll": "Silenciar todos os sons"
+  }
+}

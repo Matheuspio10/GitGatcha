@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "title": "GitGacha | A Forja",
+    "description": "Invoque cartas de devs específicos usando fragmentos."
+  },
+  "header": {
+    "title": "A Forja",
+    "subtitle": "Junte fragmentos de linguagem com BITS para invocar devs específicos.",
+    "wikiLink": "Saiba mais na Wiki",
+    "wallet": "Seus fragmentos"
+  },
+  "wildcard": "Coringa",
+  "emptyWallet": {
+    "title": "Nenhum fragmento ainda",
+    "text": "Cartas repetidas e alguns drops de pack viram fragmentos da linguagem delas. Junte o bastante e forje o dev que você quiser.",
+    "openPack": "Abrir um pack",
+    "visitStore": "Ir para a loja"
+  },
+  "reveal": {
+    "title": "Invocação concluída!",
+    "back": "Voltar para a Forja"
+  },
+  "featured": {
+    "label": "Dev da Semana · {percent}% off",
+    "text": "Fragmentos e BITS custam {percent}% menos na Forja por mais {time}, até o fim do Sprint semanal.",
+    "cta": "Ver o preço",
+    "badge": "Dev da Semana",
+    "fullCost": "(<s>{amount}</s> Dev da Semana)"
+  },
+  "tabs": {
+    "invoke": "Invocar",
+    "wishlist": "Lista de desejos",
+    "history": "Histórico"
+  },
+  "search": {
+    "title": "Buscar dev",
+    "placeholder": "Usuário do GitHub...",
+    "button": "Buscar",
+    "targetAcquired": "Alvo encontrado",
+    "toggleWishlist": "Adicionar ou tirar da lista de desejos",
+    "awaitingTitle": "Aguardando alvo",
+    "awaitingText": "Busque um dev pelo usuário do GitHub para ver os requisitos de invocação e a carta dele."
+  },
+  "requirements": {
+    "title": "Requisitos de invocação",
+    "wildcardFragments": "Fragmentos coringa",
+    "langFragments": "Fragmentos de {lang}",
+    "required": "Necessário: {amount}",
+    "noLanguage": "sem linguagem principal, pago com coringas",
+    "wildcardsCover": "coringas cobrem o que falta de {lang}",
+    "usesWildcards": "Usa {wildcards, plural, one {# coringa} other {# coringas}}",
+    "usesMixed": "Usa {count} de {lang} + {wildcards, plural, one {# coringa} other {# coringas}}",
+    "deficit": "Faltam: {amount}",
+    "invoking": "Invocando...",
+    "invoke": "Invocar dev",
+    "missing": "Requisitos insuficientes"
+  },
+  "recommendation": {
+    "title": "Dica: farme fragmentos de {lang}",
+    "text": "Abra estes packs para ganhar fragmentos de {lang} com drops diretos e conversão de repetidas:"
+  },
+  "wishlist": {
+    "title": "Sua lista de desejos",
+    "empty": "Sua lista de desejos está vazia. Busque devs e clique na estrela para acompanhá-los aqui!",
+    "remove": "Remover",
+    "view": "Ver na Forja"
+  },
+  "history": {
+    "title": "Histórico de fragmentos",
+    "empty": "Nenhuma movimentação de fragmentos ainda.",
+    "date": "Data",
+    "source": "Origem",
+    "language": "Linguagem",
+    "amount": "Quantidade"
+  },
+  "exchange": {
+    "title": "Coringas",
+    "text": "{rate} fragmentos de qualquer linguagem → 1 coringa, que paga qualquer dev (até os sem linguagem).",
+    "languageLabel": "Linguagem para trocar",
+    "amountLabel": "Coringas a receber",
+    "trade": "Trocar {cost} → {wildcards}",
+    "success": "+{count, plural, one {# fragmento coringa} other {# fragmentos coringa}}",
+    "failed": "A troca falhou"
+  },
+  "toasts": {
+    "notFound": "Dev não encontrado",
+    "searchFailed": "A busca falhou",
+    "invoked": "Você invocou {name}!",
+    "invokeFailed": "A invocação falhou",
+    "wishlistAdded": "Adicionado à lista de desejos",
+    "wishlistRemoved": "Removido da lista de desejos",
+    "wishlistFailed": "Não deu para atualizar a lista de desejos"
+  }
+}

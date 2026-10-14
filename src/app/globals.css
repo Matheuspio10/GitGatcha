@@ -62,7 +62,7 @@ body {
 :root {
   --bottom-nav-h: 0px;
 }
-@media (max-width: 1023.98px) {
+@media (max-width: 1279.98px) {
   body.has-bottom-nav {
     --bottom-nav-h: calc(4rem + env(safe-area-inset-bottom));
   }

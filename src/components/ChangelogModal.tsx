@@ -5,6 +5,7 @@ import { X, CaretDown, CaretUp } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import type { ChangelogEntry } from './ChangelogFeature';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
 
 export function ChangelogModal({
   entries,
@@ -17,6 +18,7 @@ export function ChangelogModal({
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(entries.length > 0 ? entries[0].id : null);
   const panelRef = useDialog(true, onClose);
+  const t = useTranslations('notifications.changelog');
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id));
@@ -34,11 +36,11 @@ export function ChangelogModal({
       >
         <div className="flex items-center justify-between p-4 md:p-5 border-b border-slate-800 shrink-0">
           <h2 id="changelog-title" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-            Changelog
+            {t('title')}
           </h2>
           <button 
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t('close')}
             className="text-slate-400 hover:text-white transition-colors p-1"
           >
             <X size={24} />
@@ -47,7 +49,7 @@ export function ChangelogModal({
 
         <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
           {entries.length === 0 ? (
-            <div className="text-center text-slate-500 py-10 font-bold">No update history found.</div>
+            <div className="text-center text-slate-500 py-10 font-bold">{t('empty')}</div>
           ) : (
             entries.map((entry, idx) => {
               const isUnread = !seenIds.includes(entry.id);
@@ -68,7 +70,7 @@ export function ChangelogModal({
                           <span className="text-sm font-bold text-indigo-400">{entry.version}</span>
                           {isUnread && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-500 text-white">
-                              New
+                              {t('new')}
                             </span>
                           )}
                         </div>

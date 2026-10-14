@@ -6,6 +6,7 @@ import { CaretDown, CaretUp, Stack } from '@phosphor-icons/react';
 import { RARITY_ORDER } from '@/lib/rarity';
 import type { SetProgress } from '@/lib/collections';
 import { RarityGem } from '@/components/RarityGem';
+import { useTranslations } from 'next-intl';
 
 /**
  * Language sets of the collection: one slot per rarity in each combat language.
@@ -13,6 +14,7 @@ import { RarityGem } from '@/components/RarityGem';
  */
 export function LanguageSets({ sets, profileHref }: { sets: SetProgress[]; profileHref?: string }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations('collection.sets');
   const complete = sets.filter(s => s.complete).length;
   // Closest to done first, then alphabetical
   const sorted = [...sets].sort((a, b) => b.owned.length - a.owned.length || a.language.localeCompare(b.language));
@@ -23,9 +25,9 @@ export function LanguageSets({ sets, profileHref }: { sets: SetProgress[]; profi
         <span className="flex items-center gap-3">
           <Stack size={22} weight="fill" className="text-fuchsia-400" />
           <span>
-            <span className="block text-lg font-black text-white">Language sets</span>
+            <span className="block text-lg font-black text-white">{t('title')}</span>
             <span className="block text-xs text-slate-400">
-              {complete} of {sets.length} complete · own a card of every rarity in a language to complete its set and unlock titles and frames
+              {t('summary', { complete, total: sets.length })}
             </span>
           </span>
         </span>
@@ -43,12 +45,12 @@ export function LanguageSets({ sets, profileHref }: { sets: SetProgress[]; profi
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-white">{set.language}</span>
                   <span className={`text-[11px] ${set.complete ? 'text-fuchsia-300' : 'text-slate-500'}`}>
-                    {set.complete ? `Complete · "${set.language} Collector"` : `${Math.round(set.share * 100)}%`}
+                    {set.complete ? t('complete', { language: set.language }) :`${Math.round(set.share * 100)}%`}
                   </span>
                 </span>
                 <span className="flex gap-1">
                   {RARITY_ORDER.map(r => (
-                    <span key={r} className={set.owned.includes(r) ? '' : 'opacity-20 grayscale'} title={`${r}${set.owned.includes(r) ? '' : ' (missing)'}`}>
+                    <span key={r} className={set.owned.includes(r) ? '' : 'opacity-20 grayscale'} title={set.owned.includes(r) ? r : t('missing', { rarity: r })}>
                       <RarityGem rarity={r} size={14} />
                     </span>
                   ))}
@@ -57,8 +59,8 @@ export function LanguageSets({ sets, profileHref }: { sets: SetProgress[]; profi
             ))}
           </div>
           <p className="mt-3 text-xs text-slate-500">
-            Missing a slot? The <Link href="/forge" className="text-indigo-300 hover:underline">Forge</Link> invokes any developer.
-            {profileHref && <> Equip what you unlocked on your <Link href={profileHref} className="text-indigo-300 hover:underline">profile</Link>.</>}
+            {t.rich('forgeHint', { link: chunks => <Link href="/forge" className="text-indigo-300 hover:underline">{chunks}</Link> })}
+            {profileHref && <>{' '}{t.rich('profileHint', { link: chunks => <Link href={profileHref} className="text-indigo-300 hover:underline">{chunks}</Link> })}</>}
           </p>
         </>
       )}

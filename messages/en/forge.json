@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "title": "GitGacha | The Forge",
+    "description": "Invoke specific developer cards using fragments."
+  },
+  "header": {
+    "title": "The Forge",
+    "subtitle": "Combine Language Fragments with BITS to invoke specific developers.",
+    "wikiLink": "Learn more in the Wiki",
+    "wallet": "Your Fragment Wallet"
+  },
+  "wildcard": "Wildcard",
+  "emptyWallet": {
+    "title": "No fragments yet",
+    "text": "Duplicate cards and some pack drops turn into fragments of their language. Collect enough and forge the developer you want.",
+    "openPack": "Open a pack",
+    "visitStore": "Visit the store"
+  },
+  "reveal": {
+    "title": "Invocation Successful!",
+    "back": "Return to Forge"
+  },
+  "featured": {
+    "label": "Dev of the Week · {percent}% off",
+    "text": "Fragments and BITS cost {percent}% less at the Forge for {time} more, until the Weekly Sprint ends.",
+    "cta": "See the price",
+    "badge": "Dev of the Week",
+    "fullCost": "(<s>{amount}</s> Dev of the Week)"
+  },
+  "tabs": {
+    "invoke": "Invoke",
+    "wishlist": "Wishlist",
+    "history": "History"
+  },
+  "search": {
+    "title": "Search Developer",
+    "placeholder": "GitHub username...",
+    "button": "Search",
+    "targetAcquired": "Target Acquired",
+    "toggleWishlist": "Toggle Wishlist",
+    "awaitingTitle": "Awaiting Target",
+    "awaitingText": "Search for a developer by GitHub username to see their invocation requirements and stats card."
+  },
+  "requirements": {
+    "title": "Invocation Requirements",
+    "wildcardFragments": "Wildcard Fragments",
+    "langFragments": "{lang} Fragments",
+    "required": "Required: {amount}",
+    "noLanguage": "no primary language, paid with wildcards",
+    "wildcardsCover": "wildcards cover what {lang} lacks",
+    "usesWildcards": "Uses {wildcards} wildcard",
+    "usesMixed": "Uses {count} {lang} + {wildcards} wildcard",
+    "deficit": "Deficit: {amount}",
+    "invoking": "Invoking...",
+    "invoke": "Invoke Developer",
+    "missing": "Missing Requirements"
+  },
+  "recommendation": {
+    "title": "Recommendation: Farm {lang} Fragments",
+    "text": "Open these packs to earn {lang} fragments from direct drops and duplicate conversions:"
+  },
+  "wishlist": {
+    "title": "Your Wishlist",
+    "empty": "Your wishlist is empty. Search for developers and click the star icon to track them here!",
+    "remove": "Remove",
+    "view": "View in Forge"
+  },
+  "history": {
+    "title": "Fragment History",
+    "empty": "No fragment activity yet.",
+    "date": "Date",
+    "source": "Log Source",
+    "language": "Language",
+    "amount": "Amount"
+  },
+  "exchange": {
+    "title": "Wildcards",
+    "text": "{rate} fragments of any language → 1 wildcard, which pays for any developer (even ones with no language).",
+    "languageLabel": "Language to trade",
+    "amountLabel": "Wildcards to get",
+    "trade": "Trade {cost} → {wildcards}",
+    "success": "+{count, plural, one {# wildcard fragment} other {# wildcard fragments}}",
+    "failed": "Exchange failed"
+  },
+  "toasts": {
+    "notFound": "Developer not found",
+    "searchFailed": "Search failed",
+    "invoked": "Successfully invoked {name}!",
+    "invokeFailed": "Invocation failed",
+    "wishlistAdded": "Added to Wishlist",
+    "wishlistRemoved": "Removed from Wishlist",
+    "wishlistFailed": "Wishlist update failed"
+  }
+}

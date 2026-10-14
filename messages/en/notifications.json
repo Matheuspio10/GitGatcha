@@ -1,0 +1,31 @@
+{
+  "bell": {
+    "title": "Notifications",
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutes": "{count}m ago",
+      "hours": "{count}h ago",
+      "days": "{count}d ago"
+    },
+    "levelUp": {
+      "title": "Level {level} Reached!",
+      "body": "You reached level {level} and won: <b>{packs}</b>",
+      "coins": "+ {coins} Coins",
+      "claim": "Claim Reward"
+    },
+    "toastTitle": "{type, select, friend_request {New friend request} battle_challenge {New battle challenge} other {New notification}}",
+    "viewDetails": "View Details",
+    "markAllRead": "Mark all as read",
+    "allRead": "All Read",
+    "empty": "No notifications",
+    "emptyText": "You're all caught up!",
+    "dismiss": "Dismiss",
+    "viewAll": "View all activity"
+  },
+  "changelog": {
+    "title": "Changelog",
+    "close": "Close",
+    "empty": "No update history found.",
+    "new": "New"
+  }
+}

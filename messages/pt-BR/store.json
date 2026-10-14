@@ -1,0 +1,107 @@
+{
+  "header": {
+    "title": "O Repositório",
+    "subtitle": "Invoque novos devs para o seu time."
+  },
+  "ready": "Pronto!",
+  "daily": {
+    "checking": "Verificando...",
+    "cooldown": "Diária: {time}",
+    "claiming": "Resgatando...",
+    "claim": "Resgatar dia {day}: {bits} Bits",
+    "claimWithPack": "Resgatar dia {day}: {bits} Bits + Pack",
+    "claimed": "+{amount} Bits resgatados!",
+    "claimedDay": "Dia {day}: +{amount} Bits resgatados!",
+    "packGranted": "{pack} foi para o seu inventário!",
+    "failed": "Não deu para resgatar a recompensa diária"
+  },
+  "errors": {
+    "network": "Erro de conexão",
+    "notEnoughBits": "Bits insuficientes!",
+    "purchaseFailed": "Não deu para comprar"
+  },
+  "calendar": {
+    "title": "Calendário de login",
+    "streakDay": "Sequência: dia {day} de 7",
+    "buildStreak": "Resgate todo dia para montar uma sequência",
+    "keepStreak": "resgate em até 48h para mantê-la",
+    "day": "Dia {day}",
+    "dayLabel": "Dia {day}: {bits} Bits ({state})",
+    "dayLabelBooster": "Dia {day}: {bits} Bits e um booster ({state})",
+    "today": "Hoje",
+    "states": {
+      "claimed": "resgatado",
+      "today": "hoje",
+      "upcoming": "em breve"
+    }
+  },
+  "dropRates": {
+    "pityNext": "Legendary garantido no seu próximo pack!",
+    "pityWithin": "Legendary garantido em até {count} packs",
+    "pityEvery": "Legendary garantido pelo menos a cada {count} packs",
+    "button": "Chances de drop",
+    "card": "Carta",
+    "average": "Média",
+    "footnote": "Chances de cada carta de um booster, antes do bônus de estrelas (um dev com estrelas suficientes sobe uma raridade ao ser revelado). Packs marcados com \"≥1\" sobem a carta mais baixa para essa raridade. Depois de {count} packs seguidos sem um Legendary, a última carta do próximo pack é um Legendary. Packs só de Common não contam para a garantia."
+  },
+  "purchase": {
+    "title": "Comprar <pack>{name}</pack>?",
+    "surprise": "O conteúdo é surpresa, as chances não.",
+    "cost": "Custo",
+    "youWillHave": "Você vai ficar com",
+    "bits": "{amount} BITS",
+    "short": "faltam {amount} BITS",
+    "cancel": "Cancelar",
+    "buy": "Comprar",
+    "buyAndOpen": "Comprar e abrir",
+    "successTitle": "Compra feita",
+    "successText": "{pack} foi para o seu inventário.",
+    "openNow": "Abrir agora →"
+  },
+  "categories": {
+    "event": "Evento semanal",
+    "language": "Linguagem & Stack",
+    "contributor": "Tipo de contribuidor",
+    "era": "Era",
+    "company": "Empresa & Origem",
+    "regional": "Regional",
+    "rarity": "Foco em raridade"
+  },
+  "pack": {
+    "ariaLabel": "{name}: {count, plural, one {# carta} other {# cartas}} por {cost} BITS",
+    "cards": "{count, plural, one {# Carta} other {# Cartas}}",
+    "onSale": "À venda por {time}",
+    "unknownContents": "??? Conteúdo desconhecido",
+    "atLeastOne": "≥1 {rarity}",
+    "mystery": "Mistério"
+  },
+  "odds": {
+    "title": "Chance de pelo menos uma…",
+    "allCommon": "Todas as cartas são Common.",
+    "summary": "{count, plural, one {# carta} other {# cartas}}{hasMin, select, yes {, pelo menos uma {rarity} ou melhor garantida} other {}}{pity, select, yes {, e a sua garantia faz a última ser um Legendary} other {}}.",
+    "starNote": "Chances antes do bônus de estrelas: um dev com estrelas suficientes sobe uma raridade."
+  },
+  "missions": {
+    "title": "Daily Standup",
+    "badge": "Missões",
+    "newIn": "Novas missões em {time}",
+    "newSoon": "Novas missões em instantes...",
+    "today": "Hoje",
+    "todaySwap": "Hoje · você pode trocar uma missão",
+    "thisWeek": "Esta semana",
+    "newOnesIn": "· novas em {time}",
+    "dev": "Missão dev",
+    "swapTitle": "Trocar esta missão (uma vez por dia)",
+    "swapLabel": "Trocar esta missão",
+    "checking": "Verificando…",
+    "checkGithub": "Verificar GitHub",
+    "devHelp": "Faça na sua conta real do GitHub (só atividade pública conta) e depois toque em Verificar GitHub. Renova à meia-noite UTC.",
+    "devEmpty": "Sua missão dev aparece aqui.",
+    "connect": "Conecte sua conta do GitHub para ganhar uma missão dev diária (dar push num commit, abrir um PR, revisar…) que paga BITS. <link>Conecte no seu perfil</link>.",
+    "newMission": "Nova missão: {description}",
+    "githubReward": "+{reward} BITS pela sua atividade no GitHub!",
+    "notYet": "Ainda não apareceu no GitHub. Só atividade pública conta e pode levar alguns minutos para aparecer.",
+    "notYetLogin": "Ainda não apareceu no GitHub para @{login}. Só atividade pública conta e pode levar alguns minutos para aparecer.",
+    "error": "Algo deu errado"
+  }
+}

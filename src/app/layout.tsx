@@ -13,6 +13,8 @@ import { buildEarnGuide } from "@/lib/earnGuide";
 import { getPackById } from "@/lib/packDefinitions";
 import { STARTER_PACK_ID } from "@/lib/onboarding";
 import { siteUrl } from "@/lib/siteUrl";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 
 // Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
@@ -44,11 +46,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
+  const [user, locale] = await Promise.all([getCurrentUser(), getLocale()]);
 
   return (
-    <html lang="en" className="dark">
+    <html lang={locale} className="dark">
       <body className={`${unbounded.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${caveat.variable} font-sans app-bg text-slate-50 min-h-screen overflow-x-hidden${user ? ' has-bottom-nav' : ''}`}>
+        <NextIntlClientProvider>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
@@ -67,6 +70,7 @@ export default async function RootLayout({
             {children}
           </main>
         </NextAuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

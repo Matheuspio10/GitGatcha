@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
 import { toast } from 'react-hot-toast';
 import { notifyAchievements } from '@/lib/achievementToast';
+import { useTranslations } from 'next-intl';
 
 interface PackVisualTheme {
   gradient: string;
@@ -59,6 +60,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const router = useRouter();
+  const t = useTranslations('inventory');
 
   const fetchInventory = async () => {
     try {
@@ -104,7 +106,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
         const wItem = wishlist.find((w: { primaryLanguage: string, fragmentsRequired: number, name: string }) => w.primaryLanguage === lang);
         if (wItem) {
           const current = fragments[lang] || 0;
-          toast(`🌟 ${lang} fragment earned — ${Math.min(current, wItem.fragmentsRequired)} of ${wItem.fragmentsRequired} toward ${wItem.name}!`, {
+          toast(t('wishlistToast', { language: lang, current: Math.min(current, wItem.fragmentsRequired), required: wItem.fragmentsRequired, name: wItem.name }), {
             duration: 6000,
             style: { background: '#1e1b4b', color: '#fff', border: '1px solid #4f46e5' }
           });
@@ -143,14 +145,14 @@ export default function InventoryClient({ userId }: { userId: string }) {
         router.refresh();
         setApiState('SUCCESS');
       } else {
-        setErrorMessage(data.error || 'Failed to locate enough developers. The API might rate-limited or the pool is empty.');
+        setErrorMessage(data.error || t('error.generic'));
         setApiState('ERROR');
         router.refresh(); // a failed opening gives the pack back: resync the inventory
       }
     })
     .catch(e => {
       console.error(e);
-      setErrorMessage('Network error');
+      setErrorMessage(t('error.network'));
       setApiState('ERROR');
       router.refresh();
     });
@@ -196,13 +198,13 @@ export default function InventoryClient({ userId }: { userId: string }) {
         {errorMessage && (
           <div className="z-30 text-center bg-red-900/50 border border-red-500 rounded-2xl p-8 max-w-lg mt-20 backdrop-blur-md">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Network Intrusion Failed</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">{t('error.title')}</h2>
             <p className="text-red-200 mb-6">{errorMessage}</p>
             <button 
               onClick={resetView}
               className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors"
             >
-              Return to Inventory
+              {t('error.back')}
             </button>
           </div>
         )}
@@ -230,9 +232,9 @@ export default function InventoryClient({ userId }: { userId: string }) {
     <div className="flex flex-col min-h-screen gap-8 pt-8 px-4 max-w-7xl mx-auto">
       <div className="text-center space-y-4">
         <h1 className="text-5xl md:text-6xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-500">
-          Your Inventory
+          {t('title')}
         </h1>
-        <p className="text-xl text-slate-400">Unopened booster packs await.</p>
+        <p className="text-xl text-slate-400">{t('subtitle')}</p>
       </div>
 
       {loading ? (
@@ -242,13 +244,13 @@ export default function InventoryClient({ userId }: { userId: string }) {
       ) : packs.length === 0 ? (
         <div className="text-center py-20 bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-700/50">
           <div className="text-5xl mb-4 text-slate-500">🎒</div>
-          <h3 className="text-2xl font-bold mb-2">Vault is empty</h3>
-          <p className="text-slate-400">Visit the Store or level up to get more booster packs.</p>
+          <h3 className="text-2xl font-bold mb-2">{t('empty.title')}</h3>
+          <p className="text-slate-400">{t('empty.text')}</p>
           <button 
             onClick={() => router.push('/store')}
             className="mt-6 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors"
           >
-            Go to Store
+            {t('empty.goToStore')}
           </button>
         </div>
       ) : (
@@ -263,7 +265,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                 if (opening) return;
                 // If it's a click without dragging, we'll just open the modal or start the flow
                 setSelectedPack(pack);
-              }, `${pack.packName}: open (${pack.count} in inventory)`)}
+              }, t('pack.openAria', { name: pack.packName, count: pack.count }))}
             >
               <div 
                 className="relative aspect-[2/3] rounded-2xl border-4 shadow-xl flex flex-col items-center overflow-hidden transition-all duration-300"
@@ -291,7 +293,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                     className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-80 mb-6 bg-black/20 px-3 py-1 rounded-full" 
                     style={{ color: pack.visualTheme?.textColor || '#fff' }}
                   >
-                    {pack.cardCount} Cards
+                    {t('pack.cards', { count: pack.cardCount })}
                   </div>
                 </div>
 
@@ -301,13 +303,13 @@ export default function InventoryClient({ userId }: { userId: string }) {
                       className="inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded shadow-md"
                       style={{ backgroundColor: getRarityBadgeColor(pack.guaranteedMinRarity), color: '#000' }}
                     >
-                      ≥1 {pack.guaranteedMinRarity}
+                      {t('pack.guaranteed', { rarity: pack.guaranteedMinRarity })}
                     </div>
                   </div>
                 )}
 
                 <div className="absolute bottom-0 w-full bg-black/60 backdrop-blur-sm py-4 text-center font-bold text-white border-t border-white/10 group-hover:bg-indigo-600/80 transition-colors">
-                  Tap to Open
+                  {t('pack.tapToOpen')}
                 </div>
               </div>
             </motion.div>
@@ -337,18 +339,21 @@ export default function InventoryClient({ userId }: { userId: string }) {
               onClick={e => e.stopPropagation()}
             >
               <h3 id="open-pack-title" className="text-2xl font-black mb-2 flex items-center gap-2">
-                Open <span style={{ color: selectedPack.visualTheme?.textColor || '#fff' }}>{selectedPack.packName}</span>?
+                {t.rich('confirm.title', {
+                  name: selectedPack.packName,
+                  pack: chunks => <span style={{ color: selectedPack.visualTheme?.textColor || '#fff' }}>{chunks}</span>,
+                })}
               </h3>
               <p className="text-slate-400 mb-6">
-                This will consume one pack from your inventory and reveal {selectedPack.cardCount} cards.
+                {t('confirm.body', { count: selectedPack.cardCount })}
               </p>
 
               {/* Transparency UI Info */}
               <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-8">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Pack Details</div>
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{t('confirm.details')}</div>
                 {selectedPack.activeFilters && (
                   <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700">
-                    <span className="text-slate-300 font-medium text-sm">Active Filter:</span>
+                    <span className="text-slate-300 font-medium text-sm">{t('confirm.activeFilter')}</span>
                     <span className="text-indigo-400 font-bold text-sm text-right max-w-[60%]">{selectedPack.activeFilters}</span>
                   </div>
                 )}
@@ -363,13 +368,13 @@ export default function InventoryClient({ userId }: { userId: string }) {
                   onClick={() => setSelectedPack(null)}
                   className="flex-1 py-3 px-4 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 text-white transition-colors border border-slate-700 hover:border-slate-600"
                 >
-                  Cancel
+                  {t('confirm.cancel')}
                 </button>
                 <button 
                   onClick={() => confirmOpenPack(selectedPack)}
                   className="flex-1 py-3 px-4 rounded-xl font-black bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] border border-indigo-400/50 hover:-translate-y-0.5"
                 >
-                  Tear Open!
+                  {t('confirm.tearOpen')}
                 </button>
               </div>
             </motion.div>

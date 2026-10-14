@@ -1,0 +1,124 @@
+{
+  "stats": {
+    "title": "Collection Stats",
+    "wiki": "Learn more in the Wiki",
+    "uniqueCards": "Unique Cards:",
+    "totalPulls": "Total Pulls:"
+  },
+  "toolbar": {
+    "listView": "List View",
+    "gridView": "Grid View",
+    "sortBy": "Sort By:",
+    "page": "Page",
+    "of": "of {total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "search": "Search by title..."
+  },
+  "sort": {
+    "rarity": "RARITY",
+    "name": "NAME",
+    "type": "TYPE",
+    "hp": "HP",
+    "atk": "ATK",
+    "def": "DEF",
+    "count": "COUNT",
+    "loyalty": "LOYALTY"
+  },
+  "table": {
+    "rank": "Rank",
+    "title": "Title (Username)",
+    "type": "Type",
+    "hp": "HP",
+    "atk": "ATK",
+    "def": "DEF",
+    "stamina": "STM",
+    "loyalty": "Loyalty",
+    "count": "CNT",
+    "openDetails": "{name} ({rarity}): open details",
+    "trainingLevel": "Training level {level}",
+    "coreType": "Core Combat Type",
+    "neutralType": "Treated as Neutral in combat",
+    "neutral": "(Neutral)"
+  },
+  "empty": {
+    "noMatchTitle": "No cards match your search",
+    "noMatchText": "Try another name, or clear the search to see every card.",
+    "clearSearch": "Clear search",
+    "emptyTitle": "Your collection is empty",
+    "emptyText": "Every developer you pull from a booster lands here. Open a pack to meet your first ones.",
+    "openPack": "Open a pack",
+    "visitStore": "Visit the store"
+  },
+  "loyalty": {
+    "tiers": {
+      "veteran": "Veteran",
+      "trusted": "Trusted",
+      "reliable": "Reliable",
+      "legendary_bond": "Legendary Bond",
+      "eternal": "Eternal"
+    },
+    "maxed": "♾️ ETERNAL",
+    "battles": "{count} battles",
+    "label": "Loyalty",
+    "contract": "Loyalty Contract",
+    "milestones": "Milestones",
+    "threshold": "({count} battles)",
+    "left": "{count} left",
+    "lifetime": "Lifetime Stats",
+    "damageDealt": "Damage Dealt",
+    "battlesWon": "Battles Won",
+    "critsLanded": "Crits Landed",
+    "passivesUsed": "Passives Used"
+  },
+  "dialog": {
+    "label": "{name}: card details",
+    "close": "Close",
+    "openProfile": "Open Profile",
+    "share": "Share",
+    "shareTitle": "Copy a public link to this card (with a preview image)",
+    "linkCopied": "Card link copied",
+    "recovering": "Recovering...",
+    "cure": "Cure (100)",
+    "recoverFailed": "Failed to recover stamina",
+    "genericError": "An error occurred"
+  },
+  "sets": {
+    "title": "Language sets",
+    "summary": "{complete} of {total} complete · own a card of every rarity in a language to complete its set and unlock titles and frames",
+    "complete": "Complete · \"{language} Collector\"",
+    "missing": "{rarity} (missing)",
+    "forgeHint": "Missing a slot? The <link>Forge</link> invokes any developer.",
+    "profileHint": "Equip what you unlocked on your <link>profile</link>."
+  },
+  "training": {
+    "title": "Training",
+    "level": "Level <b>{level}</b> / {max}",
+    "bonus": "+{percent} stats",
+    "nextLevel": "Next level: ATK {atk} → <b>{nextAtk}</b> · DEF {def} → <b>{nextDef}</b> · HP {hp} → <b>{nextHp}</b> in battle (before loyalty).",
+    "fragments": "{language} fragments",
+    "wildcardFragments": "Wildcard fragments",
+    "usesWildcard": "uses {count} wildcard",
+    "training": "Training...",
+    "trainTo": "Train to level {level}",
+    "notEnough": "Not enough fragments or BITS",
+    "hint": "Duplicates and pack drops give fragments; wildcards cover any language. The Forge shows your wallet.",
+    "maxed": "Fully trained: +{percent} ATK, DEF and HP in every battle.",
+    "failed": "Training failed",
+    "success": "{name} reached training level {level}!"
+  },
+  "download": {
+    "label": "Download PNG",
+    "title": "Save this card as an image"
+  },
+  "cosmetics": {
+    "heading": "Title & frame",
+    "showAll": "Show every set title",
+    "title": "Title",
+    "frame": "Avatar frame",
+    "none": "None",
+    "locked": "Locked: {requirement}",
+    "frameLabel": "{label} frame",
+    "updateFailed": "Could not update"
+  }
+}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Scroll } from '@phosphor-icons/react';
 import { ChangelogModal } from './ChangelogModal';
+import { useTranslations } from 'next-intl';
 
 export type ChangelogEntry = {
   id: string;
@@ -17,6 +18,7 @@ export function ChangelogFeature({ username }: { username?: string }) {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
+  const t = useTranslations('notifications.changelog');
 
   useEffect(() => {
     const fetchChangelogs = async () => {
@@ -68,11 +70,11 @@ export function ChangelogFeature({ username }: { username?: string }) {
       <button
         onClick={handleOpenModal}
         className="relative flex items-center justify-center gap-1.5 p-2 rounded-full md:rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors min-h-[44px] min-w-[44px]"
-        aria-label="Changelog"
-        title="Changelog"
+        aria-label={t('title')}
+        title={t('title')}
       >
         <Scroll size={22} weight="bold" />
-        <span className="hidden md:inline font-bold text-sm">Changelog</span>
+        <span className="hidden 2xl:inline font-bold text-sm">{t('title')}</span>
         {hasUnread && (
           <div className="absolute top-2 right-2 md:top-2 md:right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-slate-900 border border-slate-900 animate-pulse" />
         )}

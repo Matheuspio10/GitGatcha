@@ -11,13 +11,27 @@ import { UserAvatar } from './UserAvatar';
 import { Logo, LogoMark } from './Logo';
 import { SoundControl } from './SoundControl';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 /** Bottom tab bar on phones and tablets (the drawer behind "More" has every link). */
 const TAB_BAR = [
-  { name: 'Gacha', path: '/store', icon: Package },
-  { name: 'Packs', path: '/inventory', icon: Backpack },
-  { name: 'Cards', path: '/collection', icon: Cards },
-  { name: 'Battle', path: '/battle', icon: Sword },
+  { key: 'store', path: '/store', icon: Package },
+  { key: 'inventory', path: '/inventory', icon: Backpack },
+  { key: 'collection', path: '/collection', icon: Cards },
+  { key: 'battle', path: '/battle', icon: Sword },
+] as const;
+
+/** Every page, in the header (desktop) and the drawer (phones). */
+const NAV_LINKS = [
+  { key: 'store', path: '/store' },
+  { key: 'inventory', path: '/inventory' },
+  { key: 'collection', path: '/collection' },
+  { key: 'forge', path: '/forge' },
+  { key: 'battle', path: '/battle' },
+  { key: 'leaderboard', path: '/leaderboard' },
+  { key: 'friends', path: '/friends' },
+  { key: 'wiki', path: '/wiki' },
 ] as const;
 
 export function Navbar({ username, currency: initialCurrency, userImage }: { username: string, currency: number, userImage?: string | null }) {
@@ -25,6 +39,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(initialCurrency);
   const pathname = usePathname();
+  const t = useTranslations('nav');
   const drawerRef = useDialog(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
   const bitsRef = useDialog(showBitsModal, () => setShowBitsModal(false));
 
@@ -81,21 +96,16 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
     <>
       <header className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-ink-0/80 border-b border-white/[0.08]">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between relative">
-        <Link href="/" aria-label="GitGacha home" className="flex items-center">
+        <Link href="/" aria-label={t('home')} className="flex items-center">
           <span className="hidden sm:inline-flex"><Logo size={20} /></span>
           <LogoMark size={32} className="sm:hidden" />
         </Link>
 
         {username && (
-          <nav className="hidden lg:flex flex-1 justify-center items-center gap-4 xl:gap-6 text-sm xl:text-base font-bold text-slate-400 mx-4">
-            <Link href="/store" className={`transition-all ${pathname === '/store' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Gacha</Link>
-            <Link href="/inventory" className={`transition-all ${pathname === '/inventory' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Inventory</Link>
-            <Link href="/collection" className={`transition-all ${pathname === '/collection' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Collection</Link>
-            <Link href="/forge" className={`transition-all ${pathname === '/forge' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Forge</Link>
-            <Link href="/battle" className={`transition-all ${pathname === '/battle' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Battle</Link>
-            <Link href="/leaderboard" className={`transition-all ${pathname === '/leaderboard' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Rankings</Link>
-            <Link href="/friends" className={`transition-all ${pathname === '/friends' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Friends</Link>
-            <Link href="/wiki" className={`transition-all ${pathname === '/wiki' ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>Wiki</Link>
+          <nav className="hidden xl:flex flex-1 justify-center items-center gap-4 2xl:gap-6 text-sm 2xl:text-base font-bold text-slate-400 mx-4">
+            {NAV_LINKS.map(link => (
+              <Link key={link.path} href={link.path} className={`transition-all ${pathname === link.path ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>{t(`links.${link.key}`)}</Link>
+            ))}
           </nav>
         )}
 
@@ -103,36 +113,38 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowBitsModal(true)}
-              aria-label={`${currency} BITS: how to earn more`}
+              aria-label={t('bitsButton', { amount: currency })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors"
             >
               <Coin size={16} weight="fill" />
               <span className="font-bold text-sm">{currency}</span>
-              <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
+              <span className="text-xs uppercase tracking-wider hidden sm:inline">{t('bitsUnit')}</span>
             </button>
+            <LanguageSwitcher compact className="hidden xl:flex" />
             <SoundControl />
             <ChangelogFeature username={username} />
             <NotificationBell />
             
             {/* Desktop Profile */}
-            <div className="hidden lg:flex items-center gap-2">
-              <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer group">
+            <div className="hidden xl:flex items-center gap-2">
+              <Link href={`/profile/${username}`} aria-label={username} className="flex items-center gap-2 hover:bg-slate-800/50 p-1.5 2xl:pr-3 rounded-full transition-colors cursor-pointer group">
                 <UserAvatar username={username} image={userImage} size="sm" />
-                <span className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
+                <span className="hidden 2xl:block text-sm font-bold text-white group-hover:text-indigo-300 transition-colors line-clamp-1 max-w-[100px]">{username}</span>
               </Link>
               <button 
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="text-xs text-slate-400 hover:text-white transition-colors ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
 
             {/* Phones and tablets: the menu opens from "More" in the bottom tab bar */}
           </div>
         ) : (
-          <div>
-            <Link href="/login" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">Login / Register</Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher compact />
+            <Link href="/login" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">{t('login')}</Link>
           </div>
         )}
       </div>
@@ -141,8 +153,8 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
       {/* Phone tab bar: the four most used screens, everything else under "More" */}
       {username && (
         <nav
-          aria-label="Main"
-          className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-ink-0/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+          aria-label={t('tabs.main')}
+          className="xl:hidden fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-ink-0/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
         >
           <ul className="grid h-16 grid-cols-5">
             {TAB_BAR.map(tab => {
@@ -155,7 +167,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                     className={`flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${active ? 'text-brand-b' : 'text-slate-400 hover:text-white'}`}
                   >
                     <tab.icon size={22} weight={active ? 'fill' : 'regular'} />
-                    {tab.name}
+                    {t(`tabs.${tab.key}`)}
                   </Link>
                 </li>
               );
@@ -163,12 +175,12 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             <li>
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                aria-label="More: open the menu"
+                aria-label={t('tabs.moreLabel')}
                 aria-expanded={isMobileMenuOpen}
                 className={`flex h-full w-full flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${isMobileMenuOpen ? 'text-brand-b' : 'text-slate-400 hover:text-white'}`}
               >
                 <DotsThreeOutline size={22} weight={isMobileMenuOpen ? 'fill' : 'regular'} />
-                More
+                {t('tabs.more')}
               </button>
             </li>
           </ul>
@@ -178,7 +190,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
       {/* Mobile Drawer Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity"
+          className="xl:hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div 
@@ -190,10 +202,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
-              <span id="menu-title" className="font-bold text-lg text-white">Menu</span>
+              <span id="menu-title" className="font-bold text-lg text-white">{t('menu')}</span>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
-                aria-label="Close the menu"
+                aria-label={t('closeMenu')}
                 className="text-slate-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center -mr-3"
               >
                 <X size={24} />
@@ -210,40 +222,32 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                   <UserAvatar username={username} image={userImage} size="md" />
                   <div>
                     <div className="text-sm font-bold text-white line-clamp-1">{username}</div>
-                    <div className="text-xs text-slate-400">View Profile</div>
+                    <div className="text-xs text-slate-400">{t('viewProfile')}</div>
                   </div>
                 </Link>
               </div>
             )}
 
             <nav className="flex flex-col gap-2 flex-1">
-              {[
-                { name: 'Gacha', path: '/store' },
-                { name: 'Inventory', path: '/inventory' },
-                { name: 'Collection', path: '/collection' },
-                { name: 'Forge', path: '/forge' },
-                { name: 'Battle', path: '/battle' },
-                { name: 'Rankings', path: '/leaderboard' },
-                { name: 'Friends', path: '/friends' },
-                { name: 'Wiki', path: '/wiki' },
-              ].map(link => (
+              {NAV_LINKS.map(link => (
                 <Link
-                  key={link.name}
+                  key={link.path}
                   href={link.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`p-3 rounded-lg flex items-center transition-all min-h-[44px] font-bold text-[15px] ${pathname === link.path ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
                 >
-                  {link.name}
+                  {t(`links.${link.key}`)}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-8 pt-6 border-t border-slate-800">
+            <div className="mt-8 pt-6 border-t border-slate-800 space-y-3">
+              <LanguageSwitcher />
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="w-full p-3 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors flex items-center font-bold min-h-[44px] text-[15px]"
               >
-                Logout
+                {t('logout')}
               </button>
             </div>
           </div>
@@ -267,30 +271,30 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             <button
               onClick={() => setShowBitsModal(false)}
               className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Close"
+              aria-label={t('bits.close')}
             >
               <X size={24} />
             </button>
 
             <h2 id="bits-panel-title" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">
-              Your BITS
+              {t('bits.title')}
             </h2>
             <div className="mt-4 flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
               <Coin size={32} weight="fill" className="text-yellow-500 shrink-0" />
               <div>
                 <div className="text-2xl font-black text-white leading-none">{currency.toLocaleString('en-US')}</div>
-                <div className="text-xs uppercase tracking-wider text-yellow-500/80 mt-1">Current balance</div>
+                <div className="text-xs uppercase tracking-wider text-yellow-500/80 mt-1">{t('bits.balance')}</div>
               </div>
               <Link
                 href="/bits"
                 onClick={() => setShowBitsModal(false)}
                 className="ml-auto text-xs font-bold text-indigo-300 hover:text-indigo-200 whitespace-nowrap"
               >
-                History &rarr;
+                {t('bits.history')} &rarr;
               </Link>
             </div>
 
-            <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">How to earn BITS</h3>
+            <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">{t('bits.howToEarn')}</h3>
             <ul className="flex flex-col gap-2">
               <li>
                 <Link
@@ -300,10 +304,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 >
                   <CalendarCheck size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
                   <span className="flex-1">
-                    <span className="block font-bold text-white text-sm">Daily reward</span>
-                    <span className="block text-xs text-slate-400">Claim free BITS once a day in the Gacha shop.</span>
+                    <span className="block font-bold text-white text-sm">{t('bits.daily')}</span>
+                    <span className="block text-xs text-slate-400">{t('bits.dailyText')}</span>
                   </span>
-                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Go to Gacha &rarr;</span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">{t('bits.dailyCta')} &rarr;</span>
                 </Link>
               </li>
               <li>
@@ -314,10 +318,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 >
                   <Target size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
                   <span className="flex-1">
-                    <span className="block font-bold text-white text-sm">Daily missions</span>
-                    <span className="block text-xs text-slate-400">Finish missions for bonus BITS. They refresh every day.</span>
+                    <span className="block font-bold text-white text-sm">{t('bits.missions')}</span>
+                    <span className="block text-xs text-slate-400">{t('bits.missionsText')}</span>
                   </span>
-                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">See missions &rarr;</span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">{t('bits.missionsCta')} &rarr;</span>
                 </Link>
               </li>
               <li>
@@ -328,10 +332,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 >
                   <Sword size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
                   <span className="flex-1">
-                    <span className="block font-bold text-white text-sm">Battles</span>
-                    <span className="block text-xs text-slate-400">Win battles and league matches to earn BITS.</span>
+                    <span className="block font-bold text-white text-sm">{t('bits.battles')}</span>
+                    <span className="block text-xs text-slate-400">{t('bits.battlesText')}</span>
                   </span>
-                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Start a battle &rarr;</span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">{t('bits.battlesCta')} &rarr;</span>
                 </Link>
               </li>
               <li>
@@ -342,10 +346,10 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
                 >
                   <TrendUp size={22} weight="duotone" className="text-yellow-500 shrink-0 mt-0.5" />
                   <span className="flex-1">
-                    <span className="block font-bold text-white text-sm">Level-ups</span>
-                    <span className="block text-xs text-slate-400">Leveling up grants rewards, including BITS and boosters.</span>
+                    <span className="block font-bold text-white text-sm">{t('bits.levels')}</span>
+                    <span className="block text-xs text-slate-400">{t('bits.levelsText')}</span>
                   </span>
-                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">Read the wiki &rarr;</span>
+                  <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 whitespace-nowrap self-center">{t('bits.levelsCta')} &rarr;</span>
                 </Link>
               </li>
             </ul>
@@ -353,8 +357,8 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
             <div className="mt-6 flex items-center gap-3 rounded-xl border border-dashed border-slate-700 p-3 text-slate-500" aria-disabled="true">
               <ShoppingCart size={20} className="shrink-0" />
               <div className="text-sm">
-                <span className="font-bold">Buy BITS — coming soon.</span>{' '}
-                <span className="text-xs">BITS can&apos;t be bought with real money yet.</span>
+                <span className="font-bold">{t('bits.buySoon')}</span>{' '}
+                <span className="text-xs">{t('bits.buySoonText')}</span>
               </div>
             </div>
           </div>

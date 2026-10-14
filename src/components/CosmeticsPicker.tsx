@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Lock, Check, IdentificationBadge } from '@phosphor-icons/react';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
+import { useTranslations } from 'next-intl';
 
 type Option<T> = T & { requirement: string; unlocked: boolean };
 interface CosmeticsState {
@@ -20,6 +21,7 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
   const [state, setState] = useState<CosmeticsState | null>(null);
   const [busy, setBusy] = useState(false);
   const [showLocked, setShowLocked] = useState(false);
+  const tr = useTranslations('collection.cosmetics');
 
   useEffect(() => {
     fetch('/api/profile/cosmetics')
@@ -40,13 +42,13 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'Could not update');
+        toast.error(data.error || tr('updateFailed'));
         return;
       }
       setState(prev => (prev ? { ...prev, equipped: data.equipped } : prev));
       onChange(data.equipped);
     } catch {
-      toast.error('Could not update');
+      toast.error(tr('updateFailed'));
     } finally {
       setBusy(false);
     }
@@ -65,23 +67,23 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
     <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 shadow-xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-lg font-bold text-white">
-          <IdentificationBadge size={20} weight="fill" className="text-indigo-400" /> Title & frame
+          <IdentificationBadge size={20} weight="fill" className="text-indigo-400" /> {tr('heading')}
         </h3>
         <label className="flex items-center gap-2 text-xs text-slate-400">
-          <input type="checkbox" checked={showLocked} onChange={e => setShowLocked(e.target.checked)} /> Show every set title
+          <input type="checkbox" checked={showLocked} onChange={e => setShowLocked(e.target.checked)} /> {tr('showAll')}
         </label>
       </div>
 
       <div>
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Title</p>
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">{tr('title')}</p>
         <div className="flex flex-wrap gap-2">
-          <button disabled={busy} onClick={() => equip({ title: null })} className={chip(!state.equipped.title, true)}>None</button>
+          <button disabled={busy} onClick={() => equip({ title: null })} className={chip(!state.equipped.title, true)}>{tr('none')}</button>
           {titles.map(t => (
             <button
               key={t.id}
               disabled={busy || !t.unlocked}
               onClick={() => equip({ title: t.id })}
-              title={t.unlocked ? t.label : `Locked: ${t.requirement}`}
+              title={t.unlocked ? t.label : tr('locked', { requirement: t.requirement })}
               className={chip(state.equipped.title?.id === t.id, t.unlocked)}
             >
               {t.unlocked ? (state.equipped.title?.id === t.id && <Check size={12} weight="bold" />) : <Lock size={12} />}
@@ -93,15 +95,15 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
       </div>
 
       <div>
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Avatar frame</p>
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">{tr('frame')}</p>
         <div className="flex flex-wrap gap-3">
-          <button disabled={busy} onClick={() => equip({ frame: null })} className={chip(!state.equipped.frame, true)}>None</button>
+          <button disabled={busy} onClick={() => equip({ frame: null })} className={chip(!state.equipped.frame, true)}>{tr('none')}</button>
           {state.frames.map(f => (
             <button
               key={f.id}
               disabled={busy || !f.unlocked}
               onClick={() => equip({ frame: f.id })}
-              title={f.unlocked ? `${f.label} frame` : `Locked: ${f.requirement}`}
+              title={f.unlocked ? tr('frameLabel', { label: f.label }) : tr('locked', { requirement: f.requirement })}
               className={chip(state.equipped.frame?.id === f.id, f.unlocked)}
             >
               <span className={`h-4 w-4 rounded-full ${f.unlocked ? '' : 'opacity-30'}`} style={{ background: f.ring }} />
