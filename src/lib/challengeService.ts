@@ -57,6 +57,11 @@ export async function cancelChallenge(battleId: string, userId: string) {
   if (!(await closePending(battleId, 'CANCELLED', 'Challenge cancelled'))) throw new UserFacingError('challenge.alreadyClosed');
 }
 
+/** An open (link) challenge that another player already took: the answer to the ones who lost the race. */
+export function takenByAnother(battle: { isOpen: boolean; defenderId: string | null }, userId: string): boolean {
+  return battle.isOpen && !!battle.defenderId && battle.defenderId !== userId;
+}
+
 /**
  * The defender joins: claims an open (link) challenge if needed and puts in
  * the same stake. Undone by `releaseDefender` if the battle then fails.
@@ -66,6 +71,7 @@ export async function joinChallenge(battleId: string, userId: string) {
     where: { id: battleId },
     select: { challengerId: true, defenderId: true, isOpen: true, stake: true, status: true },
   });
+  if (battle && takenByAnother(battle, userId)) throw new UserFacingError('challenge.alreadyAccepted', 409);
   if (!battle || battle.status !== 'PENDING') throw new UserFacingError('challenge.noLongerOpen', 400);
   if (battle.challengerId === userId) throw new UserFacingError('challenge.ownChallenge');
 

@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
 import { getCardStamina } from '@/lib/staminaService';
-import { cancelChallenge, expireChallenges, joinChallenge, releaseDefender } from '@/lib/challengeService';
+import { cancelChallenge, expireChallenges, joinChallenge, releaseDefender, takenByAnother } from '@/lib/challengeService';
 import { teamCardIdsSchema } from '@/lib/playerTeam';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
@@ -32,6 +32,8 @@ export async function POST(
     // The battle must still be waiting; an expired one is closed (stake refunded)
     const battle = await prisma.battle.findUnique({ where: { id: battleId } });
     if (!battle) return apiError('challenge.battleNotFound', 404);
+    // Someone else got to an open challenge first (a race on the link), whatever its status now
+    if (takenByAnother(battle, userId)) return apiError('challenge.alreadyAccepted', 409);
     if (battle.status !== 'PENDING') return apiError('challenge.noLongerPending');
     if (battle.expiresAt && battle.expiresAt < new Date()) {
       await expireChallenges();

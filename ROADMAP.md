@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da terceira rodada da onda 8 (PR #60). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da quarta rodada da onda 8 (PR #61). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 228 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 229 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -42,6 +42,7 @@
 | Comando | Para quê |
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
+| `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio. Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
 | `node scripts/lint-budget.mjs` | Lint com orçamento de erros (o mesmo do CI) |
 | `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
@@ -56,11 +57,10 @@
 
 ## ▶️ Próximo passo
 
-**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60). Próximas, em ordem sugerida:
-1. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
-2. **Reduzir o lint** (98 erros, quase todos `any`).
-3. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
-4. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
+**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61). Próximas, em ordem sugerida:
+1. **Reduzir o lint** (98 erros, quase todos `any`).
+2. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
+3. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
 
 Depois: **onda 9** (grandes apostas e monetização).
 
@@ -365,6 +365,18 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 8 — testes de concorrência, rodada 4 (PR #61)
+- **`scripts/concurrency-test.ts`** (`npm run test:concurrency`): dispara rajadas de requisições paralelas nas rotas de verdade do servidor de dev, logado como jogadores descartáveis criados no banco de dev (cookie de sessão gerado com o `NEXTAUTH_SECRET`; BITS iniciais entram pelo histórico). Apaga tudo no fim, inclusive os `RecentPull` que não têm chave estrangeira. Recusa rodar se o `DATABASE_URL` não for a branch dev ou se o servidor não for localhost.
+- **Cenários e o que confere:**
+  - compra: 10 compras com BITS para 3 → exatamente 3 passam, 3 packs no inventário, saldo e histórico batem;
+  - abertura: 5 aberturas do único pack → 1 abre, as outras dizem "pack não está no inventário", toda carta sorteada está na coleção (se o GitHub falhar, o pack precisa ter voltado);
+  - daily: 8 resgates → 1 paga, sequência sobe 1 dia;
+  - criação de desafio: 5 desafios com as mesmas cartas → 1 criado, aposta cobrada uma vez;
+  - aceite de desafio aberto: 2 jogadores × 3 aceites → 1 vence, batalha concluída uma vez, apostas somam zero, quem perdeu a corrida não paga nada;
+  - em todos: histórico de BITS = saldo e nenhum erro 500.
+- **Tudo passou de primeira**: as travas das ondas anteriores seguram. Rodado 3 vezes seguidas sem falha.
+- **Ajuste de UX encontrado pelo teste:** quem perde a corrida num desafio aberto recebia, conforme o momento, "Battle is no longer pending", "You are not the defender" ou "Someone else accepted this challenge first". Agora é sempre a última (`takenByAnother` em `challengeService.ts`).
+
 ### Onda 8 — headers de segurança, CSP e imagens, rodada 3 (PR #60)
 - **Headers em todas as respostas** (`src/lib/securityHeaders.ts`, ligado no `next.config.ts`): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (o jogo não pode ser embutido em outro site), `Referrer-Policy`, `Permissions-Policy` (sem câmera, microfone, localização, pagamento; a inclinação holográfica continua liberada), `Cross-Origin-Opener-Policy`, HSTS de 2 anos (fora do dev) e sem o `X-Powered-By`.
 - **CSP em modo report-only:** não bloqueia nada; o navegador manda o que bloquearia para `/api/csp-report`, que grava uma linha `[CSP] <diretiva> blocked <url> on <página>` no log (limite de 30 por minuto por IP, corpo até 16 KB). Imagens só do próprio site, `data:`, avatares do GitHub e fotos do Google (conferido no banco: são os únicos hosts em uso); formulários só para o site, GitHub e Google (login); nada de `<object>` nem framing. Ainda precisa de `'unsafe-inline'` em scripts e estilos (Next.js e os estilos inline do jogo); tirar exige nonce por requisição.
@@ -448,7 +460,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.8 Engenharia
 | Item | Esforço |
 |---|---|
-| Testes de concorrência (compra, abertura, daily, desafio) contra a branch dev | M |
+| ~~Testes de concorrência (compra, abertura, daily, desafio) contra a branch dev~~ | ✅ PR #61 (`npm run test:concurrency`) |
 | Mover JSON (inventário, notificações, fragmentos) para tabelas próprias | G |
 | ~~Índices restantes~~ | ✅ PR #58 |
 | ~~`select` nas consultas quentes~~ | ✅ PR #58 (e a senha omitida por padrão) |
