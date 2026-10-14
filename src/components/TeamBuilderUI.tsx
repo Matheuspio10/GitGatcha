@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import {
   Sword, Shield, Heart, Lightning, Users, Star, Funnel,
   X, CheckCircle, ArrowsVertical, GameController, MagnifyingGlass,
@@ -51,13 +52,16 @@ export const LEAGUE_CONFIG = Object.fromEntries(
     return [mode, {
       ...LEAGUE_STYLE[mode],
       label: l.label,
-      description: l.entryFee > 0 ? `${l.rules} ${l.entryFee} BITS entry.` : l.rules,
+      // League rules are game data (battleConfig); the "N BITS entry." suffix is added in the UI (translated)
+      rules: l.rules,
       winBits: l.winBits,
       winXp: l.winXp,
       entryFee: l.entryFee > 0 ? l.entryFee : undefined,
     }];
   })
-) as Record<LeagueMode, { label: string; icon: string; color: string; border: string; bg: string; description: string; winBits: number; winXp: number; entryFee?: number }>;
+) as Record<LeagueMode, { label: string; icon: string; color: string; border: string; bg: string; rules: string; winBits: number; winXp: number; entryFee?: number }>;
+
+type TeamBuilderT = ReturnType<typeof useTranslations<'teamBuilder'>>;
 
 interface TeamBuilderProps {
   userCards: TeamBuilderCard[];
@@ -128,12 +132,7 @@ const LANG_COLOR: Record<string, string> = {
   Unknown: 'text-slate-400',
 };
 
-const SLOT_LABELS = ['Opener', 'Mid', 'Closer'];
-const SLOT_DESCRIPTIONS = [
-  'Leads the battle — sets the pace',
-  'Mid-game fighter — bridges the team',
-  'The finisher — closes strong',
-];
+const SLOT_KEYS = ['opener', 'mid', 'closer'] as const;
 const SLOT_ICONS = ['🥊', '⚔️', '🏆'];
 
 // ─── Synergy Computation ─────────────────────────────────────────────────────
@@ -156,7 +155,7 @@ function cardType(card: TeamBuilderCard): CardType {
 }
 
 /** Mirrors applySynergies() in battleResolver.ts; numbers come from SYNERGY / PASSIVE. */
-function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
+function computeSynergies(cards: (TeamBuilderCard | null)[], t: TeamBuilderT): SynergyInfo[] {
   const filled = cards.filter(Boolean) as TeamBuilderCard[];
   if (filled.length === 0) return [];
 
@@ -185,7 +184,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     if (type === 'Python') {
       results.push({
         label: `${count}× Python`,
-        description: `Every card heals ${pct(SYNERGY.pythonRegenAtkPct * mult)} of its ATK per turn (Python cards use their own ${pct(PASSIVE.python.regenAtkPct)} if higher; Jupyter counts as Python)`,
+        description: t('synergy.pythonDesc', { regen: pct(SYNERGY.pythonRegenAtkPct * mult), own: pct(PASSIVE.python.regenAtkPct) }),
         color: 'text-cyan-400',
         icon: '🐍',
         active: true,
@@ -193,7 +192,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     } else if (type === 'JavaScript') {
       results.push({
         label: `${count}× JavaScript`,
-        description: `Non-JS teammates get a ${pct(SYNERGY.jsCallbackChance * mult)} Double Callback chance (+${pct(PASSIVE.javascript.bonus)} damage)`,
+        description: t('synergy.jsDesc', { chance: pct(SYNERGY.jsCallbackChance * mult), bonus: pct(PASSIVE.javascript.bonus) }),
         color: 'text-yellow-400',
         icon: '⚡',
         active: true,
@@ -201,7 +200,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     } else if (type === 'Rust') {
       results.push({
         label: `${count}× Rust`,
-        description: `All cards take ${pct(SYNERGY.rustDamageReduction * mult)} less damage`,
+        description: t('synergy.rustDesc', { reduction: pct(SYNERGY.rustDamageReduction * mult) }),
         color: 'text-orange-400',
         icon: '🛡️',
         active: true,
@@ -209,7 +208,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
     } else if (type === 'Go') {
       results.push({
         label: `${count}× Go`,
-        description: 'All cards gain First Strike on entry',
+        description: t('synergy.goDesc'),
         color: 'text-cyan-300',
         icon: '⚡',
         active: true,
@@ -220,8 +219,8 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
   // Mixed team bonus when all 3 filled and all combat types differ (Neutral counts as one type)
   if (filled.length === 3 && uniqueCount === 3) {
     results.push({
-      label: 'Mixed Team',
-      description: `+${pct(SYNERGY.mixedTeamAtk)} ATK for all cards`,
+      label: t('synergy.mixed'),
+      description: t('synergy.mixedDesc', { atk: pct(SYNERGY.mixedTeamAtk) }),
       color: 'text-emerald-400',
       icon: '🌈',
       active: true,
@@ -231,8 +230,8 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
   // No synergy (partial team - informative)
   if (results.length === 0 && filled.length < 3) {
     results.push({
-      label: 'No synergy yet',
-      description: 'Add more cards to activate synergies',
+      label: t('synergy.noneYet'),
+      description: t('synergy.noneYetDesc'),
       color: 'text-slate-500',
       icon: '—',
       active: false,
@@ -242,8 +241,8 @@ function computeSynergies(cards: (TeamBuilderCard | null)[]): SynergyInfo[] {
   // Full team with a repeated type that has no synergy (e.g. 2× Java, 2× Neutral)
   if (results.length === 0 && filled.length === 3) {
     results.push({
-      label: 'No synergy',
-      description: `Use 3 different types for Mixed Team (+${pct(SYNERGY.mixedTeamAtk)} ATK), or pair Python, Rust, JavaScript or Go`,
+      label: t('synergy.none'),
+      description: t('synergy.noneDesc', { atk: pct(SYNERGY.mixedTeamAtk) }),
       color: 'text-slate-400',
       icon: '⚔️',
       active: false,
@@ -268,6 +267,7 @@ function CompactCard({
   dimmed?: boolean;
   onClick: () => void;
 }) {
+  const t = useTranslations('teamBuilder');
   const border = RARITY_COLOR[card.rarity] || RARITY_COLOR.Common;
   const langColor = LANG_COLOR[card.primaryLanguage || 'Unknown'] || LANG_COLOR.Unknown;
   const glow = RARITY_GLOW[card.rarity] || '';
@@ -346,7 +346,7 @@ function CompactCard({
         <p className={clsx("text-sm font-black leading-tight", multiplier < 1 ? "text-yellow-400" : "text-white")}>{displayAtk + displayDef + card.hp}</p>
         
         {/* Stamina line */}
-        <div className="w-full mt-2 h-[4px] bg-slate-800 rounded-full overflow-hidden shadow-inner flex" title={`Stamina: ${currentStamina}/100`}>
+        <div className="w-full mt-2 h-[4px] bg-slate-800 rounded-full overflow-hidden shadow-inner flex" title={t('card.stamina', { value: currentStamina })}>
           <div 
             className={clsx("h-full transition-all duration-500", currentStamina < 40 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : currentStamina < 80 ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8)]' : 'bg-green-500')}
             style={{ width: `${Math.max(0, Math.min(100, currentStamina))}%` }}
@@ -354,7 +354,7 @@ function CompactCard({
         </div>
         {currentStamina < 60 && (
           <p className={clsx("text-[8px] mt-1 font-bold uppercase", currentStamina === 0 ? "text-red-500 animate-pulse" : "text-yellow-500")}>
-            {currentStamina === 0 ? "Exhaust" : "Fatigue"}
+            {currentStamina === 0 ? t('card.exhaust') : t('card.fatigue')}
           </p>
         )}
         {(() => {
@@ -390,6 +390,7 @@ function TeamSlot({
   onRemove: () => void;
   isActive?: boolean;
 }) {
+  const t = useTranslations('teamBuilder');
   const border = card ? (RARITY_COLOR[card.rarity] || RARITY_COLOR.Common) : 'border-slate-700';
   const glow = card ? (RARITY_GLOW[card.rarity] || '') : '';
   const langColor = card ? (LANG_COLOR[card.primaryLanguage || 'Unknown'] || LANG_COLOR.Unknown) : '';
@@ -425,7 +426,7 @@ function TeamSlot({
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={onRemove}
-          aria-label="Remove from team"
+          aria-label={t('slots.remove')}
           className="absolute top-2 right-2 z-20 bg-red-600/80 hover:bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-white transition-colors backdrop-blur-sm"
         >
           <X size={12} weight="bold" />
@@ -449,7 +450,7 @@ function TeamSlot({
             <div className="absolute top-2 left-10 z-20">
               {currentStamina < 60 && (
                 <div className={clsx("backdrop-blur-sm text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border", currentStamina === 0 ? "bg-red-500/30 border-red-500/50 text-red-300 animate-pulse" : "bg-yellow-500/30 border-yellow-500/50 text-yellow-300")}>
-                  <WarningCircle size={10} weight="bold" /> {currentStamina === 0 ? 'Exhausted' : 'Fatigued'}
+                  <WarningCircle size={10} weight="bold" /> {currentStamina === 0 ? t('slots.exhausted') : t('slots.fatigued')}
                 </div>
               )}
             </div>
@@ -500,11 +501,11 @@ function TeamSlot({
           >
             <div className="text-3xl opacity-30">{SLOT_ICONS[index]}</div>
             <div>
-              <p className="text-sm font-bold text-slate-500">{SLOT_LABELS[index]}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{SLOT_DESCRIPTIONS[index]}</p>
+              <p className="text-sm font-bold text-slate-500">{t(`slots.${SLOT_KEYS[index]}`)}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{t(`slots.${SLOT_KEYS[index]}Desc`)}</p>
             </div>
             <div className="text-xs text-slate-500 border border-slate-700 border-dashed rounded-lg px-2 py-1">
-              Click a card below
+              {t('slots.pickCard')}
             </div>
           </motion.div>
         )}
@@ -516,7 +517,8 @@ function TeamSlot({
 // ─── Synergy Panel ────────────────────────────────────────────────────────────
 
 function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard | null)[]; prevSynergyCountRef: React.MutableRefObject<number> }) {
-  const synergies = computeSynergies(slots);
+  const t = useTranslations('teamBuilder');
+  const synergies = computeSynergies(slots, t);
   const activeSynergies = synergies.filter(s => s.active);
   const [pulsing, setPulsing] = useState(false);
 
@@ -543,10 +545,10 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
       <div className="flex items-center justify-between pointer-events-auto mb-2">
         <p className="text-[10px] uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
           <Star size={10} className="text-purple-400" />
-          Team Synergy
+          {t('synergy.title')}
         </p>
         <a href="/wiki#team-synergies" className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 z-50 relative pointer-events-auto">
-          <BookOpenText size={12} weight="bold" /> Learn more in the Wiki
+          <BookOpenText size={12} weight="bold" /> {t('synergy.wiki')}
         </a>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -575,7 +577,7 @@ function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard 
           ))}
         </AnimatePresence>
         {synergies.length === 0 && (
-          <span className="text-xs text-slate-500 italic">Select cards to see synergies</span>
+          <span className="text-xs text-slate-500 italic">{t('synergy.empty')}</span>
         )}
       </div>
     </motion.div>
@@ -612,6 +614,7 @@ const LANG_BG_HEX: Record<string, string> = {
 };
 
 function TypeChartPanel({ onClose }: { onClose: () => void }) {
+  const t = useTranslations('teamBuilder');
   return (
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.97 }}
@@ -621,9 +624,9 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
     >
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-bold text-white flex items-center gap-2">
-          <ChartBar size={16} className="text-purple-400" /> Type Advantage Chart
+          <ChartBar size={16} className="text-purple-400" /> {t('typeChart.title')}
         </p>
-        <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+        <button onClick={onClose} aria-label={t('a11y.closeTypeChart')} className="text-slate-500 hover:text-white transition-colors">
           <X size={16} />
         </button>
       </div>
@@ -635,7 +638,7 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
               {/* Corner cell */}
               <th className="sticky left-0 z-10 bg-slate-900 p-0">
                 <div className="w-[72px] h-[72px] flex items-end justify-start p-1">
-                  <span className="text-[8px] text-slate-500 uppercase leading-tight">Atk ↓ / Def →</span>
+                  <span className="text-[8px] text-slate-500 uppercase leading-tight">{t('typeChart.corner')}</span>
                 </div>
               </th>
               {ALL_TYPES.map(t => (
@@ -737,18 +740,18 @@ function TypeChartPanel({ onClose }: { onClose: () => void }) {
       <div className="flex flex-wrap items-center gap-3 mt-3 text-[10px] text-slate-400">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-green-600/70 border border-green-500/40" />
-          <span>{TYPE_ADVANTAGE_MULTIPLIER}× (super effective)</span>
+          <span>{t('typeChart.superEffective', { mult: TYPE_ADVANTAGE_MULTIPLIER })}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-red-600/70 border border-red-500/40" />
-          <span>{TYPE_DISADVANTAGE_MULTIPLIER}× (not very effective)</span>
+          <span>{t('typeChart.notVeryEffective', { mult: TYPE_DISADVANTAGE_MULTIPLIER })}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3.5 h-3.5 rounded bg-slate-800/40 border border-slate-700/40" />
-          <span>1× (neutral)</span>
+          <span>{t('typeChart.neutral')}</span>
         </div>
       </div>
-      <p className="text-[9px] text-slate-500 mt-1.5">CSS deals {TYPE_DISADVANTAGE_MULTIPLIER}× against every typed language (chaotic wildcard). Languages outside the chart are Neutral: 1× against everything.</p>
+      <p className="text-[9px] text-slate-500 mt-1.5">{t('typeChart.note', { mult: TYPE_DISADVANTAGE_MULTIPLIER })}</p>
     </motion.div>
   );
 }
@@ -779,7 +782,8 @@ function ConfirmationModal({
   onCancel: () => void;
   loading?: boolean;
 }) {
-  const synergies = computeSynergies(slots).filter(s => s.active);
+  const t = useTranslations('teamBuilder');
+  const synergies = computeSynergies(slots, t).filter(s => s.active);
   const filled = slots.filter(Boolean) as TeamBuilderCard[];
   const panelRef = useDialog(true, loading ? undefined : onCancel);
 
@@ -804,27 +808,27 @@ function ConfirmationModal({
         <div className="text-center">
           <div className="text-4xl mb-2">{mode === 'random' ? '⚡' : '🎯'}</div>
           <h2 id="battle-confirm-title" className="text-2xl font-black text-white">
-            {mode === 'random' ? (action ? action.title : ranked ? 'Battle Ranked?' : 'Battle Random?') : defenderUsername === OPEN_CHALLENGE ? 'Create a challenge link?' : `Challenge ${defenderUsername}?`}
+            {mode === 'random' ? (action ? action.title : ranked ? t('confirm.battleRanked') : t('confirm.battleRandom')) : defenderUsername === OPEN_CHALLENGE ? t('confirm.createLink') : t('confirm.challengeUser', { username: defenderUsername ?? '' })}
           </h2>
           <p className="text-slate-400 text-sm mt-1">
             {mode === 'random'
               ? action
                 ? action.description
                 : ranked
-                ? "Your team will face the saved team of a player near your rating. Both ratings change."
-                : 'Your team will be matched against a random opponent.'
+                ? t('confirm.rankedDesc')
+                : t('confirm.randomDesc')
               : defenderUsername === OPEN_CHALLENGE
-                ? `Anyone with the link can accept it within ${CHALLENGE_TTL_HOURS}h. You'll get the link to share.`
-                : `Your challenge will be sent to ${defenderUsername}. They have ${CHALLENGE_TTL_HOURS}h to respond.`}
+                ? t('confirm.linkDesc', { hours: CHALLENGE_TTL_HOURS })
+                : t('confirm.challengeDesc', { username: defenderUsername ?? '', hours: CHALLENGE_TTL_HOURS })}
             {mode === 'challenge' && stake > 0 && (
-              <span className="mt-2 block font-bold text-yellow-300">Stake: {stake} BITS each, winner takes {stake * 2}. Refunded if nobody accepts.</span>
+              <span className="mt-2 block font-bold text-yellow-300">{t('confirm.stake', { stake, total: stake * 2 })}</span>
             )}
           </p>
         </div>
 
         {/* Team order preview */}
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Your Team (in order)</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">{t('confirm.yourTeam')}</p>
           <div className="space-y-2">
             {filled.map((card, i) => {
               const currentStamina = card.stamina !== undefined ? calculateCurrentStamina(card.stamina, card.lastUsedAt ? new Date(card.lastUsedAt) : new Date(), card.inActiveTeam || false) : 100;
@@ -843,7 +847,7 @@ function ConfirmationModal({
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white truncate">{card.name}</p>
                     <p className="text-[10px] text-slate-400">
-                      {isFatigued ? <span className="text-yellow-400 font-bold">FATIGUED ({currentStamina}%)</span> : `${SLOT_LABELS[i]} · ${card.rarity}`}
+                      {isFatigued ? <span className="text-yellow-400 font-bold">{t('confirm.fatigued', { stamina: currentStamina })}</span> : `${t(`slots.${SLOT_KEYS[i]}`)} · ${card.rarity}`}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0 text-xs">
@@ -862,7 +866,7 @@ function ConfirmationModal({
         {/* Synergy bonuses */}
         {synergies.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Active Bonuses</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">{t('confirm.activeBonuses')}</p>
             <div className="flex flex-wrap gap-1.5">
               {synergies.map(syn => (
                 <span key={syn.label} className="text-xs bg-purple-500/15 border border-purple-500/30 rounded-lg px-2 py-1 text-purple-300">
@@ -879,7 +883,7 @@ function ConfirmationModal({
             onClick={onCancel}
             className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors"
           >
-            Cancel
+            {t('confirm.cancel')}
           </button>
           <button
             onClick={onConfirm}
@@ -891,7 +895,7 @@ function ConfirmationModal({
                 : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]',
             )}
           >
-            {loading ? 'Sending...' : mode === 'random' ? '⚡ Battle!' : '🎯 Send Challenge'}
+            {loading ? t('confirm.sending') : mode === 'random' ? t('confirm.battle') : t('confirm.sendChallenge')}
           </button>
         </div>
       </motion.div>
@@ -910,6 +914,7 @@ function FriendModal({
   onSelect: (username: string) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('teamBuilder');
   const [search, setSearch] = useState('');
   const [friends, setFriends] = useState<{user: {id: string, username: string, level: number}}[]>([]);
   const [loading, setLoading] = useState(true);
@@ -950,9 +955,9 @@ function FriendModal({
       >
         <div className="flex items-center justify-between shrink-0">
           <h2 id="friend-picker-title" className="text-xl font-black text-white flex items-center gap-2">
-            <Users size={20} className="text-orange-400" /> Challenge a Friend
+            <Users size={20} className="text-orange-400" /> {t('friends.title')}
           </h2>
-          <button onClick={onCancel} aria-label="Close" className="text-slate-500 hover:text-white transition-colors">
+          <button onClick={onCancel} aria-label={t('friends.close')} className="text-slate-500 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -963,7 +968,7 @@ function FriendModal({
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search friends..."
+            placeholder={t('friends.search')}
             className="w-full pl-9 pr-4 py-3 rounded-xl bg-black/40 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50 transition-colors"
             autoFocus
           />
@@ -975,8 +980,8 @@ function FriendModal({
         >
           <span className="text-xl">🔗</span>
           <span>
-            <span className="block text-sm font-bold text-white">Anyone with a link</span>
-            <span className="block text-xs text-slate-400">Get a link to share anywhere; the first player to accept fights you.</span>
+            <span className="block text-sm font-bold text-white">{t('friends.openLink')}</span>
+            <span className="block text-xs text-slate-400">{t('friends.openLinkDesc')}</span>
           </span>
         </button>
 
@@ -984,11 +989,11 @@ function FriendModal({
           {loading ? (
             <div className="py-8 text-center text-slate-500">
               <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm">Loading friends...</p>
+              <p className="text-sm">{t('friends.loading')}</p>
             </div>
           ) : filteredFriends.length > 0 ? (
             <>
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2 py-1">Your Friends</p>
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2 py-1">{t('friends.yourFriends')}</p>
               {filteredFriends.map(f => (
                 <button
                   key={f.user.id}
@@ -998,7 +1003,7 @@ function FriendModal({
                   <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-black text-white flex-shrink-0 relative overflow-hidden ring-1 ring-white/10">
                     {f.user.username[0]?.toUpperCase()}
                     <div className="absolute inset-x-0 bottom-0 bg-black/60 pt-0.5">
-                      <p className="text-[7px] text-center font-bold text-orange-400">LVL {f.user.level}</p>
+                      <p className="text-[7px] text-center font-bold text-orange-400">{t('friends.level', { level: f.user.level })}</p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-white group-hover:text-orange-100 transition-colors">{f.user.username}</span>
@@ -1008,18 +1013,18 @@ function FriendModal({
             </>
           ) : search.trim() ? (
             <div className="py-8 text-center text-slate-500">
-              <p className="text-sm mb-3">No friends found matching &quot;{search}&quot;</p>
+              <p className="text-sm mb-3">{t('friends.noMatch', { search })}</p>
               <button
                 onClick={() => onSelect(search.trim())}
                 className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors flex items-center justify-center gap-2 border border-slate-700"
               >
-                <ArrowRight size={16} /> Challenge anyway
+                <ArrowRight size={16} /> {t('friends.challengeAnyway')}
               </button>
             </div>
           ) : (
             <div className="py-8 text-center text-slate-500">
-              <p className="text-sm">You have no friends yet.</p>
-              <p className="text-xs mt-1 opacity-70">Add friends from their profiles to challenge them easily!</p>
+              <p className="text-sm">{t('friends.none')}</p>
+              <p className="text-xs mt-1 opacity-70">{t('friends.noneHint')}</p>
             </div>
           )}
         </div>
@@ -1049,6 +1054,7 @@ function FilterSheet({
   availablePacks: string[];
   onClose: () => void;
 }) {
+  const t = useTranslations('teamBuilder');
   const panelRef = useDialog(true, onClose);
   return (
     <motion.div
@@ -1062,7 +1068,7 @@ function FilterSheet({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Filter and sort"
+        aria-label={t('filters.sheetLabel')}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -1071,8 +1077,8 @@ function FilterSheet({
         className="bg-slate-900 border-t border-slate-700 rounded-t-3xl p-5 w-full sm:max-w-lg space-y-5 h-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between">
-          <p className="font-bold text-white text-lg">Filter & Sort</p>
-          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-white">
+          <p className="font-bold text-white text-lg">{t('filters.sheetTitle')}</p>
+          <button onClick={onClose} aria-label={t('filters.close')} className="text-slate-400 hover:text-white">
             <X size={20} />
           </button>
         </div>
@@ -1090,7 +1096,7 @@ function FilterSheet({
           onClick={onClose}
           className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors"
         >
-          Apply Filters
+          {t('filters.apply')}
         </button>
       </motion.div>
     </motion.div>
@@ -1126,6 +1132,7 @@ function FilterControls({
   availablePacks: string[];
   vertical?: boolean;
 }) {
+  const t = useTranslations('teamBuilder');
   const toggle = (key: keyof Filters, value: string) => {
     setFilters({
       ...filters,
@@ -1139,16 +1146,16 @@ function FilterControls({
     { value: 'atk', label: '⚔ ATK' },
     { value: 'def', label: '🛡 DEF' },
     { value: 'hp', label: '♥ HP' },
-    { value: 'power', label: '✨ Power' },
-    { value: 'rarity', label: '⭐ Rarity' },
+    { value: 'power', label: `✨ ${t('filters.power')}` },
+    { value: 'rarity', label: `⭐ ${t('filters.rarityOption')}` },
   ];
 
   return (
     <div className={clsx('space-y-3', !vertical && 'flex flex-wrap gap-3 items-center space-y-0')}>
       {/* Rarity filter */}
       <div className={vertical ? '' : 'flex items-center gap-1.5'}>
-        {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">Rarity:</span>}
-        {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">Rarity</p>}
+        {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">{t('filters.rarity')}</span>}
+        {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">{t('filters.rarityTitle')}</p>}
         <div className="flex flex-wrap gap-1.5">
           {availableRarities.map(r => (
             <button
@@ -1170,8 +1177,8 @@ function FilterControls({
       {/* Language filter */}
       {availableLanguages.length > 0 && (
         <div className={vertical ? '' : 'flex items-center gap-1.5'}>
-          {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">Type:</span>}
-          {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">Type / Language</p>}
+          {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">{t('filters.type')}</span>}
+          {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">{t('filters.typeTitle')}</p>}
           <div className="flex flex-wrap gap-1.5">
             {availableLanguages.map(l => (
               <button
@@ -1194,8 +1201,8 @@ function FilterControls({
       {/* Pack filter */}
       {availablePacks.length > 1 && (
         <div className={vertical ? '' : 'flex items-center gap-1.5'}>
-          {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">Pack:</span>}
-          {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">Pack Origin</p>}
+          {!vertical && <span className="text-xs text-slate-500 uppercase tracking-wider mr-1">{t('filters.pack')}</span>}
+          {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">{t('filters.packTitle')}</p>}
           <div className="flex flex-wrap gap-1.5">
             {availablePacks.map(p => (
               <button
@@ -1218,7 +1225,7 @@ function FilterControls({
       {/* Sort */}
       <div className={vertical ? '' : 'flex items-center gap-1.5 ml-auto'}>
         {!vertical && <SortAscending size={13} className="text-slate-500 hidden sm:block" />}
-        {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">Sort By</p>}
+        {vertical && <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5">{t('filters.sortBy')}</p>}
         
         {/* Desktop Sort (Hidden on mobile unless vertical) */}
         <div className={clsx("gap-1.5", vertical ? "flex flex-wrap" : "hidden sm:flex")}>
@@ -1246,12 +1253,12 @@ function FilterControls({
             </span>
             <select
               value={sort}
-              aria-label="Sort cards"
+              aria-label={t('filters.sortCards')}
               onChange={(e) => setSort(e.target.value as SortOption)}
               className="w-full pl-9 pr-4 py-3 min-h-[44px] bg-slate-800 border border-slate-700 rounded-xl text-sm font-bold text-slate-300 appearance-none focus:outline-none focus:border-orange-500/50"
             >
               {SORT_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>Sort: {opt.label}</option>
+                <option key={opt.value} value={opt.value}>{t('filters.sortOption', { label: opt.label })}</option>
               ))}
             </select>
           </div>
@@ -1291,6 +1298,7 @@ export default function TeamBuilderUI({
   powerCap = 99999,
   userBits = 0,
 }: TeamBuilderProps) {
+  const t = useTranslations('teamBuilder');
   const [showTypeChart, setShowTypeChart] = useState(false);
   const [showConfirmRandom, setShowConfirmRandom] = useState(false);
   const [showFriendModal, setShowFriendModal] = useState(false);
@@ -1379,17 +1387,17 @@ export default function TeamBuilderUI({
 
   function getCardIneligibilityReason(card: TeamBuilderCard): string | null {
     if (leagueMode === 'COMMON') {
-      if (card.rarity !== 'Common' && card.rarity !== 'Uncommon') return 'Only Common/Uncommon cards allowed';
+      if (card.rarity !== 'Common' && card.rarity !== 'Uncommon') return t('ineligible.commonOnly');
     }
     if (leagueMode === 'LEGENDARY') {
-      if (card.rarity !== 'Legendary') return 'Only Legendary cards allowed';
+      if (card.rarity !== 'Legendary') return t('ineligible.legendaryOnly');
     }
     if (leagueMode === 'DIVERSITY') {
       const currentLangs = slots.filter(Boolean).map(c => c!.primaryLanguage || '');
       if (slots.filter(Boolean).length >= 1 && currentLangs.includes(card.primaryLanguage || '')) {
-        return 'Card shares a language with existing team member';
+        return t('ineligible.sharedLanguage');
       }
-      if (!card.primaryLanguage || card.primaryLanguage === 'Unknown') return 'Card has no primary language';
+      if (!card.primaryLanguage || card.primaryLanguage === 'Unknown') return t('ineligible.noLanguage');
     }
     return null;
   }
@@ -1491,13 +1499,13 @@ export default function TeamBuilderUI({
     return (
       <div className="text-center py-20 space-y-4">
         <GameController size={64} className="mx-auto text-slate-500" />
-        <p className="text-xl font-bold text-slate-300">You have no cards!</p>
-        <p className="text-slate-500">Open some booster packs to get started.</p>
+        <p className="text-xl font-bold text-slate-300">{t('empty.noCards')}</p>
+        <p className="text-slate-500">{t('empty.noCardsHint')}</p>
         <a
           href="/store"
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-amber-500 transition-all"
         >
-          Go to the Store
+          {t('empty.goStore')}
         </a>
       </div>
     );
@@ -1507,13 +1515,13 @@ export default function TeamBuilderUI({
     return (
       <div className="text-center py-20 space-y-4">
         <WarningCircle size={64} className="mx-auto text-yellow-500" />
-        <p className="text-xl font-bold text-white">You need at least 3 cards to battle.</p>
-        <p className="text-slate-400">You have {userCards.length} card{userCards.length !== 1 ? 's' : ''}. Open more booster packs!</p>
+        <p className="text-xl font-bold text-white">{t('empty.needThree')}</p>
+        <p className="text-slate-400">{t('empty.youHave', { count: userCards.length })}</p>
         <a
           href="/store"
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-amber-500 transition-all"
         >
-          Open Booster Packs
+          {t('empty.openPacks')}
         </a>
       </div>
     );
@@ -1529,7 +1537,7 @@ export default function TeamBuilderUI({
       {setLeagueMode && (
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-            <Crown size={12} className="text-yellow-400" /> Select League Mode
+            <Crown size={12} className="text-yellow-400" /> {t('league.select')}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {(Object.keys(LEAGUE_CONFIG) as LeagueMode[]).map(mode => {
@@ -1551,12 +1559,12 @@ export default function TeamBuilderUI({
                     <span className="text-lg">{cfg.icon}</span>
                     <span className={clsx('text-xs font-bold', isActive ? cfg.color : 'text-slate-400')}>{cfg.label}</span>
                   </div>
-                  <p className="text-[9px] text-slate-500 leading-tight">{cfg.description}</p>
+                  <p className="text-[9px] text-slate-500 leading-tight">{cfg.entryFee ? t('league.rulesWithFee', { rules: cfg.rules, fee: cfg.entryFee }) : cfg.rules}</p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[9px] text-yellow-400">+{cfg.winBits} BITS</span>
                     <span className="text-[9px] text-blue-400">+{cfg.winXp} XP</span>
                   </div>
-                  {cfg.entryFee && <span className="text-[8px] text-red-400 mt-0.5 block">Entry: {cfg.entryFee} BITS</span>}
+                  {cfg.entryFee && <span className="text-[8px] text-red-400 mt-0.5 block">{t('league.entry', { fee: cfg.entryFee })}</span>}
                   {isActive && <div className={clsx('absolute top-1.5 right-1.5 w-2 h-2 rounded-full', cfg.border.replace('border-', 'bg-'))} />}
                 </button>
               );
@@ -1566,7 +1574,7 @@ export default function TeamBuilderUI({
           {/* Balanced League Power Meter */}
           {leagueMode === 'BALANCED' && (
             <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2">
-              <span className="text-xs text-blue-400 font-bold">Team Power:</span>
+              <span className="text-xs text-blue-400 font-bold">{t('league.teamPower')}</span>
               <div className="flex-1 bg-slate-800 rounded-full h-2.5 overflow-hidden">
                 <div
                   className={clsx('h-full rounded-full transition-all duration-300', teamPower > powerCap ? 'bg-red-500' : teamPower > powerCap * 0.8 ? 'bg-yellow-500' : 'bg-blue-500')}
@@ -1583,8 +1591,8 @@ export default function TeamBuilderUI({
           {leagueMode === 'LEGENDARY' && (
             <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2">
               <Crown size={16} className="text-yellow-400" />
-              <span className="text-xs text-yellow-300">{LEAGUES.LEGENDARY.entryFee} BITS entry fee will be charged per battle (win pays {LEAGUES.LEGENDARY.winBits}, a loss pays {LEAGUES.LEGENDARY.lossBits})</span>
-              <span className="ml-auto text-xs text-slate-400">Balance: <span className="text-yellow-400 font-bold">{userBits}</span></span>
+              <span className="text-xs text-yellow-300">{t('league.legendaryFee', { fee: LEAGUES.LEGENDARY.entryFee, win: LEAGUES.LEGENDARY.winBits, loss: LEAGUES.LEGENDARY.lossBits })}</span>
+              <span className="ml-auto text-xs text-slate-400">{t.rich('league.balance', { bits: userBits, b: chunks => <span className="text-yellow-400 font-bold">{chunks}</span> })}</span>
             </div>
           )}
         </div>
@@ -1595,8 +1603,8 @@ export default function TeamBuilderUI({
         {mode === 'respond' ? (
           <>
             <div className="flex-1 text-center py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-              <p className="text-sm font-bold text-yellow-400">Responding to <span className="text-white">{respondingToChallenger}</span>&apos;s challenge</p>
-              <p className="text-xs text-slate-400 mt-0.5">Select your team, then confirm below.</p>
+              <p className="text-sm font-bold text-yellow-400">{t.rich('actions.responding', { username: respondingToChallenger ?? '', hl: chunks => <span className="text-white">{chunks}</span> })}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{t('actions.respondHint')}</p>
             </div>
             <button
               onClick={handleRespond}
@@ -1604,7 +1612,7 @@ export default function TeamBuilderUI({
               className="sm:w-48 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 disabled:opacity-40 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center justify-center gap-2"
             >
               <Sword size={18} weight="fill" />
-              {!teamFull ? `Select ${slots.filter(s => !s).length} more` : loading ? 'Fighting...' : 'Accept & Fight!'}
+              {!teamFull ? t('actions.selectMore', { count: slots.filter(s => !s).length }) : loading ? t('actions.fighting') : t('actions.acceptFight')}
             </button>
           </>
         ) : (
@@ -1622,7 +1630,7 @@ export default function TeamBuilderUI({
                 )}
               >
                 <Lightning size={22} weight="fill" />
-                {loading ? 'Matchmaking...' : teamFull ? (quickAction?.label ?? (leagueMode === 'RANKED' ? 'Battle Ranked' : 'Battle Random')) : `Select ${slots.filter(s => !s).length} more card${slots.filter(s => !s).length !== 1 ? 's' : ''}`}
+                {loading ? t('actions.matchmaking') : teamFull ? (quickAction?.label ?? (leagueMode === 'RANKED' ? t('actions.battleRanked') : t('actions.battleRandom'))) : t('actions.selectMoreCards', { count: slots.filter(s => !s).length })}
               </motion.button>
             )}
             
@@ -1639,7 +1647,7 @@ export default function TeamBuilderUI({
                 )}
               >
                 <Users size={22} weight="fill" />
-                Challenge a Friend
+                {t('actions.challengeFriend')}
               </motion.button>
             )}
           </>
@@ -1665,7 +1673,7 @@ export default function TeamBuilderUI({
           animate={{ opacity: 1 }}
           className="text-center text-xs text-slate-500 flex items-center justify-center gap-1.5"
         >
-          <ArrowsVertical size={12} /> Click a card slot to remove it, pick a different one below, then re-place it.
+          <ArrowsVertical size={12} /> {t('actions.reorderHint')}
         </motion.p>
       )}
 
@@ -1679,7 +1687,7 @@ export default function TeamBuilderUI({
           className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-600 mb-2"
         >
           <Info size={13} />
-          {showTypeChart ? 'Hide' : 'Show'} Type Advantage Chart
+          {showTypeChart ? t('typeChart.hide') : t('typeChart.show')}
         </button>
         <AnimatePresence>
           {showTypeChart && (
@@ -1694,8 +1702,8 @@ export default function TeamBuilderUI({
         <div className="p-4 border-b border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold text-white">
-              Your Collection
-              <span className="ml-2 text-xs text-slate-500 font-normal">{filteredCards.length} cards</span>
+              {t('collection.title')}
+              <span className="ml-2 text-xs text-slate-500 font-normal">{t('collection.count', { count: filteredCards.length })}</span>
             </p>
             {/* Mobile filter button */}
             <button
@@ -1703,7 +1711,7 @@ export default function TeamBuilderUI({
               className="sm:hidden flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg px-3 py-1.5 transition-colors"
             >
               <Funnel size={13} />
-              Filters
+              {t('filters.button')}
               {activeFilterCount > 0 && (
                 <span className="ml-1 bg-orange-500 text-white text-[10px] font-bold px-1.5 rounded-full">{activeFilterCount}</span>
               )}
@@ -1735,7 +1743,7 @@ export default function TeamBuilderUI({
                       newFilters[k] = newFilters[k].filter(x => x !== f);
                     }
                     setFilters(newFilters);
-                  }}>
+                  }} aria-label={t('a11y.removeFilter', { filter: f })}>
                     <X size={10} />
                   </button>
                 </span>
@@ -1744,7 +1752,7 @@ export default function TeamBuilderUI({
                 onClick={() => setFilters({ rarity: [], language: [], pack: [] })}
                 className="text-xs text-slate-500 hover:text-white"
               >
-                Clear all
+                {t('filters.clearAll')}
               </button>
             </div>
           )}
@@ -1768,7 +1776,7 @@ export default function TeamBuilderUI({
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.18 }}
                   className="relative"
-                  title={ineligibleReason || (isBalancedOverflow ? 'Would exceed power cap' : undefined)}
+                  title={ineligibleReason || (isBalancedOverflow ? t('ineligible.exceedsCapTitle') : undefined)}
                 >
                   <CompactCard
                     card={card}
@@ -1781,7 +1789,7 @@ export default function TeamBuilderUI({
                     <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 pointer-events-none">
                       <div className="flex flex-col items-center gap-1">
                         <Lock size={20} weight="fill" className="text-slate-400" />
-                        <span className="text-[9px] text-slate-400 text-center px-2 leading-tight">{ineligibleReason || 'Exceeds cap'}</span>
+                        <span className="text-[9px] text-slate-400 text-center px-2 leading-tight">{ineligibleReason || t('ineligible.exceedsCap')}</span>
                       </div>
                     </div>
                   )}
@@ -1792,9 +1800,9 @@ export default function TeamBuilderUI({
           {filteredCards.length === 0 && (
             <div className="col-span-2 text-center py-12 text-slate-500 space-y-2">
               <Funnel size={32} className="mx-auto opacity-40" />
-              <p>No cards match your filters.</p>
+              <p>{t('filters.noMatch')}</p>
               <button onClick={() => setFilters({ rarity: [], language: [], pack: [] })} className="text-xs text-orange-400 hover:text-orange-300 underline">
-                Clear filters
+                {t('filters.clear')}
               </button>
             </div>
           )}

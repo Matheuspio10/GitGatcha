@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da primeira parte do PT-BR (PR #55). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da segunda parte do PT-BR (PR #56). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 20 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 212 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 212 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -56,8 +56,7 @@
 ## ▶️ Próximo passo
 
 **Onda 7 (celular, acessibilidade e idioma)**, uma PR por rodada:
-1. **PT-BR, parte 2 (7c-2):** Arena e montador de time, Torre, desafios, ranking, Sprints, amigos, perfil (com o seletor de título/moldura e o GitHub), histórico de BITS e as páginas públicas (`/u`, `/card`, `/try`, `/challenge`, login). Mesmo método da parte 1, seguindo o guia [`docs/i18n.md`](docs/i18n.md) (regras, glossário PT-BR, verificação); os namespaces `battle`, `leaderboard`, `social`, `profile` e `public` já existem, vazios.
-2. **PT-BR, parte 3 (7c-3):** os textos que vêm dos dados do jogo, que hoje aparecem em inglês mesmo em PT-BR: nomes e descrições dos packs, missões, conquistas, passos do "Primeiros passos", guia de BITS, passivas e regras das ligas, nomes das raridades (decidir se traduz), mensagens de erro das APIs e notificações; depois a wiki inteira (namespaces `game` e `wiki`).
+1. **PT-BR, parte 3 (7c-3):** os textos que vêm dos dados do jogo, que hoje aparecem em inglês mesmo em PT-BR: nomes e descrições dos packs, missões, conquistas, passos do "Primeiros passos", guia de BITS, passivas e regras das ligas, nomes das raridades (decidir se traduz), mensagens de erro das APIs e notificações; depois a wiki inteira (namespaces `game` e `wiki`).
 
 Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes apostas e monetização).
 
@@ -138,7 +137,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
-| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR parte 1 (PR #55) · falta: **PT-BR partes 2 e 3** (2.5) | 2 rodadas, M–G |
+| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR partes 1 e 2 (PR #55, #56) · falta: **PT-BR parte 3** (dados do jogo e wiki) (2.5) | 1 rodada, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
@@ -354,6 +353,11 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Contraste AA:** o `slate-500` (texto secundário em 196 lugares) foi de 57% para 64% de luminosidade: 5,9:1 no fundo e 5,4:1 nos painéis (antes 4,5 e 4,1). Os textos em `slate-600` (2,8:1) passaram para `slate-500`.
 - **Som:** botão de som no topo com volume (salvo no navegador) e mudo, ligado ao ganho mestre do `audioManager`. Epic e Legendary ganharam sons próprios sintetizados por cima do de Rare: arpejo subindo no Epic, arpejo com acorde sustentado e brilho no Legendary.
 
+### Onda 7 — PT-BR, parte 2 (PR #56)
+- **Traduzido (~520 textos), por 5 agentes em paralelo seguindo `docs/i18n.md`:** montador de time (namespace novo `teamBuilder`), Arena com replay, resultado, desafios, apostas e revanche, Torre; perfil, editar perfil, conectar GitHub e convites; ranking (abas, temporada, Sprints) e amigos com comparar coleção; início, login, pack de visitante, perfil e carta públicos (com as imagens de prévia), desafio por link e histórico de BITS. Agora **toda a interface tem português**; o que ainda aparece em inglês vem dos dados do jogo (parte 3).
+- Datas seguem o idioma (histórico de BITS, desafios, conquistas). A data de expiração do desafio passou de `toUTCString` para um formato legível nos dois idiomas, com "UTC" no fim.
+- Revisão: 6 botões só com ícone ganharam rótulo (fechar tabela de tipos e remover filtro no montador, câmera e compartilhar no perfil, aceitar/recusar/cancelar pedido de amizade); "Só seu amigo tem" virou "Você ainda não tem" (sem gênero). O lint caiu para 98 erros (o perfil perdeu 3 antigos) e o orçamento acompanhou.
+
 ### Onda 7 — PT-BR, parte 1 (PR #55)
 - **Infra** (`src/i18n`): next-intl 4.14.7 sem prefixo na URL. O idioma vem do cookie `NEXT_LOCALE` ou, no primeiro acesso, do `Accept-Language` do navegador. Mensagens em `messages/<idioma>/<área>.json`, um arquivo por área (15 namespaces, os da parte 2 e 3 já criados vazios), importadas estaticamente.
   - **As chaves são tipadas a partir do inglês** (`global.d.ts`): chave errada quebra o `tsc`. O português precisa ter as mesmas chaves, e o `messages.test.ts` confere chaves, campos `{variáveis}` e textos vazios nos dois idiomas.
@@ -390,7 +394,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Item | Esforço |
 |---|---|
 | Notificações: limitar e limpar a lista, que cresce sem fim | P |
-| **Português (PT-BR)** com next-intl, mantendo o inglês | parte 1 ✅ (PR #55); partes 2 e 3 pendentes |
+| **Português (PT-BR)** com next-intl, mantendo o inglês | partes 1 e 2 ✅ (PR #55, #56); parte 3 pendente |
 
 ### 2.6 Áudio (restante)
 | Item | Esforço |

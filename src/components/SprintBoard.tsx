@@ -6,6 +6,7 @@ import { SPRINT_REWARDS, SPRINT_TEAM_SIZE, sprintKindLabel, sprintRewardsLegend 
 import type { SprintState } from '@/lib/sprintService';
 import type { WeeklyEvent } from '@/lib/weeklyEventService';
 import { RarityGem } from '@/components/RarityGem';
+import { useTranslations } from 'next-intl';
 
 function Position({ position }: { position: number }) {
   if (position === 1) return <Trophy className="text-yellow-400" size={20} weight="fill" />;
@@ -19,6 +20,8 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
   const languages = sprint.theme.languages;
   const packs = [...(event ? [{ id: event.pack.id, name: event.pack.name }] : []), ...ALL_PACKS.filter(p => p.pool.languages?.some(l => languages.includes(l)))];
   const paidPlaces = SPRINT_REWARDS[sprint.kind][SPRINT_REWARDS[sprint.kind].length - 1].upTo;
+  const t = useTranslations('leaderboard.sprint');
+  const featured = event?.featuredDev;
   const accent = sprint.kind === 'daily' ? 'text-cyan-300 border-cyan-500/30 bg-cyan-500/5' : 'text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/5';
 
   return (
@@ -28,14 +31,20 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
           <p className="text-xs font-bold uppercase tracking-wider">{sprintKindLabel(sprint.kind)}</p>
           <h2 className="text-2xl font-black text-white">{sprint.theme.name}</h2>
           <p className="text-xs text-slate-400">
-            {languages.length > 1 ? `Cards in ${languages.join(', ')}` : `${languages[0]} cards`} · your best {SPRINT_TEAM_SIZE} count (ATK + DEF + HP)
+            {t('bestCount', {
+              cards: languages.length > 1 ? t('cardsInLanguages', { languages: languages.join(', ') }) : t('languageCards', { language: languages[0] }),
+              count: SPRINT_TEAM_SIZE,
+            })}
           </p>
         </div>
         <div className="text-right text-xs text-slate-400">
           <p className="flex items-center justify-end gap-1">
-            <Timer size={14} weight="fill" /> Ends in <span className="font-mono font-bold text-white">{formatSeasonLeft(sprint.endsAt.getTime() - now.getTime())}</span>
+            <Timer size={14} weight="fill" /> {t.rich('endsIn', {
+              left: formatSeasonLeft(sprint.endsAt.getTime() - now.getTime()),
+              time: chunks => <span className="font-mono font-bold text-white">{chunks}</span>,
+            })}
           </p>
-          <p className="mt-1">BITS: {sprintRewardsLegend(sprint.kind)}</p>
+          <p className="mt-1">{t('bitsLegend', { legend: sprintRewardsLegend(sprint.kind) })}</p>
         </div>
       </div>
 
@@ -43,12 +52,19 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-fuchsia-500/30 bg-slate-950/60 p-3 text-sm text-slate-300">
           <Sparkle size={18} weight="fill" className="shrink-0 text-fuchsia-300" />
           <span className="min-w-0 flex-1">
-            Weekly event: the <Link href={`/store#pack-${event.pack.id}`} className="font-bold text-fuchsia-200 hover:underline">{event.pack.name}</Link> is on sale until the sprint ends
-            {event.featuredDev && (
+            {t.rich('eventSale', {
+              pack: event.pack.name,
+              packLink: chunks => <Link href={`/store#pack-${event.pack.id}`} className="font-bold text-fuchsia-200 hover:underline">{chunks}</Link>,
+            })}
+            {featured && (
               <>
-                {' '}· Dev of the Week:{' '}
-                <Link href={`/forge?dev=${encodeURIComponent(event.featuredDev.githubUsername)}`} className="font-bold text-white hover:underline">{event.featuredDev.name}</Link>
-                {' '}({event.featuredDev.rarity}), {event.discountPercent}% off at the Forge
+                {' '}
+                {t.rich('eventDev', {
+                  dev: featured.name,
+                  rarity: featured.rarity,
+                  percent: event.discountPercent,
+                  devLink: chunks => <Link href={`/forge?dev=${encodeURIComponent(featured.githubUsername)}`} className="font-bold text-white hover:underline">{chunks}</Link>,
+                })}
               </>
             )}
           </span>
@@ -59,14 +75,19 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
           {sprint.you ? (
             <p className="text-sm text-slate-300">
-              You are <span className="font-black text-white">#{sprint.you.position}</span> of {sprint.players} with{' '}
-              <span className="font-mono font-bold text-emerald-300">{sprint.you.score}</span> power
+              {t.rich('youAre', {
+                position: String(sprint.you.position),
+                players: String(sprint.players),
+                score: String(sprint.you.score),
+                b: chunks => <span className="font-black text-white">{chunks}</span>,
+                power: chunks => <span className="font-mono font-bold text-emerald-300">{chunks}</span>,
+              })}
               {sprint.you.rewardBits > 0
-                ? <> · <span className="text-yellow-300">+{sprint.you.rewardBits} BITS</span> if it ends now</>
-                : <> · the top {paidPlaces} get BITS</>}
+                ? <> · {t.rich('ifEndsNow', { bits: String(sprint.you.rewardBits), reward: chunks => <span className="text-yellow-300">{chunks}</span> })}</>
+                : <> · {t('topPaid', { count: paidPlaces })}</>}
             </p>
           ) : (
-            <p className="text-sm text-slate-400">You have no {languages.length > 1 ? 'cards of this theme' : `${languages[0]} cards`} yet, so you are not in this sprint.</p>
+            <p className="text-sm text-slate-400">{languages.length > 1 ? t('notInTheme') : t('notInLanguage', { language: languages[0] })}</p>
           )}
           {sprint.yourCards.length > 0 && (
             <ul className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -90,11 +111,11 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
           )}
           {packs.length > 0 && (
             <p className="mt-3 text-xs text-slate-500">
-              <Lightning size={12} weight="fill" className="inline" /> Boosters with these cards:{' '}
+              <Lightning size={12} weight="fill" className="inline" /> {t('boosters')}{' '}
               {packs.map((p, i) => (
                 <span key={p.id}>{i > 0 && ', '}<Link href={`/store#pack-${p.id}`} className="text-indigo-300 hover:underline">{p.name}</Link></span>
               ))}
-              . The Forge works too.
+              {t('forgeToo')}
             </p>
           )}
         </div>
@@ -106,22 +127,22 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
             <li key={s.userId} className={`flex items-center gap-3 px-4 py-2 ${s.userId === viewerId ? 'bg-indigo-500/10' : ''}`}>
               <span className="flex w-8 justify-center"><Position position={s.position} /></span>
               <Link href={`/u/${encodeURIComponent(s.username)}`} className="flex-1 truncate font-bold text-white hover:text-indigo-300">{s.username}</Link>
-              <span className="text-xs text-slate-500">{s.cards} card{s.cards === 1 ? '' : 's'}</span>
+              <span className="text-xs text-slate-500">{t('cards', { count: s.cards })}</span>
               <span className="w-16 text-right font-mono font-bold text-emerald-300">{s.score}</span>
             </li>
           ))}
         </ol>
       ) : (
-        <p className="text-center text-sm text-slate-500">Nobody has a card of this theme yet. The first one takes the top spot.</p>
+        <p className="text-center text-sm text-slate-500">{t('empty')}</p>
       )}
 
       {sprint.last && (
         <p className="text-xs text-slate-500">
-          Last {sprint.kind === 'daily' ? 'daily' : 'weekly'} sprint ({sprint.last.theme.name}):{' '}
+          {t('last', { kind: sprint.kind, theme: sprint.last.theme.name })}{' '}
           {sprint.last.winners.length > 0
-            ? <>won by {sprint.last.winners.map(w => w.username).join(', ')} ({sprint.last.winners[0].score})</>
-            : 'nobody took part'}
-          {sprint.last.you && <> · you finished #{sprint.last.you.position}{sprint.last.you.rewardBits > 0 ? ` (+${sprint.last.you.rewardBits} BITS)` : ''}</>}
+            ? t('wonBy', { names: sprint.last.winners.map(w => w.username).join(', '), score: String(sprint.last.winners[0].score) })
+            : t('nobody')}
+          {sprint.last.you && <> · {t('youFinished', { position: String(sprint.last.you.position) })}{sprint.last.you.rewardBits > 0 ? ` (+${sprint.last.you.rewardBits} BITS)` : ''}</>}
         </p>
       )}
     </section>

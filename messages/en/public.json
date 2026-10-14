@@ -1,1 +1,123 @@
-{}
+{
+  "meta": {
+    "title": "GitGacha - Dev Card Game",
+    "description": "Collect developers, build your deck, rule the repository."
+  },
+  "home": {
+    "tagline": "Collect real open-source developers, forge the ultimate engineering team, and dominate the repository battles.",
+    "start": "Start Your Journey",
+    "login": "Login",
+    "register": "Register Account",
+    "tryFree": "Open a free pack first (no sign-up)"
+  },
+  "login": {
+    "title": "Access the Repository",
+    "errors": {
+      "oauthAccountNotLinked": "This account is already linked to another player, or its e-mail belongs to an existing account. Sign in the way you usually do, then connect GitHub from your profile.",
+      "credentialsSignin": "Wrong e-mail or password.",
+      "tooManyAttempts": "Too many sign-in attempts. Please wait a few minutes and try again.",
+      "unknown": "Sign-in failed ({error}). Please try again.",
+      "registrationFailed": "Registration failed",
+      "generic": "An error occurred"
+    },
+    "github": "Continue with GitHub",
+    "githubHint": "GitHub players get their own card in the exclusive Signature edition.",
+    "google": "Continue with Google",
+    "or": "Or",
+    "email": "Email address",
+    "password": "Password",
+    "processing": "Processing...",
+    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "haveAccount": "Already have an account?",
+    "newHere": "New to GitGacha?",
+    "createAccount": "Create Account"
+  },
+  "try": {
+    "metaTitle": "Open a free pack · GitGacha",
+    "fallbackPack": "Free pack",
+    "fallbackStarter": "a starter pack",
+    "keepCards": "Keep these cards",
+    "openError": "Could not open the pack right now.",
+    "doneTitle": "These developers are yours",
+    "doneText": "…as soon as you create an account. They wait for you on this browser for a week.",
+    "signUpKeep": "Sign up and keep them",
+    "bonus": "You also get {starterPack} (Rare or better guaranteed) and BITS to buy more packs.",
+    "createAccount": "Create my account",
+    "haveAccount": "I already have an account",
+    "cards": "{count, plural, one {# card} other {# cards}}",
+    "title": "Open a free pack",
+    "intro": "No account needed. {count} real open-source developers from GitHub, drawn at random. Like them? Sign up and they are yours.",
+    "drawing": "Drawing developers…",
+    "openCta": "Open my free pack"
+  },
+  "player": {
+    "notFound": "Player not found · GitGacha",
+    "metaDescription": "Level {level} · {count} developers collected · rating {rating}. Collect real developers from GitHub on GitGacha.",
+    "ogTitle": "{username} on GitGacha",
+    "level": "Level {level}",
+    "collected": "{count} developers collected",
+    "setsComplete": "{count, plural, one {# language set complete} other {# language sets complete}}",
+    "shareText": "{username}'s GitGacha collection: {count} developers",
+    "pastSeasons": "Past seasons",
+    "seasonShort": "S{season}",
+    "signatureCard": "Signature card",
+    "bestCards": "Best cards",
+    "noCards": "No cards yet.",
+    "fullProfile": "See the full profile →",
+    "ctaTitle": "Start your own collection",
+    "ctaText": "Open a free pack of real GitHub developers, no account needed.",
+    "ctaButton": "Open a free pack",
+    "og": {
+      "stats": "Level {level} · {count} developers · rating {rating}",
+      "signature": "Signature"
+    }
+  },
+  "card": {
+    "notFound": "Card not found · GitGacha",
+    "metaDescription": "{rarity} · {title} · ATK {atk} / DEF {def} / HP {hp}. Collect real developers from GitHub on GitGacha.",
+    "ogTitle": "{name} on GitGacha",
+    "label": "Developer card",
+    "onGithub": "@{login} on GitHub",
+    "signatureOwner": "The Signature edition belongs to <link>@{owner}</link>, the developer themself.",
+    "owners": "{count, plural, one {In # player collection.} other {In # player collections.}}",
+    "shareText": "{name} is a {rarity} card on GitGacha",
+    "ctaTitle": "Collect real open-source developers",
+    "ctaText": "Open a free pack, no account needed.",
+    "ctaButton": "Open a free pack",
+    "og": {
+      "signatureHeld": "Signature edition held by @{owner}",
+      "owners": "{count, plural, one {In # collection} other {In # collections}}",
+      "cta": "Collect real developers from GitHub →"
+    }
+  },
+  "challenge": {
+    "notFound": "Challenge not found · GitGacha",
+    "aPlayer": "A player",
+    "metaTitle": "{who} challenges you · GitGacha",
+    "metaDescription": "{who} sent a 3v3 developer-card battle. Accept it on GitGacha.",
+    "metaDescriptionStake": "{who} sent a 3v3 developer-card battle with {stake} BITS on the line. Accept it on GitGacha.",
+    "title": "{who} challenges you",
+    "theirTeam": "Their team (stats hidden until the battle)",
+    "stake": "<b>{stake} BITS</b> each on the line: the winner takes {total}.",
+    "expires": "Expires {date}",
+    "closed": "This challenge is closed: it was already accepted, cancelled or expired.",
+    "own": "This is your challenge. Share this page's link; the first player to accept fights your team.",
+    "accept": "Pick my team and accept",
+    "signInToAccept": "Sign in to accept. New here? You get a starter pack and BITS when you join.",
+    "createAccount": "Create an account",
+    "signIn": "Sign in"
+  },
+  "bits": {
+    "metaTitle": "BITS history · GitGacha",
+    "title": "BITS history",
+    "subtitle": "Every BITS you earned or spent.",
+    "subtitleBefore": "Every BITS you earned or spent, before {date}.",
+    "balance": "Balance",
+    "emptyTitle": "Nothing here yet",
+    "emptyText": "Earn or spend BITS and every change shows up here.",
+    "emptyAction": "Go to the store",
+    "newest": "← Newest",
+    "older": "Older →"
+  }
+}

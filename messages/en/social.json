@@ -1,1 +1,37 @@
-{}
+{
+  "title": "Friends",
+  "searchPlaceholder": "Search players...",
+  "find": "Find",
+  "members": "Alliance Members ({count})",
+  "empty": {
+    "title": "No friends yet",
+    "text": "Friends can challenge each other to PvP battles, the only way to climb the rating. Search a username above, or find players in the rankings.",
+    "browse": "Browse the rankings"
+  },
+  "levelDeveloper": "Level {level} Developer",
+  "compare": "Compare collections",
+  "challenge": "Challenge to Duel",
+  "remove": "Remove Friend",
+  "incoming": "Incoming",
+  "noPending": "No pending requests",
+  "lvl": "Lvl {level}",
+  "outgoing": "Outgoing",
+  "noOutgoing": "No outgoing requests",
+  "comparison": {
+    "error": "Could not compare collections",
+    "ariaLabel": "Compare collections with {username}",
+    "title": "You × {username}",
+    "inCommon": "{count, plural, one {# card in common} other {# cards in common}}",
+    "close": "Close",
+    "theirs": "They have, you don't ({count})",
+    "mine": "You have, they don't ({count})",
+    "nothingTheirs": "Nothing here: you have every card they have.",
+    "nothingMine": "Nothing here: they have every card you have.",
+    "showing": "Showing the {shown} rarest of {total}."
+  },
+  "a11y": {
+    "accept": "Accept the request from {name}",
+    "decline": "Decline the request from {name}",
+    "cancel": "Cancel the request to {name}"
+  }
+}

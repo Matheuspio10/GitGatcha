@@ -1,1 +1,142 @@
-{}
+{
+  "notFound": "User Not Found",
+  "loadFailed": "Failed to load profile",
+  "noBio": "No bio yet",
+  "level": "Level {level}",
+  "sets": "{done}/{total} sets",
+  "setsTitle": "Language sets with a card of every rarity",
+  "seasonShort": "S{season}",
+  "seasonPeak": "Season {season} peak",
+  "winRateBadge": "{rate}% Win Rate",
+  "xp": {
+    "progress": "XP Progress",
+    "total": "{xp} XP",
+    "toNext": "{into} / {needed} to Lvl {level}"
+  },
+  "actions": {
+    "editProfile": "Edit Profile",
+    "copyLink": "Copy profile link",
+    "addFriend": "Add Friend",
+    "requestSent": "Request Sent",
+    "remove": "Remove",
+    "changePhoto": "Change photo"
+  },
+  "stats": {
+    "totalBattles": "Total Battles",
+    "winRate": "Win Rate",
+    "wins": "{count}W",
+    "losses": "{count}L",
+    "cardsOwned": "Cards Owned",
+    "friends": "Friends",
+    "bitsEarned": "BITS Earned",
+    "bestStreak": "Best Streak"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "tiersUnlocked": "{unlocked} / {total} tiers unlocked",
+    "locked": "Locked",
+    "lockedState": "locked",
+    "ariaLabel": "{name}: {state}",
+    "completed": "Completed: {description}",
+    "next": "Next: {description}",
+    "reward": "+{reward} Bits",
+    "progress": "Progress",
+    "unlockedOn": "Unlocked {date}",
+    "tierChip": "{name}: {threshold} · {reward} Bits"
+  },
+  "hallOfFame": {
+    "title": "Hall of Fame",
+    "subtitle": "The most loyal cards in {username}'s collection, battle-tested and forged through countless victories."
+  },
+  "topCards": {
+    "title": "Top Developers",
+    "subtitle": "Most battle-hardened cards in the collection",
+    "emptyTitle": "No collection yet.",
+    "emptyText": "This user hasn't collected any developers."
+  },
+  "battles": {
+    "title": "Recent Battles",
+    "subtitle": "Last {count} completed battles",
+    "win": "WIN",
+    "loss": "LOSS",
+    "yourTeam": "Your Team",
+    "opponentTeam": "Opponent Team"
+  },
+  "friends": {
+    "title": "Friends",
+    "manage": "Manage Friends →",
+    "emptyTitle": "No friends yet.",
+    "emptyText": "This user hasn't added any friends."
+  },
+  "edit": {
+    "title": "Edit Profile",
+    "noBio": "No bio yet",
+    "close": "Close",
+    "profilePhoto": "Profile Photo",
+    "uploadPhoto": "Upload Photo",
+    "remove": "Remove",
+    "profileBanner": "Profile Banner",
+    "modes": {
+      "presets": "Presets",
+      "colors": "Colors",
+      "upload": "Upload"
+    },
+    "presets": {
+      "cyber": "Cyber Grid",
+      "aurora": "Aurora",
+      "ember": "Ember",
+      "ocean": "Deep Ocean",
+      "void": "Void",
+      "neon": "Neon Night"
+    },
+    "defaultBanner": "Default",
+    "uploadBanner": "Click to upload banner image",
+    "displayName": "Display Name",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell the world about your coding journey...",
+    "favoriteLanguage": "Favorite Language",
+    "favoriteLanguageHint": "Shows as a badge next to your name",
+    "noneSelected": "None selected",
+    "none": "None",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save Changes",
+    "errors": {
+      "notImage": "Please select an image file",
+      "server": "Server error: {status} {statusText}",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "github": {
+    "loading": "Loading GitHub connection",
+    "connectText": "Connect your GitHub account to get <sig>your own card in the exclusive Signature foil edition</sig>.",
+    "connectTextBonus": "Connect your GitHub account to get <sig>your own card in the exclusive Signature foil edition</sig> plus <bits>{bonus} BITS</bits>.",
+    "quotaText": "Your boosters will also use your own GitHub quota, so they stay fast when the game is busy.",
+    "redirecting": "Redirecting…",
+    "connect": "Connect GitHub",
+    "signatureInCollection": "Your Signature card ({rarity}) is in your collection.",
+    "signaturePending": "Connected. Your Signature card will appear in your collection shortly.",
+    "tokenInvalid": "GitHub no longer accepts this connection. Reconnect to keep using your own quota.",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "disconnectFailed": "Could not disconnect GitHub",
+    "readme": {
+      "markdownAlt": "{name} on GitGacha",
+      "copyPrompt": "Copy this into your README:",
+      "imageAlt": "{name} Signature card",
+      "title": "Show it on your GitHub profile",
+      "hint": "Paste in your profile README (github.com/{login}/{login}).",
+      "copied": "Copied!",
+      "copy": "Copy for README",
+      "publicPage": "Public page"
+    }
+  },
+  "invite": {
+    "title": "Invite friends, both get {bonus} BITS",
+    "text": "Your friend opens a free pack from your link and signs up. When they connect their GitHub account, you both get the BITS.",
+    "textCap": "Your friend opens a free pack from your link and signs up. When they connect their GitHub account, you both get the BITS (paid for up to {cap} friends).",
+    "stats": "{invited} joined with your link · {paid} connected GitHub · +{earned} BITS earned",
+    "waiting": "{waiting} waiting for GitHub",
+    "shareText": "Collect real GitHub developers with me on GitGacha. Free pack, no sign-up:"
+  }
+}

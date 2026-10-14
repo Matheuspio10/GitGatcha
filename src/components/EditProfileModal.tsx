@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserAvatar } from './UserAvatar';
 import { GitHubConnect } from './GitHubConnect';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -24,13 +25,13 @@ interface EditProfileModalProps {
 }
 
 const PRESET_BANNERS = [
-  { id: 'preset:cyber', label: 'Cyber Grid', gradient: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' },
-  { id: 'preset:aurora', label: 'Aurora', gradient: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)' },
-  { id: 'preset:ember', label: 'Ember', gradient: 'linear-gradient(135deg, #1a0a00, #3d1f00, #0d0d0d)' },
-  { id: 'preset:ocean', label: 'Deep Ocean', gradient: 'linear-gradient(135deg, #000428, #004e92, #000428)' },
-  { id: 'preset:void', label: 'Void', gradient: 'linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e)' },
-  { id: 'preset:neon', label: 'Neon Night', gradient: 'linear-gradient(135deg, #0d0221, #150050, #3f0071)' },
-];
+  { id: 'preset:cyber', key: 'cyber', gradient: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' },
+  { id: 'preset:aurora', key: 'aurora', gradient: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)' },
+  { id: 'preset:ember', key: 'ember', gradient: 'linear-gradient(135deg, #1a0a00, #3d1f00, #0d0d0d)' },
+  { id: 'preset:ocean', key: 'ocean', gradient: 'linear-gradient(135deg, #000428, #004e92, #000428)' },
+  { id: 'preset:void', key: 'void', gradient: 'linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e)' },
+  { id: 'preset:neon', key: 'neon', gradient: 'linear-gradient(135deg, #0d0221, #150050, #3f0071)' },
+] as const;
 
 const BANNER_COLORS = [
   'color:#1e1b4b', 'color:#1e3a5f', 'color:#1a2e1a', 'color:#3b1a2e',
@@ -68,6 +69,7 @@ function getBannerStyle(bannerImage?: string | null): React.CSSProperties {
 
 export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: EditProfileModalProps) {
   const panelRef = useDialog(isOpen, onClose);
+  const t = useTranslations('profile.edit');
   const [image, setImage] = useState<string | null>(currentProfile.image || null);
   const [bannerImage, setBannerImage] = useState<string | null>(currentProfile.bannerImage || null);
   const [bio, setBio] = useState(currentProfile.bio || '');
@@ -97,7 +99,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
+      setError(t('errors.notImage'));
       return;
     }
 
@@ -142,7 +144,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
     reader.readAsDataURL(file);
     // Reset the input
     e.target.value = '';
-  }, []);
+  }, [t]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -166,10 +168,10 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
         data = JSON.parse(resText);
       } catch (e) {
         console.error('Non-JSON response:', resText);
-        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+        throw new Error(t('errors.server', { status: res.status, statusText: res.statusText }));
       }
 
-      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      if (!res.ok) throw new Error(data.error || t('errors.saveFailed'));
 
       onSave();
       onClose();
@@ -205,9 +207,9 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
           {/* Header */}
           <div className="sticky top-0 z-20 flex items-center justify-between p-6 pb-0 bg-slate-900/95 backdrop-blur-sm">
             <h2 id="edit-profile-title" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-              Edit Profile
+              {t('title')}
             </h2>
-            <button onClick={onClose} aria-label="Close" className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white">
+            <button onClick={onClose} aria-label={t('close')} className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white">
               <X size={24} />
             </button>
           </div>
@@ -239,7 +241,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-400 line-clamp-1">{bio || 'No bio yet'}</p>
+                    <p className="text-sm text-slate-400 line-clamp-1">{bio || t('noBio')}</p>
                   </div>
                 </div>
               </div>
@@ -247,7 +249,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
             {/* Avatar Upload */}
             <div>
-              <label className="block text-sm font-bold text-slate-300 mb-3">Profile Photo</label>
+              <label className="block text-sm font-bold text-slate-300 mb-3">{t('profilePhoto')}</label>
               <div className="flex items-center gap-4">
                 <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
                   <UserAvatar username={currentProfile.username} image={image} size="lg" />
@@ -260,14 +262,14 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                     onClick={() => avatarInputRef.current?.click()}
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-colors"
                   >
-                    Upload Photo
+                    {t('uploadPhoto')}
                   </button>
                   {image && (
                     <button
                       onClick={() => setImage(null)}
                       className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm text-slate-300 font-medium transition-colors"
                     >
-                      Remove
+                      {t('remove')}
                     </button>
                   )}
                 </div>
@@ -277,9 +279,9 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
             {/* Banner Selection */}
             <div>
-              <label className="block text-sm font-bold text-slate-300 mb-3">Profile Banner</label>
+              <label className="block text-sm font-bold text-slate-300 mb-3">{t('profileBanner')}</label>
               <div className="flex gap-2 mb-4">
-                {([['presets', 'Presets', <ImageIcon key="i" size={16} />], ['colors', 'Colors', <Palette key="p" size={16} />], ['upload', 'Upload', <Camera key="c" size={16} />]] as const).map(([mode, label, icon]) => (
+                {([['presets', <ImageIcon key="i" size={16} />], ['colors', <Palette key="p" size={16} />], ['upload', <Camera key="c" size={16} />]] as const).map(([mode, icon]) => (
                   <button
                     key={mode}
                     onClick={() => setBannerMode(mode)}
@@ -287,7 +289,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                       bannerMode === mode ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
-                    {icon} {label}
+                    {icon} {t(`modes.${mode}`)}
                   </button>
                 ))}
               </div>
@@ -303,7 +305,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                       }`}
                       style={{ background: preset.gradient }}
                     >
-                      <span className="absolute bottom-1 left-2 text-[10px] font-bold text-white/60">{preset.label}</span>
+                      <span className="absolute bottom-1 left-2 text-[10px] font-bold text-white/60">{t(`presets.${preset.key}`)}</span>
                       {bannerImage === preset.id && (
                         <div className="absolute top-1 right-1">
                           <Check size={14} className="text-indigo-400" weight="bold" />
@@ -336,7 +338,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                     }`}
                     style={{ background: 'linear-gradient(135deg, #0f172a, #1e1b4b)' }}
                   >
-                    Default
+                    {t('defaultBanner')}
                   </button>
                 </div>
               )}
@@ -347,7 +349,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                     onClick={() => bannerInputRef.current?.click()}
                     className="w-full h-20 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500/50 flex items-center justify-center gap-2 text-slate-400 hover:text-indigo-400 transition-colors"
                   >
-                    <Camera size={20} /> Click to upload banner image
+                    <Camera size={20} /> {t('uploadBanner')}
                   </button>
                   <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'banner')} />
                 </div>
@@ -356,7 +358,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
             {/* Display Name */}
             <div>
-              <label className="block text-sm font-bold text-slate-300 mb-2" htmlFor="edit-displayname">Display Name</label>
+              <label className="block text-sm font-bold text-slate-300 mb-2" htmlFor="edit-displayname">{t('displayName')}</label>
               <input
                 id="edit-displayname"
                 type="text"
@@ -369,13 +371,13 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
             {/* Bio */}
             <div>
-              <label className="block text-sm font-bold text-slate-300 mb-2" htmlFor="edit-bio">Bio</label>
+              <label className="block text-sm font-bold text-slate-300 mb-2" htmlFor="edit-bio">{t('bio')}</label>
               <textarea
                 id="edit-bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value.slice(0, 160))}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none h-24"
-                placeholder="Tell the world about your coding journey..."
+                placeholder={t('bioPlaceholder')}
                 maxLength={160}
               />
               <div className="flex justify-end mt-1">
@@ -387,8 +389,8 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
             {/* Preferred Language */}
             <div>
-              <label className="block text-sm font-bold text-slate-300 mb-2">Favorite Language</label>
-              <p className="text-xs text-slate-500 mb-3">Shows as a badge next to your name</p>
+              <label className="block text-sm font-bold text-slate-300 mb-2">{t('favoriteLanguage')}</label>
+              <p className="text-xs text-slate-500 mb-3">{t('favoriteLanguageHint')}</p>
               <div className="relative">
                 <button
                   onClick={() => setShowLangDropdown(!showLangDropdown)}
@@ -400,7 +402,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                       <span className="text-white font-medium">{preferredLanguage}</span>
                     </span>
                   ) : (
-                    <span className="text-slate-500">None selected</span>
+                    <span className="text-slate-500">{t('noneSelected')}</span>
                   )}
                   <CaretDown size={16} className="text-slate-400" />
                 </button>
@@ -411,7 +413,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                       onClick={() => { setPreferredLanguage(null); setShowLangDropdown(false); }}
                       className="w-full px-4 py-2.5 text-left text-sm text-slate-400 hover:bg-slate-800 transition-colors"
                     >
-                      None
+                      {t('none')}
                     </button>
                     {LANGUAGES.map(lang => (
                       <button
@@ -446,14 +448,14 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
                 onClick={onClose}
                 className="flex-1 px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors border border-slate-600"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('saving') : t('save')}
               </button>
             </div>
           </div>

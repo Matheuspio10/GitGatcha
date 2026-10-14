@@ -1,1 +1,37 @@
-{}
+{
+  "title": "Amigos",
+  "searchPlaceholder": "Buscar jogadores...",
+  "find": "Buscar",
+  "members": "Membros da aliança ({count})",
+  "empty": {
+    "title": "Nenhum amigo ainda",
+    "text": "Amigos podem se desafiar em batalhas PvP, o único jeito de subir o rating. Busque um nome de usuário acima ou encontre jogadores nos rankings.",
+    "browse": "Ver os rankings"
+  },
+  "levelDeveloper": "Dev nível {level}",
+  "compare": "Comparar coleções",
+  "challenge": "Desafiar para um duelo",
+  "remove": "Remover amigo",
+  "incoming": "Recebidos",
+  "noPending": "Nenhum pedido pendente",
+  "lvl": "Nv. {level}",
+  "outgoing": "Enviados",
+  "noOutgoing": "Nenhum pedido enviado",
+  "comparison": {
+    "error": "Não foi possível comparar as coleções",
+    "ariaLabel": "Comparar coleções com {username}",
+    "title": "Você × {username}",
+    "inCommon": "{count, plural, one {# carta em comum} other {# cartas em comum}}",
+    "close": "Fechar",
+    "theirs": "Você ainda não tem ({count})",
+    "mine": "Só você tem ({count})",
+    "nothingTheirs": "Nada aqui: você tem todas as cartas que seu amigo tem.",
+    "nothingMine": "Nada aqui: seu amigo tem todas as cartas que você tem.",
+    "showing": "Mostrando as {shown} mais raras de {total}."
+  },
+  "a11y": {
+    "accept": "Aceitar o pedido de {name}",
+    "decline": "Recusar o pedido de {name}",
+    "cancel": "Cancelar o pedido para {name}"
+  }
+}

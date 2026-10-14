@@ -14,7 +14,7 @@ import { getPackById } from "@/lib/packDefinitions";
 import { STARTER_PACK_ID } from "@/lib/onboarding";
 import { siteUrl } from "@/lib/siteUrl";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 // Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
@@ -22,15 +22,18 @@ const chakraPetch = Chakra_Petch({ subsets: ["latin"], weight: ["400", "500", "6
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-jetbrains' });
 const caveat = Caveat({ subsets: ["latin"], weight: ["700"], variable: '--font-caveat' });
 
-export const metadata: Metadata = {
-  // Absolute URLs for the og:image of the public card and player pages
-  metadataBase: new URL(siteUrl()),
-  title: "GitGacha - Dev Card Game",
-  description: "Collect developers, build your deck, rule the repository.",
-  // Installed on an iPhone home screen (the manifest covers Android and desktop)
-  appleWebApp: { capable: true, title: 'GitGacha', statusBarStyle: 'black-translucent' },
-  icons: { apple: '/icons/apple-touch-icon.png' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('public.meta');
+  return {
+    // Absolute URLs for the og:image of the public card and player pages
+    metadataBase: new URL(siteUrl()),
+    title: t('title'),
+    description: t('description'),
+    // Installed on an iPhone home screen (the manifest covers Android and desktop)
+    appleWebApp: { capable: true, title: 'GitGacha', statusBarStyle: 'black-translucent' },
+    icons: { apple: '/icons/apple-touch-icon.png' },
+  };
+}
 
 // No maximumScale: users must be able to pinch-zoom (WCAG 1.4.4). viewport-fit=cover
 // lets the phone tab bar pad itself for the iPhone home indicator.

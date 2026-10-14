@@ -4,8 +4,12 @@ import { getCurrentUser } from '@/lib/session';
 import { getBitsHistory } from '@/lib/bitsLedger';
 import { bitsReasonLabel } from '@/lib/bitsReasons';
 import { EmptyState } from '@/components/EmptyState';
+import { getLocale, getTranslations } from 'next-intl/server';
 
-export const metadata = { title: 'BITS history · GitGacha' };
+export async function generateMetadata() {
+  const t = await getTranslations('public.bits');
+  return { title: t('metaTitle') };
+}
 
 const PAGE = 50;
 
@@ -15,24 +19,24 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
   if (!user) redirect('/');
   const { before } = await searchParams;
   const beforeDate = before && !Number.isNaN(Date.parse(before)) ? new Date(before) : undefined;
-  const rows = await getBitsHistory(user.id, PAGE, beforeDate);
-  const fmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  const [rows, t, locale] = await Promise.all([getBitsHistory(user.id, PAGE, beforeDate), getTranslations('public.bits'), getLocale()]);
+  const fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
     <div className="mx-auto max-w-3xl py-6">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-white">BITS history</h1>
-          <p className="text-sm text-slate-400">Every BITS you earned or spent{beforeDate ? `, before ${fmt.format(beforeDate)}` : ''}.</p>
+          <h1 className="font-display text-3xl font-extrabold text-white">{t('title')}</h1>
+          <p className="text-sm text-slate-400">{beforeDate ? t('subtitleBefore', { date: fmt.format(beforeDate) }) : t('subtitle')}</p>
         </div>
         <div className="text-right">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Balance</div>
-          <div className="font-mono text-2xl font-bold text-yellow-300">{user.currency.toLocaleString('en-US')}</div>
+          <div className="text-xs uppercase tracking-wider text-slate-500">{t('balance')}</div>
+          <div className="font-mono text-2xl font-bold text-yellow-300">{user.currency.toLocaleString(locale)}</div>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title="Nothing here yet" text="Earn or spend BITS and every change shows up here." actions={[{ label: 'Go to the store', href: '/store' }]} />
+        <EmptyState title={t('emptyTitle')} text={t('emptyText')} actions={[{ label: t('emptyAction'), href: '/store' }]} />
       ) : (
         <ul className="divide-y divide-slate-800 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
           {rows.map(row => (
@@ -43,9 +47,9 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
               </div>
               <div className="text-right">
                 <p className={`font-mono font-bold ${row.amount >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                  {row.amount >= 0 ? '+' : ''}{row.amount.toLocaleString('en-US')}
+                  {row.amount >= 0 ? '+' : ''}{row.amount.toLocaleString(locale)}
                 </p>
-                <p className="font-mono text-[11px] text-slate-500">= {row.balanceAfter.toLocaleString('en-US')}</p>
+                <p className="font-mono text-[11px] text-slate-500">= {row.balanceAfter.toLocaleString(locale)}</p>
               </div>
             </li>
           ))}
@@ -53,10 +57,10 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
       )}
 
       <div className="mt-4 flex justify-between text-sm">
-        {beforeDate ? <Link href="/bits" className="text-indigo-300 hover:underline">&larr; Newest</Link> : <span />}
+        {beforeDate ? <Link href="/bits" className="text-indigo-300 hover:underline">{t('newest')}</Link> : <span />}
         {rows.length === PAGE && (
           <Link href={`/bits?before=${encodeURIComponent(rows[rows.length - 1].createdAt.toISOString())}`} className="text-indigo-300 hover:underline">
-            Older &rarr;
+            {t('older')}
           </Link>
         )}
       </div>

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Gift, Sparkle } from '@phosphor-icons/react';
 import { BoosterReveal, BoosterPackTheme } from '@/components/BoosterReveal';
 import { Card, CardProps } from '@/components/Card';
+import { useTranslations } from 'next-intl';
 
 type Phase = 'loading' | 'idle' | 'opening' | 'revealing' | 'done';
 
@@ -15,6 +16,7 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
   cardCount: number;
   starterPackName: string;
 }) {
+  const t = useTranslations('public.try');
   const [phase, setPhase] = useState<Phase>('loading');
   const [cards, setCards] = useState<CardProps[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
     try {
       const res = await fetch('/api/guest-pack', { method: 'POST' });
       const data = await res.json();
-      if (!res.ok || !data.pull?.cards?.length) throw new Error(data.error || 'Could not open the pack right now.');
+      if (!res.ok || !data.pull?.cards?.length) throw new Error(data.error || t('openError'));
       setCards(data.pull.cards);
       setPhase(data.alreadyOpened ? 'done' : 'revealing');
     } catch (err) {
@@ -62,7 +64,7 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
           packDropFragments={null}
           packName={packName}
           packTheme={packTheme}
-          completeLabel="Keep these cards"
+          completeLabel={t('keepCards')}
           onComplete={() => setPhase('done')}
         />
       </div>
@@ -72,8 +74,8 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
   if (phase === 'done') {
     return (
       <div className="mx-auto max-w-5xl text-center">
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white">These developers are yours</h1>
-        <p className="mt-3 text-slate-300">…as soon as you create an account. They wait for you on this browser for a week.</p>
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white">{t('doneTitle')}</h1>
+        <p className="mt-3 text-slate-300">{t('doneText')}</p>
 
         <div className="my-8 flex flex-wrap justify-center gap-4">
           {cards.map(card => (
@@ -85,14 +87,14 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
 
         <div className="mx-auto max-w-md rounded-2xl border border-commit/40 bg-commit/10 p-6">
           <p className="flex items-center justify-center gap-2 font-bold text-white">
-            <Gift size={22} weight="duotone" className="text-commit" /> Sign up and keep them
+            <Gift size={22} weight="duotone" className="text-commit" /> {t('signUpKeep')}
           </p>
-          <p className="mt-2 text-sm text-slate-300">You also get {starterPackName} (Rare or better guaranteed) and BITS to buy more packs.</p>
+          <p className="mt-2 text-sm text-slate-300">{t('bonus', { starterPack: starterPackName })}</p>
           <Link href="/login?register=true" className="btn-brand mt-5 block w-full py-3 font-bold text-white">
-            Create my account
+            {t('createAccount')}
           </Link>
           <Link href="/login" className="mt-3 block text-sm text-slate-400 hover:text-white">
-            I already have an account
+            {t('haveAccount')}
           </Link>
         </div>
       </div>
@@ -109,12 +111,12 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
       >
         <Sparkle size={40} weight="fill" style={{ color: packTheme?.accentColor }} />
         <span className="mt-4 px-4 font-display text-xl font-extrabold" style={{ color: packTheme?.textColor }}>{packName}</span>
-        <span className="mt-2 font-mono text-xs text-slate-300">{cardCount} cards</span>
+        <span className="mt-2 font-mono text-xs text-slate-300">{t('cards', { count: cardCount })}</span>
       </motion.div>
 
-      <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white">Open a free pack</h1>
+      <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white">{t('title')}</h1>
       <p className="mt-3 text-slate-300">
-        No account needed. {cardCount} real open-source developers from GitHub, drawn at random. Like them? Sign up and they are yours.
+        {t('intro', { count: cardCount })}
       </p>
 
       {error && <p className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</p>}
@@ -124,9 +126,9 @@ export default function TryClient({ packName, packTheme, cardCount, starterPackN
         disabled={phase !== 'idle'}
         className="btn-brand mt-8 w-full max-w-xs py-3.5 text-lg font-bold text-white disabled:opacity-60"
       >
-        {phase === 'opening' ? 'Drawing developers…' : phase === 'loading' ? '…' : 'Open my free pack'}
+        {phase === 'opening' ? t('drawing') : phase === 'loading' ? '…' : t('openCta')}
       </button>
-      <Link href="/login" className="mt-4 text-sm text-slate-400 hover:text-white">I already have an account</Link>
+      <Link href="/login" className="mt-4 text-sm text-slate-400 hover:text-white">{t('haveAccount')}</Link>
     </div>
   );
 }

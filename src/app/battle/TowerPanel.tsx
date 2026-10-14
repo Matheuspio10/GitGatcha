@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { CheckCircle, Crown, Lock, Skull, Trophy } from '@phosphor-icons/react';
+import { useTranslations } from 'next-intl';
 import TeamBuilderUI, { type TeamBuilderCard } from '@/components/TeamBuilderUI';
 import { formatSeasonLeft } from '@/lib/seasons';
 
@@ -32,6 +33,7 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
   /** Hands the battle (the /api/tower JSON answer) to the Arena's replay. */
   onResult: (data: Awaited<ReturnType<Response['json']>>) => void;
 }) {
+  const t = useTranslations('battle.tower');
   const [state, setState] = useState<TowerState | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,8 +51,8 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
     try {
       const res = await fetch('/api/tower', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardIds }) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'The tower battle failed');
-      if (data.tower?.cleared) toast.success(`${data.tower.title} cleared! +${data.rewards.bits} BITS`);
+      if (!res.ok) throw new Error(data.error || t('failed'));
+      if (data.tower?.cleared) toast.success(t('cleared', { title: data.tower.title, bits: data.rewards.bits }));
       window.dispatchEvent(new Event('bits:refresh'));
       onResult(data);
       load();
@@ -61,17 +63,17 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
     }
   };
 
-  if (!state) return <div className="h-64 animate-pulse rounded-2xl bg-slate-900/60" aria-label="Loading the tower" />;
+  if (!state) return <div className="h-64 animate-pulse rounded-2xl bg-slate-900/60" aria-label={t('loading')} />;
 
   const resetsIn = formatSeasonLeft(new Date(state.resetsAt).getTime() - Date.now());
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-transparent p-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-orange-300">This week · new tower in {resetsIn}</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-orange-300">{t('thisWeek', { time: resetsIn })}</p>
         <h2 className="font-display text-2xl font-extrabold text-white">{state.name}</h2>
         <p className="text-sm text-slate-400">
-          {state.cleared}/{state.floors.length} floors · {state.attempts} attempt{state.attempts === 1 ? '' : 's'}. Every floor pays BITS the first time you clear it this week; the opponents are the same for everyone.
+          {t('progress', { cleared: state.cleared, total: state.floors.length, attempts: state.attempts })}
         </p>
       </div>
 
@@ -102,8 +104,8 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
           ) : (
             <div className="rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-6 text-center">
               <Trophy size={40} weight="fill" className="mx-auto text-yellow-400" />
-              <p className="mt-2 font-bold text-white">You conquered {state.name}!</p>
-              <p className="text-sm text-slate-300">A new tower opens in {resetsIn}.</p>
+              <p className="mt-2 font-bold text-white">{t('conquered', { name: state.name })}</p>
+              <p className="text-sm text-slate-300">{t('newTowerIn', { time: resetsIn })}</p>
             </div>
           )}
 
@@ -117,9 +119,9 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
               powerCap={powerCap}
               userBits={userBits}
               quickAction={{
-                label: `Fight floor ${state.next.floor}`,
-                title: `${state.next.title}?`,
-                description: `Your team climbs to floor ${state.next.floor} of ${state.name}. Losing only costs stamina; try again with a better team.`,
+                label: t('fightFloor', { floor: state.next.floor }),
+                title: t('confirmTitle', { title: state.next.title }),
+                description: t('confirmText', { floor: state.next.floor, name: state.name }),
               }}
             />
           )}
@@ -133,7 +135,7 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
               return (
                 <li key={f.floor} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${current ? 'bg-orange-500/15 text-white' : done ? 'text-slate-400' : 'text-slate-500'}`}>
                   {done ? <CheckCircle size={16} weight="fill" className="text-emerald-400" /> : current ? <Crown size={16} className="text-orange-300" /> : <Lock size={16} />}
-                  <span className="flex-1">Floor {f.floor}{f.boss === 'final' ? ' · boss' : f.boss === 'mini' ? ' · mini-boss' : ''}</span>
+                  <span className="flex-1">{t(f.boss === 'final' ? 'floorBoss' : f.boss === 'mini' ? 'floorMiniBoss' : 'floor', { floor: f.floor })}</span>
                   <span className="font-mono text-xs text-yellow-300/80">+{f.rewardBits}</span>
                 </li>
               );
@@ -141,16 +143,16 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
           </ol>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Weekly ranking</h3>
+            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">{t('ranking')}</h3>
             {state.ranking.length === 0 ? (
-              <p className="text-sm text-slate-500">Nobody has cleared a floor yet. Be the first.</p>
+              <p className="text-sm text-slate-500">{t('rankingEmpty')}</p>
             ) : (
               <ol className="space-y-1 text-sm">
                 {state.ranking.map((r, i) => (
                   <li key={`${r.username}-${i}`} className={`flex items-center gap-2 ${r.isYou ? 'text-orange-300 font-bold' : 'text-slate-300'}`}>
                     <span className="w-5 font-mono text-slate-500">{i + 1}</span>
-                    <span className="flex-1 truncate">{r.username ?? 'Player'}</span>
-                    <span className="font-mono">F{r.cleared}</span>
+                    <span className="flex-1 truncate">{r.username ?? t('player')}</span>
+                    <span className="font-mono">{t('floorShort', { floor: r.cleared })}</span>
                     <span className="font-mono text-xs text-slate-500">{r.attempts}×</span>
                   </li>
                 ))}

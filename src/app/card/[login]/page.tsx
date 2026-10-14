@@ -6,26 +6,28 @@ import { ShareButtons } from '@/components/ShareButtons';
 import { getShareCard, siteUrl } from '@/lib/shareCard';
 import { getCurrentUser } from '@/lib/session';
 import { cardPassive } from '@/lib/battleConfig';
+import { getTranslations } from 'next-intl/server';
 
 type Props = { params: Promise<{ login: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { login } = await params;
-  const card = await getShareCard(decodeURIComponent(login));
-  if (!card) return { title: 'Card not found · GitGacha' };
-  const description = `${card.rarity} · ${card.title} · ATK ${card.atk} / DEF ${card.def} / HP ${card.hp}. Collect real developers from GitHub on GitGacha.`;
+  const [card, t] = await Promise.all([getShareCard(decodeURIComponent(login)), getTranslations('public.card')]);
+  if (!card) return { title: t('notFound') };
+  const description = t('metaDescription', { rarity: card.rarity, title: card.title, atk: card.atk, def: card.def, hp: card.hp });
+  const ogTitle = t('ogTitle', { name: card.name });
   return {
     title: `${card.name} · GitGacha`,
     description,
-    openGraph: { title: `${card.name} on GitGacha`, description, url: `${siteUrl()}/card/${card.githubUsername}` },
-    twitter: { card: 'summary_large_image', title: `${card.name} on GitGacha`, description },
+    openGraph: { title: ogTitle, description, url: `${siteUrl()}/card/${card.githubUsername}` },
+    twitter: { card: 'summary_large_image', title: ogTitle, description },
   };
 }
 
 /** Public page of one developer card (shareable, no login). */
 export default async function CardPage({ params }: Props) {
   const { login } = await params;
-  const [card, user] = await Promise.all([getShareCard(decodeURIComponent(login)), getCurrentUser()]);
+  const [card, user, t] = await Promise.all([getShareCard(decodeURIComponent(login)), getCurrentUser(), getTranslations('public.card')]);
   if (!card) notFound();
 
   const passive = cardPassive(card.primaryLanguage, card.rarity);
@@ -38,29 +40,29 @@ export default async function CardPage({ params }: Props) {
       </div>
 
       <div className="flex-1 text-center md:text-left">
-        <p className="font-mono text-xs uppercase tracking-widest text-slate-500">Developer card</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-slate-500">{t('label')}</p>
         <h1 className="mt-1 font-display text-3xl font-extrabold text-white">{card.name}</h1>
         <a href={`https://github.com/${card.githubUsername}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-300 hover:underline">
-          @{card.githubUsername} on GitHub
+          {t('onGithub', { login: card.githubUsername })}
         </a>
         <p className="mt-3 text-lg font-bold text-white">{card.rarity} · {card.title}</p>
         {card.titleReason && <p className="text-sm text-slate-400">{card.titleReason}</p>}
         <p className="mt-3 text-sm text-slate-300"><strong>{passive.name}:</strong> {passive.desc}</p>
         <p className="mt-3 text-sm text-slate-400">
           {card.signatureOwner
-            ? <>The Signature edition belongs to <Link href={`/u/${card.signatureOwner}`} className="text-fuchsia-300 hover:underline">@{card.signatureOwner}</Link>, the developer themself.</>
-            : <>In {card.owners} player collection{card.owners === 1 ? '' : 's'}.</>}
+            ? t.rich('signatureOwner', { owner: card.signatureOwner, link: chunks => <Link href={`/u/${card.signatureOwner}`} className="text-fuchsia-300 hover:underline">{chunks}</Link> })
+            : t('owners', { count: card.owners })}
         </p>
 
         <div className="mt-6">
-          <ShareButtons url={url} text={`${card.name} is a ${card.rarity} card on GitGacha`} />
+          <ShareButtons url={url} text={t('shareText', { name: card.name, rarity: card.rarity })} />
         </div>
 
         {!user && (
           <div className="mt-8 rounded-2xl border border-commit/40 bg-commit/10 p-5">
-            <p className="font-bold text-white">Collect real open-source developers</p>
-            <p className="mt-1 text-sm text-slate-300">Open a free pack, no account needed.</p>
-            <Link href="/try" className="btn-brand mt-4 inline-block px-6 py-2.5 font-bold text-white">Open a free pack</Link>
+            <p className="font-bold text-white">{t('ctaTitle')}</p>
+            <p className="mt-1 text-sm text-slate-300">{t('ctaText')}</p>
+            <Link href="/try" className="btn-brand mt-4 inline-block px-6 py-2.5 font-bold text-white">{t('ctaButton')}</Link>
           </div>
         )}
       </div>

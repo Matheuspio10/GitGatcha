@@ -1,1 +1,60 @@
-{}
+{
+  "title": "Rankings globais",
+  "subtitle": "Os devs mais lendários do repositório.",
+  "ratingNote": "O rating só muda no PvP: batalhas Ranked e desafios entre amigos. Desempate: vitórias PvP, depois batalhas jogadas, depois a conta mais antiga.",
+  "tabs": {
+    "global": "Global",
+    "rivals": "Rivais",
+    "collectors": "Colecionadores",
+    "sprints": "Sprints"
+  },
+  "sprintsNote": "Nada para configurar: quando uma sprint termina, cada um pontua com suas {count} cartas mais fortes do tema. Empates dividem a posição.",
+  "collectorsNote": "Pontos por carta única: {legend}. Não precisa batalhar.",
+  "empty": "Nenhum jogador encontrado. Seja o primeiro a entrar na batalha!",
+  "rivalsHint": "Adicione amigos pelos perfis deles para comparar seu rating com o deles.",
+  "table": {
+    "rank": "Posição",
+    "player": "Jogador",
+    "rating": "Rating",
+    "winLoss": "V/D",
+    "winRate": "Taxa de vitória",
+    "cards": "Cartas",
+    "you": "VOCÊ",
+    "record": "{wins}V / {losses}D · {rate}%",
+    "points": "Pontos",
+    "unique": "Únicas",
+    "legendary": "Legendary"
+  },
+  "season": {
+    "title": "Temporada {id}",
+    "endsIn": "Termina em <time>{left}</time>. Depois, os ratings voltam metade do caminho até o valor inicial.",
+    "yourPeak": "Seu pico na temporada",
+    "battles": "{count, plural, one {# batalha PvP} other {# batalhas PvP}} nesta temporada",
+    "rank": "Elo",
+    "firstTime": "Primeira vez na temporada",
+    "endOfSeason": "Fim da temporada (pico)",
+    "rewardsNote": "Os BITS de fim de temporada vão para todos com pelo menos uma batalha Ranked ou desafio entre amigos na temporada."
+  },
+  "sprint": {
+    "cardsInLanguages": "Cartas de {languages}",
+    "languageCards": "Cartas de {language}",
+    "bestCount": "{cards} · contam suas {count} melhores (ATK + DEF + HP)",
+    "endsIn": "Termina em <time>{left}</time>",
+    "bitsLegend": "BITS: {legend}",
+    "eventSale": "Evento semanal: o <packLink>{pack}</packLink> está em promoção até a sprint acabar",
+    "eventDev": "· Dev da Semana: <devLink>{dev}</devLink> ({rarity}), {percent}% de desconto na Forja",
+    "youAre": "Você está em <b>#{position}</b> de {players} com <power>{score}</power> de poder",
+    "ifEndsNow": "<reward>+{bits} BITS</reward> se acabar agora",
+    "topPaid": "os {count} primeiros ganham BITS",
+    "notInTheme": "Você ainda não tem cartas deste tema, então não está nesta sprint.",
+    "notInLanguage": "Você ainda não tem cartas de {language}, então não está nesta sprint.",
+    "boosters": "Boosters com essas cartas:",
+    "forgeToo": ". A Forja também serve.",
+    "cards": "{count, plural, one {# carta} other {# cartas}}",
+    "empty": "Ninguém tem carta deste tema ainda. O primeiro fica com o topo.",
+    "last": "{kind, select, daily {Última sprint diária} other {Última sprint semanal}} ({theme}):",
+    "wonBy": "vencida por {names} ({score})",
+    "nobody": "ninguém participou",
+    "youFinished": "você terminou em #{position}"
+  }
+}

@@ -1,1 +1,142 @@
-{}
+{
+  "notFound": "Usuário não encontrado",
+  "loadFailed": "Não deu para carregar o perfil",
+  "noBio": "Ainda sem bio",
+  "level": "Nível {level}",
+  "sets": "{done}/{total} sets",
+  "setsTitle": "Sets de linguagem com uma carta de cada raridade",
+  "seasonShort": "T{season}",
+  "seasonPeak": "Pico da temporada {season}",
+  "winRateBadge": "{rate}% de vitórias",
+  "xp": {
+    "progress": "Progresso de XP",
+    "total": "{xp} XP",
+    "toNext": "{into} / {needed} para o nível {level}"
+  },
+  "actions": {
+    "editProfile": "Editar perfil",
+    "copyLink": "Copiar link do perfil",
+    "addFriend": "Adicionar amigo",
+    "requestSent": "Pedido enviado",
+    "remove": "Remover",
+    "changePhoto": "Trocar foto"
+  },
+  "stats": {
+    "totalBattles": "Batalhas",
+    "winRate": "Taxa de vitória",
+    "wins": "{count}V",
+    "losses": "{count}D",
+    "cardsOwned": "Cartas",
+    "friends": "Amigos",
+    "bitsEarned": "BITS ganhos",
+    "bestStreak": "Melhor sequência"
+  },
+  "achievements": {
+    "title": "Conquistas",
+    "tiersUnlocked": "{unlocked} / {total} níveis desbloqueados",
+    "locked": "Bloqueada",
+    "lockedState": "bloqueada",
+    "ariaLabel": "{name}: {state}",
+    "completed": "Concluída: {description}",
+    "next": "Próximo: {description}",
+    "reward": "+{reward} Bits",
+    "progress": "Progresso",
+    "unlockedOn": "Desbloqueado em {date}",
+    "tierChip": "{name}: {threshold} · {reward} Bits"
+  },
+  "hallOfFame": {
+    "title": "Hall da Fama",
+    "subtitle": "As cartas mais leais da coleção de {username}, testadas em batalha e forjadas em incontáveis vitórias."
+  },
+  "topCards": {
+    "title": "Top devs",
+    "subtitle": "As cartas mais calejadas de batalha da coleção",
+    "emptyTitle": "Nenhuma coleção ainda.",
+    "emptyText": "Esse jogador ainda não coletou nenhum dev."
+  },
+  "battles": {
+    "title": "Batalhas recentes",
+    "subtitle": "{count, plural, one {Última batalha concluída} other {Últimas # batalhas concluídas}}",
+    "win": "VITÓRIA",
+    "loss": "DERROTA",
+    "yourTeam": "Seu time",
+    "opponentTeam": "Time do oponente"
+  },
+  "friends": {
+    "title": "Amigos",
+    "manage": "Gerenciar amigos →",
+    "emptyTitle": "Nenhum amigo ainda.",
+    "emptyText": "Esse jogador ainda não adicionou amigos."
+  },
+  "edit": {
+    "title": "Editar perfil",
+    "noBio": "Ainda sem bio",
+    "close": "Fechar",
+    "profilePhoto": "Foto de perfil",
+    "uploadPhoto": "Enviar foto",
+    "remove": "Remover",
+    "profileBanner": "Banner do perfil",
+    "modes": {
+      "presets": "Prontos",
+      "colors": "Cores",
+      "upload": "Enviar"
+    },
+    "presets": {
+      "cyber": "Grade cyber",
+      "aurora": "Aurora",
+      "ember": "Brasa",
+      "ocean": "Oceano profundo",
+      "void": "Vazio",
+      "neon": "Noite neon"
+    },
+    "defaultBanner": "Padrão",
+    "uploadBanner": "Clique para enviar uma imagem de banner",
+    "displayName": "Nome de exibição",
+    "bio": "Bio",
+    "bioPlaceholder": "Conte para o mundo sobre a sua jornada no código...",
+    "favoriteLanguage": "Linguagem favorita",
+    "favoriteLanguageHint": "Aparece como um selo ao lado do seu nome",
+    "noneSelected": "Nenhuma selecionada",
+    "none": "Nenhuma",
+    "cancel": "Cancelar",
+    "saving": "Salvando...",
+    "save": "Salvar alterações",
+    "errors": {
+      "notImage": "Escolha um arquivo de imagem",
+      "server": "Erro no servidor: {status} {statusText}",
+      "saveFailed": "Não deu para salvar"
+    }
+  },
+  "github": {
+    "loading": "Carregando a conexão com o GitHub",
+    "connectText": "Conecte sua conta do GitHub para ganhar <sig>a sua própria carta na edição foil exclusiva Signature</sig>.",
+    "connectTextBonus": "Conecte sua conta do GitHub para ganhar <sig>a sua própria carta na edição foil exclusiva Signature</sig> e mais <bits>{bonus} BITS</bits>.",
+    "quotaText": "Seus boosters também vão usar a sua própria cota do GitHub, então continuam rápidos quando o jogo estiver cheio.",
+    "redirecting": "Redirecionando…",
+    "connect": "Conectar GitHub",
+    "signatureInCollection": "Sua carta Signature ({rarity}) está na sua coleção.",
+    "signaturePending": "Conectado. Sua carta Signature vai aparecer na sua coleção em instantes.",
+    "tokenInvalid": "O GitHub não aceita mais esta conexão. Reconecte para continuar usando a sua própria cota.",
+    "reconnect": "Reconectar",
+    "disconnect": "Desconectar",
+    "disconnectFailed": "Não deu para desconectar o GitHub",
+    "readme": {
+      "markdownAlt": "{name} no GitGacha",
+      "copyPrompt": "Copie isto para o seu README:",
+      "imageAlt": "Carta Signature de {name}",
+      "title": "Mostre no seu perfil do GitHub",
+      "hint": "Cole no README do seu perfil (github.com/{login}/{login}).",
+      "copied": "Copiado!",
+      "copy": "Copiar para o README",
+      "publicPage": "Página pública"
+    }
+  },
+  "invite": {
+    "title": "Convide amigos e os dois ganham {bonus} BITS",
+    "text": "Seu amigo abre um pack grátis pelo seu link e se cadastra. Quando ele conectar a conta do GitHub, vocês dois ganham os BITS.",
+    "textCap": "Seu amigo abre um pack grátis pelo seu link e se cadastra. Quando ele conectar a conta do GitHub, vocês dois ganham os BITS (pagos para até {cap} amigos).",
+    "stats": "{invited, plural, one {# entrou} other {# entraram}} com o seu link · {paid, plural, one {# conectou} other {# conectaram}} o GitHub · +{earned} BITS ganhos",
+    "waiting": "{waiting} esperando o GitHub",
+    "shareText": "Colecione devs reais do GitHub comigo no GitGacha. Pack grátis, sem cadastro:"
+  }
+}

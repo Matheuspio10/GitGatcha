@@ -1,0 +1,142 @@
+{
+  "slots": {
+    "opener": "Abertura",
+    "mid": "Meio",
+    "closer": "Fechamento",
+    "openerDesc": "Abre a batalha — dita o ritmo",
+    "midDesc": "Lutador do meio — conecta o time",
+    "closerDesc": "O finalizador — fecha com força",
+    "remove": "Tirar do time",
+    "pickCard": "Clique numa carta abaixo",
+    "exhausted": "Exausta",
+    "fatigued": "Cansada"
+  },
+  "card": {
+    "stamina": "Stamina: {value}/100",
+    "exhaust": "Exausta",
+    "fatigue": "Cansada"
+  },
+  "synergy": {
+    "title": "Sinergia do time",
+    "wiki": "Saiba mais na Wiki",
+    "empty": "Escolha cartas para ver as sinergias",
+    "pythonDesc": "Toda carta cura {regen} do próprio ATK por turno (cartas Python usam o próprio valor de {own} se for maior; Jupyter conta como Python)",
+    "jsDesc": "Aliados que não são JS ganham {chance} de chance de Double Callback (+{bonus} de dano)",
+    "rustDesc": "Todas as cartas recebem {reduction} menos dano",
+    "goDesc": "Todas as cartas ganham First Strike ao entrar",
+    "mixed": "Time Misto",
+    "mixedDesc": "+{atk} ATK para todas as cartas",
+    "noneYet": "Sem sinergia ainda",
+    "noneYetDesc": "Adicione mais cartas para ativar sinergias",
+    "none": "Sem sinergia",
+    "noneDesc": "Use 3 tipos diferentes para Time Misto (+{atk} ATK), ou forme pares de Python, Rust, JavaScript ou Go"
+  },
+  "typeChart": {
+    "title": "Tabela de vantagem de tipo",
+    "corner": "Atk ↓ / Def →",
+    "superEffective": "{mult}× (super efetivo)",
+    "notVeryEffective": "{mult}× (pouco efetivo)",
+    "neutral": "1× (neutro)",
+    "note": "CSS causa {mult}× contra toda linguagem com tipo (coringa caótico). Linguagens fora da tabela são Neutras: 1× contra tudo.",
+    "show": "Mostrar tabela de vantagem de tipo",
+    "hide": "Esconder tabela de vantagem de tipo"
+  },
+  "confirm": {
+    "battleRanked": "Batalha Ranked?",
+    "battleRandom": "Batalha aleatória?",
+    "createLink": "Criar um link de desafio?",
+    "challengeUser": "Desafiar {username}?",
+    "rankedDesc": "Seu time vai enfrentar o time salvo de um jogador com rating parecido. O rating dos dois muda.",
+    "randomDesc": "Seu time vai enfrentar um oponente aleatório.",
+    "linkDesc": "Qualquer pessoa com o link pode aceitar em até {hours}h. Você vai receber o link para compartilhar.",
+    "challengeDesc": "Seu desafio vai para {username}, que tem {hours}h para responder.",
+    "stake": "Aposta: {stake} BITS cada, o vencedor leva {total}. Devolvido se ninguém aceitar.",
+    "yourTeam": "Seu time (em ordem)",
+    "fatigued": "CANSADA ({stamina}%)",
+    "activeBonuses": "Bônus ativos",
+    "cancel": "Cancelar",
+    "sending": "Enviando...",
+    "battle": "⚡ Batalhar!",
+    "sendChallenge": "🎯 Enviar desafio"
+  },
+  "friends": {
+    "title": "Desafiar um amigo",
+    "close": "Fechar",
+    "search": "Buscar amigos...",
+    "openLink": "Qualquer pessoa com o link",
+    "openLinkDesc": "Receba um link para compartilhar onde quiser; o primeiro jogador que aceitar luta com você.",
+    "loading": "Carregando amigos...",
+    "yourFriends": "Seus amigos",
+    "level": "NV {level}",
+    "noMatch": "Nenhum amigo encontrado para \"{search}\"",
+    "challengeAnyway": "Desafiar mesmo assim",
+    "none": "Você ainda não tem amigos.",
+    "noneHint": "Adicione amigos pelo perfil deles para desafiar com facilidade!"
+  },
+  "filters": {
+    "sheetLabel": "Filtrar e ordenar",
+    "sheetTitle": "Filtrar e ordenar",
+    "close": "Fechar",
+    "apply": "Aplicar filtros",
+    "rarity": "Raridade:",
+    "rarityTitle": "Raridade",
+    "type": "Tipo:",
+    "typeTitle": "Tipo / Linguagem",
+    "pack": "Pack:",
+    "packTitle": "Origem do pack",
+    "sortBy": "Ordenar por",
+    "sortCards": "Ordenar cartas",
+    "sortOption": "Ordenar: {label}",
+    "power": "Poder",
+    "rarityOption": "Raridade",
+    "button": "Filtros",
+    "clearAll": "Limpar tudo",
+    "noMatch": "Nenhuma carta bate com seus filtros.",
+    "clear": "Limpar filtros"
+  },
+  "empty": {
+    "noCards": "Você não tem cartas!",
+    "noCardsHint": "Abra alguns boosters para começar.",
+    "goStore": "Ir para a loja",
+    "needThree": "Você precisa de pelo menos 3 cartas para batalhar.",
+    "youHave": "Você tem {count, plural, one {# carta} other {# cartas}}. Abra mais boosters!",
+    "openPacks": "Abrir boosters"
+  },
+  "league": {
+    "select": "Escolha o modo de liga",
+    "rulesWithFee": "{rules} Entrada: {fee} BITS.",
+    "entry": "Entrada: {fee} BITS",
+    "teamPower": "Poder do time:",
+    "legendaryFee": "Taxa de entrada de {fee} BITS por batalha (vitória paga {win}, derrota paga {loss})",
+    "balance": "Saldo: <b>{bits}</b>"
+  },
+  "actions": {
+    "responding": "Respondendo ao desafio de <hl>{username}</hl>",
+    "respondHint": "Escolha seu time e confirme abaixo.",
+    "selectMore": "Escolha mais {count}",
+    "fighting": "Lutando...",
+    "acceptFight": "Aceitar e lutar!",
+    "matchmaking": "Buscando oponente...",
+    "battleRanked": "Batalha Ranked",
+    "battleRandom": "Batalha aleatória",
+    "selectMoreCards": "{count, plural, one {Escolha mais # carta} other {Escolha mais # cartas}}",
+    "challengeFriend": "Desafiar um amigo",
+    "reorderHint": "Clique num slot para tirar a carta, escolha outra abaixo e coloque de novo."
+  },
+  "collection": {
+    "title": "Sua coleção",
+    "count": "{count, plural, one {# carta} other {# cartas}}"
+  },
+  "ineligible": {
+    "commonOnly": "Só cartas Common/Uncommon",
+    "legendaryOnly": "Só cartas Legendary",
+    "sharedLanguage": "A carta tem a mesma linguagem de alguém do time",
+    "noLanguage": "A carta não tem linguagem principal",
+    "exceedsCapTitle": "Passaria do limite de poder",
+    "exceedsCap": "Passa do limite"
+  },
+  "a11y": {
+    "closeTypeChart": "Fechar a tabela de tipos",
+    "removeFilter": "Remover filtro: {filter}"
+  }
+}

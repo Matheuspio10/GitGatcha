@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { RANK_TIERS } from '@/lib/ranks';
 import { PROMOTION_BITS, SEASON_REWARD_BITS, formatSeasonLeft } from '@/lib/seasons';
 import { RankBadge } from '@/components/RankBadge';
@@ -8,21 +9,24 @@ export function SeasonBanner({ season, now, viewer }: {
   now: Date;
   viewer?: { seasonPeakRating: number; seasonBattles: number } | null;
 }) {
+  const t = useTranslations('leaderboard.season');
   return (
     <div className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-orange-300">Season {season.id}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-orange-300">{t('title', { id: season.id })}</p>
           <p className="text-sm text-slate-300">
-            Ends in <span className="font-mono font-bold text-white">{formatSeasonLeft(season.endsAt.getTime() - now.getTime())}</span>.
-            Ratings then reset halfway back to the start.
+            {t.rich('endsIn', {
+              left: formatSeasonLeft(season.endsAt.getTime() - now.getTime()),
+              time: chunks => <span className="font-mono font-bold text-white">{chunks}</span>,
+            })}
           </p>
         </div>
         {viewer && (
           <div className="text-right text-xs text-slate-400">
-            <div className="mb-1">Your season peak</div>
+            <div className="mb-1">{t('yourPeak')}</div>
             <RankBadge rating={viewer.seasonPeakRating} />
-            <div className="mt-1">{viewer.seasonBattles} PvP battle{viewer.seasonBattles === 1 ? '' : 's'} this season</div>
+            <div className="mt-1">{t('battles', { count: viewer.seasonBattles })}</div>
           </div>
         )}
       </div>
@@ -30,23 +34,23 @@ export function SeasonBanner({ season, now, viewer }: {
         <table className="w-full text-xs">
           <thead>
             <tr className="text-slate-500">
-              <th className="py-1 pr-3 text-left font-bold">Rank</th>
-              {RANK_TIERS.map(t => <th key={t.id} className="px-2 py-1 font-bold" style={{ color: t.color }}>{t.name}</th>)}
+              <th className="py-1 pr-3 text-left font-bold">{t('rank')}</th>
+              {RANK_TIERS.map(tier => <th key={tier.id} className="px-2 py-1 font-bold" style={{ color: tier.color }}>{tier.name}</th>)}
             </tr>
           </thead>
           <tbody className="font-mono text-slate-200">
             <tr>
-              <td className="py-1 pr-3 text-left font-sans text-slate-400">First time this season</td>
-              {RANK_TIERS.map(t => <td key={t.id} className="px-2 py-1 text-center">{PROMOTION_BITS[t.id] ? `+${PROMOTION_BITS[t.id]}` : '—'}</td>)}
+              <td className="py-1 pr-3 text-left font-sans text-slate-400">{t('firstTime')}</td>
+              {RANK_TIERS.map(tier => <td key={tier.id} className="px-2 py-1 text-center">{PROMOTION_BITS[tier.id] ? `+${PROMOTION_BITS[tier.id]}` : '—'}</td>)}
             </tr>
             <tr>
-              <td className="py-1 pr-3 text-left font-sans text-slate-400">End of season (peak)</td>
-              {RANK_TIERS.map(t => <td key={t.id} className="px-2 py-1 text-center">+{SEASON_REWARD_BITS[t.id]}</td>)}
+              <td className="py-1 pr-3 text-left font-sans text-slate-400">{t('endOfSeason')}</td>
+              {RANK_TIERS.map(tier => <td key={tier.id} className="px-2 py-1 text-center">+{SEASON_REWARD_BITS[tier.id]}</td>)}
             </tr>
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[11px] text-slate-500">End-of-season BITS go to everyone with at least one Ranked battle or friend challenge in the season.</p>
+      <p className="mt-2 text-[11px] text-slate-500">{t('rewardsNote')}</p>
     </div>
   );
 }
