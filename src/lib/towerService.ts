@@ -86,9 +86,9 @@ export async function getTowerState(userId: string, now = new Date()) {
   };
 }
 
-const toBattleCard = (c: { id: string; name: string; atk: number; def: number; hp: number; rarity: string; primaryLanguage: string | null; avatarUrl: string | null }, stamina: number, loyaltyTier = 'none'): BattleCard => ({
+const toBattleCard = (c: { id: string; name: string; atk: number; def: number; hp: number; rarity: string; primaryLanguage: string | null; avatarUrl: string | null }, stamina: number, loyaltyTier = 'none', trainingLevel = 0): BattleCard => ({
   id: c.id, name: c.name, atk: c.atk, def: c.def, hp: c.hp, maxHp: c.hp, stamina,
-  rarity: c.rarity as BattleCard['rarity'], primaryLanguage: c.primaryLanguage, type: getCardType(c), avatarUrl: c.avatarUrl, loyaltyTier,
+  rarity: c.rarity as BattleCard['rarity'], primaryLanguage: c.primaryLanguage, type: getCardType(c), avatarUrl: c.avatarUrl, loyaltyTier, trainingLevel,
 });
 
 /**
@@ -108,7 +108,7 @@ export async function fightTower(userId: string, team: PlayerTeamCard[], now = n
   if (!floor) throw new UserFacingError(`You already conquered ${towerName(theme)} this week. A new tower opens on Monday.`);
 
   const opponents = await floorTeam(weekStart, floor, theme);
-  const cTeam = team.map(c => toBattleCard(c, c.stamina, c.loyaltyTier));
+  const cTeam = team.map(c => toBattleCard(c, c.stamina, c.loyaltyTier, c.trainingLevel));
   const dTeam = opponents.map(c => toBattleCard(c, 100));
   const result = resolve3v3Battle(cTeam, dTeam);
   const won = result.winner === 'CHALLENGER';

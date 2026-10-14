@@ -101,6 +101,7 @@ export async function POST(req: Request) {
         primaryLanguage: c.primaryLanguage,
         type: getCardType(c),
         loyaltyTier: uc.loyaltyTier || 'none',
+        trainingLevel: uc.trainingLevel,
       };
     });
 

@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 13/10/2026, ao fim dos eventos semanais (PR #50). Ondas 1 a 5 completas; onda 6 em andamento (Torre, Sprints e eventos semanais prontos). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 13/10/2026, ao fim do treino de cartas (PR #51). Ondas 1 a 5 completas; onda 6 em andamento (Torre, Sprints, eventos semanais e treino prontos; falta coleções/sets). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -12,14 +12,14 @@
 ## 👉 Como continuar (leia primeiro)
 
 ### Estado atual
-- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre, os Sprints e os eventos semanais da onda 6. Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 18 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 193 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre, os Sprints, os eventos semanais e o treino de cartas da onda 6. Resumo de cada PR na seção "✅ Concluído".
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 19 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 199 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -56,8 +56,7 @@
 ## ▶️ Próximo passo
 
 **Onda 6 (modos e cartas), rodadas que faltam**, uma PR por rodada:
-1. **Treinar cartas (3.3):** BITS + repetidas/fragmentos sobem níveis (+2% por nível, teto por raridade). Mexe nos status da batalha, não na fórmula de geração: não sobe `STAT_VERSION`, mas precisa entrar no `resolve3v3Battle` (como a fidelidade) e no simulador.
-2. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
+1. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
 
 Depois: **onda 7** (celular, acessibilidade, PT-BR), **onda 8** (engenharia de fundo, pode intercalar), **onda 9** (grandes apostas e monetização).
 
@@ -111,6 +110,9 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #50 | Desconto do Dev da Semana na forja | 50% em fragmentos e BITS | `FEATURED_DEV_DISCOUNT` (`weeklyEvents.ts`) |
 | #50 | Quem pode ser Dev da Semana | Sorteio uniforme entre as cartas do tema já existentes no jogo, Rare ou melhor (qualquer raridade se não houver) | `FEATURED_DEV_MIN_RARITY` (`weeklyEvents.ts`), `drawFeaturedDev` (`weeklyEventService.ts`) |
 | #50 | Rate-up anunciado | **Não feito**: dar mais chance a certos devs fere a regra de ouro 1. Se quiser, decidir as regras (quem, quanto, aviso na loja) | — |
+| #51 | Teto de treino por raridade | Common 8 · Uncommon 4 · Rare 4 · Epic 3 · Legendary 3 (+2% por nível). Medido no simulador: treino completo ≈ empata com a raridade de cima | `TRAINING_MAX_LEVEL`, `TRAINING_BONUS_PER_LEVEL` (`training.ts`) |
+| #51 | Custo do treino | Nível n = n × passo; passo Common 50 · Uncommon 100 · Rare 200 · Epic 400 · Legendary 800 BITS + n × fragmentos de uma repetida (5/10/20/40/80) | `TRAINING_BITS_PER_STEP`, `TRAINING_FRAGMENTS_PER_STEP` (`training.ts`) |
+| #51 | Teto da Liga Balanced com cartas treinadas | Conta o poder **base** (como a fidelidade já fazia) | rota `api/battle` e `TeamBuilderUI` |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -126,7 +128,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
-| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50) · falta: **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 2 rodadas, M |
+| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51) · falta: **coleções/sets** e níveis que desbloqueiam algo (3.3, 2.4) | 1 rodada, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
@@ -313,6 +315,16 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Dev da Semana**: na primeira visita da semana (ou no cron), sorteia uma carta do tema já existente no jogo, Rare ou melhor, e guarda na linha do Sprint semanal (`Sprint.featuredDev`, migração `20261028000000_weekly_events`; só grava se ainda estiver vazio, então dois pedidos juntos concordam). Na forja custa metade (fragmentos e BITS) até a semana acabar; a busca mostra o preço cheio riscado e o histórico marca "(Dev of the Week)".
 - **Interface:** destaque na forja (`/forge?dev=<login>` já abre a busca), linha do evento no quadro do Sprint semanal com links para o pack e para a forja, e seção "Weekly events" na wiki com os números das constantes.
 
+### Onda 6 — treino de cartas (PR #51)
+- **Regras** em `src/lib/training.ts`: cada nível dá +2% de ATK, DEF e HP na batalha, por cima da fidelidade (`UserCard.trainingLevel`, migração `20261029000000_card_training`). Não mexe na fórmula de geração, então o `STAT_VERSION` não muda.
+  - Teto por raridade: Commons vão mais longe. Os números saíram do simulador: com o teto de 10/8/6/5/4 que eu tinha pensado, um Uncommon treinado vencia um Rare sem treino 66% das vezes. Com 8/4/4/3/3, um time totalmente treinado fica entre 37% e 57% contra a raridade de cima e vence ~70% da própria raridade sem treino.
+  - Custo: BITS + fragmentos da linguagem da carta (coringas cobrem o resto), a mesma moeda em que as repetidas viram. Nível n custa n passos.
+- **Batalha:** o `resolve3v3Battle` aplica o treino junto com a fidelidade; o nível chega por todos os caminhos (PvE, Ranked e o time fantasma, Torre, desafios entre amigos e por link). O teto da Liga Balanced continua no poder base.
+- **Rota** `POST /api/collection/train`: confere e paga tudo dentro do `withUserLock`, com histórico de BITS (`card_training`) e de fragmentos.
+- **Interface:** painel "Training" no detalhe da carta na coleção (nível, barra, status antes → depois, custo e botão) e selo "+N%" na lista. Wiki explica com os números das constantes.
+- **Simulador:** nova seção "Fully trained team vs untrained" e um teste que segura o treino dentro da faixa.
+- **Download da carta em PNG** (pedido do dono): botão "Download PNG" no bloco da carta Signature do perfil e "PNG" no detalhe de qualquer carta na coleção (`CardDownloadButton`, usa a rota `/api/card-image/<login>` que já existia).
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -393,7 +405,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.3 Cartas e coleção
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Treinar cartas** | BITS + duplicatas/fragmentos sobem níveis (+2% por nível, teto por raridade) | M |
+| ~~**Treinar cartas**~~ | ✅ PR #51 | — |
 | **Coleções/sets** | Completar o elenco de um pack dá título, moldura ou banner; mostrar % por pack | M |
 | **Wishlist ativa** | Itens da wishlist com chance levemente maior (cuidado com a regra de ouro 1: seria um viés explícito e anunciado) | P |
 | **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui. Padrão do GitPacks 🅶: a cada requisição, tentar pegar uma vaga global (`UPDATE … WHERE updated_at < agora-5min RETURNING`) e atualizar **a carta mais desatualizada**, em rodízio, sem cron. Respeitar a regra 4 (`STAT_VERSION`) | M |
@@ -441,7 +453,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Sistema de elos | ✅ elos, Ranked e temporadas (PR #44, #45) |
 | Sincronizar BITS | ✅ |
 | Métodos de pagamento | pendente (Fase 4) |
-| Treinar as cartas | pendente (3.3) |
+| Treinar as cartas | ✅ treino com BITS + fragmentos (PR #51) |
 | Melhorar os desafios | ✅ bugs, só amigos, link, aposta, revanche, cancelar (PR #46); melhor de 3 no backlog |
 | Arrumar o ranking | ✅ |
 | Efeitos sonoros | ✅ booster/batalha; sons próprios pendentes (2.6) |

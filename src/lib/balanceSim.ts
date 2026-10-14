@@ -34,6 +34,7 @@ import { buildDevStats, DevStats } from './githubService';
 import { BattleCard, BattleResult, getCardType, getTypeMultiplier, resolve3v3Battle } from './battleResolver';
 import { RARITY_FOLLOWER_BANDS, RARITY_ORDER, Rarity } from './rarity';
 import { computeCardStats, StatFormulaName, StatInputs } from './cardStats';
+import { maxTrainingLevel } from './training';
 
 // ─── RNG ──────────────────────────────────────────────────────────────────────
 
@@ -255,7 +256,7 @@ export function buildCardPools(seed: number, perBand: number, statsOf: (dev: Syn
 
 let cardSerial = 0;
 
-export function toBattleCard(stats: DevStats): BattleCard {
+export function toBattleCard(stats: DevStats, trainingLevel = 0): BattleCard {
   const card = {
     id: `${stats.githubUsername}#${cardSerial++}`,
     name: stats.githubUsername,
@@ -267,14 +268,15 @@ export function toBattleCard(stats: DevStats): BattleCard {
     rarity: stats.rarity as Rarity,
     primaryLanguage: stats.primaryLanguage,
     loyaltyTier: 'none',
+    trainingLevel,
   };
   return { ...card, type: getCardType(card) };
 }
 
-function pickTeam(rng: Rng, pool: DevStats[]): BattleCard[] {
+function pickTeam(rng: Rng, pool: DevStats[], trainingLevel = 0): BattleCard[] {
   const picked = new Set<number>();
   while (picked.size < 3) picked.add(Math.floor(rng() * pool.length));
-  return [...picked].map(i => toBattleCard(pool[i]));
+  return [...picked].map(i => toBattleCard(pool[i], trainingLevel));
 }
 
 /** Team of 3 drawn from the pools with the given rarity weights. */
@@ -367,6 +369,11 @@ export interface SimReport {
   /** Mirror + mixed battles: win rate of the teams a card of each combat type played in. */
   typeWinRates: { type: string; appearances: number; winRate: number }[];
   pools: Record<Rarity, { cards: number; atk: number; def: number; hp: number; neutralShare: number }>;
+  /**
+   * Fully trained teams (training.ts): win rate against an untrained team of the
+   * same rarity, and against an untrained team one rarity up (null for Legendary).
+   */
+  training: { rarity: Rarity; maxLevel: number; vsSame: number; vsNextUp: number | null }[];
 }
 
 /** Card mix of the live database after the follower-based recalculation (ROADMAP 2.3). */
@@ -382,11 +389,12 @@ export interface SimOptions {
   /** Stat formula to build the cards with (default: the live STAT_FORMULA). Ignored when `statsOf` is given. */
   formula?: StatFormulaName;
   statsOf?: (dev: SyntheticDev) => DevStats;
+  trainingBattles?: number;
 }
 
 export function runBalanceSim(opts: SimOptions = {}): SimReport {
   const {
-    seed = 1234, perBand = 1000, battlesPerPair = 800, mirrorBattles = 1500, mixedBattles = 3000,
+    seed = 1234, perBand = 1000, battlesPerPair = 800, mirrorBattles = 1500, mixedBattles = 3000, trainingBattles = 600,
     resolve = defaultResolver, formula,
   } = opts;
   const statsOf = opts.statsOf ?? (formula ? statsWithFormula(formula) : undefined);
@@ -479,6 +487,22 @@ export function runBalanceSim(opts: SimOptions = {}): SimReport {
     .filter(gap => gaps.has(gap))
     .map(gap => ({ gap, battles: gaps.get(gap)!.battles, higherWins: gaps.get(gap)!.higherWins / gaps.get(gap)!.battles }));
 
+  // Training: a fully trained team against untrained ones (not tracked in the other stats)
+  const trainedWinRate = (rarity: Rarity, against: Rarity) => {
+    let wins = 0;
+    for (let k = 0; k < trainingBattles; k++) {
+      const trained = pickTeam(rng, pools[rarity], maxTrainingLevel(rarity));
+      if (fight(resolve, rng, trained, pickTeam(rng, pools[against]), k).aWon) wins++;
+    }
+    return wins / trainingBattles;
+  };
+  const training = RARITY_ORDER.map((rarity, i) => ({
+    rarity,
+    maxLevel: maxTrainingLevel(rarity),
+    vsSame: trainedWinRate(rarity, rarity),
+    vsNextUp: i + 1 < RARITY_ORDER.length ? trainedWinRate(rarity, RARITY_ORDER[i + 1]) : null,
+  }));
+
   const sorted = [...opening].sort((a, b) => a - b);
   const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
   const poolSummary = Object.fromEntries(RARITY_ORDER.map(r => {
@@ -507,6 +531,7 @@ export function runBalanceSim(opts: SimOptions = {}): SimReport {
       .map(([type, t]) => ({ type, appearances: t.n, winRate: t.wins / t.n }))
       .sort((x, y) => y.winRate - x.winRate),
     pools: poolSummary,
+    training,
   };
 }
 
@@ -533,5 +558,9 @@ export function formatSimReport(r: SimReport): string {
   lines.push('', 'Win rate of teams fielding each type (mirror + mixed battles):');
   const types = r.typeWinRates.map(t => `${t.type} ${p(t.winRate).trim()}`);
   for (let i = 0; i < types.length; i += 6) lines.push(`  ${types.slice(i, i + 6).join(' · ')}`);
+  lines.push('', 'Fully trained team vs untrained: same rarity / one rarity up');
+  for (const t of r.training) {
+    lines.push(`  ${t.rarity.padEnd(10)} level ${String(t.maxLevel).padStart(2)}  same ${p(t.vsSame)}  next up ${t.vsNextUp === null ? '     —' : p(t.vsNextUp)}`);
+  }
   return lines.join('\n');
 }

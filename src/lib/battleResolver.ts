@@ -12,6 +12,7 @@ import {
   TYPE_ADVANTAGES,
   TYPE_DISADVANTAGE_MULTIPLIER,
 } from './battleConfig';
+import { trainingMultiplier } from './training';
 
 /** A combat language (see COMBAT_LANGUAGES), 'Neutral', or the special 'Legendary' pack type. */
 export type CardType = (typeof COMBAT_LANGUAGES)[number] | 'Neutral' | 'Legendary';
@@ -30,6 +31,8 @@ export interface BattleCard {
   type: CardType;
   avatarUrl?: string | null;
   loyaltyTier?: string;
+  /** Training level of the player's copy (training.ts); 0 for computer cards. */
+  trainingLevel?: number;
 
   // Momentum & Tracking
   consecutiveWins?: number;
@@ -169,14 +172,15 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   }));
   const st = (c: BattleCard) => state.get(c)!;
 
-  // Apply loyalty bonuses FIRST (permanent multiplier on base stats)
+  // Apply loyalty and training bonuses FIRST (permanent multipliers on base stats)
   const applyLoyaltyBonuses = (team: BattleCard[]) => {
     team.forEach(c => {
       const bonuses = getLoyaltyBonuses(c.loyaltyTier || 'none');
-      c.atk = Math.floor(c.atk * bonuses.atkMult);
-      c.def = Math.floor(c.def * bonuses.defMult);
-      c.hp = Math.floor(c.hp * bonuses.hpMult);
-      c.maxHp = Math.floor(c.maxHp * bonuses.hpMult);
+      const trained = trainingMultiplier(c.trainingLevel, c.rarity);
+      c.atk = Math.floor(c.atk * bonuses.atkMult * trained);
+      c.def = Math.floor(c.def * bonuses.defMult * trained);
+      c.hp = Math.floor(c.hp * bonuses.hpMult * trained);
+      c.maxHp = Math.floor(c.maxHp * bonuses.hpMult * trained);
     });
   };
 

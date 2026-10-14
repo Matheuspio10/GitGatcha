@@ -40,6 +40,7 @@ export default async function CollectionPage() {
     loyaltyMilestones: uc.loyaltyMilestones as any[],
     lifetimeStats: uc.lifetimeStats as any,
     showcaseOrder: uc.showcaseOrder,
+    trainingLevel: uc.trainingLevel,
   }));
 
   // New players: visiting the collection completes a "Getting started" step

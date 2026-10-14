@@ -54,6 +54,15 @@ describe('balance simulator (live formula)', () => {
     }
   });
 
+  test('training pays off but does not erase rarity', () => {
+    for (const t of report.training) {
+      // A fully trained team clearly beats its own untrained rarity...
+      assert.ok(t.vsSame >= 0.6 && t.vsSame <= 0.85, `${t.rarity} trained vs same ${t.vsSame}`);
+      // ...and at most about evens out with the untrained rarity one up
+      if (t.vsNextUp !== null) assert.ok(t.vsNextUp >= 0.25 && t.vsNextUp <= 0.62, `${t.rarity} trained vs next up ${t.vsNextUp}`);
+    }
+  });
+
   test('mirror rarities are a coin flip and ATK, DEF and HP all matter', () => {
     for (const mirror of report.mirrors) {
       assert.ok(Math.abs(mirror.winRate - 0.5) <= 0.05, `${mirror.rarity} mirror ${mirror.winRate}`);

@@ -152,6 +152,8 @@ model UserCard {
   loyaltyTier       String   @default("none")
   loyaltyMilestones Json     @default("[]")
   lifetimeStats     Json     @default("{}")
+  // Training level bought with BITS + fragments (training.ts): +2% ATK/DEF/HP per level in battle
+  trainingLevel     Int      @default(0)
   showcaseOrder     Int?
   createdAt DateTime @default(now())
 
