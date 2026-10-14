@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import React, { useState, useEffect } from 'react';
 import { WILDCARD, WILDCARD_EXCHANGE_RATE, maxWildcardsFrom, needsWildcards, planFragmentPayment } from '@/lib/fragments';
 import { EmptyState } from '@/components/EmptyState';
@@ -277,7 +278,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       {featuredDev && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-950/40 to-slate-900 p-5 shadow-xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {featuredDev.avatarUrl ? <img src={featuredDev.avatarUrl} alt="" className="h-14 w-14 rounded-full border-2 border-fuchsia-400/60" /> : <span className="h-14 w-14 rounded-full bg-slate-700" />}
+          {featuredDev.avatarUrl ? <img src={sizedAvatar(featuredDev.avatarUrl, 56)} alt="" className="h-14 w-14 rounded-full border-2 border-fuchsia-400/60" /> : <span className="h-14 w-14 rounded-full bg-slate-700" />}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">{t('featured.label', { percent: featuredDev.discountPercent })}</p>
             <p className="flex items-center gap-2 text-lg font-black text-white">
@@ -501,7 +502,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                       {t('wishlist.remove')}
                     </button>
                     <div className="flex items-center gap-4 mb-4">
-                      <img src={w.avatarUrl} alt={w.username} className="w-12 h-12 rounded-full border border-slate-700" />
+                      <img src={sizedAvatar(w.avatarUrl, 48)} alt={w.username} className="w-12 h-12 rounded-full border border-slate-700" />
                       <div>
                         <div className="font-bold">{w.name}</div>
                         <div className="text-xs text-slate-400">@{w.username} • {w.rarity}</div>

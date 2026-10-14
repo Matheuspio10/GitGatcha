@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da segunda rodada da onda 8 (PR #59). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da terceira rodada da onda 8 (PR #60). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 219 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 228 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -56,17 +56,18 @@
 
 ## ▶️ Próximo passo
 
-**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59). Próximas, em ordem sugerida:
-1. **Headers de segurança e CSP** no `next.config.ts` (começar com CSP em modo report-only) e otimização de imagens.
-2. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
-3. **Reduzir o lint** (98 erros, quase todos `any`).
-4. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco.
+**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60). Próximas, em ordem sugerida:
+1. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
+2. **Reduzir o lint** (98 erros, quase todos `any`).
+3. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
+4. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
 
 Depois: **onda 9** (grandes apostas e monetização).
 
 **Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
 - O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
 - Configurar o backup diário: chave `age` + `BACKUP_AGE_RECIPIENT` + `BACKUP_DATABASE_URL` no GitHub ([`docs/backup.md`](docs/backup.md)). Sem isso o workflow "Database backup" falha.
+- Olhar os logs da Vercel (Logs → buscar `[CSP]`) alguns dias depois do deploy da #60 e me passar o que aparecer, para decidir se a CSP pode passar a bloquear.
 - Rodar uma vez a conferência do histórico de BITS em produção (só leitura): `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts`.
 - Responder a tabela "Decisões pendentes" abaixo.
 
@@ -364,6 +365,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 8 — headers de segurança, CSP e imagens, rodada 3 (PR #60)
+- **Headers em todas as respostas** (`src/lib/securityHeaders.ts`, ligado no `next.config.ts`): `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (o jogo não pode ser embutido em outro site), `Referrer-Policy`, `Permissions-Policy` (sem câmera, microfone, localização, pagamento; a inclinação holográfica continua liberada), `Cross-Origin-Opener-Policy`, HSTS de 2 anos (fora do dev) e sem o `X-Powered-By`.
+- **CSP em modo report-only:** não bloqueia nada; o navegador manda o que bloquearia para `/api/csp-report`, que grava uma linha `[CSP] <diretiva> blocked <url> on <página>` no log (limite de 30 por minuto por IP, corpo até 16 KB). Imagens só do próprio site, `data:`, avatares do GitHub e fotos do Google (conferido no banco: são os únicos hosts em uso); formulários só para o site, GitHub e Google (login); nada de `<object>` nem framing. Ainda precisa de `'unsafe-inline'` em scripts e estilos (Next.js e os estilos inline do jogo); tirar exige nonce por requisição.
+  - Só `report-uri`, sem `report-to`: com os dois, o Chrome usa a Reporting API, que segura os relatórios por até um minuto, e o navegador do app nem entregava.
+  - Testado com o build de produção local: 11 telas sem nenhuma violação; uma imagem de outro host gerou a linha no log.
+- **Avatares no tamanho certo** (`sizedAvatar`, `src/lib/avatarUrl.ts`): as miniaturas pedem ao próprio GitHub o dobro do tamanho mostrado (`?s=88` para 44px) em vez do avatar padrão de 460px. No montador de time são dezenas de avatares por tela. Aplicado na Arena, Torre, Forja, perfil, comparar coleção, Sprints e montador. **Sem `next/image` de propósito:** a otimização da Vercel cobra por imagem de origem, e os packs sorteiam entre milhões de devs.
+
 ### Onda 8 — zod e erros da API traduzidos, rodada 2 (PR #59)
 - **zod em todas as rotas que recebem corpo** (as 23 rotas; ao todo 40 rotas passaram pelo novo tratamento de erro, e só o cron ficou de fora, por não ser do jogador). `readBody(req, schema)` (`src/lib/apiResponse.ts`) lê e valida; corpo ausente ou que não é JSON vira 400, em vez do 500 que várias rotas davam ao quebrar no `req.json()`. Textos e listas têm tamanho máximo (ids até 100, e-mail até 254, senha até 200, até 1000 ids no changelog). Os schemas aceitam exatamente o que as telas mandam hoje (conferido em cada `fetch`).
 - **Erros no idioma do jogador:** toda resposta de erro é `{ error, code }`. O `error` já vem traduzido pelo cookie de idioma (as telas mostram como antes, sem mudança nos clientes) e o `code` é a chave estável em `messages/<idioma>/apiErrors.json` (142 chaves, por área: `common`, `store`, `battle`, `challenge`, `friends`…). Inclui o 429 do limite de requisições, as mensagens de imagem do perfil e a recompensa diária.
@@ -446,7 +454,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | ~~`select` nas consultas quentes~~ | ✅ PR #58 (e a senha omitida por padrão) |
 | ~~Validação com zod em todas as rotas~~ | ✅ PR #59 (e os erros traduzidos) |
 | Sentry/logs estruturados + registrar os headers de limite do GitHub | P |
-| `next.config.ts`: otimização de imagens e headers de segurança (CSP) | P |
+| ~~`next.config.ts`: otimização de imagens e headers de segurança (CSP)~~ | ✅ PR #60 (CSP em report-only; falta ligar) |
 | Reduzir os 98 erros de lint (quase todos `any`) | M |
 | ~~Migrar `middleware.ts` para `proxy.ts`~~ | ✅ PR #58 |
 | Atualizar Prisma 6 → 7/8 e next-auth v4 → Auth.js v5 (planejar) | M |

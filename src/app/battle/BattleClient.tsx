@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { Card, CardProps } from '@/components/Card';
@@ -256,7 +257,7 @@ function BattleFieldCard({ card, hp, maxHp, side, defeated, onFire, isAttacking,
         {/* Art */}
         <div className="relative h-[100px] w-full bg-slate-800 shrink-0">
           {card.avatarUrl ? (
-            <img src={card.avatarUrl} alt={card.name} className="w-full h-full object-cover object-top" />
+            <img src={sizedAvatar(card.avatarUrl, 176)} alt={card.name} className="w-full h-full object-cover object-top" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500"><Sword size={36} /></div>
           )}
@@ -987,7 +988,7 @@ function BattleReplay({
                   isActive && !isDefeated ? 'border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' : isDefeated ? 'border-slate-700 grayscale' : 'border-slate-700 hover:border-slate-600'
                 )}>
                   {card.avatarUrl ? (
-                    <img src={card.avatarUrl} className="w-full h-full object-cover" alt={card.name} />
+                    <img src={sizedAvatar(card.avatarUrl, 90)} className="w-full h-full object-cover" alt={card.name} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"><Sword className="text-slate-500" size={24} /></div>
                   )}
@@ -1554,7 +1555,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                           <div className="flex gap-1">
                             {cTeam.map(c => (
                               <div key={c.id} className="flex items-center gap-1 bg-slate-800 rounded px-1.5 py-0.5">
-                                {c.avatarUrl && <img src={c.avatarUrl} className="w-4 h-4 rounded-full object-cover" alt="" />}
+                                {c.avatarUrl && <img src={sizedAvatar(c.avatarUrl, 16)} className="w-4 h-4 rounded-full object-cover" alt="" />}
                                 <span>{c.name}</span>
                               </div>
                             ))}
@@ -1567,7 +1568,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                           <div className="flex gap-1">
                             {dTeam.map(c => (
                               <div key={c.id} className="flex items-center gap-1 bg-slate-800 rounded px-1.5 py-0.5">
-                                {c.avatarUrl && <img src={c.avatarUrl} className="w-4 h-4 rounded-full object-cover" alt="" />}
+                                {c.avatarUrl && <img src={sizedAvatar(c.avatarUrl, 16)} className="w-4 h-4 rounded-full object-cover" alt="" />}
                                 <span>{c.name}</span>
                               </div>
                             ))}
