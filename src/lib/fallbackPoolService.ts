@@ -1,9 +1,10 @@
 import { prisma } from './prisma';
 import { GitHubUnavailableError } from './githubService';
-import { ALL_PACKS, BIG_TECH_ORGS } from './packDefinitions';
+import { ALL_PACKS, BIG_TECH_ORGS, getPackById, type PackDefinition } from './packDefinitions';
 import { RARITY_ORDER } from './rarity';
 import { devSampler, isOrgPoolStale, refreshOrgMembers } from './samplerStore';
 import { purgeStaleReserve, refillReserve, reserveDeficit } from './boosterReserve';
+import { upcomingEventPackIds } from './weeklyEvents';
 
 export interface MaintenanceReport {
   maxId?: number;
@@ -39,22 +40,27 @@ export async function rebuildFallbackPools(budgetMs = 270_000): Promise<Maintena
       }
     }
 
+    // The regular catalog plus this week's and next week's event packs (ready on Monday)
+    const packs: PackDefinition[] = [
+      ...ALL_PACKS,
+      ...upcomingEventPackIds(new Date()).map(id => getPackById(id)).filter((p): p is PackDefinition => !!p),
+    ];
+
     // Biggest gaps first, so a short run still helps the emptiest slots
-    const gaps: { packId: string; rarity: (typeof RARITY_ORDER)[number]; deficit: number }[] = [];
-    for (const pack of ALL_PACKS) {
+    const gaps: { pack: PackDefinition; rarity: (typeof RARITY_ORDER)[number]; deficit: number }[] = [];
+    for (const pack of packs) {
       for (const rarity of RARITY_ORDER) {
         if (pack.allCommon && rarity !== 'Common') continue;
         const deficit = await reserveDeficit(pack.id, rarity);
-        if (deficit > 0) gaps.push({ packId: pack.id, rarity, deficit });
+        if (deficit > 0) gaps.push({ pack, rarity, deficit });
       }
     }
     gaps.sort((a, b) => b.deficit - a.deficit);
 
-    for (const { packId, rarity, deficit } of gaps) {
+    for (const { pack, rarity, deficit } of gaps) {
       if (Date.now() > deadline) throw new OutOfTime();
-      const pack = ALL_PACKS.find(p => p.id === packId)!;
-      const added = await refillReserve(devSampler, packId, pack.pool, rarity, deficit, deadline);
-      if (added) report.reserveAdded[`${packId}/${rarity}`] = added;
+      const added = await refillReserve(devSampler, pack.id, pack.pool, rarity, deficit, deadline);
+      if (added) report.reserveAdded[`${pack.id}/${rarity}`] = added;
     }
   } catch (err) {
     if (err instanceof OutOfTime || err instanceof GitHubUnavailableError) {

@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 13/10/2026, ao fim dos Sprints (PR #49). Ondas 1 a 5 completas; onda 6 em andamento (Torre e Sprints prontos). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 13/10/2026, ao fim dos eventos semanais (PR #50). Ondas 1 a 5 completas; onda 6 em andamento (Torre, Sprints e eventos semanais prontos). O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -12,14 +12,14 @@
 ## 👉 Como continuar (leia primeiro)
 
 ### Estado atual
-- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre e os Sprints da onda 6. Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 17 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 185 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), mais a Torre, os Sprints e os eventos semanais da onda 6. Resumo de cada PR na seção "✅ Concluído".
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 18 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 193 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -56,13 +56,13 @@
 ## ▶️ Próximo passo
 
 **Onda 6 (modos e cartas), rodadas que faltam**, uma PR por rodada:
-1. **Eventos semanais (3.2):** os Sprints já existem (PR #49). Falta: **booster por tempo limitado** ligado ao tema do Sprint semanal (um pack cujo filtro é o tema; sorteio uniforme dentro dele, então não fere a regra de ouro 1), **"Dev da Semana"** (carta em destaque, por exemplo com desconto na forja) e, se o dono quiser, **rate-up anunciado** (ver "Decisões pendentes": é um viés explícito, contra a regra de ouro 1). O pack temporário mexe no catálogo (`getPackById`), na reserva (`boosterReserve.ts`) e no cron; o tema de org (Big Tech) só vale a pena quando houver mais cartas de membros de orgs (hoje são 9 no dev).
-2. **Treinar cartas (3.3):** BITS + repetidas/fragmentos sobem níveis (+2% por nível, teto por raridade). Mexe nos status da batalha, não na fórmula de geração: não sobe `STAT_VERSION`, mas precisa entrar no `resolve3v3Battle` (como a fidelidade) e no simulador.
-3. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
+1. **Treinar cartas (3.3):** BITS + repetidas/fragmentos sobem níveis (+2% por nível, teto por raridade). Mexe nos status da batalha, não na fórmula de geração: não sobe `STAT_VERSION`, mas precisa entrar no `resolve3v3Battle` (como a fidelidade) e no simulador.
+2. **Coleções/sets + níveis que desbloqueiam algo (3.3, 2.4):** completar o elenco de um pack dá título/moldura/banner; % por pack; níveis liberando modos/molduras/títulos.
 
 Depois: **onda 7** (celular, acessibilidade, PT-BR), **onda 8** (engenharia de fundo, pode intercalar), **onda 9** (grandes apostas e monetização).
 
-**Pendências do dono (fora do código):**
+**Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
+- O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
 - Configurar o backup diário: chave `age` + `BACKUP_AGE_RECIPIENT` + `BACKUP_DATABASE_URL` no GitHub ([`docs/backup.md`](docs/backup.md)). Sem isso o workflow "Database backup" falha.
 - Rodar uma vez a conferência do histórico de BITS em produção (só leitura): `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts`.
 - Responder a tabela "Decisões pendentes" abaixo.
@@ -107,6 +107,10 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #49 | Pontuação do Sprint | Soma de ATK+DEF+HP das **3 melhores** cartas do tema (outra opção, a do GitPacks: a melhor de cada raridade, até 5) | `SPRINT_TEAM_SIZE`, `sprintStandings` (`sprintService.ts`) |
 | #49 | Cartas que contam | Todas as que o jogador tinha **antes do fim** do Sprint, inclusive as de antes do início (outra opção: só as tiradas durante o Sprint) | `sprintStandings` (`sprintService.ts`) |
 | #49 | Temas | Diário: 15 linguagens em rodízio. Semanal: 6 famílias (Web, Sistemas, Dados, JVM & .NET, Scripting, Mobile). Sem tema de org por enquanto (poucas cartas) | `DAILY_SPRINT_LANGUAGES`, `WEEKLY_SPRINT_FAMILIES` (`sprints.ts`) |
+| #50 | Pack do evento semanal | 5 cartas, 350 BITS, ≥1 Rare; só à venda na semana do tema | `EVENT_PACK_COST`, `EVENT_PACK_MIN_RARITY` (`weeklyEvents.ts`) |
+| #50 | Desconto do Dev da Semana na forja | 50% em fragmentos e BITS | `FEATURED_DEV_DISCOUNT` (`weeklyEvents.ts`) |
+| #50 | Quem pode ser Dev da Semana | Sorteio uniforme entre as cartas do tema já existentes no jogo, Rare ou melhor (qualquer raridade se não houver) | `FEATURED_DEV_MIN_RARITY` (`weeklyEvents.ts`), `drawFeaturedDev` (`weeklyEventService.ts`) |
+| #50 | Rate-up anunciado | **Não feito**: dar mais chance a certos devs fere a regra de ouro 1. Se quiser, decidir as regras (quem, quanto, aviso na loja) | — |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -122,7 +126,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
-| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49) · falta: eventos semanais (3.2); **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 2+ rodadas, M |
+| **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50) · falta: **treinar cartas**, coleções/sets, níveis que desbloqueiam algo (3.3, 2.4) | 2 rodadas, M |
 | **7** | 📱 Celular, acessibilidade e idioma | Barra de abas inferior, carta responsiva, PWA, teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2–3 rodadas, M–G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
@@ -303,6 +307,12 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
   - Sem cron novo: a linha do Sprint (com o tema) nasce na primeira visita ou no cron diário, que também fecha os vencidos (`maintainSprints`). Fecha também quando alguém abre a aba.
 - **Interface:** aba **"Sprints"** no ranking (`SprintBoard`): tema, tempo restante, tabela de BITS, sua posição e "+N BITS se acabar agora", as 3 cartas que contam, os boosters com cartas do tema, o top 20 ao vivo e o resultado do Sprint anterior. Wiki e tela de boas-vindas explicam a regra com os números das constantes.
 
+### Onda 6 — eventos semanais (PR #50)
+- **Pack do evento** (`EVENT_PACKS` em `packDefinitions.ts`, regras em `weeklyEvents.ts`): um por tema do Sprint semanal ("Web Week Pack", "Scripting Week Pack"…), com o filtro das linguagens do tema; dentro dele o sorteio continua uniforme (regra de ouro 1). Só o da semana aparece na loja (aba **Weekly Event**, primeira e aberta por padrão, com "On sale for 4d 22h"); a rota de compra recusa os outros com 410. Quem comprou abre depois da semana sem problema (`getPackById` acha todos).
+  - A reserva só é preenchida para o pack desta semana e o da próxima (`upcomingEventPackIds`), no cron e depois de cada abertura, para não gastar cota do GitHub com os outros quatro.
+- **Dev da Semana**: na primeira visita da semana (ou no cron), sorteia uma carta do tema já existente no jogo, Rare ou melhor, e guarda na linha do Sprint semanal (`Sprint.featuredDev`, migração `20261028000000_weekly_events`; só grava se ainda estiver vazio, então dois pedidos juntos concordam). Na forja custa metade (fragmentos e BITS) até a semana acabar; a busca mostra o preço cheio riscado e o histórico marca "(Dev of the Week)".
+- **Interface:** destaque na forja (`/forge?dev=<login>` já abre a busca), linha do evento no quadro do Sprint semanal com links para o pack e para a forja, e seção "Weekly events" na wiki com os números das constantes.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -377,8 +387,8 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Feature | Descrição | Esforço |
 |---|---|---|
 | **Liga pessoal estilo Cartola** | Elenco de 5 devs com orçamento; pontos semanais vêm da atividade **real** no GitHub (commits, estrelas, PRs); ligas privadas com amigos | G |
-| **Eventos semanais** | Rate-up temático, "Dev da Semana", boosters por tempo limitado | M |
-| ~~**Sprints 🅶**~~ | ✅ PR #49 (diário por linguagem, semanal por família). Falta só o tema de org/"Dev da Semana", junto com os eventos | — |
+| ~~**Eventos semanais**~~ | ✅ PR #50 (pack do evento e Dev da Semana). Rate-up ficou nas decisões pendentes | — |
+| ~~**Sprints 🅶**~~ | ✅ PR #49 (diário por linguagem, semanal por família). Tema de org (Big Tech) só quando houver mais cartas de membros de orgs | — |
 
 ### 3.3 Cartas e coleção
 | Feature | Descrição | Esforço |

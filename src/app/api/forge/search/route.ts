@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { fetchGitHubUserStats, isValidGitHubLogin } from '@/lib/githubService';
-import { getInvocationCost } from '@/lib/forgeService';
-import { ALL_PACKS, getSerializablePacks } from '@/lib/packDefinitions';
+import { getSerializablePacks, storePacks } from '@/lib/packDefinitions';
+import { forgeCostFor, isFeaturedDev } from '@/lib/weeklyEvents';
+import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function GET(req: Request) {
@@ -24,13 +25,16 @@ export async function GET(req: Request) {
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });
 
-    const cost = getInvocationCost(stats.rarity);
-    
-    // Find packs that might drop this language
-    const lang = stats.primaryLanguage || 'Unknown';
-    const recommendedPacks = getSerializablePacks().filter(p => p.themeLanguage === lang || ALL_PACKS.find(a => a.id === p.id)?.pool.languages?.includes(lang));
+    // The Dev of the Week costs less this week
+    const featured = isFeaturedDev(stats.githubUsername, await getFeaturedDevLogin());
+    const cost = forgeCostFor(stats.rarity, featured);
+    const fullCost = forgeCostFor(stats.rarity, false);
 
-    return NextResponse.json({ stats, cost, recommendedPacks });
+    // Packs on sale now that might drop this language
+    const lang = stats.primaryLanguage || 'Unknown';
+    const recommendedPacks = getSerializablePacks(storePacks(new Date()).filter(p => p.themeLanguage === lang || p.pool.languages?.includes(lang)));
+
+    return NextResponse.json({ stats, cost, fullCost, featured, recommendedPacks });
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });

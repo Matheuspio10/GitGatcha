@@ -5,7 +5,8 @@ import { authOptions } from '@/lib/auth';
 import { randomInt } from 'node:crypto';
 import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
 import { fetchGitHubUserStats, isValidGitHubLogin, toCardData } from '@/lib/githubService';
-import { getInvocationCost } from '@/lib/forgeService';
+import { forgeCostFor, isFeaturedDev } from '@/lib/weeklyEvents';
+import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 import { SHINY_CHANCE, WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
@@ -24,7 +25,9 @@ export async function POST(req: Request) {
 
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });
-    const { fragments, bits } = getInvocationCost(stats.rarity);
+    // The Dev of the Week costs less this week
+    const featured = isFeaturedDev(stats.githubUsername, await getFeaturedDevLogin());
+    const { fragments, bits } = forgeCostFor(stats.rarity, featured);
 
     const userId = session.user.id;
     // Developers with no primary language are paid with wildcard fragments only
@@ -54,7 +57,7 @@ export async function POST(req: Request) {
         const spend = (language: string, amount: number) => {
           if (amount <= 0) return;
           userFragments[language] = (userFragments[language] || 0) - amount;
-          logs.unshift({ date: new Date().toISOString(), source: `Invocation - ${stats.name || username}`, language, amount: -amount });
+          logs.unshift({ date: new Date().toISOString(), source: `Invocation - ${stats.name || username}${featured ? ' (Dev of the Week)' : ''}`, language, amount: -amount });
         };
         spend(lang, payment.fromLanguage);
         spend(WILDCARD, payment.fromWildcard);
@@ -66,7 +69,7 @@ export async function POST(req: Request) {
             fragmentLogs: logs
           }
         });
-        await addBits(userId, -bits, 'forge', { tx, detail: stats.name || username });
+        await addBits(userId, -bits, 'forge', { tx, detail: `${stats.name || username}${featured ? ' (Dev of the Week)' : ''}` });
 
         const isShiny = randomInt(0, 1_000_000) < SHINY_CHANCE * 1_000_000;
         const userCard = await tx.userCard.create({

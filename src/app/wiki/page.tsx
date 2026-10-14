@@ -6,6 +6,7 @@ import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANC
 import { RANK_TIERS } from '@/lib/ranks';
 import { TOWER_FLOORS } from '@/lib/tower';
 import { DAILY_SPRINT_LANGUAGES, SPRINT_TEAM_SIZE, WEEKLY_SPRINT_FAMILIES, sprintRewardsLegend } from '@/lib/sprints';
+import { EVENT_PACK_CARD_COUNT, EVENT_PACK_COST, EVENT_PACK_MIN_RARITY, FEATURED_DEV_DISCOUNT, FEATURED_DEV_MIN_RARITY } from '@/lib/weeklyEvents';
 import { PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
@@ -551,6 +552,14 @@ export default function WikiPage() {
                 <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
                   <li><strong>Daily Sprint</strong> (midnight to midnight UTC): one language, in rotation ({DAILY_SPRINT_LANGUAGES.join(', ')}). BITS: {sprintRewardsLegend('daily')}.</li>
                   <li><strong>Weekly Sprint</strong> (Monday to Monday UTC): a family of languages ({WEEKLY_SPRINT_FAMILIES.map(f => f.name).join(', ')}). BITS: {sprintRewardsLegend('weekly')}.</li>
+                </ul>
+              </div>
+              <div className="mt-4 bg-slate-800/30 p-5 rounded-xl border border-fuchsia-500/30">
+                <h3 className="text-lg font-bold text-fuchsia-300 mb-2">Weekly events</h3>
+                <p className="text-sm text-slate-300">Each week follows the theme of the Weekly Sprint:</p>
+                <ul className="mt-2 text-sm text-slate-300 list-disc pl-5 space-y-1">
+                  <li><strong>Event pack</strong>: {EVENT_PACK_CARD_COUNT} cards of the week&apos;s languages for {EVENT_PACK_COST} BITS, at least one {EVENT_PACK_MIN_RARITY}. On sale only that week (Store → Weekly Event); one you bought can be opened later. Like every pack, each developer of the theme has the same chance.</li>
+                  <li><strong>Dev of the Week</strong>: a card of the theme ({FEATURED_DEV_MIN_RARITY} or better) drawn at random when the week starts. Invoking it at the Forge costs {Math.round(FEATURED_DEV_DISCOUNT * 100)}% less fragments and BITS until the week ends.</li>
                 </ul>
               </div>
               <p className="mt-4 text-xs text-slate-500">

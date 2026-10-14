@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 import { closeDueSeasons } from '@/lib/seasonService';
 import { maintainSprints } from '@/lib/sprintService';
+import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 
 // Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
 export const maxDuration = 300;
@@ -45,6 +46,8 @@ export async function GET(req: Request) {
       console.error('[Cron] Sprint close failed:', err);
       return 0;
     });
+    // Draws the Dev of the Week on the week's first run (otherwise the first visit does)
+    await getFeaturedDevLogin().catch((err: unknown) => console.error('[Cron] Dev of the Week failed:', err));
     const results = await rebuildFallbackPools();
 
     return NextResponse.json({
