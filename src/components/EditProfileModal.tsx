@@ -5,6 +5,7 @@ import { X, Camera, Image as ImageIcon, Palette, Check, CaretDown } from '@phosp
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserAvatar } from './UserAvatar';
 import { GitHubConnect } from './GitHubConnect';
+import { useDialog } from '@/lib/useDialog';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -66,6 +67,7 @@ function getBannerStyle(bannerImage?: string | null): React.CSSProperties {
 }
 
 export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: EditProfileModalProps) {
+  const panelRef = useDialog(isOpen, onClose);
   const [image, setImage] = useState<string | null>(currentProfile.image || null);
   const [bannerImage, setBannerImage] = useState<string | null>(currentProfile.bannerImage || null);
   const [bio, setBio] = useState(currentProfile.bio || '');
@@ -190,6 +192,10 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
         onClick={onClose}
       >
         <motion.div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-profile-title"
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
@@ -198,10 +204,10 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
         >
           {/* Header */}
           <div className="sticky top-0 z-20 flex items-center justify-between p-6 pb-0 bg-slate-900/95 backdrop-blur-sm">
-            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+            <h2 id="edit-profile-title" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
               Edit Profile
             </h2>
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white">
+            <button onClick={onClose} aria-label="Close" className="p-2 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 hover:text-white">
               <X size={24} />
             </button>
           </div>

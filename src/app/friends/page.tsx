@@ -229,7 +229,7 @@ export default function FriendsPage() {
                 <h3 className="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wider">Outgoing</h3>
                 
                 {outgoing.length === 0 ? (
-                  <p className="text-sm text-slate-600">No outgoing requests</p>
+                  <p className="text-sm text-slate-500">No outgoing requests</p>
                 ) : (
                   <div className="space-y-2">
                      {outgoing.map((req) => (

@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da rodada de celular (PR #53). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da rodada de acessibilidade (PR #54). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 20 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 205 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 208 testes (`npm test`), `tsc` sem erros, lint com 101 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -56,8 +56,7 @@
 ## ▶️ Próximo passo
 
 **Onda 7 (celular, acessibilidade e idioma)**, uma PR por rodada:
-1. **Acessibilidade:** packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais, contraste AA (2.7); slider de volume e sons de Epic/Legendary (2.6).
-2. **PT-BR com next-intl**, mantendo o inglês (2.5). É a maior: toda a interface passa por chaves de tradução.
+1. **PT-BR com next-intl**, mantendo o inglês (2.5). É a maior: toda a interface passa por chaves de tradução.
 
 Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes apostas e monetização).
 
@@ -134,7 +133,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
-| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53) · falta: teclado/`aria`/foco nos modais, contraste AA (2.7); slider de volume e sons próprios de Epic/Legendary (2.6); **PT-BR com next-intl** (2.5) | 2 rodadas, M–G |
+| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54) · falta: **PT-BR com next-intl** (2.5) | 1 rodada, G |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
@@ -343,6 +342,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **PWA:** `src/app/manifest.ts` (abre na loja, tela cheia, atalhos para packs, batalha e coleção), ícones 192/512, "maskable" e o da Apple, gerados do `icon.svg` por `scripts/build-app-icons.mjs`; `theme-color` e metadados de app no iPhone. Sem service worker: o Chrome não exige mais um para instalar, e um cache mal feito mostraria dados velhos do jogo.
 - **Vazamento lateral:** varri as páginas principais em 375px e 320px. Vazavam as abas da Forja e da Arena (agora quebram linha ou rolam) e a tabela de stamina da Wiki (agora rola dentro do quadro, como as outras).
 
+### Onda 7 — acessibilidade (PR #54)
+- **Modais** (`src/lib/useDialog.ts`): um hook único com o comportamento de diálogo do WAI-ARIA. Esc fecha, Tab e Shift+Tab ficam presos dentro, o foco entra ao abrir e volta para quem abriu ao fechar (lembrado num listener global, porque um `autoFocus` dentro do modal roubava o foco antes do efeito). Aplicado aos 14 modais: menu do celular, painel de BITS, compra de pack, abrir pack, carta da coleção, changelog, comparar coleções, editar perfil, os três do montador de time, boas-vindas, level up e apelido (esses dois últimos sem Esc, porque o jogador precisa concluir). Todos com `role="dialog"`, `aria-modal` e título ligado.
+  - O BoosterReveal e a tela de batalha ocupam a tela inteira como fluxos, não modais; ficaram como estavam.
+- **Teclado:** packs da loja e do inventário e as cartas da grade da coleção usam `pressable()` (botão com Enter/Espaço); as linhas da tabela da coleção abrem com Enter/Espaço sem perder a semântica de tabela. Anel de foco visível padrão em tudo que recebe teclado (`globals.css`). Botões só com ícone ganharam `aria-label` (páginas da coleção, remover do time, buscar na forja, ordenar na Arena); uma varredura nas páginas principais não acha mais controles sem nome.
+- **Contraste AA:** o `slate-500` (texto secundário em 196 lugares) foi de 57% para 64% de luminosidade: 5,9:1 no fundo e 5,4:1 nos painéis (antes 4,5 e 4,1). Os textos em `slate-600` (2,8:1) passaram para `slate-500`.
+- **Som:** botão de som no topo com volume (salvo no navegador) e mudo, ligado ao ganho mestre do `audioManager`. Epic e Legendary ganharam sons próprios sintetizados por cima do de Rare: arpejo subindo no Epic, arpejo com acorde sustentado e brilho no Legendary.
+
 ### Infra (PR #25)
 - Build seguro: os previews não tocam o banco; as migrações vão pela conexão direta, e só quando há alguma pendente.
 
@@ -376,14 +382,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 2.6 Áudio (restante)
 | Item | Esforço |
 |---|---|
-| Slider de volume nas configurações | P |
-| Sons próprios de Epic/Legendary (hoje reaproveitam o de Rare com tom diferente) e música curta de batalha | P |
+| ~~Slider de volume~~ | ✅ PR #54 (botão de som no topo) |
+| ~~Sons próprios de Epic/Legendary~~ | ✅ PR #54 (sintetizados) · falta só a música curta de batalha | P |
 
 ### 2.7 Acessibilidade e mobile
 | Item | Esforço |
 |---|---|
-| Packs e cartas como botões (teclado), `aria-label`, foco preso e Esc nos modais | M |
-| Contraste AA (textos slate-500/600 sobre quase preto) | P |
+| ~~Packs e cartas como botões, `aria-label`, foco preso e Esc nos modais~~ | ✅ PR #54 |
+| ~~Contraste AA~~ | ✅ PR #54 |
 | ~~Carta com tamanho responsivo~~ | ✅ não precisou: com 256px a carta cabe até em 320px; o que vazava eram abas e uma tabela (PR #53) |
 | ~~Barra de abas inferior no celular~~ | ✅ PR #53 |
 | ~~PWA (instalar na tela inicial)~~ | ✅ PR #53 (manifest e ícones; sem service worker) |

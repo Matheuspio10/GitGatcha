@@ -8,17 +8,19 @@
  *   audio before the battle replay starts playing sounds.
  * - Every sound routes through a master gain, so muting also silences
  *   long-running nodes (ambient drones).
- * - The mute preference is persisted in localStorage.
+ * - The mute preference and the master volume are persisted in localStorage.
  */
 
 import { useSyncExternalStore } from 'react';
 
 const MUTE_STORAGE_KEY = 'gitgacha:audio-muted';
+const VOLUME_STORAGE_KEY = 'gitgacha:audio-volume';
 const UNLOCK_EVENTS = ['pointerdown', 'keydown', 'touchend'] as const;
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted: boolean | null = null; // null = not read from storage yet
+let volume: number | null = null; // 0..1, null = not read from storage yet
 let unlockRegistered = false;
 const muteListeners = new Set<() => void>();
 
@@ -38,6 +40,45 @@ function writeStoredMute(value: boolean) {
   }
 }
 
+function readStoredVolume(): number {
+  try {
+    const v = Number(window.localStorage.getItem(VOLUME_STORAGE_KEY));
+    return window.localStorage.getItem(VOLUME_STORAGE_KEY) !== null && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+/** Master volume, 0..1 (1 by default). */
+export function getAudioVolume(): number {
+  if (typeof window === 'undefined') return 1;
+  if (volume === null) volume = readStoredVolume();
+  return volume;
+}
+
+/** Gain the master node should have: 0 when muted, else the volume. */
+function masterLevel(): number {
+  return isAudioMuted() ? 0 : getAudioVolume();
+}
+
+function applyMasterLevel() {
+  if (ctx && master) {
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(masterLevel(), ctx.currentTime, 0.02);
+  }
+}
+
+export function setAudioVolume(value: number) {
+  volume = Math.min(1, Math.max(0, value));
+  try {
+    window.localStorage.setItem(VOLUME_STORAGE_KEY, String(volume));
+  } catch {
+    // Storage blocked: keep the in-memory value only
+  }
+  applyMasterLevel();
+  muteListeners.forEach(fn => fn());
+}
+
 export function isAudioMuted(): boolean {
   if (typeof window === 'undefined') return false;
   if (muted === null) muted = readStoredMute();
@@ -47,10 +88,7 @@ export function isAudioMuted(): boolean {
 export function setAudioMuted(value: boolean) {
   muted = value;
   writeStoredMute(value);
-  if (ctx && master) {
-    master.gain.cancelScheduledValues(ctx.currentTime);
-    master.gain.setTargetAtTime(value ? 0 : 1, ctx.currentTime, 0.02);
-  }
+  applyMasterLevel();
   muteListeners.forEach(fn => fn());
 }
 
@@ -68,7 +106,7 @@ function createContext(): AudioContext | null {
     if (!AC) return null;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = isAudioMuted() ? 0 : 1;
+    master.gain.value = masterLevel();
     master.connect(ctx.destination);
   } catch {
     ctx = null;
@@ -130,9 +168,10 @@ export function ensureAudioUnlock() {
 function subscribeMute(fn: () => void) {
   muteListeners.add(fn);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === MUTE_STORAGE_KEY) {
-      muted = e.newValue === '1';
-      if (ctx && master) master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.02);
+    if (e.key === MUTE_STORAGE_KEY || e.key === VOLUME_STORAGE_KEY) {
+      if (e.key === MUTE_STORAGE_KEY) muted = e.newValue === '1';
+      else volume = readStoredVolume();
+      applyMasterLevel();
       fn();
     }
   };
@@ -147,6 +186,12 @@ function subscribeMute(fn: () => void) {
 export function useAudioMuted() {
   const isMuted = useSyncExternalStore(subscribeMute, isAudioMuted, () => false);
   return { isMuted, setMuted: setAudioMuted, toggleMuted: toggleAudioMuted };
+}
+
+/** React hook: master volume (0..1), synced across components and tabs. */
+export function useAudioVolume() {
+  const level = useSyncExternalStore(subscribeMute, getAudioVolume, () => 1);
+  return { volume: level, setVolume: setAudioVolume };
 }
 
 // ─── Sample playback (files under /public/sounds) ─────────────────────────

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, CaretDown, CaretUp } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import type { ChangelogEntry } from './ChangelogFeature';
+import { useDialog } from '@/lib/useDialog';
 
 export function ChangelogModal({
   entries,
@@ -15,23 +16,29 @@ export function ChangelogModal({
   onClose: () => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(entries.length > 0 ? entries[0].id : null);
+  const panelRef = useDialog(true, onClose);
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id));
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-0 md:pt-20 bg-black/60 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-0 md:pt-20 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}>
       <div 
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="changelog-title"
         className="bg-slate-900 border-x md:border border-slate-700 md:rounded-2xl w-full h-full md:h-auto md:max-h-[560px] md:max-w-[480px] shadow-2xl flex flex-col relative"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 md:p-5 border-b border-slate-800 shrink-0">
-          <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+          <h2 id="changelog-title" className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
             Changelog
           </h2>
           <button 
             onClick={onClose}
+            aria-label="Close"
             className="text-slate-400 hover:text-white transition-colors p-1"
           >
             <X size={24} />

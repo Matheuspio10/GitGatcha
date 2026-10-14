@@ -247,7 +247,7 @@ function BattleFieldCard({ card, hp, maxHp, side, defeated, onFire, isAttacking,
           {card.avatarUrl ? (
             <img src={card.avatarUrl} alt={card.name} className="w-full h-full object-cover object-top" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-600"><Sword size={36} /></div>
+            <div className="w-full h-full flex items-center justify-center text-slate-500"><Sword size={36} /></div>
           )}
           {defeated && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
@@ -802,7 +802,7 @@ function BattleReplay({
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center bg-black/60 px-6 py-1.5 rounded-full border border-slate-700/60 backdrop-blur-md shadow-xl">
           <div className="flex items-center gap-4">
             <span className="text-2xl font-mono font-black text-blue-400">{cScore}</span>
-            <span className="text-lg text-slate-600 font-bold">–</span>
+            <span className="text-lg text-slate-500 font-bold">–</span>
             <span className="text-2xl font-mono font-black text-red-400">{dScore}</span>
           </div>
           <p className="text-[9px] uppercase text-slate-500 tracking-widest font-bold -mt-0.5">Round {Math.min(currentTurn + 1, log.length)}</p>
@@ -974,7 +974,7 @@ function BattleReplay({
                   {card.avatarUrl ? (
                     <img src={card.avatarUrl} className="w-full h-full object-cover" alt={card.name} />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><Sword className="text-slate-600" size={24} /></div>
+                    <div className="w-full h-full flex items-center justify-center"><Sword className="text-slate-500" size={24} /></div>
                   )}
                   {isDefeated && (
                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center">

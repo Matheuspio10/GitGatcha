@@ -41,7 +41,7 @@ function MissionCard({ um, action }: { um: MissionInfo; action?: React.ReactNode
     }`}>
       <div className="flex justify-between items-start gap-3">
         <h3 className={`font-bold ${um.completed ? 'text-green-400' : 'text-white'}`}>{um.mission.description}</h3>
-        {um.completed ? <CheckCircle className="text-green-500 shrink-0" size={22} weight="fill" /> : <Circle className="text-slate-600 shrink-0" size={22} />}
+        {um.completed ? <CheckCircle className="text-green-500 shrink-0" size={22} weight="fill" /> : <Circle className="text-slate-500 shrink-0" size={22} />}
       </div>
       <div className="flex justify-between items-end mt-auto pt-4 gap-3">
         <span className="text-yellow-400 font-bold">+{um.mission.reward} BITS</span>

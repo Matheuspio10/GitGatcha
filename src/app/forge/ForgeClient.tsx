@@ -333,6 +333,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                 />
                 <button 
                   type="submit"
+                  aria-label="Search"
                   disabled={isSearching}
                   className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white rounded-xl px-4 flex items-center justify-center transition-colors"
                 >
@@ -465,7 +466,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
             ) : (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl h-full flex flex-col items-center justify-center text-center opacity-70">
                 <MagnifyingGlass size={48} className="text-slate-700 mb-4" />
-                <h3 className="text-xl font-bold text-slate-600 mb-2">Awaiting Target</h3>
+                <h3 className="text-xl font-bold text-slate-500 mb-2">Awaiting Target</h3>
                 <p className="text-slate-500 text-sm max-w-sm">
                   Search for a developer by GitHub username to see their invocation requirements and stats card.
                 </p>

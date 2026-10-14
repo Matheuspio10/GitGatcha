@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from '@phosphor-icons/react';
+import { useDialog } from '@/lib/useDialog';
 
 interface MiniCard {
   id: string;
@@ -34,7 +35,6 @@ export function CompareCollection({ username, onClose }: { username: string | nu
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           onClick={onClose}
-          role="dialog" aria-modal="true" aria-label={`Compare collections with ${username}`}
         >
           {/* keyed by friend: a new comparison starts from a clean state */}
           <ComparePanel key={username} username={username} onClose={onClose} />
@@ -48,6 +48,7 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
   const [data, setData] = useState<Comparison | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [side, setSide] = useState<'theirs' | 'mine'>('theirs');
+  const panelRef = useDialog(true, onClose);
 
   useEffect(() => {
     fetch(`/api/friends/compare?username=${encodeURIComponent(username)}`, { cache: 'no-store' })
@@ -63,6 +64,8 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
 
   return (
     <motion.div
+      ref={panelRef}
+      role="dialog" aria-modal="true" aria-label={`Compare collections with ${username}`}
       initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
       className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl"
       onClick={e => e.stopPropagation()}

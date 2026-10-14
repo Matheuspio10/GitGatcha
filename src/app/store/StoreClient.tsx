@@ -11,6 +11,7 @@ import { PITY_THRESHOLD } from '@/lib/pity';
 import { formatSeasonLeft } from '@/lib/seasons';
 import { PackOdds } from '@/components/PackOdds';
 import { MissionsPanel, type MissionInfo } from './MissionsPanel';
+import { pressable, useDialog } from '@/lib/useDialog';
 import {
   Code,
   Trophy,
@@ -226,17 +227,18 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
   onCancel: () => void;
   onBuy: (openNow: boolean) => void;
 }) {
+  const panelRef = useDialog(!!pack, onCancel);
   return (
     <AnimatePresence>
       {pack && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-          role="dialog" aria-modal="true" aria-labelledby="buy-title"
           onClick={onCancel}
-          onKeyDown={e => { if (e.key === 'Escape') onCancel(); }}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog" aria-modal="true" aria-labelledby="buy-title"
             initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
             className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
             onClick={e => e.stopPropagation()}
@@ -633,11 +635,11 @@ export default function StoreClient({
             id={`pack-${pack.id}`}
             whileHover={{ scale: 1.05, y: -8 }}
             whileTap={{ scale: 0.98 }}
-            className={`group cursor-pointer relative mx-auto w-full max-w-[280px] rounded-2xl transition-shadow ${highlightPackId === pack.id ? 'ring-4 ring-indigo-400 ring-offset-4 ring-offset-slate-950 animate-pulse' : ''}`}
-            onClick={() => {
+            className={`group cursor-pointer relative mx-auto w-full max-w-[280px] rounded-2xl transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-b ${highlightPackId === pack.id ? 'ring-4 ring-indigo-400 ring-offset-4 ring-offset-slate-950 animate-pulse' : ''}`}
+            {...pressable(() => {
               if (loading) return;
               setConfirmPack(pack);
-            }}
+            }, `${pack.name}: ${pack.cardCount} cards for ${pack.cost} BITS`)}
           >
             {/* The Pack Shape */}
             <div 

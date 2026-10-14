@@ -24,7 +24,8 @@
   --color-slate-200: oklch(92.9% 0.014 290);
   --color-slate-300: oklch(86.9% 0.022 290);
   --color-slate-400: oklch(71% 0.035 290);
-  --color-slate-500: oklch(57% 0.04 290);
+  /* 64% (was 57%): secondary text passes WCAG AA, 5.9:1 on the page and 5.4:1 on slate-900 panels */
+  --color-slate-500: oklch(64% 0.04 290);
   --color-slate-600: oklch(45.5% 0.04 290);
   --color-slate-700: oklch(36.5% 0.04 290);
   --color-slate-800: oklch(27% 0.036 290);
@@ -46,6 +47,14 @@
 
 body {
   overflow-x: hidden;
+}
+
+/* Keyboard focus: one visible ring everywhere (classes like focus-visible:ring-* still win) */
+@layer base {
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand-b);
+    outline-offset: 2px;
+  }
 }
 
 /* Height of the phone tab bar (Navbar.tsx), 0 when there is none. Content and

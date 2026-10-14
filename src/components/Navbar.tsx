@@ -9,6 +9,8 @@ import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
 import { UserAvatar } from './UserAvatar';
 import { Logo, LogoMark } from './Logo';
+import { SoundControl } from './SoundControl';
+import { useDialog } from '@/lib/useDialog';
 
 /** Bottom tab bar on phones and tablets (the drawer behind "More" has every link). */
 const TAB_BAR = [
@@ -23,6 +25,8 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState(initialCurrency);
   const pathname = usePathname();
+  const drawerRef = useDialog(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
+  const bitsRef = useDialog(showBitsModal, () => setShowBitsModal(false));
 
   // Live BITS sync: refetch on the global 'bits:refresh' event (dispatched after
   // any action that changes BITS), on tab focus, and poll every 30s as a fallback.
@@ -73,14 +77,6 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
     };
   }, [username]);
 
-  // Close the BITS panel with Escape
-  useEffect(() => {
-    if (!showBitsModal) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowBitsModal(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showBitsModal]);
-
   return (
     <>
       <header className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-ink-0/80 border-b border-white/[0.08]">
@@ -114,6 +110,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
               <span className="font-bold text-sm">{currency}</span>
               <span className="text-xs uppercase tracking-wider hidden sm:inline">Bits</span>
             </button>
+            <SoundControl />
             <ChangelogFeature username={username} />
             <NotificationBell />
             
@@ -185,13 +182,18 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div 
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="menu-title"
             className="fixed inset-y-0 right-0 w-64 bg-slate-900 border-l border-slate-800 shadow-2xl p-6 flex flex-col transform transition-transform"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
-              <span className="font-bold text-lg text-white">Menu</span>
+              <span id="menu-title" className="font-bold text-lg text-white">Menu</span>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close the menu"
                 className="text-slate-400 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center -mr-3"
               >
                 <X size={24} />
@@ -255,6 +257,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
           onClick={() => setShowBitsModal(false)}
         >
           <div
+            ref={bitsRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="bits-panel-title"

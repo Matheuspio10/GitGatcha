@@ -1,5 +1,6 @@
 'use client';
 
+import { pressable, useDialog } from '@/lib/useDialog';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardProps } from '@/components/Card';
@@ -52,6 +53,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
   const [apiState, setApiState] = useState<'IDLE' | 'PENDING' | 'SUCCESS' | 'ERROR'>('IDLE');
 
   const [selectedPack, setSelectedPack] = useState<InventoryPack | null>(null);
+  const confirmRef = useDialog(!!selectedPack && packState === 'IDLE' && !opening, () => setSelectedPack(null));
   const [cards, setCards] = useState<CardProps[]>([]);
   const [packDropFragments, setPackDropFragments] = useState<{language: string, amount: number} | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -239,7 +241,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
         </div>
       ) : packs.length === 0 ? (
         <div className="text-center py-20 bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-700/50">
-          <div className="text-5xl mb-4 text-slate-600">🎒</div>
+          <div className="text-5xl mb-4 text-slate-500">🎒</div>
           <h3 className="text-2xl font-bold mb-2">Vault is empty</h3>
           <p className="text-slate-400">Visit the Store or level up to get more booster packs.</p>
           <button 
@@ -256,12 +258,12 @@ export default function InventoryClient({ userId }: { userId: string }) {
               key={pack.packId}
               whileHover={{ scale: 1.05, y: -8 }}
               whileTap={{ scale: 0.98 }}
-              className="group cursor-pointer relative mx-auto w-full max-w-[280px]"
-              onClick={() => {
+              className="group cursor-pointer relative mx-auto w-full max-w-[280px] rounded-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-b"
+              {...pressable(() => {
                 if (opening) return;
                 // If it's a click without dragging, we'll just open the modal or start the flow
                 setSelectedPack(pack);
-              }}
+              }, `${pack.packName}: open (${pack.count} in inventory)`)}
             >
               <div 
                 className="relative aspect-[2/3] rounded-2xl border-4 shadow-xl flex flex-col items-center overflow-hidden transition-all duration-300"
@@ -321,14 +323,20 @@ export default function InventoryClient({ userId }: { userId: string }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedPack(null)}
           >
             <motion.div 
+              ref={confirmRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="open-pack-title"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               className="bg-slate-900 border border-slate-700 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+              onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-black mb-2 flex items-center gap-2">
+              <h3 id="open-pack-title" className="text-2xl font-black mb-2 flex items-center gap-2">
                 Open <span style={{ color: selectedPack.visualTheme?.textColor || '#fff' }}>{selectedPack.packName}</span>?
               </h3>
               <p className="text-slate-400 mb-6">
