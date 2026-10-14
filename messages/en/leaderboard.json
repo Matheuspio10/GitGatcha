@@ -1,1 +1,60 @@
-{}
+{
+  "title": "Global Rankings",
+  "subtitle": "The most legendary developers in the repository.",
+  "ratingNote": "Rating only changes in PvP: Ranked battles and friend challenges. Ties: PvP wins, then battles played, then oldest account.",
+  "tabs": {
+    "global": "Global",
+    "rivals": "Rivals",
+    "collectors": "Collectors",
+    "sprints": "Sprints"
+  },
+  "sprintsNote": "Nothing to set up: when a sprint ends, everyone is scored by their {count} strongest cards of the theme. Ties share the place.",
+  "collectorsNote": "Points per unique card: {legend}. No battles needed.",
+  "empty": "No players found. Be the first to join the battle!",
+  "rivalsHint": "Add friends from their profiles to compare your rating with theirs.",
+  "table": {
+    "rank": "Rank",
+    "player": "Player",
+    "rating": "Rating",
+    "winLoss": "W/L",
+    "winRate": "Win Rate",
+    "cards": "Cards",
+    "you": "YOU",
+    "record": "{wins}W / {losses}L · {rate}%",
+    "points": "Points",
+    "unique": "Unique",
+    "legendary": "Legendary"
+  },
+  "season": {
+    "title": "Season {id}",
+    "endsIn": "Ends in <time>{left}</time>. Ratings then reset halfway back to the start.",
+    "yourPeak": "Your season peak",
+    "battles": "{count, plural, one {# PvP battle} other {# PvP battles}} this season",
+    "rank": "Rank",
+    "firstTime": "First time this season",
+    "endOfSeason": "End of season (peak)",
+    "rewardsNote": "End-of-season BITS go to everyone with at least one Ranked battle or friend challenge in the season."
+  },
+  "sprint": {
+    "cardsInLanguages": "Cards in {languages}",
+    "languageCards": "{language} cards",
+    "bestCount": "{cards} · your best {count} count (ATK + DEF + HP)",
+    "endsIn": "Ends in <time>{left}</time>",
+    "bitsLegend": "BITS: {legend}",
+    "eventSale": "Weekly event: the <packLink>{pack}</packLink> is on sale until the sprint ends",
+    "eventDev": "· Dev of the Week: <devLink>{dev}</devLink> ({rarity}), {percent}% off at the Forge",
+    "youAre": "You are <b>#{position}</b> of {players} with <power>{score}</power> power",
+    "ifEndsNow": "<reward>+{bits} BITS</reward> if it ends now",
+    "topPaid": "the top {count} get BITS",
+    "notInTheme": "You have no cards of this theme yet, so you are not in this sprint.",
+    "notInLanguage": "You have no {language} cards yet, so you are not in this sprint.",
+    "boosters": "Boosters with these cards:",
+    "forgeToo": ". The Forge works too.",
+    "cards": "{count, plural, one {# card} other {# cards}}",
+    "empty": "Nobody has a card of this theme yet. The first one takes the top spot.",
+    "last": "Last {kind, select, daily {daily sprint} other {weekly sprint}} ({theme}):",
+    "wonBy": "won by {names} ({score})",
+    "nobody": "nobody took part",
+    "youFinished": "you finished #{position}"
+  }
+}

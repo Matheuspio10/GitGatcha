@@ -1,1 +1,123 @@
-{}
+{
+  "meta": {
+    "title": "GitGacha - Jogo de cartas de devs",
+    "description": "Colecione devs, monte seu time, domine o repositório."
+  },
+  "home": {
+    "tagline": "Colecione devs open source de verdade, monte o time de engenharia definitivo e domine as batalhas de repositório.",
+    "start": "Comece sua jornada",
+    "login": "Entrar",
+    "register": "Criar conta",
+    "tryFree": "Abra um pack grátis antes (sem cadastro)"
+  },
+  "login": {
+    "title": "Acesse o repositório",
+    "errors": {
+      "oauthAccountNotLinked": "Esta conta já está vinculada a outro jogador, ou o e-mail dela pertence a uma conta existente. Entre do jeito que você costuma entrar e depois conecte o GitHub pelo seu perfil.",
+      "credentialsSignin": "E-mail ou senha incorretos.",
+      "tooManyAttempts": "Tentativas de login demais. Espere alguns minutos e tente de novo.",
+      "unknown": "Não foi possível entrar ({error}). Tente de novo.",
+      "registrationFailed": "Não foi possível criar a conta",
+      "generic": "Ocorreu um erro"
+    },
+    "github": "Continuar com o GitHub",
+    "githubHint": "Quem joga com GitHub ganha a própria carta na edição exclusiva Signature.",
+    "google": "Continuar com o Google",
+    "or": "Ou",
+    "email": "Endereço de e-mail",
+    "password": "Senha",
+    "processing": "Processando...",
+    "signUp": "Criar conta",
+    "signIn": "Entrar",
+    "haveAccount": "Já tem uma conta?",
+    "newHere": "Novo no GitGacha?",
+    "createAccount": "Criar conta"
+  },
+  "try": {
+    "metaTitle": "Abra um pack grátis · GitGacha",
+    "fallbackPack": "Pack grátis",
+    "fallbackStarter": "um pack inicial",
+    "keepCards": "Ficar com estas cartas",
+    "openError": "Não foi possível abrir o pack agora.",
+    "doneTitle": "Estes devs são seus",
+    "doneText": "…assim que você criar uma conta. Eles esperam por você neste navegador por uma semana.",
+    "signUpKeep": "Cadastre-se e fique com eles",
+    "bonus": "Você também ganha {starterPack} (carta Rare ou melhor garantida) e BITS para comprar mais packs.",
+    "createAccount": "Criar minha conta",
+    "haveAccount": "Já tenho uma conta",
+    "cards": "{count, plural, one {# carta} other {# cartas}}",
+    "title": "Abra um pack grátis",
+    "intro": "Sem precisar de conta. {count} devs open source de verdade do GitHub, sorteados ao acaso. Curtiu? Cadastre-se e eles são seus.",
+    "drawing": "Sorteando devs…",
+    "openCta": "Abrir meu pack grátis"
+  },
+  "player": {
+    "notFound": "Jogador não encontrado · GitGacha",
+    "metaDescription": "Nível {level} · {count} devs coletados · rating {rating}. Colecione devs de verdade do GitHub no GitGacha.",
+    "ogTitle": "{username} no GitGacha",
+    "level": "Nível {level}",
+    "collected": "{count} devs coletados",
+    "setsComplete": "{count, plural, one {# coleção de linguagem completa} other {# coleções de linguagem completas}}",
+    "shareText": "Coleção de {username} no GitGacha: {count} devs",
+    "pastSeasons": "Temporadas anteriores",
+    "seasonShort": "T{season}",
+    "signatureCard": "Carta Signature",
+    "bestCards": "Melhores cartas",
+    "noCards": "Nenhuma carta ainda.",
+    "fullProfile": "Ver o perfil completo →",
+    "ctaTitle": "Comece sua própria coleção",
+    "ctaText": "Abra um pack grátis de devs de verdade do GitHub, sem precisar de conta.",
+    "ctaButton": "Abrir um pack grátis",
+    "og": {
+      "stats": "Nível {level} · {count} devs · rating {rating}",
+      "signature": "Signature"
+    }
+  },
+  "card": {
+    "notFound": "Carta não encontrada · GitGacha",
+    "metaDescription": "{rarity} · {title} · ATK {atk} / DEF {def} / HP {hp}. Colecione devs de verdade do GitHub no GitGacha.",
+    "ogTitle": "{name} no GitGacha",
+    "label": "Carta de dev",
+    "onGithub": "@{login} no GitHub",
+    "signatureOwner": "A edição Signature pertence a <link>@{owner}</link>, o próprio dev.",
+    "owners": "{count, plural, one {Na coleção de # jogador.} other {Na coleção de # jogadores.}}",
+    "shareText": "{name} é uma carta {rarity} no GitGacha",
+    "ctaTitle": "Colecione devs open source de verdade",
+    "ctaText": "Abra um pack grátis, sem precisar de conta.",
+    "ctaButton": "Abrir um pack grátis",
+    "og": {
+      "signatureHeld": "Edição Signature nas mãos de @{owner}",
+      "owners": "{count, plural, one {Em # coleção} other {Em # coleções}}",
+      "cta": "Colecione devs de verdade do GitHub →"
+    }
+  },
+  "challenge": {
+    "notFound": "Desafio não encontrado · GitGacha",
+    "aPlayer": "Um jogador",
+    "metaTitle": "{who} desafia você · GitGacha",
+    "metaDescription": "{who} mandou uma batalha 3v3 de cartas de devs. Aceite no GitGacha.",
+    "metaDescriptionStake": "{who} mandou uma batalha 3v3 de cartas de devs valendo {stake} BITS. Aceite no GitGacha.",
+    "title": "{who} desafia você",
+    "theirTeam": "Time do desafiante (atributos ocultos até a batalha)",
+    "stake": "<b>{stake} BITS</b> de cada um em jogo: quem vencer leva {total}.",
+    "expires": "Expira em {date}",
+    "closed": "Este desafio está encerrado: já foi aceito, cancelado ou expirou.",
+    "own": "Este é o seu desafio. Compartilhe o link desta página; o primeiro jogador a aceitar enfrenta o seu time.",
+    "accept": "Escolher meu time e aceitar",
+    "signInToAccept": "Entre para aceitar. Novo por aqui? Você ganha um pack inicial e BITS ao se cadastrar.",
+    "createAccount": "Criar uma conta",
+    "signIn": "Entrar"
+  },
+  "bits": {
+    "metaTitle": "Histórico de BITS · GitGacha",
+    "title": "Histórico de BITS",
+    "subtitle": "Todos os BITS que você ganhou ou gastou.",
+    "subtitleBefore": "Todos os BITS que você ganhou ou gastou, antes de {date}.",
+    "balance": "Saldo",
+    "emptyTitle": "Nada por aqui ainda",
+    "emptyText": "Ganhe ou gaste BITS e cada mudança aparece aqui.",
+    "emptyAction": "Ir para a loja",
+    "newest": "← Mais recentes",
+    "older": "Mais antigos →"
+  }
+}

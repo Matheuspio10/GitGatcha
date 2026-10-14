@@ -10,6 +10,7 @@ import {
   Sword, Shield, Heart, Lightning, Trophy, Clock, Users,
   GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText, Crown } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
 import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
@@ -70,6 +71,14 @@ interface TeamCard {
 
 type Tab = 'Quick Battle' | 'Tower' | 'Challenge' | 'History';
 
+/** Message key of each Arena tab (battle.tabs.*). */
+const TAB_KEYS: Record<Tab, 'quick' | 'tower' | 'challenge' | 'history'> = {
+  'Quick Battle': 'quick',
+  Tower: 'tower',
+  Challenge: 'challenge',
+  History: 'history',
+};
+
 const RARITY_GLOW: Record<string, string> = {
   Common: 'ring-slate-500',
   Uncommon: 'ring-green-500',
@@ -124,6 +133,7 @@ function StatBar({ label, current, max, color, large }: { label: string; current
 }
 
 function FloatingDamage({ value, side, isCrit }: { value: number; side: 'top' | 'bottom'; isCrit?: boolean }) {
+  const t = useTranslations('battle.replay');
   const fontSize = Math.min(48, 20 + Math.floor(value / 100) * 6);
   // Random horizontal offset between -30px and 30px
   const randomX = Math.floor(Math.random() * 60) - 30;
@@ -139,7 +149,7 @@ function FloatingDamage({ value, side, isCrit }: { value: number; side: 'top' | 
       )}
       style={{ fontSize }}
     >
-      {isCrit && <div className="text-[10px] uppercase text-yellow-200 text-center -mb-2 tracking-widest bg-black/50 px-2 rounded-full w-fit mx-auto border border-yellow-500/50">CRIT</div>}
+      {isCrit && <div className="text-[10px] uppercase text-yellow-200 text-center -mb-2 tracking-widest bg-black/50 px-2 rounded-full w-fit mx-auto border border-yellow-500/50">{t('crit')}</div>}
       -{value}
     </motion.div>
   );
@@ -368,6 +378,7 @@ function BattleReplay({
   loyaltyUnlocks?: { cardId: string; cardName: string; milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[] }[];
   achievementsUnlocked?: AchievementUnlockNotice[];
 }) {
+  const t = useTranslations('battle');
   const [currentTurn, setCurrentTurn] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<'normal' | 'fast'>('normal');
@@ -389,11 +400,11 @@ function BattleReplay({
   const dMomentum: Record<string, number> = {};
 
   for (let i = 0; i <= currentTurn && i < log.length; i++) {
-    const t = log[i];
-    if (t.cCardId) cHpTracker[t.cCardId] = t.cHpEnd;
-    if (t.dCardId) dHpTracker[t.dCardId] = t.dHpEnd;
+    const turn = log[i];
+    if (turn.cCardId) cHpTracker[turn.cCardId] = turn.cHpEnd;
+    if (turn.dCardId) dHpTracker[turn.dCardId] = turn.dHpEnd;
     // Check for momentum in events
-    t.events.forEach(ev => {
+    turn.events.forEach(ev => {
       if (ev.type === 'passive' && ev.message.includes('On Fire!') && ev.cardId) {
         const match = ev.message.match(/\+(\d+)%/);
         const pct = match ? parseInt(match[1]) / 10 : 1;
@@ -556,14 +567,14 @@ function BattleReplay({
               : <Skull size={64} weight="fill" className="text-red-400 mx-auto mb-3" />
             }
             <h2 className={clsx('text-5xl font-black', winnerSide === 'CHALLENGER' ? 'text-yellow-400' : 'text-red-400')}>
-              {winnerSide === 'CHALLENGER' ? 'VICTORY!' : 'DEFEAT'}
+              {winnerSide === 'CHALLENGER' ? t('results.victory') : t('results.defeat')}
             </h2>
             {leagueMode && leagueMode !== 'OPEN' && leagueMode !== 'RANKED' && (
-              <p className="text-xs text-slate-500 mt-2 uppercase tracking-wider">{leagueMode} League</p>
+              <p className="text-xs text-slate-500 mt-2 uppercase tracking-wider">{t('results.league', { league: leagueMode })}</p>
             )}
             {ranked && (
               <div className="mt-3 flex flex-col items-center gap-2">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">Ranked{ranked.opponent ? ` vs ${ranked.opponent}` : ''}</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">{ranked.opponent ? t('results.rankedVs', { opponent: ranked.opponent }) : t('results.ranked')}</p>
                 {ranked.rating && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-mono text-slate-400">{ranked.rating.before}</span>
@@ -589,9 +600,9 @@ function BattleReplay({
               <motion.p
                 initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
                 className="mt-1 text-[10px] font-bold uppercase tracking-wider text-commit"
-                title="You beat a team of higher average rarity"
+                title={t('results.upsetTitle')}
               >
-                Upset! +{Math.round(rewards.upsetBonusPct * 100)}%
+                {t('results.upset', { percent: Math.round(rewards.upsetBonusPct * 100) })}
               </motion.p>
             )}
           </motion.div>
@@ -605,9 +616,9 @@ function BattleReplay({
         {battleStats && battleStats.length > 0 && (
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between pointer-events-auto">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2"><ChartBar size={16} className="text-purple-400" /> Battle Summary</h3>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2"><ChartBar size={16} className="text-purple-400" /> {t('results.summary')}</h3>
               <a href="/wiki#battle-system" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 z-50 relative pointer-events-auto">
-                <BookOpenText size={14} weight="bold" /> Learn more in the Wiki
+                <BookOpenText size={14} weight="bold" /> {t('header.wiki')}
               </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -615,13 +626,13 @@ function BattleReplay({
                 <div key={i} className={clsx('rounded-xl p-3 border', stat.team === 'CHALLENGER' ? 'border-blue-500/20 bg-blue-500/5' : 'border-red-500/20 bg-red-500/5')}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-white">{stat.name}</span>
-                    <span className={clsx('text-[10px] uppercase tracking-wider', stat.team === 'CHALLENGER' ? 'text-blue-400' : 'text-red-400')}>{stat.team}</span>
+                    <span className={clsx('text-[10px] uppercase tracking-wider', stat.team === 'CHALLENGER' ? 'text-blue-400' : 'text-red-400')}>{stat.team === 'CHALLENGER' ? t('history.challenger') : t('history.defender')}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-1 text-[10px]">
-                    <span className="text-slate-500">Damage Dealt</span><span className="text-right text-red-400 font-bold">{stat.damageDealt}</span>
-                    <span className="text-slate-500">Damage Taken</span><span className="text-right text-orange-400 font-bold">{stat.damageReceived}</span>
-                    <span className="text-slate-500">Passives</span><span className="text-right text-blue-400 font-bold">{stat.passivesTriggered}</span>
-                    {stat.momentumAchieved && <><span className="text-slate-500">Momentum</span><span className="text-right text-orange-400 font-bold">🔥 Yes</span></>}
+                    <span className="text-slate-500">{t('results.damageDealt')}</span><span className="text-right text-red-400 font-bold">{stat.damageDealt}</span>
+                    <span className="text-slate-500">{t('results.damageTaken')}</span><span className="text-right text-orange-400 font-bold">{stat.damageReceived}</span>
+                    <span className="text-slate-500">{t('results.passives')}</span><span className="text-right text-blue-400 font-bold">{stat.passivesTriggered}</span>
+                    {stat.momentumAchieved && <><span className="text-slate-500">{t('results.momentum')}</span><span className="text-right text-orange-400 font-bold">{t('results.momentumYes')}</span></>}
                   </div>
                 </div>
               ))}
@@ -647,14 +658,14 @@ function BattleReplay({
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl">🏆</span>
                     <div>
-                      <h4 className="text-lg font-black text-yellow-400">Loyalty Milestone!</h4>
+                      <h4 className="text-lg font-black text-yellow-400">{t('results.loyaltyMilestone')}</h4>
                       <p className="text-sm text-white font-bold">{unlock.cardName}</p>
                     </div>
                   </div>
                   {unlock.milestones.map((m, mi) => (
                     <div key={mi} className="flex items-center gap-3 bg-black/30 rounded-xl px-4 py-3 mt-2">
                       <div className="text-center">
-                        <p className="text-xs text-slate-400 uppercase">New Title</p>
+                        <p className="text-xs text-slate-400 uppercase">{t('results.newTitle')}</p>
                         <p className="text-lg font-black text-yellow-300">{m.title}</p>
                       </div>
                       <div className="flex-1 flex flex-wrap gap-2 ml-4">
@@ -683,12 +694,12 @@ function BattleReplay({
         {/* Stamina Summary */}
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-center text-sm text-slate-300">
           <div className="flex items-center justify-center gap-2 text-orange-400 font-bold mb-1">
-            <Star size={16} weight="fill" /> Stamina Penalty
+            <Star size={16} weight="fill" /> {t('results.staminaPenalty')}
           </div>
-          <p>Your team cards lost <span className="text-red-400 font-bold">20 Stamina</span>.</p>
+          <p>{t.rich('results.staminaLost', { b: chunks => <span className="text-red-400 font-bold">{chunks}</span> })}</p>
           <p className="text-[10px] mt-1 text-slate-500">
             <Lightning size={10} className="inline mr-1 text-yellow-500" />
-            Fatigued cards (&lt;60 STA) suffer stat penalties. Go to your <a href="/collection" className="text-indigo-400 hover:text-indigo-300 underline font-bold">Collection</a> to recover!
+            {t.rich('results.fatigued', { link: chunks => <a href="/collection" className="text-indigo-400 hover:text-indigo-300 underline font-bold">{chunks}</a> })}
           </p>
         </div>
 
@@ -698,7 +709,7 @@ function BattleReplay({
             onClick={onReset}
             className="px-10 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-2xl font-black text-lg transition-all shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center gap-3"
           >
-            <ArrowClockwise size={22} weight="bold" /> FIGHT AGAIN
+            <ArrowClockwise size={22} weight="bold" /> {t('results.fightAgain')}
           </button>
         </div>
       </div>
@@ -751,7 +762,7 @@ function BattleReplay({
             className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm"
           >
             <h2 className={clsx('text-7xl font-black drop-shadow-[0_0_30px_currentColor] mb-4', winnerSide === 'CHALLENGER' ? 'text-yellow-400' : 'text-red-500')}>
-              {winnerSide === 'CHALLENGER' ? 'VICTORY' : 'DEFEAT'}
+              {winnerSide === 'CHALLENGER' ? t('replay.victory') : t('replay.defeat')}
             </h2>
             <div className="text-5xl">{winnerSide === 'CHALLENGER' ? '🏆✨' : '💀🔥'}</div>
           </motion.div>
@@ -774,10 +785,10 @@ function BattleReplay({
         {/* Opponent Info */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-600 flex items-center justify-center text-sm font-black text-white border-2 border-red-400 shadow-[0_0_12px_rgba(220,38,38,0.4)]">
-            OPP
+            {t('replay.oppBadge')}
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Opponent</p>
+            <p className="text-sm font-bold text-white">{t('replay.opponent')}</p>
             <div className="flex gap-1 mt-0.5">
               {defenderTeam.map((card) => {
                 const cardHp = dHpTracker[card.id] ?? card.maxHp;
@@ -805,13 +816,13 @@ function BattleReplay({
             <span className="text-lg text-slate-500 font-bold">–</span>
             <span className="text-2xl font-mono font-black text-red-400">{dScore}</span>
           </div>
-          <p className="text-[9px] uppercase text-slate-500 tracking-widest font-bold -mt-0.5">Round {Math.min(currentTurn + 1, log.length)}</p>
+          <p className="text-[9px] uppercase text-slate-500 tracking-widest font-bold -mt-0.5">{t('replay.round', { round: Math.min(currentTurn + 1, log.length) })}</p>
         </div>
 
         {/* Player Info */}
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-sm font-bold text-white">You</p>
+            <p className="text-sm font-bold text-white">{t('replay.you')}</p>
             <div className="flex gap-1 justify-end mt-0.5">
               {challengerTeam.map((card) => {
                 const cardHp = cHpTracker[card.id] ?? card.maxHp;
@@ -831,7 +842,7 @@ function BattleReplay({
             </div>
           </div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-sm font-black text-white border-2 border-blue-400 shadow-[0_0_12px_rgba(79,70,229,0.4)]">
-            YOU
+            {t('replay.youBadge')}
           </div>
         </div>
       </div>
@@ -931,7 +942,7 @@ function BattleReplay({
         )}>
           <div className="px-4 py-3 border-b border-slate-800/80 bg-gradient-to-r from-slate-900/80 to-slate-900/60 flex justify-between items-center">
             <p className="text-xs uppercase tracking-widest text-orange-400 font-bold flex items-center gap-2">
-              <Sword size={14} weight="fill" /> Battle Log
+              <Sword size={14} weight="fill" /> {t('replay.log')}
             </p>
             <button className="sm:hidden text-slate-500 hover:text-white transition-colors" onClick={() => setIsLogOpenMobile(false)}>✕</button>
           </div>
@@ -996,14 +1007,14 @@ function BattleReplay({
 
         {/* Controls Cluster */}
         <div className="flex items-center gap-1.5 bg-black/70 px-3 py-2 rounded-xl border border-slate-700/60 backdrop-blur-sm shadow-lg">
-          <button className="sm:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all" onClick={() => setIsLogOpenMobile(true)} title="Battle Log">
+          <button className="sm:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all" onClick={() => setIsLogOpenMobile(true)} title={t('replay.log')}>
             <Clock size={18} />
           </button>
           <button
             onClick={toggleMuted}
             className={clsx('p-2 rounded-lg transition-all', isMuted ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-orange-400 hover:bg-orange-500/10')}
-            title={isMuted ? 'Unmute' : 'Mute'}
-            aria-label={isMuted ? 'Unmute battle sounds' : 'Mute battle sounds'}
+            title={isMuted ? t('replay.unmute') : t('replay.mute')}
+            aria-label={isMuted ? t('replay.unmuteSounds') : t('replay.muteSounds')}
             aria-pressed={isMuted}
           >
             {isMuted ? '🔇' : '🔊'}
@@ -1012,21 +1023,21 @@ function BattleReplay({
           <button
             onClick={() => setPlaying(p => !p)}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all"
-            title={playing ? 'Pause' : 'Play'}
+            title={playing ? t('replay.pause') : t('replay.play')}
           >
             {playing ? '⏸' : '▶'}
           </button>
           <button
             onClick={() => setSpeed(s => s === 'normal' ? 'fast' : 'normal')}
             className={clsx('p-2 rounded-lg transition-all font-mono font-bold text-sm', speed === 'fast' ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-slate-800 text-slate-400 hover:text-white')}
-            title="Toggle Speed"
+            title={t('replay.toggleSpeed')}
           >
             {speed === 'fast' ? '2×' : '1×'}
           </button>
           <button
             onClick={handleSkip}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-all"
-            title="Skip to End"
+            title={t('replay.skip')}
           >
             <ArrowRight size={18} />
           </button>
@@ -1047,6 +1058,8 @@ function BattleReplay({
 }
 
 export default function BattleClient({ userCards, userId, powerCap, userBits }: { userCards: TeamBuilderCard[]; userId: string; powerCap: number; userBits: number }) {
+  const t = useTranslations('battle');
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const challengeParam = searchParams.get('challenge');
   // Coming from a challenge link (/challenge/<id>): answer it straight away
@@ -1154,10 +1167,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       if (data.success) {
         showBattleResult(data);
       } else {
-        toast.error(data.error || 'Battle failed to initiate.');
+        toast.error(data.error || t('toasts.battleFailed'));
       }
     } catch {
-      toast.error('Battle failed to initiate.');
+      toast.error(t('toasts.battleFailed'));
     } finally {
       setLoading(false);
     }
@@ -1179,16 +1192,16 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
         setRematchWith(null);
         if (data.battle?.isOpen) {
           const link = challengeLink(window.location.origin, data.battle.id);
-          await copyText(link, 'Share this challenge link:');
-          toast.success('Challenge link copied! Share it anywhere.');
+          await copyText(link, t('toasts.sharePrompt'));
+          toast.success(t('toasts.linkCopiedShare'));
         } else {
-          toast.success('Challenge sent! The opponent has 24 hours to respond.');
+          toast.success(t('toasts.sent'));
         }
       } else {
-        toast.error(data.error || 'Failed to send challenge.');
+        toast.error(data.error || t('toasts.sendFailed'));
       }
     } catch {
-      toast.error('Failed to send challenge.');
+      toast.error(t('toasts.sendFailed'));
     } finally {
       setLoading(false);
     }
@@ -1198,8 +1211,8 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     try {
       const res = await fetch(`/api/battle/challenge/${battleId}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not cancel');
-      toast.success('Challenge cancelled');
+      if (!res.ok) throw new Error(data.error || t('toasts.cancelFailed'));
+      toast.success(t('toasts.cancelled'));
       window.dispatchEvent(new Event('bits:refresh'));
       fetchChallenges();
     } catch (err) {
@@ -1249,10 +1262,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
         setTab('Quick Battle');
         fetchChallenges();
       } else {
-        toast.error(data.error || 'Failed to respond to challenge.');
+        toast.error(data.error || t('toasts.respondFailed'));
       }
     } catch {
-      toast.error('Failed to respond to challenge.');
+      toast.error(t('toasts.respondFailed'));
     } finally {
       setLoading(false);
     }
@@ -1288,32 +1301,32 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       {/* Header */}
       <div className="text-center">
         <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 mb-2 tracking-tighter">
-          The Arena
+          {t('header.title')}
         </h1>
-        <p className="text-slate-400 mb-2">Assemble a team of 3. The battle resolves itself — only strategy matters.</p>
+        <p className="text-slate-400 mb-2">{t('header.subtitle')}</p>
         <a href="/wiki#leagues-tournaments" className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium relative z-10">
-          <BookOpenText size={16} weight="bold" /> Learn more in the Wiki
+          <BookOpenText size={16} weight="bold" /> {t('header.wiki')}
         </a>
       </div>
 
       {/* Tabs (wrap on phones) */}
       <div className="flex flex-wrap justify-center gap-2">
-        {(['Quick Battle', 'Tower', 'Challenge', 'History'] as Tab[]).map(t => (
+        {(['Quick Battle', 'Tower', 'Challenge', 'History'] as Tab[]).map(tabName => (
           <button
-            key={t}
-            onClick={() => { setTab(t); setRespondingToId(null); }}
+            key={tabName}
+            onClick={() => { setTab(tabName); setRespondingToId(null); }}
             className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
-              tab === t
+              tab === tabName
                 ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]'
                 : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-700/60'
             }`}
           >
-            {t === 'Quick Battle' && <Lightning size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
-            {t === 'Tower' && <Crown size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
-            {t === 'Challenge' && <Users size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
-            {t === 'History' && <Clock size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
-            {t}
-            {t === 'Challenge' && challenges.incoming.length > 0 && (
+            {tabName === 'Quick Battle' && <Lightning size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
+            {tabName === 'Tower' && <Crown size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
+            {tabName === 'Challenge' && <Users size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
+            {tabName === 'History' && <Clock size={16} weight="fill" className="inline mr-1.5 -mt-0.5" />}
+            {t(`tabs.${TAB_KEYS[tabName]}`)}
+            {tabName === 'Challenge' && challenges.incoming.length > 0 && (
               <span className="ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 {challenges.incoming.length}
               </span>
@@ -1349,10 +1362,10 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
               <Sword size={20} className="text-red-400" />
-              {rematchWith ? `Rematch vs ${rematchWith}` : 'Create a Challenge'}
+              {rematchWith ? t('challenge.rematchVs', { name: rematchWith }) : t('challenge.create')}
             </h2>
             <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm">
-              <label htmlFor="challenge-stake" className="font-bold text-slate-300">Stake</label>
+              <label htmlFor="challenge-stake" className="font-bold text-slate-300">{t('challenge.stake')}</label>
               <input
                 id="challenge-stake"
                 type="number" min={0} max={CHALLENGE_STAKE_MAX} step={50}
@@ -1360,9 +1373,9 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                 onChange={e => setStake(Math.min(CHALLENGE_STAKE_MAX, Math.max(0, Math.floor(Number(e.target.value) || 0))))}
                 className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-white"
               />
-              <span className="text-xs text-slate-500">BITS each (0–{CHALLENGE_STAKE_MAX}). Winner takes both; refunded if nobody accepts.</span>
+              <span className="text-xs text-slate-500">{t('challenge.stakeHelp', { max: CHALLENGE_STAKE_MAX })}</span>
               {rematchWith && (
-                <button onClick={() => setRematchWith(null)} className="ml-auto text-xs text-slate-400 hover:text-white">Cancel rematch</button>
+                <button onClick={() => setRematchWith(null)} className="ml-auto text-xs text-slate-400 hover:text-white">{t('challenge.cancelRematch')}</button>
               )}
             </div>
             <TeamBuilderUI
@@ -1386,25 +1399,25 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
             <div className="space-y-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Lightning size={20} className="text-yellow-400" />
-                Incoming Challenges
+                {t('challenge.incoming')}
               </h2>
               {challenges.incoming.map(c => (
                 <div key={c.id} className="bg-slate-900/60 border border-yellow-500/20 rounded-xl p-4 flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-white">{c.challenger?.username || 'Unknown'} challenges you!</p>
+                    <p className="font-bold text-white">{t('challenge.challengesYou', { name: c.challenger?.username || t('challenge.unknown') })}</p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Expires {new Date(c.expiresAt).toLocaleString()}
+                      {t('challenge.expires', { date: new Date(c.expiresAt).toLocaleString(locale) })}
                       {c.stake > 0 && <span className="ml-2 font-bold text-yellow-300">Stake {c.stake} BITS</span>}
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       setRespondingToId(c.id);
-                      setRespondingToChallenger(c.challenger?.username || 'Unknown');
+                      setRespondingToChallenger(c.challenger?.username || t('challenge.unknown'));
                     }}
                     className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold text-sm transition-colors"
                   >
-                    Accept
+                    {t('challenge.accept')}
                   </button>
                 </div>
               ))}
@@ -1416,31 +1429,31 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
             <div className="space-y-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Clock size={20} className="text-slate-400" />
-                Sent (waiting...)
+                {t('challenge.sent')}
               </h2>
               {challenges.outgoing.map(c => (
                 <div key={c.id} className="bg-slate-900/60 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-bold text-white">{c.isOpen && !c.defender ? 'Open challenge (link)' : `vs ${c.defender?.username || 'Unknown'}`}</p>
+                    <p className="font-bold text-white">{c.isOpen && !c.defender ? t('challenge.openLink') : t('challenge.vs', { name: c.defender?.username || t('challenge.unknown') })}</p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Awaiting response…
+                      {t('challenge.awaiting')}
                       {c.stake > 0 && <span className="ml-2 font-bold text-yellow-300">Stake {c.stake} BITS</span>}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {c.isOpen && (
                       <button
-                        onClick={async () => { await copyText(challengeLink(window.location.origin, c.id), 'Share this challenge link:'); toast.success('Link copied'); }}
+                        onClick={async () => { await copyText(challengeLink(window.location.origin, c.id), t('toasts.sharePrompt')); toast.success(t('toasts.linkCopied')); }}
                         className="px-3 py-1.5 rounded-lg border border-slate-600 text-xs font-bold text-slate-200 hover:bg-slate-800"
                       >
-                        Copy link
+                        {t('challenge.copyLink')}
                       </button>
                     )}
                     <button
                       onClick={() => cancelChallenge(c.id)}
                       className="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-bold text-slate-400 hover:text-white hover:border-red-500/50"
                     >
-                      Cancel
+                      {t('challenge.cancel')}
                     </button>
                   </div>
                 </div>
@@ -1451,7 +1464,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           {challenges.incoming.length === 0 && challenges.outgoing.length === 0 && (
             <div className="text-center py-8 text-slate-500">
               <Users size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No pending challenges.</p>
+              <p>{t('challenge.none')}</p>
             </div>
           )}
         </div>
@@ -1464,7 +1477,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
             onClick={() => { setRespondingToId(null); setRespondingToChallenger(''); }}
             className="text-sm text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
           >
-            ← Back to challenges
+            {t('challenge.back')}
           </button>
           <TeamBuilderUI
             userCards={userCards}
@@ -1488,16 +1501,16 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           {history.length === 0 ? (
             <EmptyState
               icon={<Clock size={40} />}
-              title="No battles yet"
-              text="Pick 3 cards and fight the computer in any league. Every battle pays BITS and XP."
-              actions={[{ label: 'Start a battle', onClick: () => setTab('Quick Battle') }]}
+              title={t('history.emptyTitle')}
+              text={t('history.emptyText')}
+              actions={[{ label: t('history.start'), onClick: () => setTab('Quick Battle') }]}
             />
           ) : (
             history.map((battle: any) => {
               const isChallenger = battle.challengerId === userId;
               const didWin = battle.winnerId === userId;
               const opponentName = isChallenger
-                ? (battle.defender?.username || 'Random Opponent')
+                ? (battle.defender?.username || t('history.randomOpponent'))
                 : (battle.challenger?.username || '???');
 
               const cTeam: TeamCard[] = (battle.challengerTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
@@ -1508,24 +1521,24 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-2 rounded-full ${didWin ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className="font-bold text-white">{didWin ? 'Victory' : 'Defeat'} vs {opponentName}</span>
+                      <span className="font-bold text-white">{t(didWin ? 'history.victoryVs' : 'history.defeatVs', { name: opponentName })}</span>
                       {battle.isRandom && (
-                        <span className="text-[10px] uppercase bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">Random</span>
+                        <span className="text-[10px] uppercase bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">{t('history.random')}</span>
                       )}
                       {battle.stake > 0 && (
-                        <span className="text-[10px] uppercase bg-yellow-500/10 text-yellow-300 px-2 py-0.5 rounded-full">Stake {battle.stake}</span>
+                        <span className="text-[10px] uppercase bg-yellow-500/10 text-yellow-300 px-2 py-0.5 rounded-full">{t('history.stake', { amount: battle.stake })}</span>
                       )}
                       {!battle.isRandom && battle.leagueMode !== 'RANKED' && opponentName && opponentName !== '???' && (
                         <button
                           onClick={() => { setRematchWith(opponentName); setStake(battle.stake || 0); setRespondingToId(null); setTab('Challenge'); }}
                           className="text-[10px] uppercase font-bold bg-orange-500/10 text-orange-300 px-2 py-0.5 rounded-full hover:bg-orange-500/20"
                         >
-                          Rematch
+                          {t('history.rematch')}
                         </button>
                       )}
                     </div>
                     <span className="text-xs text-slate-500">
-                      {new Date(battle.completedAt).toLocaleDateString()}
+                      {new Date(battle.completedAt).toLocaleDateString(locale)}
                     </span>
                   </div>
 
@@ -1533,7 +1546,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                     <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
                       {cTeam.length > 0 && (
                         <div>
-                          <p className="text-blue-400 mb-1 uppercase tracking-wide text-[10px]">Challenger</p>
+                          <p className="text-blue-400 mb-1 uppercase tracking-wide text-[10px]">{t('history.challenger')}</p>
                           <div className="flex gap-1">
                             {cTeam.map(c => (
                               <div key={c.id} className="flex items-center gap-1 bg-slate-800 rounded px-1.5 py-0.5">
@@ -1546,7 +1559,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
                       )}
                       {dTeam.length > 0 && (
                         <div>
-                          <p className="text-red-400 mb-1 uppercase tracking-wide text-[10px]">Defender</p>
+                          <p className="text-red-400 mb-1 uppercase tracking-wide text-[10px]">{t('history.defender')}</p>
                           <div className="flex gap-1">
                             {dTeam.map(c => (
                               <div key={c.id} className="flex items-center gap-1 bg-slate-800 rounded px-1.5 py-0.5">

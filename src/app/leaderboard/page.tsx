@@ -15,6 +15,8 @@ import { getSprintsState } from '@/lib/sprintService';
 import { getWeeklyEvent } from '@/lib/weeklyEventService';
 import { SprintBoard } from '@/components/SprintBoard';
 import { SPRINT_TEAM_SIZE } from '@/lib/sprints';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 const GLOBAL_LIMIT = 50;
 
@@ -132,16 +134,17 @@ async function loadCollectors(): Promise<CollectorRow[]> {
 }
 
 function CollectorTable({ rows, currentUserId }: { rows: CollectorRow[]; currentUserId?: string }) {
+  const t = useTranslations('leaderboard.table');
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
       <table className="w-full table-fixed text-left">
         <thead>
           <tr className="border-b border-slate-800 text-slate-400">
-            <th className="w-16 px-5 py-4 font-bold text-xs uppercase tracking-wider">Rank</th>
-            <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">Player</th>
-            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider">Points</th>
-            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden sm:table-cell">Unique</th>
-            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">Legendary</th>
+            <th className="w-16 px-5 py-4 font-bold text-xs uppercase tracking-wider">{t('rank')}</th>
+            <th className="px-5 py-4 font-bold text-xs uppercase tracking-wider">{t('player')}</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider">{t('points')}</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden sm:table-cell">{t('unique')}</th>
+            <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">{t('legendary')}</th>
           </tr>
         </thead>
         <tbody>
@@ -173,26 +176,27 @@ function RankBadge({ index }: { index: number }) {
 }
 
 function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRow[]; currentUserId?: string; accent: string }) {
+  const t = useTranslations('leaderboard.table');
   return (
     <div className={`bg-slate-900/60 border ${accent} rounded-2xl overflow-hidden backdrop-blur-md`}>
       <table className="w-full table-fixed text-left">
         <thead className="bg-black/50 border-b border-slate-800 text-slate-400">
           <tr>
             <th className="w-12 sm:w-20 px-3 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">
-              <span className="sr-only sm:not-sr-only">Rank</span>
+              <span className="sr-only sm:not-sr-only">{t('rank')}</span>
               <span className="sm:hidden" aria-hidden="true">#</span>
             </th>
-            <th className="px-2 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">Player</th>
+            <th className="px-2 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">{t('player')}</th>
             <th className="w-20 sm:w-28 px-3 sm:px-5 py-4 font-bold text-xs uppercase tracking-wider">
-              <span className="flex items-center gap-1"><Star size={14} weight="fill" /> Rating</span>
+              <span className="flex items-center gap-1"><Star size={14} weight="fill" /> {t('rating')}</span>
             </th>
             <th className="w-28 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
-              <span className="flex items-center gap-1"><Sword size={14} weight="fill" /> W/L</span>
+              <span className="flex items-center gap-1"><Sword size={14} weight="fill" /> {t('winLoss')}</span>
             </th>
             <th className="w-36 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden md:table-cell">
-              <span className="flex items-center gap-1"><Shield size={14} weight="fill" /> Win Rate</span>
+              <span className="flex items-center gap-1"><Shield size={14} weight="fill" /> {t('winRate')}</span>
             </th>
-            <th className="w-24 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden lg:table-cell">Cards</th>
+            <th className="w-24 px-5 py-4 font-bold text-xs uppercase tracking-wider hidden lg:table-cell">{t('cards')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/50">
@@ -208,12 +212,12 @@ function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRo
                     <span className="flex items-center gap-1.5 min-w-0">
                       <span className="truncate">{u.displayName}</span>
                       {currentUserId === u.id && (
-                        <span className="shrink-0 text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">YOU</span>
+                        <span className="shrink-0 text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded-full">{t('you')}</span>
                       )}
                     </span>
                     {/* Secondary stats move under the name on small screens */}
                     <span className="md:hidden block text-[11px] font-normal text-slate-500 truncate">
-                      {u.totalWins}W / {u.totalBattles - u.totalWins}L · {u.winRate}%
+                      {t('record', { wins: u.totalWins, losses: u.totalBattles - u.totalWins, rate: u.winRate })}
                     </span>
                   </span>
                 </Link>
@@ -249,6 +253,7 @@ function LeaderboardTable({ rows, currentUserId, accent }: { rows: LeaderboardRo
 export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const currentUser = await getCurrentUser();
   const { tab } = await searchParams;
+  const t = await getTranslations('leaderboard');
   const now = new Date();
   // Closes a season that already ended (pays it, resets ratings) before showing anything
   const [season, viewerSeason] = await Promise.all([
@@ -295,11 +300,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div className="text-center">
         <h1 className="text-4xl sm:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 mb-2 tracking-tighter">
-          Global Rankings
+          {t('title')}
         </h1>
-        <p className="text-slate-400 text-base sm:text-lg">The most legendary developers in the repository.</p>
+        <p className="text-slate-400 text-base sm:text-lg">{t('subtitle')}</p>
         <p className="text-slate-500 text-xs mt-2">
-          Rating only changes in PvP: Ranked battles and friend challenges. Ties: PvP wins, then battles played, then oldest account.
+          {t('ratingNote')}
         </p>
       </div>
 
@@ -307,25 +312,25 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
       <div className="flex flex-wrap justify-center gap-2">
         <Link href="/leaderboard"className={tabClass(!showRivals && !noBattleTable)}>
-          <Globe size={16} weight="fill" /> Global
+          <Globe size={16} weight="fill" /> {t('tabs.global')}
         </Link>
         {currentUser && (
           <Link href="/leaderboard?tab=rivals" className={tabClass(showRivals)}>
-            <Users size={16} weight="fill" /> Rivals
+            <Users size={16} weight="fill" /> {t('tabs.rivals')}
           </Link>
         )}
         <Link href="/leaderboard?tab=collectors" className={tabClass(showCollectors)}>
-          <Cards size={16} weight="fill" /> Collectors
+          <Cards size={16} weight="fill" /> {t('tabs.collectors')}
         </Link>
         <Link href="/leaderboard?tab=sprints" className={tabClass(showSprints)}>
-          <Lightning size={16} weight="fill" /> Sprints
+          <Lightning size={16} weight="fill" /> {t('tabs.sprints')}
         </Link>
       </div>
 
       {showSprints && (
         <>
           <p className="text-center text-xs text-slate-500">
-            Nothing to set up: when a sprint ends, everyone is scored by their {SPRINT_TEAM_SIZE} strongest cards of the theme. Ties share the place.
+            {t('sprintsNote', { count: SPRINT_TEAM_SIZE })}
           </p>
           {sprints.map(s => <SprintBoard key={s.kind} sprint={s} now={now} viewerId={currentUser?.id} event={s.kind === 'weekly' ? weeklyEvent : null} />)}
         </>
@@ -334,7 +339,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       {showCollectors && (
         <>
           <p className="text-center text-xs text-slate-500">
-            Points per unique card: {collectorPointsLegend()}. No battles needed.
+            {t('collectorsNote', { legend: collectorPointsLegend() })}
           </p>
           <CollectorTable rows={collectors} currentUserId={currentUser?.id} />
         </>
@@ -348,12 +353,12 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
       {!noBattleTable && rows.length === 0 && (
         <div className="p-12 text-center text-slate-500">
-          No players found. Be the first to join the battle!
+          {t('empty')}
         </div>
       )}
       {showRivals && rows.length <= 1 && (
         <p className="text-center text-sm text-slate-500">
-          Add friends from their profiles to compare your rating with theirs.
+          {t('rivalsHint')}
         </p>
       )}
     </div>

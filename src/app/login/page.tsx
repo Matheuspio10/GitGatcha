@@ -6,18 +6,20 @@ import { useSearchParams } from 'next/navigation';
 import { GithubLogo } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { Logo } from '@/components/Logo';
+import { useTranslations } from 'next-intl';
 
 function LoginContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations('public.login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(searchParams?.get('register') === 'true');
   const [loading, setLoading] = useState(false);
   const authError = searchParams?.get('error');
   const AUTH_ERRORS: Record<string, string> = {
-    OAuthAccountNotLinked: 'This account is already linked to another player, or its e-mail belongs to an existing account. Sign in the way you usually do, then connect GitHub from your profile.',
-    CredentialsSignin: 'Wrong e-mail or password.',
-    TooManyAttempts: 'Too many sign-in attempts. Please wait a few minutes and try again.',
+    OAuthAccountNotLinked: t('errors.oauthAccountNotLinked'),
+    CredentialsSignin: t('errors.credentialsSignin'),
+    TooManyAttempts: t('errors.tooManyAttempts'),
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -36,10 +38,10 @@ function LoginContent() {
           await signIn('credentials', { email, password, callbackUrl: '/store' });
         } else {
           const data = await res.json();
-          toast.error(data.error || 'Registration failed');
+          toast.error(data.error || t('errors.registrationFailed'));
         }
       } catch {
-        toast.error('An error occurred');
+        toast.error(t('errors.generic'));
       }
     } else {
       await signIn('credentials', { email, password, callbackUrl: '/store' });
@@ -52,12 +54,12 @@ function LoginContent() {
       <div className="w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl">
         <div className="flex justify-center mb-5"><Logo size={26} /></div>
         <h2 className="font-display text-2xl font-extrabold mb-8 text-center text-slate-100">
-          Access the Repository
+          {t('title')}
         </h2>
 
         {authError && (
           <div role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-950/50 p-3 text-sm text-red-300">
-            {AUTH_ERRORS[authError] ?? `Sign-in failed (${authError}). Please try again.`}
+            {AUTH_ERRORS[authError] ?? t('errors.unknown', { error: authError })}
           </div>
         )}
 
@@ -68,9 +70,9 @@ function LoginContent() {
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-xl font-bold transition-colors"
           >
             <GithubLogo size={20} weight="fill" />
-            Continue with GitHub
+            {t('github')}
           </button>
-          <p className="-mt-2 text-center text-xs text-slate-500">GitHub players get their own card in the exclusive Signature edition.</p>
+          <p className="-mt-2 text-center text-xs text-slate-500">{t('githubHint')}</p>
           
           <button
             type="button"
@@ -84,20 +86,20 @@ function LoginContent() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Continue with Google
+            {t('google')}
           </button>
         </div>
 
         <div className="relative flex items-center gap-4 py-4 mb-4">
           <div className="flex-1 h-px bg-white/10"></div>
-          <span className="text-slate-500 text-sm font-medium uppercase tracking-wider">Or</span>
+          <span className="text-slate-500 text-sm font-medium uppercase tracking-wider">{t('or')}</span>
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
 
         <form onSubmit={handleEmailSubmit} className="space-y-4">
           <input
             type="email"
-            placeholder="Email address"
+            placeholder={t('email')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
@@ -105,7 +107,7 @@ function LoginContent() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t('password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
@@ -118,18 +120,18 @@ function LoginContent() {
             disabled={loading}
             className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold tracking-wide hover:from-indigo-400 hover:to-purple-500 transition-all disabled:opacity-50"
           >
-            {loading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Sign In')}
+            {loading ? t('processing') : (isRegistering ? t('signUp') : t('signIn'))}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-400">
-          {isRegistering ? 'Already have an account? ' : 'New to GitGacha? '}
+          {isRegistering ? t('haveAccount') : t('newHere')}{' '}
           <button 
             type="button" 
             onClick={() => setIsRegistering(!isRegistering)}
             className="text-indigo-400 hover:text-indigo-300 font-bold underline"
           >
-            {isRegistering ? 'Sign In' : 'Create Account'}
+            {isRegistering ? t('signIn') : t('createAccount')}
           </button>
         </p>
 

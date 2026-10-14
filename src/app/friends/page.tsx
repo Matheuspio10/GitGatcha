@@ -10,10 +10,12 @@ import Link from 'next/link';
 import { Users, UserPlus, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons/react';
 import { InvitePanel } from '@/components/InvitePanel';
 import { CompareCollection } from '@/components/CompareCollection';
+import { useTranslations } from 'next-intl';
 
 export default function FriendsPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const t = useTranslations('social');
   
   const [friends, setFriends] = useState<any[]>([]);
   const [incoming, setIncoming] = useState<any[]>([]);
@@ -101,13 +103,13 @@ export default function FriendsPage() {
           <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 flex items-center gap-3">
               <Users size={40} className="text-indigo-500" />
-              Friends
+              {t('title')}
             </h1>
 
             <form onSubmit={handleSearch} className="w-full sm:w-auto flex gap-2">
               <input
                 type="text"
-                placeholder="Search players..."
+                placeholder={t('searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full sm:w-64 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none text-white"
@@ -117,7 +119,7 @@ export default function FriendsPage() {
                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-bold transition-colors"
                 disabled={!searchQuery.trim()}
               >
-                Find
+                {t('find')}
               </button>
             </form>
           </div>
@@ -132,15 +134,15 @@ export default function FriendsPage() {
             <div className="md:col-span-2 space-y-4">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Shield className="text-indigo-400" /> Alliance Members ({friends.length})
+                  <Shield className="text-indigo-400" /> {t('members', { count: friends.length })}
                 </h2>
                 
                 {friends.length === 0 ? (
                   <EmptyState
                     compact
-                    title="No friends yet"
-                    text="Friends can challenge each other to PvP battles, the only way to climb the rating. Search a username above, or find players in the rankings."
-                    actions={[{ label: 'Browse the rankings', href: '/leaderboard' }]}
+                    title={t('empty.title')}
+                    text={t('empty.text')}
+                    actions={[{ label: t('empty.browse'), href: '/leaderboard' }]}
                   />
                 ) : (
                   <div className="space-y-3">
@@ -153,7 +155,7 @@ export default function FriendsPage() {
                               {friendConnection.user.username}
                             </div>
                             <div className="text-xs text-slate-400 font-medium">
-                              Level {friendConnection.user.level} Developer
+                              {t('levelDeveloper', { level: friendConnection.user.level })}
                             </div>
                           </div>
                         </Link>
@@ -162,21 +164,21 @@ export default function FriendsPage() {
                           <button
                             onClick={() => setComparing(friendConnection.user.username)}
                             className="bg-slate-700 hover:bg-indigo-600/20 hover:text-indigo-300 text-slate-300 border border-slate-600 hover:border-indigo-500/50 p-2 rounded-lg transition-all"
-                            title="Compare collections"
+                            title={t('compare')}
                           >
                             <ArrowsLeftRight size={20} weight="bold" />
                           </button>
                           <button 
                             onClick={() => handleChallenge(friendConnection.user.username)}
                             className="bg-slate-700 hover:bg-rose-600/20 hover:text-rose-400 text-slate-300 border border-slate-600 hover:border-rose-500/50 p-2 rounded-lg transition-all"
-                            title="Challenge to Duel"
+                            title={t('challenge')}
                           >
                             <Sword size={20} weight="fill" />
                           </button>
                           <button 
                             onClick={() => handleDecline(friendConnection.friendshipId)} // Decline and remove share the same endpoint structure visually
                             className="bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white p-2 text-sm rounded-lg transition-all border border-slate-600 hover:border-red-600"
-                            title="Remove Friend"
+                            title={t('remove')}
                           >
                             <X size={20} weight="bold" />
                           </button>
@@ -194,14 +196,14 @@ export default function FriendsPage() {
               {/* Incoming Requests */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                 <h3 className="font-bold text-white mb-4 flex items-center justify-between">
-                  Incoming 
+                  {t('incoming')}
                   {incoming.length > 0 && (
                     <span className="bg-indigo-500 text-white text-xs px-2 py-0.5 rounded-full">{incoming.length}</span>
                   )}
                 </h3>
                 
                 {incoming.length === 0 ? (
-                  <p className="text-sm text-slate-500">No pending requests</p>
+                  <p className="text-sm text-slate-500">{t('noPending')}</p>
                 ) : (
                   <div className="space-y-3">
                      {incoming.map((req) => (
@@ -209,12 +211,12 @@ export default function FriendsPage() {
                          <Link href={`/profile/${req.user.username}`} className="font-bold text-indigo-400 hover:underline inline-block mb-2">
                            {req.user.username}
                          </Link>
-                         <p className="text-slate-400 text-xs mb-3">Lvl {req.user.level}</p>
+                         <p className="text-slate-400 text-xs mb-3">{t('lvl', { level: req.user.level })}</p>
                          <div className="flex gap-2">
-                           <button onClick={() => handleAccept(req.id)} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded-lg flex justify-center transition-colors">
+                           <button onClick={() => handleAccept(req.id)} aria-label={t('a11y.accept', { name: req.user.username })} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-1.5 rounded-lg flex justify-center transition-colors">
                              <Check size={16} weight="bold" />
                            </button>
-                           <button onClick={() => handleDecline(req.id)} className="flex-1 bg-slate-700 hover:bg-red-500 text-white py-1.5 rounded-lg flex justify-center transition-colors border border-slate-600 hover:border-red-600">
+                           <button onClick={() => handleDecline(req.id)} aria-label={t('a11y.decline', { name: req.user.username })} className="flex-1 bg-slate-700 hover:bg-red-500 text-white py-1.5 rounded-lg flex justify-center transition-colors border border-slate-600 hover:border-red-600">
                              <X size={16} weight="bold" />
                            </button>
                          </div>
@@ -226,16 +228,16 @@ export default function FriendsPage() {
 
               {/* Outgoing Requests */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <h3 className="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wider">Outgoing</h3>
+                <h3 className="font-bold text-slate-400 mb-4 text-sm uppercase tracking-wider">{t('outgoing')}</h3>
                 
                 {outgoing.length === 0 ? (
-                  <p className="text-sm text-slate-500">No outgoing requests</p>
+                  <p className="text-sm text-slate-500">{t('noOutgoing')}</p>
                 ) : (
                   <div className="space-y-2">
                      {outgoing.map((req) => (
                        <div key={req.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg border border-slate-700">
                          <span className="text-sm text-slate-300 truncate font-medium">{req.user.username}</span>
-                         <button onClick={() => handleDecline(req.id)} className="text-slate-500 hover:text-red-400 p-1">
+                         <button onClick={() => handleDecline(req.id)} aria-label={t('a11y.cancel', { name: req.user.username })} className="text-slate-500 hover:text-red-400 p-1">
                            <X size={14} weight="bold" />
                          </button>
                        </div>

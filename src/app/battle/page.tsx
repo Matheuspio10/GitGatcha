@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { getTranslations } from 'next-intl/server';
 import BattleClient from './BattleClient';
 
 export default async function BattlePage() {
@@ -16,6 +17,7 @@ export default async function BattlePage() {
     orderBy: { card: { atk: 'desc' } }
   });
 
+  const t = await getTranslations('battle');
   const allCards = await prisma.card.findMany({ select: { atk: true, def: true, hp: true } });
   const avgPower = allCards.length > 0 ? allCards.reduce((acc, c) => acc + c.atk + c.def + c.hp, 0) / allCards.length : 0;
   const powerCap = Math.floor(avgPower * 3);
@@ -38,7 +40,7 @@ export default async function BattlePage() {
   }));
 
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white font-bold">Loading Arena...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white font-bold">{t('loadingArena')}</div>}>
       <BattleClient userCards={cardsList} userId={user.id} powerCap={powerCap} userBits={user.currency} />
     </Suspense>
   );

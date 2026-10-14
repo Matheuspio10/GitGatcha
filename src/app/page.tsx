@@ -2,12 +2,14 @@ import { getCurrentUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
+import { getTranslations } from 'next-intl/server';
 
 export default async function Home() {
   const user = await getCurrentUser();
   if (user) {
     redirect('/store');
   }
+  const t = await getTranslations('public.home');
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[85vh] text-center overflow-hidden w-full">
@@ -20,20 +22,20 @@ export default async function Home() {
       </h1>
       
       <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mb-12 font-light leading-relaxed z-10">
-        Collect real open-source developers, forge the ultimate engineering team, and dominate the repository battles.
+        {t('tagline')}
       </p>
       
       <div className="w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl z-10 transform hover:scale-[1.02] transition-transform duration-500">
-        <h2 className="text-2xl font-bold mb-8 text-white">Start Your Journey</h2>
+        <h2 className="text-2xl font-bold mb-8 text-white">{t('start')}</h2>
         <div className="flex flex-col gap-4">
           <Link href="/login" className="btn-brand w-full text-white font-bold py-3.5 px-4 shadow-lg shadow-brand-b/20 transition-all hover:-translate-y-0.5 hover:brightness-110 text-center">
-            Login
+            {t('login')}
           </Link>
           <Link href="/login?register=true" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-4 rounded-xl border border-slate-700 transition-all hover:-translate-y-0.5 text-center">
-            Register Account
+            {t('register')}
           </Link>
           <Link href="/try" className="w-full font-bold py-3 px-4 rounded-xl border border-commit/50 text-commit hover:bg-commit/10 transition-all hover:-translate-y-0.5 text-center">
-            Open a free pack first (no sign-up)
+            {t('tryFree')}
           </Link>
         </div>
       </div>

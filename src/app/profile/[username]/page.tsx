@@ -23,6 +23,7 @@ import { RankBadge } from '@/components/RankBadge';
 import { AvatarFrame, PlayerTitle } from '@/components/PlayerCosmetics';
 import { CosmeticsPicker } from '@/components/CosmeticsPicker';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface FriendInfo {
   id: string;
@@ -33,8 +34,9 @@ interface FriendInfo {
 
 type Achievement = AchievementView;
 
+/** label '' = locked (translated in the component); Bronze/Silver/Gold are game data. */
 const TIER_STYLES: Record<number, { label: string; text: string; ring: string; bg: string; bar: string }> = {
-  0: { label: 'Locked', text: 'text-slate-500', ring: 'border-slate-800/80', bg: 'bg-slate-900/40', bar: 'from-slate-600 to-slate-400' },
+  0: { label: '', text: 'text-slate-500', ring: 'border-slate-800/80', bg: 'bg-slate-900/40', bar: 'from-slate-600 to-slate-400' },
   1: { label: 'Bronze', text: 'text-orange-300', ring: 'border-orange-700/60', bg: 'bg-orange-900/10', bar: 'from-orange-700 to-orange-400' },
   2: { label: 'Silver', text: 'text-slate-200', ring: 'border-slate-400/60', bg: 'bg-slate-500/10', bar: 'from-slate-400 to-slate-100' },
   3: { label: 'Gold', text: 'text-yellow-300', ring: 'border-yellow-500/60', bg: 'bg-yellow-500/10', bar: 'from-yellow-600 to-yellow-300' },
@@ -148,6 +150,9 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false);
   const [expandedBattle, setExpandedBattle] = useState<string | null>(null);
   const [achievementPopover, setAchievementPopover] = useState<string | null>(null);
+  const t = useTranslations('profile');
+  const tShare = useTranslations('common.share');
+  const locale = useLocale();
 
   useEffect(() => {
     fetchProfile();
@@ -166,7 +171,7 @@ export default function ProfilePage() {
         notifyAchievements(data.achievementsUnlocked);
       }
       else setError(data.error);
-    } catch { setError('Failed to load profile'); }
+    } catch { setError(t('loadFailed')); }
     finally { setLoading(false); }
   };
 
@@ -207,10 +212,10 @@ export default function ProfilePage() {
 
   // Shares the PUBLIC page (/u/<username>, with a preview image): /profile needs a login
   const handleShareProfile = () => {
-    copyText(`${window.location.origin}/u/${encodeURIComponent(profileUsername)}`);
+    copyText(`${window.location.origin}/u/${encodeURIComponent(profileUsername)}`, tShare('copyPrompt'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    claimShareBonus();
+    claimShareBonus(bits => tShare('firstShareBonus', { bits }));
   };
 
   const isOwnProfile = (session?.user as any)?.username === profileUsername || session?.user?.name === profileUsername;
@@ -224,7 +229,7 @@ export default function ProfilePage() {
   if (error || !profile) return (
     <div className="flex-1 flex flex-col items-center justify-center py-32">
       <div className="text-center bg-slate-900/50 p-12 rounded-3xl border border-slate-800 backdrop-blur-md">
-        <h2 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-red-500">User Not Found</h2>
+        <h2 className="text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-red-500">{t('notFound')}</h2>
         <p className="text-slate-400 font-medium text-lg">{error}</p>
       </div>
     </div>
@@ -267,6 +272,7 @@ export default function ProfilePage() {
                 {isOwnProfile && (
                   <button
                     onClick={() => setShowEditModal(true)}
+                    aria-label={t('actions.changePhoto')}
                     className="absolute bottom-1 right-1 w-9 h-9 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-slate-900 transition-colors md:opacity-0 md:group-hover:opacity-100"
                   >
                     <span className="text-sm">📷</span>
@@ -298,24 +304,24 @@ export default function ProfilePage() {
 
                 {/* Bio */}
                 <p className="text-sm text-slate-400 mb-3 max-w-md">
-                  {profile.user.bio || <span className="italic text-slate-500">No bio yet</span>}
+                  {profile.user.bio || <span className="italic text-slate-500">{t('noBio')}</span>}
                 </p>
 
                 {/* Active Badges */}
                 <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
                   <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800/80 border border-slate-700 rounded-full text-xs font-bold text-slate-300 shadow-inner">
                     <Star weight="fill" className="text-yellow-500" />
-                    Level {profile.user.level}
+                    {t('level', { level: profile.user.level })}
                   </span>
                   <RankBadge rating={profile.user.rating} className="px-3 py-1" />
                   {profile.setsCompleted > 0 && (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-full text-xs font-bold text-fuchsia-300" title="Language sets with a card of every rarity">
-                      {profile.setsCompleted}/{profile.setsTotal} sets
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-fuchsia-500/10 border border-fuchsia-500/30 rounded-full text-xs font-bold text-fuchsia-300" title={t('setsTitle')}>
+                      {t('sets', { done: profile.setsCompleted, total: profile.setsTotal })}
                     </span>
                   )}
                   {profile.user.seasons?.map(s => (
-                    <span key={s.seasonId} className="inline-flex items-center gap-1 text-[10px] text-slate-500" title={`Season ${s.seasonId} peak`}>
-                      S{s.seasonId} <RankBadge rating={s.peakRating} showRating={false} />
+                    <span key={s.seasonId} className="inline-flex items-center gap-1 text-[10px] text-slate-500" title={t('seasonPeak', { season: s.seasonId })}>
+                      {t('seasonShort', { season: s.seasonId })} <RankBadge rating={s.peakRating} showRating={false} />
                     </span>
                   ))}
                   {profile.hasLegendaryBondPrestige && (
@@ -326,7 +332,7 @@ export default function ProfilePage() {
                   )}
                   <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20 text-xs font-bold">
                     <Sword size={14} weight="fill" />
-                    {winRate}% Win Rate
+                    {t('winRateBadge', { rate: winRate })}
                   </span>
                 </div>
 
@@ -334,7 +340,7 @@ export default function ProfilePage() {
                 {isOwnProfile && (
                   <div className="w-full max-w-md">
                     <div className="flex justify-between items-end mb-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">XP Progress</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('xp.progress')}</span>
                       <span className="text-xs font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
                         {Math.floor(xpData.progressPercent)}%
                       </span>
@@ -346,8 +352,8 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="flex justify-between items-center mt-1 text-[10px] font-medium text-slate-500">
-                      <span>{Math.floor(xpData.totalXP).toLocaleString()} XP</span>
-                      <span>{Math.floor(xpData.xpIntoLevel).toLocaleString()} / {Math.floor(xpData.xpNeededForNext).toLocaleString()} to Lvl {xpData.currentLevel + 1}</span>
+                      <span>{t('xp.total', { xp: Math.floor(xpData.totalXP).toLocaleString(locale) })}</span>
+                      <span>{t('xp.toNext', { into: Math.floor(xpData.xpIntoLevel).toLocaleString(locale), needed: Math.floor(xpData.xpNeededForNext).toLocaleString(locale), level: xpData.currentLevel + 1 })}</span>
                     </div>
                   </div>
                 )}
@@ -361,12 +367,13 @@ export default function ProfilePage() {
                       onClick={() => setShowEditModal(true)}
                       className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all border border-slate-600 hover:border-slate-500 text-sm"
                     >
-                      Edit Profile
+                      {t('actions.editProfile')}
                     </button>
                     <button
                       onClick={handleShareProfile}
                       className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all border border-slate-600 hover:border-slate-500 text-sm"
-                      title="Copy profile link"
+                      title={t('actions.copyLink')}
+                      aria-label={t('actions.copyLink')}
                     >
                       {copied ? <Check size={18} className="text-emerald-400" /> : <ShareNetwork size={18} />}
                     </button>
@@ -375,21 +382,23 @@ export default function ProfilePage() {
                   <div className="flex gap-2">
                     {friendStatus === 'NONE' && (
                       <button onClick={handleAddFriend} className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-black transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] text-sm">
-                        <Plus size={18} weight="bold" /> Add Friend
+                        <Plus size={18} weight="bold" /> {t('actions.addFriend')}
                       </button>
                     )}
                     {friendStatus === 'PENDING' && (
                       <button disabled className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-slate-800 text-slate-400 font-bold border border-slate-700 cursor-not-allowed opacity-80 text-sm">
-                        <Clock size={18} weight="bold" /> Request Sent
+                        <Clock size={18} weight="bold" /> {t('actions.requestSent')}
                       </button>
                     )}
                     {friendStatus === 'FRIENDS' && (
                       <button onClick={handleRemoveFriend} className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-900/30 hover:bg-red-500 text-red-400 hover:text-white font-bold border border-red-900/50 hover:border-red-500 transition-all text-sm">
-                        <UserMinus size={18} weight="bold" /> Remove
+                        <UserMinus size={18} weight="bold" /> {t('actions.remove')}
                       </button>
                     )}
                     <button
                       onClick={handleShareProfile}
+                      aria-label={t('actions.copyLink')}
+                      title={t('actions.copyLink')}
                       className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all border border-slate-600 text-sm"
                     >
                       {copied ? <Check size={18} className="text-emerald-400" /> : <ShareNetwork size={18} />}
@@ -408,12 +417,12 @@ export default function ProfilePage() {
         {/* ═══════════ STATS GRID — 6 Items ═══════════ */}
         <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 snap-x snap-mandatory hide-scrollbar">
           {[
-            { label: 'Total Battles', value: profile.stats.totalBattles, icon: <Sword size={20} className="text-rose-500" weight="duotone" />, hoverBorder: 'hover:border-rose-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(244,63,94,0.3)]' },
-            { label: 'Win Rate', value: `${winRate}%`, icon: null, color: 'text-emerald-400', hoverBorder: 'hover:border-emerald-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(16,185,129,0.3)]', sub: <span className="text-[10px] font-bold text-slate-500"><span className="text-emerald-500">{profile.stats.battlesWon}W</span> · <span className="text-rose-500">{profile.stats.battlesLost}L</span></span> },
-            { label: 'Cards Owned', value: profile.stats.totalCards, color: 'text-indigo-400', hoverBorder: 'hover:border-indigo-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(99,102,241,0.3)]' },
-            { label: 'Friends', value: profile.stats.friendsCount, icon: <Users size={20} className="text-blue-400" weight="duotone" />, hoverBorder: 'hover:border-blue-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.3)]' },
-            { label: 'BITS Earned', value: profile.stats.totalBitsEarned.toLocaleString(), icon: <Coin size={20} className="text-yellow-500" weight="fill" />, color: 'text-yellow-400', hoverBorder: 'hover:border-yellow-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(234,179,8,0.3)]' },
-            { label: 'Best Streak', value: profile.stats.highestWinStreak, icon: <Lightning size={20} className="text-orange-500" weight="fill" />, color: 'text-orange-400', hoverBorder: 'hover:border-orange-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(249,115,22,0.3)]' },
+            { label: t('stats.totalBattles'), value: profile.stats.totalBattles, icon: <Sword size={20} className="text-rose-500" weight="duotone" />, hoverBorder: 'hover:border-rose-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(244,63,94,0.3)]' },
+            { label: t('stats.winRate'), value: `${winRate}%`, icon: null, color: 'text-emerald-400', hoverBorder: 'hover:border-emerald-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(16,185,129,0.3)]', sub: <span className="text-[10px] font-bold text-slate-500"><span className="text-emerald-500">{t('stats.wins', { count: profile.stats.battlesWon })}</span> · <span className="text-rose-500">{t('stats.losses', { count: profile.stats.battlesLost })}</span></span> },
+            { label: t('stats.cardsOwned'), value: profile.stats.totalCards, color: 'text-indigo-400', hoverBorder: 'hover:border-indigo-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(99,102,241,0.3)]' },
+            { label: t('stats.friends'), value: profile.stats.friendsCount, icon: <Users size={20} className="text-blue-400" weight="duotone" />, hoverBorder: 'hover:border-blue-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.3)]' },
+            { label: t('stats.bitsEarned'), value: profile.stats.totalBitsEarned.toLocaleString(locale), icon: <Coin size={20} className="text-yellow-500" weight="fill" />, color: 'text-yellow-400', hoverBorder: 'hover:border-yellow-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(234,179,8,0.3)]' },
+            { label: t('stats.bestStreak'), value: profile.stats.highestWinStreak, icon: <Lightning size={20} className="text-orange-500" weight="fill" />, color: 'text-orange-400', hoverBorder: 'hover:border-orange-500/50', hoverShadow: 'hover:shadow-[0_8px_30px_-8px_rgba(249,115,22,0.3)]' },
           ].map((stat, i) => (
             <div key={i} className={`snap-start shrink-0 w-[calc(50%-6px)] sm:w-[calc(33.3%-11px)] md:w-0 md:flex-1 group bg-slate-900/80 backdrop-blur-sm border border-slate-800 ${stat.hoverBorder} rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all hover:-translate-y-1 ${stat.hoverShadow}`}>
               {stat.icon && <div className="mb-2">{stat.icon}</div>}
@@ -428,16 +437,17 @@ export default function ProfilePage() {
         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-6 sm:p-8 shadow-xl">
           <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 mb-1 flex items-center gap-3">
             <Medal size={28} weight="duotone" className="text-yellow-400" />
-            Achievements
+            {t('achievements.title')}
           </h2>
           <p className="text-slate-500 text-xs font-medium mb-6">
-            {profile.achievements.reduce((n, a) => n + a.tier, 0)} / {profile.achievements.reduce((n, a) => n + a.maxTier, 0)} tiers unlocked
+            {t('achievements.tiersUnlocked', { unlocked: profile.achievements.reduce((n, a) => n + a.tier, 0), total: profile.achievements.reduce((n, a) => n + a.maxTier, 0) })}
           </p>
 
           <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
             {profile.achievements.map(achievement => {
               const isActive = achievementPopover === achievement.id;
               const style = TIER_STYLES[achievement.tier] ?? TIER_STYLES[0];
+              const tierLabel = style.label || t('achievements.locked');
               return (
                 <div
                   key={achievement.id}
@@ -445,7 +455,7 @@ export default function ProfilePage() {
                 >
                   <button
                     onClick={() => setAchievementPopover(isActive ? null : achievement.id)}
-                    aria-label={`${achievement.name}: ${achievement.unlocked ? style.label : 'locked'}`}
+                    aria-label={t('achievements.ariaLabel', { name: achievement.name, state: achievement.unlocked ? tierLabel : t('achievements.lockedState') })}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all w-[104px] hover:-translate-y-1 cursor-pointer ${style.ring} ${style.bg} ${
                       achievement.unlocked ? 'hover:border-indigo-500/50' : 'opacity-70'
                     } ${isActive ? 'ring-2 ring-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : ''}`}
@@ -456,7 +466,7 @@ export default function ProfilePage() {
                     </span>
                     <span className={`text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${style.text}`}>
                       {!achievement.unlocked && <Lock size={9} />}
-                      {style.label}
+                      {tierLabel}
                     </span>
                     <div className="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                       <div className={`h-full bg-gradient-to-r ${style.bar}`} style={{ width: `${achievement.progressPercent}%` }} />
@@ -489,15 +499,15 @@ export default function ProfilePage() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-white mb-1">{achievement.name}</div>
                         <div className="text-xs text-slate-400 leading-relaxed">
-                          {maxed ? `Completed: ${achievement.description}` : `Next: ${achievement.description}`}
+                          {maxed ? t('achievements.completed', { description: achievement.description }) : t('achievements.next', { description: achievement.description })}
                           {!maxed && achievement.nextReward !== null && (
-                            <span className="text-yellow-400 font-bold"> · +{achievement.nextReward} Bits</span>
+                            <span className="text-yellow-400 font-bold"> · {t('achievements.reward', { reward: achievement.nextReward })}</span>
                           )}
                         </div>
                         {!maxed && (
                           <div className="mt-2">
                             <div className="flex justify-between text-[10px] text-slate-500 font-mono mb-1">
-                              <span>Progress</span>
+                              <span>{t('achievements.progress')}</span>
                               <span>{Math.min(achievement.value, achievement.nextThreshold ?? 0)} / {achievement.nextThreshold}</span>
                             </div>
                             <div className="h-1.5 rounded-full bg-slate-900 overflow-hidden">
@@ -506,18 +516,18 @@ export default function ProfilePage() {
                           </div>
                         )}
                         <div className="flex flex-wrap gap-2 mt-3">
-                          {achievement.tiers.map(t => {
-                            const ts = TIER_STYLES[t.tier] ?? TIER_STYLES[0];
+                          {achievement.tiers.map(tier => {
+                            const ts = TIER_STYLES[tier.tier] ?? TIER_STYLES[0];
                             return (
                               <span
-                                key={t.tier}
-                                title={t.unlockedAt ? `Unlocked ${new Date(t.unlockedAt).toLocaleDateString()}` : 'Locked'}
+                                key={tier.tier}
+                                title={tier.unlockedAt ? t('achievements.unlockedOn', { date: new Date(tier.unlockedAt).toLocaleDateString(locale) }) : t('achievements.locked')}
                                 className={`text-[10px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
-                                  t.unlocked ? `${ts.ring} ${ts.bg} ${ts.text}` : 'border-slate-700 bg-slate-900/50 text-slate-500'
+                                  tier.unlocked ? `${ts.ring} ${ts.bg} ${ts.text}` : 'border-slate-700 bg-slate-900/50 text-slate-500'
                                 }`}
                               >
-                                {t.unlocked ? <Check size={10} weight="bold" /> : <Lock size={10} weight="bold" />}
-                                {t.name}: {t.threshold} · {t.reward} Bits
+                                {tier.unlocked ? <Check size={10} weight="bold" /> : <Lock size={10} weight="bold" />}
+                                {t('achievements.tierChip', { name: tier.name, threshold: tier.threshold, reward: tier.reward })}
                               </span>
                             );
                           })}
@@ -537,10 +547,10 @@ export default function ProfilePage() {
             <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none"></div>
             <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 mb-2 flex items-center gap-3 relative z-10">
               <Trophy size={32} weight="duotone" className="text-yellow-400" />
-              Hall of Fame
+              {t('hallOfFame.title')}
             </h2>
             <p className="text-slate-400 text-sm font-medium mb-8 relative z-10 max-w-2xl">
-              The most loyal cards in {profile.user.username}'s collection, battle-tested and forged through countless victories.
+              {t('hallOfFame.subtitle', { username: profile.user.username })}
             </p>
             
             <div className="flex flex-none overflow-x-auto gap-6 sm:gap-8 pb-8 pt-2 snap-x snap-mandatory hide-scrollbar relative z-10">
@@ -573,9 +583,9 @@ export default function ProfilePage() {
         {/* ═══════════ TOP DEVELOPERS ═══════════ */}
         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl">
           <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 mb-2 flex items-center gap-3">
-            Top Developers
+            {t('topCards.title')}
           </h2>
-          <p className="text-slate-500 text-xs font-medium mb-8 uppercase tracking-wider">Most battle-hardened cards in the collection</p>
+          <p className="text-slate-500 text-xs font-medium mb-8 uppercase tracking-wider">{t('topCards.subtitle')}</p>
           
           {profile.topCards.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
@@ -624,8 +634,8 @@ export default function ProfilePage() {
           ) : (
             <div className="text-center py-16 text-slate-500 bg-slate-800/20 rounded-[2rem] border-2 border-dashed border-slate-700/50 flex flex-col items-center">
               <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 text-2xl text-slate-500">😔</div>
-              <p className="font-bold text-lg">No collection yet.</p>
-              <p className="text-sm mt-1">This user hasn't collected any developers.</p>
+              <p className="font-bold text-lg">{t('topCards.emptyTitle')}</p>
+              <p className="text-sm mt-1">{t('topCards.emptyText')}</p>
             </div>
           )}
         </div>
@@ -635,9 +645,9 @@ export default function ProfilePage() {
           <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-6 sm:p-8 shadow-xl">
             <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400 mb-1 flex items-center gap-3">
               <Sword size={24} weight="duotone" className="text-rose-400" />
-              Recent Battles
+              {t('battles.title')}
             </h2>
-            <p className="text-slate-500 text-xs font-medium mb-6">Last {profile.recentBattles.length} completed battles</p>
+            <p className="text-slate-500 text-xs font-medium mb-6">{t('battles.subtitle', { count: profile.recentBattles.length })}</p>
 
             <div className="space-y-2">
               {profile.recentBattles.map((battle) => {
@@ -657,13 +667,13 @@ export default function ProfilePage() {
                       <div className={`px-3 py-1 rounded-lg text-xs font-black ${
                         battle.won ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
                       }`}>
-                        {battle.won ? 'WIN' : 'LOSS'}
+                        {battle.won ? t('battles.win') : t('battles.loss')}
                       </div>
                       <div className="text-sm font-bold text-white tabular-nums w-12 text-center">
                         {battle.playerScore}–{battle.opponentScore}
                       </div>
                       <div className="text-[10px] text-slate-500 w-16 text-right hidden sm:block">
-                        {new Date(battle.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {new Date(battle.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                       </div>
                       {isExpanded ? <CaretUp size={14} className="text-slate-500" /> : <CaretDown size={14} className="text-slate-500" />}
                     </button>
@@ -680,7 +690,7 @@ export default function ProfilePage() {
                           <div className="p-4 pt-0 border-t border-slate-800/50">
                             <div className="grid grid-cols-2 gap-4 mt-3">
                               <div>
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Your Team</div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.yourTeam')}</div>
                                 {(battle.isChallenger ? battle.challengerTeam : battle.defenderTeam)?.map((c: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
                                     <img src={c.avatarUrl || `https://github.com/${c.name}.png`} alt={c.name} className="w-6 h-6 rounded-full" />
@@ -690,7 +700,7 @@ export default function ProfilePage() {
                                 ))}
                               </div>
                               <div>
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Opponent Team</div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.opponentTeam')}</div>
                                 {(battle.isChallenger ? battle.defenderTeam : battle.challengerTeam)?.map((c: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
                                     <img src={c.avatarUrl || `https://github.com/${c.name}.png`} alt={c.name} className="w-6 h-6 rounded-full" />
@@ -715,13 +725,13 @@ export default function ProfilePage() {
         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-[2rem] p-8 sm:p-10 shadow-xl">
           <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 mb-8 flex items-center gap-3">
             <Users size={28} weight="duotone" className="text-blue-400" />
-            Friends
+            {t('friends.title')}
             <span className="px-3 py-1 bg-slate-800 text-xs text-slate-400 font-bold rounded-full uppercase tracking-widest border border-slate-700">
               {profile.friends.length}
             </span>
             {isOwnProfile && (
               <Link href="/friends" className="ml-auto text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 hover:border-indigo-500/40 hover:bg-indigo-500/15">
-                Manage Friends →
+                {t('friends.manage')}
               </Link>
             )}
           </h2>
@@ -741,7 +751,7 @@ export default function ProfilePage() {
                     {friend.username}
                   </div>
                   <div className="text-xs text-slate-500 font-medium mt-1">
-                    Level {friend.level}
+                    {t('level', { level: friend.level })}
                   </div>
                 </Link>
               ))}
@@ -749,8 +759,8 @@ export default function ProfilePage() {
           ) : (
             <div className="text-center py-12 text-slate-500 bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-700/50 flex flex-col items-center">
               <Users size={40} className="mb-3 opacity-40" />
-              <p className="font-bold text-lg">No friends yet.</p>
-              <p className="text-sm mt-1">This user hasn't added any friends.</p>
+              <p className="font-bold text-lg">{t('friends.emptyTitle')}</p>
+              <p className="text-sm mt-1">{t('friends.emptyText')}</p>
             </div>
           )}
         </div>

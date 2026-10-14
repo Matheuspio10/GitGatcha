@@ -1,0 +1,142 @@
+{
+  "slots": {
+    "opener": "Opener",
+    "mid": "Mid",
+    "closer": "Closer",
+    "openerDesc": "Leads the battle — sets the pace",
+    "midDesc": "Mid-game fighter — bridges the team",
+    "closerDesc": "The finisher — closes strong",
+    "remove": "Remove from team",
+    "pickCard": "Click a card below",
+    "exhausted": "Exhausted",
+    "fatigued": "Fatigued"
+  },
+  "card": {
+    "stamina": "Stamina: {value}/100",
+    "exhaust": "Exhaust",
+    "fatigue": "Fatigue"
+  },
+  "synergy": {
+    "title": "Team Synergy",
+    "wiki": "Learn more in the Wiki",
+    "empty": "Select cards to see synergies",
+    "pythonDesc": "Every card heals {regen} of its ATK per turn (Python cards use their own {own} if higher; Jupyter counts as Python)",
+    "jsDesc": "Non-JS teammates get a {chance} Double Callback chance (+{bonus} damage)",
+    "rustDesc": "All cards take {reduction} less damage",
+    "goDesc": "All cards gain First Strike on entry",
+    "mixed": "Mixed Team",
+    "mixedDesc": "+{atk} ATK for all cards",
+    "noneYet": "No synergy yet",
+    "noneYetDesc": "Add more cards to activate synergies",
+    "none": "No synergy",
+    "noneDesc": "Use 3 different types for Mixed Team (+{atk} ATK), or pair Python, Rust, JavaScript or Go"
+  },
+  "typeChart": {
+    "title": "Type Advantage Chart",
+    "corner": "Atk ↓ / Def →",
+    "superEffective": "{mult}× (super effective)",
+    "notVeryEffective": "{mult}× (not very effective)",
+    "neutral": "1× (neutral)",
+    "note": "CSS deals {mult}× against every typed language (chaotic wildcard). Languages outside the chart are Neutral: 1× against everything.",
+    "show": "Show Type Advantage Chart",
+    "hide": "Hide Type Advantage Chart"
+  },
+  "confirm": {
+    "battleRanked": "Battle Ranked?",
+    "battleRandom": "Battle Random?",
+    "createLink": "Create a challenge link?",
+    "challengeUser": "Challenge {username}?",
+    "rankedDesc": "Your team will face the saved team of a player near your rating. Both ratings change.",
+    "randomDesc": "Your team will be matched against a random opponent.",
+    "linkDesc": "Anyone with the link can accept it within {hours}h. You'll get the link to share.",
+    "challengeDesc": "Your challenge will be sent to {username}. They have {hours}h to respond.",
+    "stake": "Stake: {stake} BITS each, winner takes {total}. Refunded if nobody accepts.",
+    "yourTeam": "Your Team (in order)",
+    "fatigued": "FATIGUED ({stamina}%)",
+    "activeBonuses": "Active Bonuses",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "battle": "⚡ Battle!",
+    "sendChallenge": "🎯 Send Challenge"
+  },
+  "friends": {
+    "title": "Challenge a Friend",
+    "close": "Close",
+    "search": "Search friends...",
+    "openLink": "Anyone with a link",
+    "openLinkDesc": "Get a link to share anywhere; the first player to accept fights you.",
+    "loading": "Loading friends...",
+    "yourFriends": "Your Friends",
+    "level": "LVL {level}",
+    "noMatch": "No friends found matching \"{search}\"",
+    "challengeAnyway": "Challenge anyway",
+    "none": "You have no friends yet.",
+    "noneHint": "Add friends from their profiles to challenge them easily!"
+  },
+  "filters": {
+    "sheetLabel": "Filter and sort",
+    "sheetTitle": "Filter & Sort",
+    "close": "Close",
+    "apply": "Apply Filters",
+    "rarity": "Rarity:",
+    "rarityTitle": "Rarity",
+    "type": "Type:",
+    "typeTitle": "Type / Language",
+    "pack": "Pack:",
+    "packTitle": "Pack Origin",
+    "sortBy": "Sort By",
+    "sortCards": "Sort cards",
+    "sortOption": "Sort: {label}",
+    "power": "Power",
+    "rarityOption": "Rarity",
+    "button": "Filters",
+    "clearAll": "Clear all",
+    "noMatch": "No cards match your filters.",
+    "clear": "Clear filters"
+  },
+  "empty": {
+    "noCards": "You have no cards!",
+    "noCardsHint": "Open some booster packs to get started.",
+    "goStore": "Go to the Store",
+    "needThree": "You need at least 3 cards to battle.",
+    "youHave": "You have {count, plural, one {# card} other {# cards}}. Open more booster packs!",
+    "openPacks": "Open Booster Packs"
+  },
+  "league": {
+    "select": "Select League Mode",
+    "rulesWithFee": "{rules} {fee} BITS entry.",
+    "entry": "Entry: {fee} BITS",
+    "teamPower": "Team Power:",
+    "legendaryFee": "{fee} BITS entry fee will be charged per battle (win pays {win}, a loss pays {loss})",
+    "balance": "Balance: <b>{bits}</b>"
+  },
+  "actions": {
+    "responding": "Responding to <hl>{username}</hl>'s challenge",
+    "respondHint": "Select your team, then confirm below.",
+    "selectMore": "Select {count} more",
+    "fighting": "Fighting...",
+    "acceptFight": "Accept & Fight!",
+    "matchmaking": "Matchmaking...",
+    "battleRanked": "Battle Ranked",
+    "battleRandom": "Battle Random",
+    "selectMoreCards": "Select {count, plural, one {# more card} other {# more cards}}",
+    "challengeFriend": "Challenge a Friend",
+    "reorderHint": "Click a card slot to remove it, pick a different one below, then re-place it."
+  },
+  "collection": {
+    "title": "Your Collection",
+    "count": "{count} cards"
+  },
+  "ineligible": {
+    "commonOnly": "Only Common/Uncommon cards allowed",
+    "legendaryOnly": "Only Legendary cards allowed",
+    "sharedLanguage": "Card shares a language with existing team member",
+    "noLanguage": "Card has no primary language",
+    "exceedsCapTitle": "Would exceed power cap",
+    "exceedsCap": "Exceeds cap"
+  },
+  "a11y": {
+    "closeTypeChart": "Close the type chart",
+    "removeFilter": "Remove filter: {filter}"
+  }
+}
