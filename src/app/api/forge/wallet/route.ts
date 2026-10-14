@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { apiError } from '@/lib/apiResponse';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id) return apiError('common.unauthorized', 401);
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -18,7 +19,7 @@ export async function GET() {
       }
     });
 
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) return apiError('common.userNotFound', 404);
 
     return NextResponse.json({
       currency: user.currency,
@@ -28,6 +29,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Wallet fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch wallet' }, { status: 500 });
+    return apiError('forge.walletFailed', 500);
   }
 }

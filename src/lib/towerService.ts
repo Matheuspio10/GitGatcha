@@ -45,7 +45,7 @@ async function floorTeam(weekStart: Date, floor: TowerFloor, theme: string) {
         : seededPick(pool, 1, `${seed}|${slot}`)[0];
       if (pick) cardIds.push(pick);
     }
-    if (cardIds.length < 3) throw new UserFacingError('The tower is not ready yet: not enough cards in the game', 503);
+    if (cardIds.length < 3) throw new UserFacingError('tower.notReady', 503);
     try {
       await prisma.towerFloorTeam.create({ data: { weekStart, floor: floor.floor, theme, cardIds } });
     } catch (err) {
@@ -105,7 +105,7 @@ export async function fightTower(userId: string, team: PlayerTeamCard[], now = n
     update: {},
   });
   const floor = TOWER_FLOORS[run.cleared];
-  if (!floor) throw new UserFacingError(`You already conquered ${towerName(theme)} this week. A new tower opens on Monday.`);
+  if (!floor) throw new UserFacingError('tower.alreadyConquered', 400, { theme });
 
   const opponents = await floorTeam(weekStart, floor, theme);
   const cTeam = team.map(c => toBattleCard(c, c.stamina, c.loyaltyTier, c.trainingLevel));

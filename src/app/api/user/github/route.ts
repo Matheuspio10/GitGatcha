@@ -4,12 +4,13 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getTokenOwnerLogin } from '@/lib/githubService';
 import { GITHUB_LINK_BONUS, SIGNATURE_EDITION } from '@/lib/githubLink';
+import { apiError } from '@/lib/apiResponse';
 
 // GET: GitHub connection status of the logged-in player
 export async function GET() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
 
   const [account, user, signature] = await Promise.all([
     prisma.account.findFirst({ where: { userId, provider: 'github' }, select: { access_token: true } }),
@@ -45,14 +46,14 @@ export async function GET() {
 export async function DELETE() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!userId) return apiError('common.unauthorized', 401);
 
   const [user, otherAccounts] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { password: true } }),
     prisma.account.count({ where: { userId, provider: { not: 'github' } } }),
   ]);
   if (!user?.password && otherAccounts === 0) {
-    return NextResponse.json({ error: 'GitHub is your only way to sign in, so it cannot be disconnected.' }, { status: 400 });
+    return apiError('user.githubOnlySignIn');
   }
 
   await prisma.account.deleteMany({ where: { userId, provider: 'github' } });

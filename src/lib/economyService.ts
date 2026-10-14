@@ -155,13 +155,13 @@ export async function advanceMissionProgress(userId: string, type: string, targe
 export async function checkDevMission(userId: string): Promise<{ done: boolean; reward?: number; login?: string }> {
   const missions = await getUserMissions(userId);
   const dev = missions.find(m => m.period === 'dev');
-  if (!dev) throw new UserFacingError('Connect your GitHub account to get dev missions', 400);
+  if (!dev) throw new UserFacingError('missions.connectGitHub', 400);
   if (dev.completed) return { done: true };
 
   const account = await prisma.account.findFirst({ where: { userId, provider: 'github' }, select: { access_token: true } });
   const token = account?.access_token ?? undefined;
   const login = token ? await getTokenOwnerLogin(token) : null;
-  if (!login) throw new UserFacingError('GitHub no longer accepts your connection. Reconnect it in your profile.', 400);
+  if (!login) throw new UserFacingError('missions.githubReconnect', 400);
 
   // Slow call: outside the lock
   const events = await fetchPublicEvents(login, token);
@@ -182,16 +182,16 @@ export async function rerollDailyMission(userId: string, userMissionId: string) 
     const now = new Date();
     const user = await tx.user.findUnique({ where: { id: userId }, select: { missionRerollAt: true } });
     if (user?.missionRerollAt && user.missionRerollAt.getTime() >= utcDayStart(now).getTime()) {
-      throw new UserFacingError('You already swapped a mission today', 409);
+      throw new UserFacingError('missions.alreadySwapped', 409);
     }
     const missions = await ensureMissions(tx, userId, now);
     const target = missions.find(m => m.id === userMissionId);
-    if (!target || target.period !== 'daily') throw new UserFacingError('Mission not found', 404);
-    if (target.completed) throw new UserFacingError('This mission is already done');
+    if (!target || target.period !== 'daily') throw new UserFacingError('missions.notFound', 404);
+    if (target.completed) throw new UserFacingError('missions.alreadyDone');
 
     const held = new Set(missions.filter(m => m.period === 'daily').map(m => m.mission.description));
     const options = MISSION_POOL.filter(m => !held.has(m.description));
-    if (options.length === 0) throw new UserFacingError('No other mission to swap to');
+    if (options.length === 0) throw new UserFacingError('missions.noSwapOption');
     const replacement = options[randomInt(0, options.length)];
     const [missionId] = await missionIdsFor(tx, [replacement]);
 
@@ -223,7 +223,7 @@ export async function claimDailyReward(userId: string) {
       select: { lastDailyClaimAt: true, loginStreak: true }
     });
 
-    if (!user) return { success: false as const, error: 'User not found' };
+    if (!user) return { success: false as const, error: 'common.userNotFound' as const };
 
     const now = new Date();
     const status = loginCalendarState(user.loginStreak, user.lastDailyClaimAt, now);
@@ -231,7 +231,7 @@ export async function claimDailyReward(userId: string) {
     if (!status.canClaim && user.lastDailyClaimAt) {
       return {
         success: false as const,
-        error: 'Daily reward already claimed',
+        error: 'store.dailyAlreadyClaimed' as const,
         nextClaimAt: new Date(user.lastDailyClaimAt.getTime() + DAILY_COOLDOWN_MS).toISOString(),
         remainingMs: status.remainingMs,
         streak: status,

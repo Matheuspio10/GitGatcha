@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+/** The team builder's slots (global cardIds, up to 3; an empty team is fine). */
+const bodySchema = z.object(
+  {
+    cardIds: z
+      .array(z.string({ error: 'team.invalidPayload' }).max(100, { error: 'team.invalidPayload' }), { error: 'team.invalidPayload' })
+      .max(3, { error: 'team.invalidPayload' }),
+  },
+  { error: 'team.invalidPayload' },
+);
 
 /**
  * Handle GET to fetch which cards are currently marked as inActiveTeam.
@@ -10,7 +22,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const activeCards = await prisma.userCard.findMany({
       where: {
@@ -26,7 +38,7 @@ export async function GET() {
     return NextResponse.json({ activeCards });
   } catch (error) {
     console.error('Fetch active team error:', error);
-    return NextResponse.json({ error: 'Failed to fetch active team' }, { status: 500 });
+    return apiError('team.fetchFailed', 500);
   }
 }
 
@@ -40,12 +52,11 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
-    const { cardIds } = await req.json(); // These are the global cardIds
-    if (!Array.isArray(cardIds) || cardIds.length > 3 || cardIds.some(id => typeof id !== 'string')) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
-    }
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { cardIds } = body.data; // These are the global cardIds
 
     await prisma.$transaction([
       prisma.userCard.updateMany({
@@ -61,6 +72,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Update active team error:', error);
-    return NextResponse.json({ error: 'Failed to update active team' }, { status: 500 });
+    return apiError('team.updateFailed', 500);
   }
 }

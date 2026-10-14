@@ -4,6 +4,14 @@ import bcrypt from 'bcryptjs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { STARTING_BITS } from '@/lib/onboarding';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+// Same rules as before (an e-mail and a password of 6+ characters), now bounded
+const bodySchema = z.object({
+  email: z.string({ error: 'auth.invalidInput' }).min(1, { error: 'auth.invalidInput' }).max(254, { error: 'auth.invalidInput' }),
+  password: z.string({ error: 'auth.invalidInput' }).min(6, { error: 'auth.invalidInput' }).max(200, { error: 'auth.invalidInput' }),
+}, { error: 'auth.invalidInput' });
 
 /**
  * A free username based on the e-mail's local part (usernames are unique: two
@@ -25,11 +33,9 @@ export async function POST(req: Request) {
     const limited = await enforceRateLimit(req, 'register', 5, 60 * 60);
     if (limited) return limited;
 
-    const { email, password } = await req.json();
-
-    if (!email || !password || password.length < 6) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
-    }
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { email, password } = body.data;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -37,7 +43,7 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
+      return apiError('auth.emailExists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -59,6 +65,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Register error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

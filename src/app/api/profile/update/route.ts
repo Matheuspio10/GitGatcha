@@ -4,8 +4,26 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { validateProfileImage } from '@/lib/profileImage';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
 
 const MAX_BIO_LENGTH = 160;
+const MAX_NAME_LENGTH = 30;
+const PREFERRED_LANGUAGES = [
+  'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go',
+  'Rust', 'Ruby', 'Swift', 'Kotlin', 'PHP', 'Dart', 'Scala', 'Elixir',
+  'Haskell', 'Lua', 'R', 'MATLAB', 'Shell',
+] as const;
+
+// The edit modal always sends every field: an empty name or an unknown language
+// is ignored (as before), the images are checked by validateProfileImage below.
+const bodySchema = z.object({
+  image: z.string({ error: 'profile.avatar.invalid' }).nullable().optional(),
+  bannerImage: z.string({ error: 'profile.banner.invalid' }).nullable().optional(),
+  bio: z.string().max(MAX_BIO_LENGTH, { error: 'profile.bioTooLong' }).nullable().optional(),
+  displayName: z.string().trim().min(1).max(MAX_NAME_LENGTH).optional().catch(undefined),
+  preferredLanguage: z.enum(PREFERRED_LANGUAGES).nullable().optional().catch(undefined),
+});
 
 // Allow larger JSON payloads for base64 images
 export const maxDuration = 10;
@@ -14,23 +32,15 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session?.user?.id) return apiError('common.unauthorized', 401);
 
-    const body = await req.json();
-    const { image, bannerImage, bio, displayName, preferredLanguage } = body;
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { image, bannerImage, bio, displayName, preferredLanguage } = body.data;
 
     const updateData: Prisma.UserUpdateInput = {};
 
-    // Validate and set bio
-    if (bio !== undefined) {
-      if (typeof bio === 'string' && bio.length <= MAX_BIO_LENGTH) {
-        updateData.bio = bio.trim() || null;
-      } else if (bio !== null) {
-        return NextResponse.json({ error: `Bio must be ${MAX_BIO_LENGTH} characters or less` }, { status: 400 });
-      }
-    }
+    if (bio !== undefined) updateData.bio = bio?.trim() || null;
 
     // Validate avatar and banner. A value the profile already has (e.g. a GitHub
     // avatar URL from before this check) is sent back unchanged by the edit modal:
@@ -60,32 +70,13 @@ export async function POST(req: Request) {
         continue;
       }
       if ((await loadCurrent())?.[field] === value) continue; // unchanged legacy value
-      return NextResponse.json({ error: check.error }, { status: 400 });
+      return apiError(check.code, 400, check.values);
     }
 
-    // Validate and set display name
-    if (displayName !== undefined && typeof displayName === 'string') {
-      const trimmed = displayName.trim();
-      if (trimmed.length >= 1 && trimmed.length <= 30) {
-        updateData.name = trimmed;
-      }
-    }
+    if (displayName !== undefined) updateData.name = displayName;
+    if (preferredLanguage !== undefined) updateData.preferredLanguage = preferredLanguage;
 
-    // Validate and set preferred language
-    if (preferredLanguage !== undefined) {
-      const validLanguages = [
-        'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go',
-        'Rust', 'Ruby', 'Swift', 'Kotlin', 'PHP', 'Dart', 'Scala', 'Elixir',
-        'Haskell', 'Lua', 'R', 'MATLAB', 'Shell', null
-      ];
-      if (preferredLanguage === null || validLanguages.includes(preferredLanguage)) {
-        updateData.preferredLanguage = preferredLanguage;
-      }
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
-    }
+    if (Object.keys(updateData).length === 0) return apiError('profile.noValidFields');
 
     const updated = await prisma.user.update({
       where: { id: userId },
@@ -103,7 +94,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, user: updated });
   } catch (error) {
-    console.error('Error updating profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return routeError(error, 'common.internal', 'Error updating profile');
   }
 }

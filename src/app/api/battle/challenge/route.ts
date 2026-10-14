@@ -9,6 +9,17 @@ import { spendBits } from '@/lib/bitsLedger';
 import { CHALLENGE_TTL_HOURS } from '@/lib/battleConfig';
 import { OPEN_CHALLENGE } from '@/lib/challenges';
 import { areFriends, expireChallenges, parseStake } from '@/lib/challengeService';
+import { teamCardIdsSchema } from '@/lib/playerTeam';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+const bodySchema = z.object({
+  defenderUsername: z.string().max(100).optional(),
+  cardIds: teamCardIdsSchema,
+  // A number from the stake field; parseStake checks the range (and accepts a numeric string or empty)
+  stake: z.union([z.number(), z.string().max(20), z.null()]).optional(),
+  open: z.boolean().optional(),
+});
 
 /** Challenges that still hold their challenger's cards. */
 const OPEN_CHALLENGE_STATUSES = ['PENDING', 'RESOLVING'];
@@ -27,25 +38,25 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
-    const { defenderUsername, cardIds, stake: rawStake, open: openRequest } = await req.json();
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { defenderUsername, cardIds, stake: rawStake, open: openRequest } = body.data;
     // Open challenge: no defender yet, anyone with the link may accept it
     const open = openRequest === true || defenderUsername === OPEN_CHALLENGE;
     const stake = parseStake(rawStake);
 
-    if (!Array.isArray(cardIds) || cardIds.length !== 3) {
-      return NextResponse.json({ error: 'You must select exactly 3 cards for your team' }, { status: 400 });
-    }
-
     // Direct challenges are between friends only
     let defender: { id: string; username: string | null } | null = null;
     if (!open) {
-      defender = await prisma.user.findUnique({ where: { username: defenderUsername }, select: { id: true, username: true } });
-      if (!defender) return NextResponse.json({ error: 'Player not found' }, { status: 404 });
-      if (defender.id === userId) return NextResponse.json({ error: 'You cannot challenge yourself' }, { status: 400 });
+      defender = defenderUsername
+        ? await prisma.user.findUnique({ where: { username: defenderUsername }, select: { id: true, username: true } })
+        : null;
+      if (!defender) return apiError('challenge.playerNotFound', 404);
+      if (defender.id === userId) return apiError('challenge.cannotChallengeSelf');
       if (!(await areFriends(userId, defender.id))) {
-        return NextResponse.json({ error: 'You can only challenge your friends. Send a challenge link instead.' }, { status: 403 });
+        return apiError('challenge.friendsOnly', 403);
       }
     }
 
@@ -57,7 +68,7 @@ export async function POST(req: Request) {
     });
 
     const requiredCounts: Record<string, number> = {};
-    for (const id of cardIds as string[]) {
+    for (const id of cardIds) {
       requiredCounts[id] = (requiredCounts[id] || 0) + 1;
     }
 
@@ -68,18 +79,18 @@ export async function POST(req: Request) {
 
     for (const [id, count] of Object.entries(requiredCounts)) {
       if (!ownedCounts[id] || ownedCounts[id] < count) {
-        return NextResponse.json({ error: 'One or more cards not found in your collection' }, { status: 404 });
+        return apiError('team.cardsNotOwned', 404);
       }
     }
 
     // Preserve chosen card order
     // Validate stamina
-    for (const id of cardIds as string[]) {
+    for (const id of cardIds) {
       const uc = userCards.find(u => u.cardId === id);
       if (uc) {
         const currentStamina = getCardStamina(uc);
         if (currentStamina === 0) {
-          return NextResponse.json({ error: `Card ${uc.card.name} is exhausted and cannot battle` }, { status: 400 });
+          return apiError('team.cardExhausted', 400, { name: uc.card.name });
         }
       }
     }
@@ -127,16 +138,16 @@ export async function POST(req: Request) {
       }
       const busyCard = challengerTeam.find(c => busy.has(c.id));
       if (busyCard) {
-        throw new UserFacingError(`${busyCard.name} is already in a pending challenge. Wait for it to resolve or pick another card.`, 409);
+        throw new UserFacingError('challenge.cardBusy', 409, { name: busyCard.name });
       }
       if (new Set(teamUserCardIds).size !== teamUserCardIds.length) {
-        throw new UserFacingError('You cannot use the same card twice in a team');
+        throw new UserFacingError('team.duplicateCard');
       }
 
       // The challenger's stake is held until the challenge resolves, expires or is cancelled
       if (stake > 0) {
         const paid = await spendBits(userId, stake, 'challenge_stake', { tx, detail: defender ? `Challenge vs ${defender.username}` : 'Open challenge' });
-        if (paid === null) throw new UserFacingError(`You need ${stake} BITS for this stake`);
+        if (paid === null) throw new UserFacingError('challenge.stakeNotAffordable', 400, { stake });
       }
 
       return tx.battle.create({
@@ -159,11 +170,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, battle });
 
   } catch (error) {
-    if (error instanceof UserFacingError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    console.error('Challenge creation error:', error);
-    return NextResponse.json({ error: 'Failed to create challenge' }, { status: 500 });
+    return routeError(error, 'challenge.createFailed', 'Challenge creation error');
   }
 }
 
@@ -172,7 +179,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     // Expire old challenges (stakes go back to their challengers)
     await expireChallenges();
@@ -205,6 +212,6 @@ export async function GET() {
 
   } catch (error) {
     console.error('Challenge fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch challenges' }, { status: 500 });
+    return apiError('challenge.fetchFailed', 500);
   }
 }

@@ -8,6 +8,22 @@ import { cookies } from 'next/headers';
 import { GUEST_COOKIE, claimGuestPull } from '@/lib/guestPack';
 import { REFERRAL_COOKIE } from '@/lib/referral';
 import { attachReferrer, payReferralSafe } from '@/lib/referralService';
+import { apiError, readBody, routeError } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+const USERNAME_MIN = 3;
+const USERNAME_MAX = 20;
+
+// The setup form sends the username and, optionally, the invite code typed in.
+// An unusable invite code is ignored (as attachReferrer does with unknown ones).
+const bodySchema = z.object({
+  username: z
+    .string({ error: 'user.usernameLength' })
+    .min(USERNAME_MIN, { error: 'user.usernameLength' })
+    .max(USERNAME_MAX, { error: 'user.usernameLength' })
+    .regex(/^[a-zA-Z0-9_]+$/, { error: 'user.usernameChars' }),
+  referralCode: z.string().max(100).optional().catch(undefined),
+}, { error: 'user.usernameLength' });
 
 export async function POST(req: Request) {
   try {
@@ -15,19 +31,12 @@ export async function POST(req: Request) {
     const userId = session?.user?.id;
     
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('common.unauthorized', 401);
     }
 
-    const { username, referralCode } = await req.json();
-
-    if (!username || typeof username !== 'string' || username.length < 3 || username.length > 20) {
-      return NextResponse.json({ error: 'Username must be between 3 and 20 characters.' }, { status: 400 });
-    }
-
-    const isAlphanumeric = /^[a-zA-Z0-9_]+$/.test(username);
-    if (!isAlphanumeric) {
-      return NextResponse.json({ error: 'Username can only contain letters, numbers, and underscores.' }, { status: 400 });
-    }
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const { username, referralCode } = body.data;
 
     // Taken by ANOTHER player (case-insensitive). The player's own name doesn't count:
     // the setup form comes pre-filled with the name generated at sign-up.
@@ -36,7 +45,7 @@ export async function POST(req: Request) {
       select: { id: true },
     });
     if (taken) {
-      return NextResponse.json({ error: 'Username is already taken. Please choose another one.' }, { status: 409 });
+      return apiError('user.usernameTaken', 409);
     }
 
     // Save the username; the first time, the player also gets the starter pack
@@ -68,7 +77,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, username, starterPack, guestCards });
   } catch (error) {
-    console.error('Error setting username:', error);
-    return NextResponse.json({ error: 'Internal server error while saving username.' }, { status: 500 });
+    return routeError(error, 'user.setupFailed', 'Error setting username');
   }
 }

@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { idSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const bodySchema = z.object({ friendshipId: idSchema.optional() }).optional();
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession();
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('common.unauthorized', 401);
     }
 
-    const { friendshipId } = await req.json();
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const friendshipId = body.data?.friendshipId;
 
     if (!friendshipId) {
-      return NextResponse.json({ error: 'Friendship ID is required' }, { status: 400 });
+      return apiError('friends.friendshipIdRequired');
     }
 
     const currentUser = await prisma.user.findUnique({
@@ -21,7 +28,7 @@ export async function POST(req: Request) {
     });
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiError('common.userNotFound', 404);
     }
 
     // Find the friendship
@@ -30,12 +37,12 @@ export async function POST(req: Request) {
     });
 
     if (!friendship) {
-      return NextResponse.json({ error: 'Friendship not found' }, { status: 404 });
+      return apiError('friends.friendshipNotFound', 404);
     }
 
     // Ensure the user is part of the friendship
     if (friendship.userId !== currentUser.id && friendship.friendId !== currentUser.id) {
-      return NextResponse.json({ error: 'Unauthorized to remove this friend' }, { status: 403 });
+      return apiError('friends.cannotRemove', 403);
     }
 
     // Delete the friendship
@@ -46,6 +53,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error removing friend:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }

@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da primeira rodada da onda 8 (PR #58). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da segunda rodada da onda 8 (PR #59). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 213 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 219 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -56,12 +56,11 @@
 
 ## ▶️ Próximo passo
 
-**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58). Próximas, em ordem sugerida:
-1. **Validação com zod** nas rotas que recebem corpo (compra, abertura, treino, forja, desafios, perfil), com mensagens de erro já traduzíveis (fecha parte do PT-BR que sobrou, 2.5).
-2. **Headers de segurança e CSP** no `next.config.ts` (começar com CSP em modo report-only) e otimização de imagens.
-3. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
-4. **Reduzir o lint** (98 erros, quase todos `any`).
-5. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco.
+**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59). Próximas, em ordem sugerida:
+1. **Headers de segurança e CSP** no `next.config.ts` (começar com CSP em modo report-only) e otimização de imagens.
+2. **Testes de concorrência** (compra, abertura, daily, desafio) contra a branch dev.
+3. **Reduzir o lint** (98 erros, quase todos `any`).
+4. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco.
 
 Depois: **onda 9** (grandes apostas e monetização).
 
@@ -365,6 +364,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 8 — zod e erros da API traduzidos, rodada 2 (PR #59)
+- **zod em todas as rotas que recebem corpo** (as 23 rotas; ao todo 40 rotas passaram pelo novo tratamento de erro, e só o cron ficou de fora, por não ser do jogador). `readBody(req, schema)` (`src/lib/apiResponse.ts`) lê e valida; corpo ausente ou que não é JSON vira 400, em vez do 500 que várias rotas davam ao quebrar no `req.json()`. Textos e listas têm tamanho máximo (ids até 100, e-mail até 254, senha até 200, até 1000 ids no changelog). Os schemas aceitam exatamente o que as telas mandam hoje (conferido em cada `fetch`).
+- **Erros no idioma do jogador:** toda resposta de erro é `{ error, code }`. O `error` já vem traduzido pelo cookie de idioma (as telas mostram como antes, sem mudança nos clientes) e o `code` é a chave estável em `messages/<idioma>/apiErrors.json` (142 chaves, por área: `common`, `store`, `battle`, `challenge`, `friends`…). Inclui o 429 do limite de requisições, as mensagens de imagem do perfil e a recompensa diária.
+- **`UserFacingError` recebe a chave**, não o texto (`new UserFacingError('forge.alreadyOwned')`); as chaves são tipadas, então chave errada quebra o `tsc`. O `routeError` do fim de cada rota traduz esses erros e registra o resto. A parte pura (`parseBody`) tem teste próprio. Guia em `docs/i18n.md` ("API errors").
+- **Mudanças pequenas de comportamento:** erros internos não vazam mais o `err.message` (o "Failed to respond to challenge: …" do desafio); as corridas de aceitar o mesmo desafio agora dizem "Battle is no longer pending" em vez do erro genérico; "Insufficient BITS" da recuperação de carta virou o "Not enough BITS" comum; números nas mensagens seguem o idioma (1.000 em PT). Desafio direto sem destinatário dá 404 em vez de 500.
+- Feito por 3 agentes em paralelo (batalha; economia; social e conta), com a infra e 5 rotas de referência antes.
+
 ### Onda 7 — PT-BR, parte 3: dados do jogo e wiki (PR #57)
 - **Como funciona** (`src/i18n/gameText.ts`): os catálogos continuam em inglês em `src/lib` (servidor, testes e banco usam esse texto) e são traduzidos **onde aparecem**, pelo id do item (`packs.<id>.name`, `achievements.<id>.name`, `leagues.<MODO>.rules`…), com o inglês do código como reserva. Números vêm das constantes como `{variáveis}`, então a wiki e as cartas continuam seguindo `src/lib` (regra de ouro 7). Regras no `docs/i18n.md`.
 - **Feito em duas fases, por 10 agentes:** primeiro os catálogos (4 namespaces novos: `gamePacks`, `gameAchievements`, `gameBattle`, `game`; ~440 chaves, cada um conferido por script contra o texto do código), depois as telas (cada agente com arquivos exclusivos) e a wiki inteira (~190 chaves).
@@ -414,7 +420,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|
 | Notificações: limitar e limpar a lista, que cresce sem fim | P |
 | ~~**Português (PT-BR)** com next-intl~~ | ✅ PR #55, #56, #57 |
-| PT-BR: o que ainda sai em inglês. Textos **gravados no banco** em inglês (mensagens de notificações, detalhes do histórico de BITS, origem dos fragmentos, log das batalhas) e as **mensagens de erro das APIs**. Caminho: gravar chave + valores em vez do texto pronto (notificações e log) e traduzir as rotas com `getTranslations`. Também o "Anonymous" do ranking (só para contas sem apelido) | M |
+| PT-BR: o que ainda sai em inglês. Textos **gravados no banco** em inglês (mensagens de notificações, detalhes do histórico de BITS, origem dos fragmentos, log das batalhas) e as mensagens de **sucesso** de algumas rotas (ex.: "Rewards claimed"). Caminho: gravar chave + valores em vez do texto pronto (notificações e log). Também o "Anonymous" do ranking (só para contas sem apelido). ~~Mensagens de erro das APIs~~ ✅ PR #59 | M |
 
 ### 2.6 Áudio (restante)
 | Item | Esforço |
@@ -438,7 +444,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Mover JSON (inventário, notificações, fragmentos) para tabelas próprias | G |
 | ~~Índices restantes~~ | ✅ PR #58 |
 | ~~`select` nas consultas quentes~~ | ✅ PR #58 (e a senha omitida por padrão) |
-| Validação com zod em todas as rotas | M |
+| ~~Validação com zod em todas as rotas~~ | ✅ PR #59 (e os erros traduzidos) |
 | Sentry/logs estruturados + registrar os headers de limite do GitHub | P |
 | `next.config.ts`: otimização de imagens e headers de segurança (CSP) | P |
 | Reduzir os 98 erros de lint (quase todos `any`) | M |

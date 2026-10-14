@@ -6,11 +6,12 @@ import { getSerializablePacks, storePacks } from '@/lib/packDefinitions';
 import { forgeCostFor, isFeaturedDev } from '@/lib/weeklyEvents';
 import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { apiError } from '@/lib/apiResponse';
 
 export async function GET(req: Request) {
   // Each lookup spends the server's GitHub quota: logged-in players only
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!session?.user?.id) return apiError('common.unauthorized', 401);
 
   const limited = await enforceRateLimit(req, 'forge-search', 30, 60, session.user.id);
   if (limited) return limited;
@@ -18,12 +19,12 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const username = searchParams.get('username');
 
-  if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
-  if (!isValidGitHubLogin(username)) return NextResponse.json({ error: 'Invalid GitHub username' }, { status: 400 });
+  if (!username) return apiError('forge.usernameRequired');
+  if (!isValidGitHubLogin(username)) return apiError('forge.invalidUsername');
 
   try {
     const stats = await fetchGitHubUserStats(username);
-    if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });
+    if (!stats) return apiError('forge.devNotFound', 404);
 
     // The Dev of the Week costs less this week
     const featured = isFeaturedDev(stats.githubUsername, await getFeaturedDevLogin());
@@ -37,6 +38,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ stats, cost, fullCost, featured, recommendedPacks });
   } catch (error) {
     console.error('Search error:', error);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    return apiError('forge.searchFailed', 500);
   }
 }

@@ -4,33 +4,40 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { fetchGitHubUserStats } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+const MAX_WISHLIST = 5;
+const bodySchema = z.object({ username: z.string().trim().max(100).optional() }).optional();
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id) return apiError('common.unauthorized', 401);
 
-    const { username } = await req.json();
-    if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const username = body.data?.username;
+    if (!username) return apiError('forge.usernameRequired');
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) return apiError('common.userNotFound', 404);
 
     const wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
 
-    if (wishlist.length >= 5) {
-      return NextResponse.json({ error: 'Wishlist is full (max 5)' }, { status: 400 });
+    if (wishlist.length >= MAX_WISHLIST) {
+      return apiError('forge.wishlistFull', 400, { max: MAX_WISHLIST });
     }
     
     // Check if already in wishlist
     if (wishlist.some(w => w && w.username && w.username.toLowerCase() === username.toLowerCase())) {
-      return NextResponse.json({ error: 'Already in wishlist' }, { status: 400 });
+      return apiError('forge.alreadyInWishlist');
     }
 
     const stats = await fetchGitHubUserStats(username);
-    if (!stats) return NextResponse.json({ error: 'Developer not found' }, { status: 404 });
+    if (!stats) return apiError('forge.devNotFound', 404);
     if (!stats.primaryLanguage || stats.primaryLanguage === 'Unknown') {
-      return NextResponse.json({ error: 'Developer lacks a primary language' }, { status: 400 });
+      return apiError('forge.noPrimaryLanguage');
     }
 
     const { fragments } = getInvocationCost(stats.rarity);
@@ -55,22 +62,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, wishlist });
   } catch (error) {
     console.error('Wishlist POST error:', error);
-    return NextResponse.json({ error: 'Failed to add to wishlist' }, { status: 500 });
+    return apiError('forge.wishlistAddFailed', 500);
   }
 }
 
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id) return apiError('common.unauthorized', 401);
 
     const { searchParams } = new URL(req.url);
     const username = searchParams.get('username');
 
-    if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
+    if (!username) return apiError('forge.usernameRequired');
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) return apiError('common.userNotFound', 404);
 
     let wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
     wishlist = wishlist.filter(w => w && w.username && w.username.toLowerCase() !== username.toLowerCase());
@@ -84,6 +91,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true, wishlist });
   } catch (error) {
     console.error('Wishlist DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to remove from wishlist' }, { status: 500 });
+    return apiError('forge.wishlistRemoveFailed', 500);
   }
 }

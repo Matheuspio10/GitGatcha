@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { getSerializablePacks } from '@/lib/packDefinitions';
 import { InventoryItem } from '@/lib/xpService';
 import { withUserLock, asArray } from '@/lib/userLock';
+import { apiError } from '@/lib/apiResponse';
 
 const LEGACY_ID_MAP: Record<string, string> = {
   'the-go-gophers': 'go-gophers',
@@ -26,14 +27,14 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { inventory: true },
     });
 
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) return apiError('common.userNotFound', 404);
 
     let inventory = asArray<InventoryItem>(user.inventory);
 
@@ -83,6 +84,6 @@ export async function GET() {
     return NextResponse.json({ inventory: enrichedInventory });
   } catch (error) {
     console.error('Inventory error:', error);
-    return NextResponse.json({ error: 'Failed to fetch inventory' }, { status: 500 });
+    return apiError('inventory.fetchFailed', 500);
   }
 }

@@ -7,6 +7,11 @@ import { openBoosterPack, refillBoosterReserve, EmptyPackError } from '@/lib/boo
 import { advanceMissionProgress } from '@/lib/economyService';
 import { grantXP, InventoryItem, XP_AMOUNTS } from '@/lib/xpService';
 import { syncAchievementsSafe } from '@/lib/achievementService';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { packIdSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const bodySchema = z.object({ packId: packIdSchema.optional() }).optional();
 
 // Covers the opening plus the reserve refill that runs after the response
 export const maxDuration = 120;
@@ -15,10 +20,12 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
-    const { packId } = await req.json();
-    if (!packId) return NextResponse.json({ error: 'Pack ID required' }, { status: 400 });
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const packId = body.data?.packId;
+    if (!packId) return apiError('store.packRequired');
 
     // 1. Atomically take one pack of this type out of the inventory
     const takenPack = await withUserLock(userId, async (tx) => {
@@ -33,7 +40,7 @@ export async function POST(req: Request) {
     });
 
     if (!takenPack) {
-      return NextResponse.json({ error: 'Pack not found in inventory' }, { status: 404 });
+      return apiError('inventory.packNotInInventory', 404);
     }
 
     // 2. Draw the cards (talks to GitHub, so it runs outside the lock). Give the pack back if it fails.
@@ -85,8 +92,8 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Open pack error:', error);
     if (error instanceof EmptyPackError) {
-      return NextResponse.json({ error: 'Could not draw any card right now. The pack is back in your inventory, try again in a few minutes.' }, { status: 503 });
+      return apiError('inventory.emptyPack', 503);
     }
-    return NextResponse.json({ error: 'Failed to open pack. If it was taken, it is back in your inventory.' }, { status: 500 });
+    return apiError('inventory.openFailed', 500);
   }
 }

@@ -8,35 +8,33 @@ import { getPackById } from '@/lib/packDefinitions';
 import { InventoryItem } from '@/lib/xpService';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { activeEventPackId, isEventPackId } from '@/lib/weeklyEvents';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { packIdSchema } from '@/lib/validation';
+import { z } from 'zod';
+
+const bodySchema = z.object({ packId: packIdSchema.optional() }).optional();
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const limited = await enforceRateLimit(req, 'store-booster', 20, 60, userId);
     if (limited) return limited;
 
-    let packId: string | undefined;
-    try {
-      const body = await req.json();
-      packId = body.packId;
-    } catch {
-      // No body or invalid JSON
-    }
-
-    if (!packId) {
-      return NextResponse.json({ error: 'Pack ID required' }, { status: 400 });
-    }
+    const body = await readBody(req, bodySchema);
+    if (!body.ok) return body.response;
+    const packId = body.data?.packId;
+    if (!packId) return apiError('store.packRequired');
 
     const pack = getPackById(packId);
     if (!pack) {
-      return NextResponse.json({ error: 'Pack not found' }, { status: 404 });
+      return apiError('store.packNotFound', 404);
     }
     // Event packs are only on sale during the week of their theme
     if (isEventPackId(pack.id) && pack.id !== activeEventPackId(new Date())) {
-      return NextResponse.json({ error: 'This event pack is no longer on sale' }, { status: 410 });
+      return apiError('store.eventPackOffSale', 410);
     }
 
     const result = await withUserLock(userId, async (tx) => {
@@ -60,7 +58,7 @@ export async function POST(req: Request) {
     });
 
     if (!result) {
-      return NextResponse.json({ error: 'Not enough Bits' }, { status: 400 });
+      return apiError('common.notEnoughBits');
     }
 
     return NextResponse.json({
@@ -71,6 +69,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error('Purchase error:', error);
-    return NextResponse.json({ error: 'Failed to purchase pack' }, { status: 500 });
+    return apiError('store.purchaseFailed', 500);
   }
 }

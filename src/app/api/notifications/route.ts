@@ -3,19 +3,27 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { withUserLock } from '@/lib/userLock';
+import { apiError, readBody } from '@/lib/apiResponse';
+import { z } from 'zod';
+
+// The bell sends { notificationId, markAll }: one notification, or all of them
+const bodySchema = z.object({
+  notificationId: z.string().max(100).nullable().optional(),
+  markAll: z.boolean().optional(),
+});
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
     const dbUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { notifications: true, pendingRewards: true }
     });
 
-    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!dbUser) return apiError('common.userNotFound', 404);
 
     // Pending incoming friend requests
     const friendRequests = await prisma.friendship.findMany({
@@ -88,7 +96,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiError('common.internal', 500);
   }
 }
 
@@ -96,10 +104,11 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!userId) return apiError('common.unauthorized', 401);
 
-    const body = await request.json();
-    const { notificationId, markAll } = body;
+    const body = await readBody(request, bodySchema);
+    if (!body.ok) return body.response;
+    const { notificationId, markAll } = body.data;
 
     // Locked: grantXP may be appending a LEVEL_UP notification at the same time
     const updatedNotifications = await withUserLock(userId, async (tx) => {
@@ -126,12 +135,12 @@ export async function POST(request: Request) {
       return notifications;
     });
 
-    if (!updatedNotifications) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!updatedNotifications) return apiError('common.userNotFound', 404);
 
     return NextResponse.json({ success: true, count: updatedNotifications.filter(n => !n.read).length });
 
   } catch (error) {
     console.error('Error updating notifications:', error);
-    return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
+    return apiError('notifications.updateFailed', 500);
   }
 }
