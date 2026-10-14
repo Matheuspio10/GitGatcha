@@ -4,11 +4,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Coin, X, List, CalendarCheck, Target, Sword, TrendUp, ShoppingCart } from '@phosphor-icons/react';
+import { Coin, X, CalendarCheck, Target, Sword, TrendUp, ShoppingCart, Package, Backpack, Cards, DotsThreeOutline } from '@phosphor-icons/react';
 import { NotificationBell } from './NotificationBell';
 import { ChangelogFeature } from './ChangelogFeature';
 import { UserAvatar } from './UserAvatar';
 import { Logo, LogoMark } from './Logo';
+
+/** Bottom tab bar on phones and tablets (the drawer behind "More" has every link). */
+const TAB_BAR = [
+  { name: 'Gacha', path: '/store', icon: Package },
+  { name: 'Packs', path: '/inventory', icon: Backpack },
+  { name: 'Cards', path: '/collection', icon: Cards },
+  { name: 'Battle', path: '/battle', icon: Sword },
+] as const;
 
 export function Navbar({ username, currency: initialCurrency, userImage }: { username: string, currency: number, userImage?: string | null }) {
   const [showBitsModal, setShowBitsModal] = useState(false);
@@ -123,14 +131,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
               </button>
             </div>
 
-            {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
-              aria-label="Open global menu"
-            >
-              <List size={24} weight="bold" />
-            </button>
+            {/* Phones and tablets: the menu opens from "More" in the bottom tab bar */}
           </div>
         ) : (
           <div>
@@ -139,6 +140,43 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
         )}
       </div>
     </header>
+
+      {/* Phone tab bar: the four most used screens, everything else under "More" */}
+      {username && (
+        <nav
+          aria-label="Main"
+          className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-ink-0/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+        >
+          <ul className="grid h-16 grid-cols-5">
+            {TAB_BAR.map(tab => {
+              const active = pathname === tab.path || pathname.startsWith(`${tab.path}/`);
+              return (
+                <li key={tab.path}>
+                  <Link
+                    href={tab.path}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${active ? 'text-brand-b' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    <tab.icon size={22} weight={active ? 'fill' : 'regular'} />
+                    {tab.name}
+                  </Link>
+                </li>
+              );
+            })}
+            <li>
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                aria-label="More: open the menu"
+                aria-expanded={isMobileMenuOpen}
+                className={`flex h-full w-full flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors ${isMobileMenuOpen ? 'text-brand-b' : 'text-slate-400 hover:text-white'}`}
+              >
+                <DotsThreeOutline size={22} weight={isMobileMenuOpen ? 'fill' : 'regular'} />
+                More
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
 
       {/* Mobile Drawer Overlay */}
       {isMobileMenuOpen && (

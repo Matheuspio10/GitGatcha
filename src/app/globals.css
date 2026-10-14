@@ -48,6 +48,17 @@ body {
   overflow-x: hidden;
 }
 
+/* Height of the phone tab bar (Navbar.tsx), 0 when there is none. Content and
+ * bottom-fixed panels add it so nothing hides behind the bar. */
+:root {
+  --bottom-nav-h: 0px;
+}
+@media (max-width: 1023.98px) {
+  body.has-bottom-nav {
+    --bottom-nav-h: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* App background: near-black ink with two soft brand glows */
 .app-bg {
   background:

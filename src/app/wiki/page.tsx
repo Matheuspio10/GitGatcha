@@ -580,7 +580,8 @@ export default function WikiPage() {
                 <p>Every card automatically recovers <strong>{STAMINA_RECOVERY_RATE_PER_HOUR} Stamina per hour</strong> (up to {MAX_STAMINA}), including the cards in your saved team. Alternatively, restore Stamina instantly in the Collection view for 100 BITS per card.</p>
               </div>
 
-              <table className="w-full text-left text-sm whitespace-nowrap border border-slate-700 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto rounded-xl border border-slate-700">
+              <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-800 text-slate-300">
                   <tr>
                     <th className="px-5 py-3">Stamina Range</th>
@@ -597,6 +598,7 @@ export default function WikiPage() {
                   <tr><td className="px-5 py-3 font-bold text-slate-500">0</td><td className="px-5 py-3 text-slate-500">Completely Drained</td><td className="px-5 py-3 text-slate-500">Cannot Battle</td></tr>
                 </tbody>
               </table>
+              </div>
             </section>
 
             {/* Section 10: Loyalty System */}

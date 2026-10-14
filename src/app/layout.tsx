@@ -25,12 +25,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: "GitGacha - Dev Card Game",
   description: "Collect developers, build your deck, rule the repository.",
+  // Installed on an iPhone home screen (the manifest covers Android and desktop)
+  appleWebApp: { capable: true, title: 'GitGacha', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
 };
 
-// No maximumScale: users must be able to pinch-zoom (WCAG 1.4.4)
+// No maximumScale: users must be able to pinch-zoom (WCAG 1.4.4). viewport-fit=cover
+// lets the phone tab bar pad itself for the iPhone home indicator.
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#06060b',
 };
 
 export default async function RootLayout({
@@ -42,7 +48,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${unbounded.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${caveat.variable} font-sans app-bg text-slate-50 min-h-screen overflow-x-hidden`}>
+      <body className={`${unbounded.variable} ${chakraPetch.variable} ${jetbrainsMono.variable} ${caveat.variable} font-sans app-bg text-slate-50 min-h-screen overflow-x-hidden${user ? ' has-bottom-nav' : ''}`}>
         <NextAuthProvider>
           <Navbar username={user?.username || ''} currency={user?.currency || 0} userImage={user?.image} />
           <LevelUpModal />
@@ -57,7 +63,7 @@ export default async function RootLayout({
             />
           )}
           {user?.onboarding && <OnboardingChecklist />}
-          <main className="container mx-auto px-4 py-8">
+          <main className="container mx-auto px-4 pt-8 pb-[calc(2rem+var(--bottom-nav-h))]">
             {children}
           </main>
         </NextAuthProvider>
