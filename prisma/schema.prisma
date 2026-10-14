@@ -431,6 +431,8 @@ model Sprint {
   startsAt DateTime
   endsAt   DateTime
   closedAt DateTime?
+  // Weekly only: githubUsername of the Dev of the Week, cheaper at the Forge (weeklyEvents.ts)
+  featuredDev String?
 
   results SprintResult[]
 

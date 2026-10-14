@@ -7,6 +7,7 @@ import { withUserLock, asArray } from '@/lib/userLock';
 import { getPackById } from '@/lib/packDefinitions';
 import { InventoryItem } from '@/lib/xpService';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { activeEventPackId, isEventPackId } from '@/lib/weeklyEvents';
 
 export async function POST(req: Request) {
   try {
@@ -32,6 +33,10 @@ export async function POST(req: Request) {
     const pack = getPackById(packId);
     if (!pack) {
       return NextResponse.json({ error: 'Pack not found' }, { status: 404 });
+    }
+    // Event packs are only on sale during the week of their theme
+    if (isEventPackId(pack.id) && pack.id !== activeEventPackId(new Date())) {
+      return NextResponse.json({ error: 'This event pack is no longer on sale' }, { status: 410 });
     }
 
     const result = await withUserLock(userId, async (tx) => {

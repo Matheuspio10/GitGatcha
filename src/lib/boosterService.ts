@@ -10,6 +10,7 @@ import { asArray, asRecord, withUserLock } from './userLock';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE } from './fragments';
 export { SHINY_CHANCE };
 import { applyPity, packsUntilPity, pityCounterUpdate, PITY_THRESHOLD } from './pity';
+import { isEventPackId, upcomingEventPackIds } from './weeklyEvents';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
@@ -327,6 +328,8 @@ const REFILL_PER_RARITY = 4;
 export async function refillBoosterReserve(userId: string | null, packId: string | undefined, budgetMs = 40_000) {
   const pack = packId ? getPackById(packId) : null;
   if (!pack) return;
+  // An event pack bought in an earlier week: nobody can buy it now, its reserve would only expire
+  if (isEventPackId(pack.id) && !upcomingEventPackIds(new Date()).includes(pack.id)) return;
   const deadline = Date.now() + budgetMs;
   const sampler = samplerForToken(userId ? await getPlayerGithubToken(userId) : null);
   const rarities: Rarity[] = pack.allCommon ? ['Common'] : ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];

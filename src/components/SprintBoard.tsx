@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { Trophy, Medal, Timer, Lightning } from '@phosphor-icons/react/dist/ssr';
+import { Trophy, Medal, Timer, Lightning, Sparkle } from '@phosphor-icons/react/dist/ssr';
 import { ALL_PACKS } from '@/lib/packDefinitions';
 import { formatSeasonLeft } from '@/lib/seasons';
 import { SPRINT_REWARDS, SPRINT_TEAM_SIZE, sprintKindLabel, sprintRewardsLegend } from '@/lib/sprints';
 import type { SprintState } from '@/lib/sprintService';
+import type { WeeklyEvent } from '@/lib/weeklyEventService';
 import { RarityGem } from '@/components/RarityGem';
 
 function Position({ position }: { position: number }) {
@@ -14,9 +15,9 @@ function Position({ position }: { position: number }) {
 }
 
 /** One running sprint: theme, time left, rewards, the viewer's place and cards, the live top and the last result. */
-export function SprintBoard({ sprint, now, viewerId }: { sprint: SprintState; now: Date; viewerId?: string }) {
+export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintState; now: Date; viewerId?: string; event?: WeeklyEvent | null }) {
   const languages = sprint.theme.languages;
-  const packs = ALL_PACKS.filter(p => p.pool.languages?.some(l => languages.includes(l)));
+  const packs = [...(event ? [{ id: event.pack.id, name: event.pack.name }] : []), ...ALL_PACKS.filter(p => p.pool.languages?.some(l => languages.includes(l)))];
   const paidPlaces = SPRINT_REWARDS[sprint.kind][SPRINT_REWARDS[sprint.kind].length - 1].upTo;
   const accent = sprint.kind === 'daily' ? 'text-cyan-300 border-cyan-500/30 bg-cyan-500/5' : 'text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/5';
 
@@ -37,6 +38,22 @@ export function SprintBoard({ sprint, now, viewerId }: { sprint: SprintState; no
           <p className="mt-1">BITS: {sprintRewardsLegend(sprint.kind)}</p>
         </div>
       </div>
+
+      {event && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-fuchsia-500/30 bg-slate-950/60 p-3 text-sm text-slate-300">
+          <Sparkle size={18} weight="fill" className="shrink-0 text-fuchsia-300" />
+          <span className="min-w-0 flex-1">
+            Weekly event: the <Link href={`/store#pack-${event.pack.id}`} className="font-bold text-fuchsia-200 hover:underline">{event.pack.name}</Link> is on sale until the sprint ends
+            {event.featuredDev && (
+              <>
+                {' '}· Dev of the Week:{' '}
+                <Link href={`/forge?dev=${encodeURIComponent(event.featuredDev.githubUsername)}`} className="font-bold text-white hover:underline">{event.featuredDev.name}</Link>
+                {' '}({event.featuredDev.rarity}), {event.discountPercent}% off at the Forge
+              </>
+            )}
+          </span>
+        </div>
+      )}
 
       {viewerId && (
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
@@ -75,7 +92,7 @@ export function SprintBoard({ sprint, now, viewerId }: { sprint: SprintState; no
             <p className="mt-3 text-xs text-slate-500">
               <Lightning size={12} weight="fill" className="inline" /> Boosters with these cards:{' '}
               {packs.map((p, i) => (
-                <span key={p.id}>{i > 0 && ', '}<Link href="/store" className="text-indigo-300 hover:underline">{p.name}</Link></span>
+                <span key={p.id}>{i > 0 && ', '}<Link href={`/store#pack-${p.id}`} className="text-indigo-300 hover:underline">{p.name}</Link></span>
               ))}
               . The Forge works too.
             </p>

@@ -28,7 +28,7 @@ export interface SprintStanding {
 }
 
 /** The sprint row of the running period, created (with its theme) the first time anyone asks. */
-async function ensureSprint(kind: SprintKind, now: Date) {
+export async function ensureSprint(kind: SprintKind, now: Date) {
   const p = sprintPeriod(kind, now);
   await prisma.sprint.createMany({
     data: [{ id: p.id, kind, theme: p.theme.id, startsAt: p.startsAt, endsAt: p.endsAt }],

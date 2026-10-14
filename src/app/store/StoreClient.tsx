@@ -8,6 +8,7 @@ import { notifyAchievements } from '@/lib/achievementToast';
 import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
 import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
 import { PITY_THRESHOLD } from '@/lib/pity';
+import { formatSeasonLeft } from '@/lib/seasons';
 import { PackOdds } from '@/components/PackOdds';
 import { MissionsPanel, type MissionInfo } from './MissionsPanel';
 import {
@@ -23,6 +24,7 @@ import {
   Package,
   ChartBar,
   CaretDown,
+  CalendarStar,
 } from '@phosphor-icons/react';
 
 interface PackVisualTheme {
@@ -52,6 +54,7 @@ interface CategoryInfo {
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  event: <CalendarStar weight="bold" />,
   language: <Code weight="bold" />,
   contributor: <Trophy weight="bold" />,
   era: <Hourglass weight="bold" />,
@@ -318,7 +321,9 @@ export default function StoreClient({
   const [currency, setCurrency] = useState(userCurrency);
   const [packs, setPacks] = useState<PackInfo[]>([]);
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('language');
+  const [activeCategory, setActiveCategory] = useState<string>('event');
+  // Time left for this week's event pack (server-measured, counted down locally)
+  const [eventEndsAt, setEventEndsAt] = useState<number | null>(null);
   const [dailyCooldown, setDailyCooldown] = useState<number>(-1);
   const [claimingDaily, setClaimingDaily] = useState(false);
   const [streak, setStreak] = useState<LoginCalendarState | null>(null);
@@ -341,6 +346,9 @@ export default function StoreClient({
       .then(data => {
         setPacks(data.packs || []);
         setCategories(data.categories || []);
+        if (typeof data.eventEndsInMs === 'number') setEventEndsAt(Date.now() + data.eventEndsInMs);
+        // No event pack on sale (shouldn't happen): open the first category instead
+        if (!(data.packs || []).some((p: PackInfo) => p.category === 'event')) setActiveCategory('language');
       })
       .catch(console.error)
       .finally(() => setCatalogLoaded(true));
@@ -669,6 +677,12 @@ export default function StoreClient({
                 >
                   {pack.cardCount} Cards
                 </div>
+                {/* Event packs leave the store when the Weekly Sprint ends */}
+                {pack.category === 'event' && eventEndsAt !== null && (
+                  <div className="-mt-4 mb-4 rounded-full bg-slate-950/80 border border-white/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-lg">
+                    On sale for {formatSeasonLeft(eventEndsAt - Date.now())}
+                  </div>
+                )}
                 
                 <p className="text-sm font-medium leading-snug line-clamp-4 mix-blend-luminosity opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" style={{ color: pack.visualTheme.textColor }}>
                   {pack.noPreview ? '??? Unknown Contents' : pack.description}

@@ -8,6 +8,8 @@ import { useSession } from 'next-auth/react';
 import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin, BookOpenText } from '@phosphor-icons/react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { formatSeasonLeft } from '@/lib/seasons';
+import { RarityGem } from '@/components/RarityGem';
 
 type FragmentWallet = Record<string, number>;
 type WishlistItem = {
@@ -41,7 +43,18 @@ const LANG_COLORS: Record<string, string> = {
   Unknown: 'bg-slate-600 text-white border-slate-700'
 };
 
-export default function ForgeClient() {
+export type FeaturedDevInfo = {
+  githubUsername: string;
+  name: string;
+  avatarUrl: string | null;
+  rarity: string;
+  primaryLanguage: string | null;
+  discountPercent: number;
+  /** Measured on the server, so it is right even when the device clock is off. */
+  endsInMs: number;
+};
+
+export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: string; featuredDev?: FeaturedDevInfo | null }) {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'INVOKE' | 'WISHLIST' | 'HISTORY'>('INVOKE');
   
@@ -76,15 +89,14 @@ export default function ForgeClient() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const searchDev = async (username: string) => {
+    if (!username.trim()) return;
     setIsSearching(true);
     setSearchResult(null);
     setRevealedCard(null);
 
     try {
-      const res = await fetch(`/api/forge/search?username=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(`/api/forge/search?username=${encodeURIComponent(username.trim())}`);
       const data = await res.json();
       if (res.ok) {
         setSearchResult(data);
@@ -97,6 +109,23 @@ export default function ForgeClient() {
       setIsSearching(false);
     }
   };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    searchDev(searchQuery);
+  };
+
+  const forgeDev = (username: string) => {
+    setActiveTab('INVOKE');
+    setSearchQuery(username);
+    searchDev(username);
+  };
+
+  // `/forge?dev=<login>` (e.g. the Dev of the Week link) opens with that dev searched
+  useEffect(() => {
+    if (initialDev) forgeDev(initialDev);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDev]);
 
   const handleInvoke = async () => {
     if (!searchResult) return;
@@ -239,6 +268,31 @@ export default function ForgeClient() {
         </div>
       </div>
 
+      {/* Dev of the Week (weekly event) */}
+      {featuredDev && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-950/40 to-slate-900 p-5 shadow-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {featuredDev.avatarUrl ? <img src={featuredDev.avatarUrl} alt="" className="h-14 w-14 rounded-full border-2 border-fuchsia-400/60" /> : <span className="h-14 w-14 rounded-full bg-slate-700" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Dev of the Week · {featuredDev.discountPercent}% off</p>
+            <p className="flex items-center gap-2 text-lg font-black text-white">
+              <RarityGem rarity={featuredDev.rarity} size={14} title={featuredDev.rarity} />
+              <span className="truncate">{featuredDev.name}</span>
+              <span className="text-sm font-normal text-slate-400">@{featuredDev.githubUsername}</span>
+            </p>
+            <p className="text-xs text-slate-400">
+              Fragments and BITS cost {featuredDev.discountPercent}% less at the Forge for {formatSeasonLeft(featuredDev.endsInMs)} more, until the Weekly Sprint ends.
+            </p>
+          </div>
+          <button
+            onClick={() => forgeDev(featuredDev.githubUsername)}
+            className="shrink-0 rounded-xl bg-fuchsia-600 px-5 py-2.5 font-bold text-white transition-colors hover:bg-fuchsia-500"
+          >
+            See the price
+          </button>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div className="flex gap-2 p-1 bg-slate-900/50 rounded-xl border border-slate-800/50 w-fit">
         <button 
@@ -290,7 +344,10 @@ export default function ForgeClient() {
             {searchResult && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center flex-1">
                 <div className="w-full flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-slate-300">Target Acquired</h3>
+                  <h3 className="font-bold text-slate-300">
+                    Target Acquired
+                    {searchResult.featured && <span className="ml-2 rounded-full bg-fuchsia-500/20 px-2 py-0.5 text-xs font-bold text-fuchsia-300">Dev of the Week</span>}
+                  </h3>
                   <button 
                     onClick={() => toggleWishlist(searchResult.stats.githubUsername)}
                     className="text-slate-400 hover:text-yellow-400 transition-colors"
@@ -324,6 +381,7 @@ export default function ForgeClient() {
                         <div className="font-bold">{onlyWildcards ? 'Wildcard' : lang} Fragments</div>
                         <div className="text-xs text-slate-400">
                           Required: {reqFragments}
+                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">(<s>{searchResult.fullCost.fragments}</s> Dev of the Week)</span>}
                           {onlyWildcards ? ' · no primary language, paid with wildcards' : ownedWildcards > 0 ? ` · wildcards cover what ${lang} lacks` : ''}
                         </div>
                         {payment && payment.fromWildcard > 0 && (
@@ -347,7 +405,10 @@ export default function ForgeClient() {
                       <Coin size={24} weight="fill" className="text-yellow-500" />
                       <div>
                         <div className="font-bold">BITS</div>
-                        <div className="text-xs text-slate-400">Required: {reqBits}</div>
+                        <div className="text-xs text-slate-400">
+                          Required: {reqBits}
+                          {searchResult.featured && searchResult.fullCost && <span className="ml-1 text-fuchsia-300">(<s>{searchResult.fullCost.bits}</s> Dev of the Week)</span>}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">

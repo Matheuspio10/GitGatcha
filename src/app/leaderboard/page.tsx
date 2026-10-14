@@ -12,6 +12,7 @@ import { RankBadge as TierBadge } from '@/components/RankBadge';
 import { SeasonBanner } from '@/components/SeasonBanner';
 import { getCurrentSeason } from '@/lib/seasonService';
 import { getSprintsState } from '@/lib/sprintService';
+import { getWeeklyEvent } from '@/lib/weeklyEventService';
 import { SprintBoard } from '@/components/SprintBoard';
 import { SPRINT_TEAM_SIZE } from '@/lib/sprints';
 
@@ -261,6 +262,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
   const collectors = showCollectors ? await loadCollectors() : [];
   const sprints = showSprints ? await getSprintsState(currentUser?.id ?? null, now) : [];
+  const weeklyEvent = showSprints ? await getWeeklyEvent(now) : null;
   const counts = noBattleTable ? new Map<string, BattleCounts>() : await getBattleCounts();
 
   let rows: LeaderboardRow[];
@@ -325,7 +327,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
           <p className="text-center text-xs text-slate-500">
             Nothing to set up: when a sprint ends, everyone is scored by their {SPRINT_TEAM_SIZE} strongest cards of the theme. Ties share the place.
           </p>
-          {sprints.map(s => <SprintBoard key={s.kind} sprint={s} now={now} viewerId={currentUser?.id} />)}
+          {sprints.map(s => <SprintBoard key={s.kind} sprint={s} now={now} viewerId={currentUser?.id} event={s.kind === 'weekly' ? weeklyEvent : null} />)}
         </>
       )}
 

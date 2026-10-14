@@ -1,4 +1,12 @@
 import type { PoolFilter } from './devSampler';
+import { WEEKLY_SPRINT_FAMILIES, type SprintTheme } from './sprints';
+import {
+  EVENT_PACK_CARD_COUNT,
+  EVENT_PACK_COST,
+  EVENT_PACK_MIN_RARITY,
+  activeEventPackId,
+  eventPackId,
+} from './weeklyEvents';
 
 /** Public members of these GitHub orgs make up the Big Tech booster. */
 export const BIG_TECH_ORGS = ['google', 'microsoft', 'facebook', 'aws', 'apple', 'netflix', 'github', 'vercel', 'shopify', 'stripe', 'openai'];
@@ -15,7 +23,7 @@ export interface PackDefinition {
   id: string;
   name: string;
   description: string;
-  category: 'language' | 'contributor' | 'era' | 'company' | 'rarity' | 'regional';
+  category: 'event' | 'language' | 'contributor' | 'era' | 'company' | 'rarity' | 'regional';
   cardCount: number;
   cost: number;
   visualTheme: PackVisualTheme;
@@ -550,13 +558,74 @@ export const ALL_PACKS: PackDefinition[] = [
   mysteryBox,
 ];
 
+// ─── WEEKLY EVENT PACKS ─────────────────────────────────────────────────
+// One per Weekly Sprint theme, on sale only during its week (weeklyEvents.ts).
+// Packs bought during the week can still be opened after it.
+
+const EVENT_PACK_LOOKS: Record<string, { description: string; visualTheme: PackVisualTheme }> = {
+  'family:web': {
+    description: 'Browsers, frameworks and one more div. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #f7df1e 0%, #e34c26 50%, #264de4 100%)', border: '#f7df1e', textColor: '#ffffff', accentColor: '#264de4', animated: true },
+  },
+  'family:systems': {
+    description: 'Close to the metal and proud of it. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #CE422B 0%, #00ADD8 50%, #1a1a1a 100%)', border: '#CE422B', textColor: '#ffffff', accentColor: '#00ADD8', animated: true },
+  },
+  'family:data': {
+    description: 'Notebooks, models and a lot of pandas. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #306998 0%, #FFD43B 50%, #276DC3 100%)', border: '#FFD43B', textColor: '#ffffff', accentColor: '#306998', animated: true },
+  },
+  'family:enterprise': {
+    description: 'Factories of factories, shipped on time. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #b07219 0%, #7f52ff 50%, #178600 100%)', border: '#b07219', textColor: '#ffffff', accentColor: '#7f52ff', animated: true },
+  },
+  'family:scripting': {
+    description: 'One-liners that run half the internet. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #CC342D 0%, #4F5D95 50%, #89e051 100%)', border: '#89e051', textColor: '#ffffff', accentColor: '#4F5D95', animated: true },
+  },
+  'family:mobile': {
+    description: 'Shipping to the pocket of everyone. Only this week.',
+    visualTheme: { gradient: 'linear-gradient(135deg, #F05138 0%, #00B4AB 50%, #A97BFF 100%)', border: '#00B4AB', textColor: '#ffffff', accentColor: '#F05138', animated: true },
+  },
+};
+
+function buildEventPack(theme: SprintTheme): PackDefinition {
+  const look = EVENT_PACK_LOOKS[theme.id] ?? EVENT_PACK_LOOKS['family:web'];
+  return {
+    id: eventPackId(theme),
+    name: `${theme.name} Pack`,
+    description: look.description,
+    category: 'event',
+    cardCount: EVENT_PACK_CARD_COUNT,
+    cost: EVENT_PACK_COST,
+    visualTheme: look.visualTheme,
+    guaranteedMinRarity: EVENT_PACK_MIN_RARITY,
+    activeFilters: `Weekly event · Languages: ${theme.languages.join(', ')}`,
+    pool: { languages: theme.languages },
+  };
+}
+
+export const EVENT_PACKS: PackDefinition[] = WEEKLY_SPRINT_FAMILIES.map(buildEventPack);
+
+/** Any pack, event packs included (an event pack bought during its week opens at any time). */
 export function getPackById(id: string): PackDefinition | undefined {
-  return ALL_PACKS.find(p => p.id === id);
+  return ALL_PACKS.find(p => p.id === id) ?? EVENT_PACKS.find(p => p.id === id);
+}
+
+/** The event pack on sale at `now`. */
+export function activeEventPack(now: Date): PackDefinition {
+  return EVENT_PACKS.find(p => p.id === activeEventPackId(now)) ?? EVENT_PACKS[0];
+}
+
+/** What the store sells at `now`: this week's event pack and the regular catalog. */
+export function storePacks(now: Date): PackDefinition[] {
+  return [activeEventPack(now), ...ALL_PACKS];
 }
 
 export type PackCategory = PackDefinition['category'];
 
 export const PACK_CATEGORIES: { key: PackCategory; label: string }[] = [
+  { key: 'event', label: 'Weekly Event' },
   { key: 'language', label: 'Language & Stack' },
   { key: 'contributor', label: 'Contributor Type' },
   { key: 'era', label: 'Era' },
@@ -565,7 +634,7 @@ export const PACK_CATEGORIES: { key: PackCategory; label: string }[] = [
   { key: 'rarity', label: 'Rarity-Focused' },
 ];
 
-/** Serializable pack info for the frontend (strips the sampler pool definition) */
-export function getSerializablePacks() {
-  return ALL_PACKS.map(({ pool, ...rest }) => rest);
+/** Serializable pack info for the frontend (strips the sampler pool definition); every pack by default */
+export function getSerializablePacks(packs: PackDefinition[] = [...ALL_PACKS, ...EVENT_PACKS]) {
+  return packs.map(({ pool, ...rest }) => rest);
 }
