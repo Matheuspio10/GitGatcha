@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
@@ -631,7 +632,7 @@ export default function ProfilePage() {
                         </span>
                       </div>
                     )}
-                    <img src={card.avatarUrl || `https://github.com/${card.githubUsername}.png`} alt={card.name} className={`w-20 h-20 rounded-full mb-3 shadow-lg relative z-10 ${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
+                    <img src={sizedAvatar(card.avatarUrl || `https://github.com/${card.githubUsername}.png`, 80)} alt={card.name} className={`w-20 h-20 rounded-full mb-3 shadow-lg relative z-10 ${card.isShiny ? 'ring-2 ring-yellow-500 ring-offset-2 ring-offset-slate-900' : ''}`} />
                     <div className="font-black text-sm line-clamp-1 mb-1 text-white relative z-10">{card.name}</div>
                     <div className="flex gap-2 text-[10px] font-bold bg-slate-950/50 px-3 py-1.5 rounded-lg border border-white/5 flex-wrap justify-center mb-2 relative z-10">
                       <span className="text-rose-400">⚔️ {card.atk}</span>
@@ -707,7 +708,7 @@ export default function ProfilePage() {
                                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.yourTeam')}</div>
                                 {(battle.isChallenger ? battle.challengerTeam : battle.defenderTeam)?.map((c: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
-                                    <img src={c.avatarUrl || `https://github.com/${c.name}.png`} alt={c.name} className="w-6 h-6 rounded-full" />
+                                    <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.name}.png`, 24)} alt={c.name} className="w-6 h-6 rounded-full" />
                                     <span className="text-xs font-bold text-white truncate">{c.name}</span>
                                     <span className="text-[10px] text-slate-500 ml-auto">{c.atk}/{c.def}/{c.hp}</span>
                                   </div>
@@ -717,7 +718,7 @@ export default function ProfilePage() {
                                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.opponentTeam')}</div>
                                 {(battle.isChallenger ? battle.defenderTeam : battle.challengerTeam)?.map((c: any, idx: number) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
-                                    <img src={c.avatarUrl || `https://github.com/${c.name}.png`} alt={c.name} className="w-6 h-6 rounded-full" />
+                                    <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.name}.png`, 24)} alt={c.name} className="w-6 h-6 rounded-full" />
                                     <span className="text-xs font-bold text-white truncate">{c.name}</span>
                                     <span className="text-[10px] text-slate-500 ml-auto">{c.atk}/{c.def}/{c.hp}</span>
                                   </div>

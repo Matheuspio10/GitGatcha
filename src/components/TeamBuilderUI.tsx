@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
@@ -302,7 +303,7 @@ function CompactCard({
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <img
-          src={card.avatarUrl}
+          src={sizedAvatar(card.avatarUrl, 44)}
           alt={card.name}
           className="w-11 h-11 rounded-lg object-cover ring-1 ring-white/10"
         />
@@ -849,7 +850,7 @@ function ConfirmationModal({
                   <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs font-black text-white flex-shrink-0">
                     {i + 1}
                   </div>
-                  <img src={card.avatarUrl} alt={card.name} className="w-8 h-8 rounded-lg object-cover" />
+                  <img src={sizedAvatar(card.avatarUrl, 32)} alt={card.name} className="w-8 h-8 rounded-lg object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white truncate">{card.name}</p>
                     <p className="text-[10px] text-slate-400">

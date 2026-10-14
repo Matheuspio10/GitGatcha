@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -105,7 +106,7 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
                   <li key={c.id}>
                     <Link href={`/card/${c.githubUsername}`} target="_blank" className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-2 hover:border-slate-600">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={c.avatarUrl || `https://github.com/${c.githubUsername}.png?size=64`} alt="" width={36} height={36} className="rounded-lg" loading="lazy" />
+                      <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.githubUsername}.png`, 36)} alt="" width={36} height={36} className="rounded-lg" loading="lazy" />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold text-white">{c.name}</span>
                         <span className={`block text-xs ${RARITY_TEXT[c.rarity] ?? 'text-slate-400'}`}>{c.rarity}{c.primaryLanguage ? ` · ${c.primaryLanguage}` : ''}</span>

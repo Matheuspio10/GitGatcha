@@ -1,5 +1,6 @@
 'use client';
 
+import { sizedAvatar } from '@/lib/avatarUrl';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { CheckCircle, Crown, Lock, Skull, Trophy } from '@phosphor-icons/react';
@@ -106,7 +107,7 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
                 {state.next.opponents.map(o => (
                   <li key={o.name} className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {o.avatarUrl && <img src={o.avatarUrl} alt="" width={32} height={32} className="rounded-lg" />}
+                    {o.avatarUrl && <img src={sizedAvatar(o.avatarUrl, 32)} alt="" width={32} height={32} className="rounded-lg" />}
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-white">{o.name}</span>
                       <span className={`block text-xs ${RARITY_TEXT[o.rarity] ?? 'text-slate-400'}`}>{o.rarity}{o.primaryLanguage ? ` · ${o.primaryLanguage}` : ''}</span>
