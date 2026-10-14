@@ -1,0 +1,112 @@
+{
+  "title": "Your Inventory",
+  "subtitle": "Unopened booster packs await.",
+  "empty": {
+    "title": "Vault is empty",
+    "text": "Visit the Store or level up to get more booster packs.",
+    "goToStore": "Go to Store"
+  },
+  "pack": {
+    "cards": "{count, plural, one {# Card} other {# Cards}}",
+    "guaranteed": "≥1 {rarity}",
+    "tapToOpen": "Tap to Open",
+    "openAria": "{name}: open ({count} in inventory)"
+  },
+  "confirm": {
+    "title": "Open <pack>{name}</pack>?",
+    "body": "This will consume one pack from your inventory and reveal {count} cards.",
+    "details": "Pack Details",
+    "activeFilter": "Active Filter:",
+    "cancel": "Cancel",
+    "tearOpen": "Tear Open!"
+  },
+  "error": {
+    "title": "Network Intrusion Failed",
+    "back": "Return to Inventory",
+    "generic": "Failed to locate enough developers. The API might rate-limited or the pool is empty.",
+    "network": "Network error"
+  },
+  "wishlistToast": "🌟 {language} fragment earned — {current} of {required} toward {name}!",
+  "reveal": {
+    "tearHere": "tear here",
+    "boosterPack": "Booster Pack",
+    "packCards": "{count, plural, one {# Card} other {# Cards}}",
+    "cardsCount": "{count, plural, one {# card} other {# cards}}",
+    "tearOpenAria": "Tear open {name}",
+    "new": "NEW",
+    "dup": "DUP",
+    "flipCard": "Flip the card",
+    "nextCardAria": "{name}, {rarity}. Next card",
+    "prevCard": "Bring back the previous card",
+    "viewSummaryAria": "View pack summary",
+    "nextCard": "Next card",
+    "flipFirst": "Flip this card first",
+    "skipIntro": "Skip intro",
+    "viewSummary": "View summary",
+    "revealAll": "Reveal all",
+    "hints": {
+      "pulling": "Pulling the cards out…",
+      "tearTouch": "Swipe across the top to tear it open, or tap",
+      "tearMouse": "Drag across the top to tear it open, or click",
+      "legendary": "Something big is coming…",
+      "epic": "Feels special…",
+      "flipTouch": "Tap the card to flip it",
+      "flipMouse": "Click or press Space to flip",
+      "nextTouch": "Tap or swipe to throw it aside",
+      "nextMouse": "Click, Space or → for the next card"
+    },
+    "caption": {
+      "duplicate": "Duplicate · +{amount} {language} fragments",
+      "duplicateShiny": "Duplicate turned Shiny! · +{amount} {language} fragments",
+      "newCard": "New card for your collection!"
+    },
+    "summary": {
+      "title": "Pack Summary",
+      "subtitle": "All revealed cards from this booster",
+      "bonus": "Bonus: <hl>+{amount}</hl> {language} Fragments!",
+      "addToCollection": "Add to collection"
+    }
+  },
+  "hacking": {
+    "readout": {
+      "target": "TARGET: {host}",
+      "protocol": "PROTOCOL: {protocol}",
+      "packType": "PACK TYPE: {name}",
+      "status": "STATUS: {status}",
+      "dataReceived": "DATA RECEIVED",
+      "fetching": "FETCHING...",
+      "terminated": "TERMINATED",
+      "connected": "CONNECTED",
+      "nodesSecured": "NODES SECURED: {count}",
+      "grid": "GRID: {size}"
+    },
+    "status": {
+      "firewall": "FIREWALL DETECTED — REROUTING",
+      "secured": "Node Secured",
+      "granted": "ACCESS GRANTED"
+    },
+    "closeCall": {
+      "escaped": "Narrowly escaped detection",
+      "bypassed": "Close call — firewall bypassed",
+      "averted": "Security averted by milliseconds"
+    },
+    "intro": {
+      "title": "Infiltrating GitHub servers…",
+      "subtitle": "Route the signal to extract your developers"
+    },
+    "hud": {
+      "move": "Move:",
+      "dataCollected": "Data Collected:",
+      "nodes": "Nodes: {count}",
+      "skip": "Skip",
+      "loading": "Loading…",
+      "skipTitle": "Skip (Esc)",
+      "skipAria": "Skip the mini-game and reveal the cards",
+      "skippingAria": "Skipping, waiting for the pack data",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "muteAria": "Mute sound",
+      "unmuteAria": "Unmute sound"
+    }
+  }
+}

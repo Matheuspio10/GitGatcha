@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { RARITY_ORDER, packAtLeastOdds } from '@/lib/rarity';
 
 const RARITY_COLOR: Record<string, string> = {
@@ -25,10 +26,11 @@ export function PackOdds({ pack, pityDue = false }: {
   /** The player's Legendary pity is due: this pack's last card will be a Legendary. */
   pityDue?: boolean;
 }) {
+  const t = useTranslations('store.odds');
   const odds = packAtLeastOdds(pack);
   return (
     <div>
-      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">Chance of at least one…</p>
+      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">{t('title')}</p>
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {RARITY_ORDER.filter(r => r !== 'Common').map(r => {
           const value = r === 'Legendary' && pityDue && !pack.allCommon ? 1 : odds[r];
@@ -42,9 +44,14 @@ export function PackOdds({ pack, pityDue = false }: {
       </ul>
       <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
         {pack.allCommon
-          ? 'Every card is a Common.'
-          : `${pack.cardCount} cards${pack.guaranteedMinRarity ? `, at least one ${pack.guaranteedMinRarity} or better guaranteed` : ''}${pityDue ? ', and your pity makes the last one a Legendary' : ''}. `}
-        Odds before the star bonus: a developer with enough stars is promoted one rarity.
+          ? t('allCommon')
+          : t('summary', {
+              count: pack.cardCount,
+              hasMin: pack.guaranteedMinRarity ? 'yes' : 'no',
+              rarity: pack.guaranteedMinRarity ?? '',
+              pity: pityDue ? 'yes' : 'no',
+            })}{' '}
+        {t('starNote')}
       </p>
     </div>
   );

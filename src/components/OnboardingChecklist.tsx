@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { CaretDown, CheckCircle, Circle, ListChecks, X } from '@phosphor-icons/react';
 import type { OnboardingStepId, OnboardingStepView } from '@/lib/onboarding';
+import { useTranslations } from 'next-intl';
 
 interface Status {
   steps: OnboardingStepView[];
@@ -28,6 +29,7 @@ export function OnboardingChecklist() {
   const [status, setStatus] = useState<Status | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [claiming, setClaiming] = useState<OnboardingStepId | null>(null);
+  const t = useTranslations('onboarding.checklist');
 
   useEffect(() => {
     // Collapsed by default on phones (it would cover half the screen), open on desktop
@@ -64,7 +66,7 @@ export function OnboardingChecklist() {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+    if (!res.ok) throw new Error(data.error || t('error'));
     return data;
   };
 
@@ -72,9 +74,9 @@ export function OnboardingChecklist() {
     setClaiming(step.id);
     try {
       const data = await post({ action: 'claim', step: step.id });
-      toast.success(`+${data.bits} BITS: ${step.title}`);
+      toast.success(t('claimed', { bits: data.bits, step: step.title }));
       window.dispatchEvent(new Event('bits:refresh'));
-      if (data.onboarding?.complete) toast.success('Getting started complete. Have fun!', { icon: '🎉' });
+      if (data.onboarding?.complete) toast.success(t('complete'), { icon: '🎉' });
       setStatus(data.onboarding);
     } catch (err) {
       toast.error((err as Error).message);
@@ -106,18 +108,18 @@ export function OnboardingChecklist() {
     <motion.aside
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       className="fixed bottom-[calc(1rem+var(--bottom-nav-h))] right-4 z-40 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-slate-700 bg-slate-900/95 shadow-2xl backdrop-blur"
-      aria-label="Getting started"
+      aria-label={t('title')}
     >
       <div className="flex items-center gap-2 px-4 py-3">
         <button onClick={toggle} className="flex flex-1 items-center gap-2 text-left" aria-expanded={!collapsed}>
           <ListChecks size={20} weight="duotone" className="text-commit" />
           <span className="flex-1">
-            <span className="block text-sm font-bold text-white">Getting started</span>
-            <span className="block text-[11px] text-slate-400">{claimedCount}/{status.steps.length} done{collapsed && nextStep ? ` · next: ${nextStep.title}` : ''}</span>
+            <span className="block text-sm font-bold text-white">{t('title')}</span>
+            <span className="block text-[11px] text-slate-400">{t('progress', { done: claimedCount, total: status.steps.length })}{collapsed && nextStep ? ` · ${t('next', { step: nextStep.title })}` : ''}</span>
           </span>
           <CaretDown size={16} className={`text-slate-400 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
         </button>
-        <button onClick={dismiss} className="rounded p-1 text-slate-500 hover:text-white" aria-label="Hide the checklist" title="Hide the checklist">
+        <button onClick={dismiss} className="rounded p-1 text-slate-500 hover:text-white" aria-label={t('hide')} title={t('hide')}>
           <X size={14} />
         </button>
       </div>
@@ -151,7 +153,7 @@ export function OnboardingChecklist() {
                   </button>
                 ) : (
                   <Link href={step.href} className="shrink-0 rounded-lg border border-slate-700 px-2.5 py-1 text-xs font-bold text-slate-300 hover:bg-slate-800">
-                    Go
+                    {t('go')}
                   </Link>
                 ))}
               </li>

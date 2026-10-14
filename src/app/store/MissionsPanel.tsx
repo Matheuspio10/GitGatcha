@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { ArrowsClockwise, CheckCircle, Circle, GithubLogo } from '@phosphor-icons/react';
+import { useTranslations } from 'next-intl';
 import { missionRequiredCount, type MissionPeriod } from '@/lib/missionUtils';
 
 export interface MissionInfo {
@@ -26,10 +27,10 @@ function formatDuration(ms: number): string {
   return d > 0 ? `${d}d ${h % 24}h` : `${h}h ${Math.floor((ms % 3_600_000) / 60_000)}m`;
 }
 
-async function post(url: string, body?: object) {
+async function post(url: string, fallbackError: string, body?: object) {
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  if (!res.ok) throw new Error(data.error || fallbackError);
   return data;
 }
 
@@ -65,6 +66,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
   githubConnected: boolean;
   weeklyResetInMs: number;
 }) {
+  const t = useTranslations('store.missions');
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const daily = missions.filter(m => m.period === 'daily');
@@ -74,8 +76,8 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
   const reroll = async (um: MissionInfo) => {
     setBusy(um.id);
     try {
-      const data = await post('/api/missions/reroll', { userMissionId: um.id });
-      toast.success(`New mission: ${data.mission.description}`);
+      const data = await post('/api/missions/reroll', t('error'), { userMissionId: um.id });
+      toast.success(t('newMission', { description: data.mission.description }));
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);
@@ -87,15 +89,15 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
   const checkGithub = async () => {
     setBusy('dev');
     try {
-      const data = await post('/api/missions/dev-check');
+      const data = await post('/api/missions/dev-check', t('error'));
       if (data.reward) {
-        toast.success(`+${data.reward} BITS for your GitHub activity!`);
+        toast.success(t('githubReward', { reward: data.reward }));
         window.dispatchEvent(new Event('bits:refresh'));
         router.refresh();
       } else if (data.done) {
         router.refresh();
       } else {
-        toast(`Not on GitHub yet${data.login ? ` for @${data.login}` : ''}. Only public activity counts and it can take a few minutes to show up.`, { icon: '⏳' });
+        toast(data.login ? t('notYetLogin', { login: data.login }) : t('notYet'), { icon: '⏳' });
       }
     } catch (err) {
       toast.error((err as Error).message);
@@ -108,7 +110,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
     <div className="space-y-10">
       <div>
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
-          Today{canReroll ? ' · you can swap one mission' : ''}
+          {canReroll ? t('todaySwap') : t('today')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {daily.map(um => (
@@ -120,8 +122,8 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
                   onClick={() => reroll(um)}
                   disabled={busy !== null}
                   className="rounded-lg border border-slate-700 p-1.5 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-50"
-                  title="Swap this mission (once a day)"
-                  aria-label="Swap this mission"
+                  title={t('swapTitle')}
+                  aria-label={t('swapLabel')}
                 >
                   <ArrowsClockwise size={16} className={busy === um.id ? 'animate-spin' : ''} />
                 </button>
@@ -133,7 +135,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
 
       <div>
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
-          This week <span className="font-mono normal-case text-slate-500">· new ones in {formatDuration(weeklyResetInMs)}</span>
+          {t('thisWeek')} <span className="font-mono normal-case text-slate-500">{t('newOnesIn', { time: formatDuration(weeklyResetInMs) })}</span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {weekly.map(um => <MissionCard key={um.id} um={um} />)}
@@ -142,7 +144,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
 
       <div>
         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-          <GithubLogo size={14} weight="fill" /> Dev mission
+          <GithubLogo size={14} weight="fill" /> {t('dev')}
         </h3>
         {dev ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,19 +156,19 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
                   disabled={busy !== null}
                   className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-900 hover:bg-slate-200 disabled:opacity-50"
                 >
-                  {busy === 'dev' ? 'Checking…' : 'Check GitHub'}
+                  {busy === 'dev' ? t('checking') : t('checkGithub')}
                 </button>
               ) : undefined}
             />
             <p className="self-center text-xs text-slate-500">
-              Do it on your real GitHub account (public activity only), then press Check GitHub. Resets at midnight UTC.
+              {t('devHelp')}
             </p>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-5 text-sm text-slate-400">
             {githubConnected
-              ? 'Your dev mission shows up here.'
-              : <>Connect your GitHub account to get a daily dev mission (push a commit, open a PR, review…) that pays BITS. <Link href={profileHref} className="text-indigo-300 hover:underline">Connect it in your profile</Link>.</>}
+              ? t('devEmpty')
+              : t.rich('connect', { link: chunks => <Link href={profileHref} className="text-indigo-300 hover:underline">{chunks}</Link> })}
           </div>
         )}
       </div>

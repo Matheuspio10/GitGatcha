@@ -1,0 +1,112 @@
+{
+  "title": "Seu inventário",
+  "subtitle": "Packs fechados esperando por você.",
+  "empty": {
+    "title": "O cofre está vazio",
+    "text": "Passe na loja ou suba de nível para ganhar mais packs.",
+    "goToStore": "Ir para a loja"
+  },
+  "pack": {
+    "cards": "{count, plural, one {# carta} other {# cartas}}",
+    "guaranteed": "≥1 {rarity}",
+    "tapToOpen": "Toque para abrir",
+    "openAria": "{name}: abrir ({count} no inventário)"
+  },
+  "confirm": {
+    "title": "Abrir <pack>{name}</pack>?",
+    "body": "Isso vai usar um pack do seu inventário e revelar {count} cartas.",
+    "details": "Detalhes do pack",
+    "activeFilter": "Filtro ativo:",
+    "cancel": "Cancelar",
+    "tearOpen": "Rasgar!"
+  },
+  "error": {
+    "title": "A invasão falhou",
+    "back": "Voltar ao inventário",
+    "generic": "Não encontramos devs suficientes. A API pode estar com limite de requisições ou a lista está vazia.",
+    "network": "Erro de rede"
+  },
+  "wishlistToast": "🌟 Fragmento de {language} ganho — {current} de {required} para {name}!",
+  "reveal": {
+    "tearHere": "rasgue aqui",
+    "boosterPack": "Booster Pack",
+    "packCards": "{count, plural, one {# carta} other {# cartas}}",
+    "cardsCount": "{count, plural, one {# carta} other {# cartas}}",
+    "tearOpenAria": "Rasgar {name}",
+    "new": "NOVA",
+    "dup": "REP",
+    "flipCard": "Virar a carta",
+    "nextCardAria": "{name}, {rarity}. Próxima carta",
+    "prevCard": "Voltar para a carta anterior",
+    "viewSummaryAria": "Ver o resumo do pack",
+    "nextCard": "Próxima carta",
+    "flipFirst": "Vire esta carta primeiro",
+    "skipIntro": "Pular intro",
+    "viewSummary": "Ver resumo",
+    "revealAll": "Revelar todas",
+    "hints": {
+      "pulling": "Tirando as cartas…",
+      "tearTouch": "Deslize pelo topo para rasgar, ou toque",
+      "tearMouse": "Arraste pelo topo para rasgar, ou clique",
+      "legendary": "Vem coisa grande aí…",
+      "epic": "Essa parece especial…",
+      "flipTouch": "Toque na carta para virar",
+      "flipMouse": "Clique ou aperte Espaço para virar",
+      "nextTouch": "Toque ou deslize para jogar de lado",
+      "nextMouse": "Clique, Espaço ou → para a próxima carta"
+    },
+    "caption": {
+      "duplicate": "Repetida · +{amount} fragmentos de {language}",
+      "duplicateShiny": "Repetida virou Shiny! · +{amount} fragmentos de {language}",
+      "newCard": "Carta nova para sua coleção!"
+    },
+    "summary": {
+      "title": "Resumo do pack",
+      "subtitle": "Todas as cartas reveladas deste booster",
+      "bonus": "Bônus: <hl>+{amount}</hl> fragmentos de {language}!",
+      "addToCollection": "Adicionar à coleção"
+    }
+  },
+  "hacking": {
+    "readout": {
+      "target": "ALVO: {host}",
+      "protocol": "PROTOCOLO: {protocol}",
+      "packType": "TIPO DE PACK: {name}",
+      "status": "STATUS: {status}",
+      "dataReceived": "DADOS RECEBIDOS",
+      "fetching": "BUSCANDO...",
+      "terminated": "ENCERRADO",
+      "connected": "CONECTADO",
+      "nodesSecured": "NÓS DOMINADOS: {count}",
+      "grid": "GRADE: {size}"
+    },
+    "status": {
+      "firewall": "FIREWALL DETECTADO — DESVIANDO",
+      "secured": "Nó dominado",
+      "granted": "ACESSO LIBERADO"
+    },
+    "closeCall": {
+      "escaped": "Escapou por um triz",
+      "bypassed": "Foi por pouco — firewall driblado",
+      "averted": "Segurança evitada por milissegundos"
+    },
+    "intro": {
+      "title": "Invadindo os servidores do GitHub…",
+      "subtitle": "Guie o sinal para extrair seus devs"
+    },
+    "hud": {
+      "move": "Mover:",
+      "dataCollected": "Dados coletados:",
+      "nodes": "Nós: {count}",
+      "skip": "Pular",
+      "loading": "Carregando…",
+      "skipTitle": "Pular (Esc)",
+      "skipAria": "Pular o minigame e revelar as cartas",
+      "skippingAria": "Pulando, esperando os dados do pack",
+      "mute": "Silenciar",
+      "unmute": "Ativar som",
+      "muteAria": "Silenciar o som",
+      "unmuteAria": "Ativar o som"
+    }
+  }
+}

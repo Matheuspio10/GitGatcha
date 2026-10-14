@@ -1,0 +1,51 @@
+{
+  "welcome": {
+    "close": "Close",
+    "title": "Welcome, <name>{username}</name>!",
+    "intro": "Collect real developers from GitHub, build a team of 3 and battle. Here is a gift to get you started.",
+    "starterPack": "Your starter pack is in the inventory, with a Rare or better guaranteed.",
+    "guestCards": "The {count} developers from your free pack are already in your collection.",
+    "openNow": "Open it now",
+    "waysToEarn": "Ways to earn BITS and packs",
+    "gotIt": "Got it, let me play"
+  },
+  "checklist": {
+    "title": "Getting started",
+    "error": "Something went wrong",
+    "claimed": "+{bits} BITS: {step}",
+    "complete": "Getting started complete. Have fun!",
+    "progress": "{done}/{total} done",
+    "next": "next: {step}",
+    "hide": "Hide the checklist",
+    "go": "Go"
+  },
+  "setupProfile": {
+    "failed": "Failed to update username.",
+    "title": "Confirm Your Nickname",
+    "intro": "Welcome! To ensure a fair ranking and friend system, all accounts must actively reserve a unique unchangeable nickname.",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "e.g. CodeMaster99",
+    "nicknameHint": "Only letters, numbers, and underscores. (3-20 characters)",
+    "invitedBy": "Invited by <optional>(optional)</optional>",
+    "invitedByPlaceholder": "A friend's nickname",
+    "referralBonus": "You both get {bonus} BITS when you connect your GitHub account.",
+    "saving": "Saving...",
+    "submit": "Claim Nickname"
+  },
+  "levelUp": {
+    "label": "Level up rewards",
+    "title": "Level Up!",
+    "rewardsUnlocked": "Rewards Unlocked",
+    "booster": "{pack} Booster",
+    "bits": "+{amount} Bits",
+    "badge": "{badge} Badge",
+    "nextLevel": "Next Level ➔",
+    "viewSummary": "View Summary",
+    "claimRewards": "Claim Rewards",
+    "levelOf": "{current} of {total} LEVELS",
+    "totalHaul": "Total Haul",
+    "levelRange": "Levels {from} - {to}",
+    "totalBits": "+{amount} Total Bits",
+    "claimAll": "Claim All"
+  }
+}

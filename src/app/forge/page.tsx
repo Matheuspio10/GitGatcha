@@ -2,12 +2,16 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getWeeklyEvent } from '@/lib/weeklyEventService';
+import { getTranslations } from 'next-intl/server';
 import ForgeClient from './ForgeClient';
 
-export const metadata = {
-  title: 'GitGacha | The Forge',
-  description: 'Invoke specific developer cards using fragments.',
-};
+export async function generateMetadata() {
+  const t = await getTranslations('forge.meta');
+  return {
+    title: t('title'),
+    description: t('description'),
+  };
+}
 
 export default async function ForgePage({ searchParams }: { searchParams: Promise<{ dev?: string }> }) {
   const session = await getServerSession(authOptions);

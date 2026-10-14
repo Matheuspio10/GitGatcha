@@ -1,0 +1,27 @@
+{
+  "card": {
+    "serial": "Número de série da carta",
+    "shinyStamp": "SHINY",
+    "signatureStamp": "ASSINATURA",
+    "rarityLevel": "{rarity} ({level} de 5)",
+    "exhausted": "Exausta",
+    "fatigued": "Cansada",
+    "stamina": "Stamina",
+    "attack": "Ataque",
+    "defense": "Defesa",
+    "hp": "HP",
+    "shiny": "Shiny",
+    "signature": "Assinatura",
+    "openGithub": "{card}: abrir perfil no GitHub"
+  },
+  "share": {
+    "copyPrompt": "Copie este link:",
+    "firstShareBonus": "+{bits} BITS pelo seu primeiro compartilhamento!",
+    "copied": "Copiado!",
+    "copyLink": "Copiar link",
+    "postOnX": "Postar no X",
+    "share": "Compartilhar…"
+  },
+  "rankBadge": "Elo {tier} (rating {rating})",
+  "frame": "Moldura {label}"
+}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
 
 /** Ring around a player's avatar when they equipped a frame (collections.ts). */
@@ -9,9 +10,10 @@ export function AvatarFrame({ frame, children, className = '', thickness = 4 }: 
   /** Ring width in px (wider where the avatar already has its own ring). */
   thickness?: number;
 }) {
+  const t = useTranslations('common');
   if (!frame) return <>{children}</>;
   return (
-    <span className={`relative inline-flex rounded-full ${className}`} style={{ padding: thickness }} title={`${frame.label} frame`}>
+    <span className={`relative inline-flex rounded-full ${className}`} style={{ padding: thickness }} title={t('frame', { label: frame.label })}>
       <span
         aria-hidden
         className={`absolute inset-0 rounded-full ${frame.animated ? 'animate-[spin_6s_linear_infinite]' : ''}`}

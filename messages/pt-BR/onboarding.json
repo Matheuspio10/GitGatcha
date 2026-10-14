@@ -1,0 +1,51 @@
+{
+  "welcome": {
+    "close": "Fechar",
+    "title": "Boas-vindas, <name>{username}</name>!",
+    "intro": "Colecione devs de verdade do GitHub, monte um time de 3 e batalhe. Aqui vai um presente pra começar.",
+    "starterPack": "Seu pack inicial está no inventário, com um Rare ou melhor garantido.",
+    "guestCards": "Os {count} devs do seu pack grátis já estão na sua coleção.",
+    "openNow": "Abrir agora",
+    "waysToEarn": "Jeitos de ganhar BITS e packs",
+    "gotIt": "Entendi, bora jogar"
+  },
+  "checklist": {
+    "title": "Primeiros passos",
+    "error": "Algo deu errado",
+    "claimed": "+{bits} BITS: {step}",
+    "complete": "Primeiros passos concluídos. Divirta-se!",
+    "progress": "{done}/{total} feitos",
+    "next": "próximo: {step}",
+    "hide": "Esconder a lista",
+    "go": "Ir"
+  },
+  "setupProfile": {
+    "failed": "Não foi possível atualizar o nome de usuário.",
+    "title": "Confirme seu apelido",
+    "intro": "Boas-vindas! Para o ranking e o sistema de amigos serem justos, toda conta precisa reservar um apelido único, que não pode ser alterado.",
+    "nickname": "Apelido",
+    "nicknamePlaceholder": "ex.: CodeMaster99",
+    "nicknameHint": "Só letras, números e underscores. (3 a 20 caracteres)",
+    "invitedBy": "Convidado por <optional>(opcional)</optional>",
+    "invitedByPlaceholder": "O apelido de um amigo",
+    "referralBonus": "Vocês dois ganham {bonus} BITS quando você conectar sua conta do GitHub.",
+    "saving": "Salvando...",
+    "submit": "Reservar apelido"
+  },
+  "levelUp": {
+    "label": "Recompensas de nível",
+    "title": "Subiu de nível!",
+    "rewardsUnlocked": "Recompensas desbloqueadas",
+    "booster": "Booster {pack}",
+    "bits": "+{amount} Bits",
+    "badge": "Emblema {badge}",
+    "nextLevel": "Próximo nível ➔",
+    "viewSummary": "Ver resumo",
+    "claimRewards": "Resgatar recompensas",
+    "levelOf": "NÍVEL {current} DE {total}",
+    "totalHaul": "Total ganho",
+    "levelRange": "Níveis {from} - {to}",
+    "totalBits": "+{amount} Bits no total",
+    "claimAll": "Resgatar tudo"
+  }
+}

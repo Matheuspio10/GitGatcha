@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, UserPlus, Sword, X, ArrowCircleUp, Checks } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 
 interface Notification {
   id: string;
@@ -32,6 +33,7 @@ export function NotificationBell() {
   
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const t = useTranslations('notifications.bell');
 
   const fetchNotifications = async () => {
     try {
@@ -113,11 +115,11 @@ export function NotificationBell() {
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return t('timeAgo.justNow');
+    if (mins < 60) return t('timeAgo.minutes', { count: mins });
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
+    if (hours < 24) return t('timeAgo.hours', { count: hours });
+    return t('timeAgo.days', { count: Math.floor(hours / 24) });
   };
 
   const displayCount = count;
@@ -132,11 +134,11 @@ export function NotificationBell() {
     return (
       <div className="flex-1 min-w-0">
         <p className="text-sm text-yellow-400 font-black group-hover:text-yellow-300 transition-colors uppercase tracking-wide">
-          Level {maxLevel} Reached!
+          {t('levelUp.title', { level: maxLevel })}
         </p>
         <p className="text-sm text-slate-200 mt-1 leading-snug">
-          You reached level {maxLevel} and won: <span className="font-bold text-indigo-300">{packs}</span>
-          {coins > 0 && <span className="text-yellow-500 font-bold"> + {coins} Coins</span>}
+          {t.rich('levelUp.body', { level: maxLevel, packs, b: chunks => <span className="font-bold text-indigo-300">{chunks}</span> })}
+          {coins > 0 && <span className="text-yellow-500 font-bold"> {t('levelUp.coins', { coins })}</span>}
         </p>
         
         <div className="mt-3 flex gap-2">
@@ -147,7 +149,7 @@ export function NotificationBell() {
             }}
             className="text-xs font-black bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-900 px-4 py-1.5 rounded shadow-lg transition-transform hover:-translate-y-0.5"
           >
-            Claim Reward
+            {t('levelUp.claim')}
           </button>
         </div>
       </div>
@@ -188,7 +190,7 @@ export function NotificationBell() {
                   renderLevelUpBody(toast, true)
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-white mb-1">New {toast.type.replace('_', ' ')}</p>
+                    <p className="text-sm font-bold text-white mb-1">{t('toastTitle', { type: toast.type })}</p>
                     <p className="text-sm text-slate-300">{toast.message}</p>
                     {toast.actionUrl && (
                       <Link 
@@ -199,7 +201,7 @@ export function NotificationBell() {
                           setActiveToasts(prev => prev.filter(t => t.id !== toast.id));
                         }}
                       >
-                        View Details
+                        {t('viewDetails')}
                       </Link>
                     )}
                   </>
@@ -244,7 +246,7 @@ export function NotificationBell() {
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Bell size={16} weight="fill" className="text-indigo-400" />
-                  Notifications
+                  {t('title')}
                   {displayCount > 0 && (
                     <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-red-500/30">
                       {displayCount}
@@ -256,10 +258,10 @@ export function NotificationBell() {
                     <button 
                       onClick={() => markAsRead(undefined, true)} 
                       className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 bg-indigo-500/10 px-2 py-1 rounded border border-indigo-500/20"
-                      title="Mark all as read"
+                      title={t('markAllRead')}
                     >
                       <Checks size={14} />
-                      All Read
+                      {t('allRead')}
                     </button>
                   )}
                   <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-white transition-colors p-1">
@@ -273,8 +275,8 @@ export function NotificationBell() {
                 {notifications.length === 0 ? (
                   <div className="px-5 py-10 text-center text-slate-500">
                     <Bell size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-medium">No notifications</p>
-                    <p className="text-xs mt-1">You&apos;re all caught up!</p>
+                    <p className="text-sm font-medium">{t('empty')}</p>
+                    <p className="text-xs mt-1">{t('emptyText')}</p>
                   </div>
                 ) : (
                   notifications.map((notif) => {
@@ -319,7 +321,7 @@ export function NotificationBell() {
                             <button 
                               onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
                               className="text-slate-500 hover:text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Dismiss"
+                              title={t('dismiss')}
                             >
                               <X size={14} />
                             </button>
@@ -343,7 +345,7 @@ export function NotificationBell() {
                     onClick={() => setIsOpen(false)}
                     className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors w-full inline-block text-center"
                   >
-                    View all activity
+                    {t('viewAll')}
                   </Link>
                 </div>
               )}

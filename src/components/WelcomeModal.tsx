@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import type { EarnIcon, EarnWay } from '@/lib/earnGuide';
 import { useDialog } from '@/lib/useDialog';
+import { useTranslations } from 'next-intl';
 
 const ICONS: Record<EarnIcon, React.ElementType> = {
   checklist: ListChecks,
@@ -30,6 +31,7 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
   const [open, setOpen] = useState(true);
   const router = useRouter();
   const openButton = useRef<HTMLButtonElement>(null);
+  const t = useTranslations('onboarding.welcome');
 
   // Focus the main action without scrolling the dialog away from its top
   useEffect(() => { openButton.current?.focus({ preventScroll: true }); }, []);
@@ -65,32 +67,35 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-6 sm:p-8 shadow-2xl"
           >
-            <button onClick={() => close()} className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close">
+            <button onClick={() => close()} className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label={t('close')}>
               <X size={20} />
             </button>
 
             <h2 id="welcome-title" className="font-display text-2xl sm:text-3xl font-extrabold text-white pr-8">
-              Welcome, <span className="bg-gradient-to-r from-brand-a to-brand-b bg-clip-text text-transparent">{username}</span>!
+              {t.rich('title', {
+                username,
+                name: chunks => <span className="bg-gradient-to-r from-brand-a to-brand-b bg-clip-text text-transparent">{chunks}</span>,
+              })}
             </h2>
             <p className="mt-2 text-slate-300">
-              Collect real developers from GitHub, build a team of 3 and battle. Here is a gift to get you started.
+              {t('intro')}
             </p>
 
             <div className="mt-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-2xl border border-commit/40 bg-commit/10 p-4">
               <Gift size={40} weight="duotone" className="shrink-0 text-commit" />
               <div className="flex-1">
                 <p className="font-bold text-white">{starterPackName}</p>
-                <p className="text-sm text-slate-300">Your starter pack is in the inventory, with a Rare or better guaranteed.</p>
+                <p className="text-sm text-slate-300">{t('starterPack')}</p>
                 {guestCards > 0 && (
-                  <p className="mt-1 text-sm text-commit">The {guestCards} developers from your free pack are already in your collection.</p>
+                  <p className="mt-1 text-sm text-commit">{t('guestCards', { count: guestCards })}</p>
                 )}
               </div>
               <button onClick={() => close('/inventory')} ref={openButton} className="btn-brand w-full sm:w-auto px-5 py-2.5 font-bold text-white">
-                Open it now
+                {t('openNow')}
               </button>
             </div>
 
-            <h3 className="mt-6 mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Ways to earn BITS and packs</h3>
+            <h3 className="mt-6 mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">{t('waysToEarn')}</h3>
             <ul className="grid gap-2 sm:grid-cols-2">
               {guide.map(way => {
                 const Icon = ICONS[way.icon];
@@ -113,7 +118,7 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
             </ul>
 
             <button onClick={() => close()} className="mt-6 w-full rounded-xl border border-slate-700 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-800">
-              Got it, let me play
+              {t('gotIt')}
             </button>
           </motion.div>
         </motion.div>

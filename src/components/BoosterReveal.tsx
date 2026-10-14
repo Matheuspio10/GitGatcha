@@ -7,6 +7,7 @@ import { Logo, LogoMark } from '@/components/Logo';
 import { motion, AnimatePresence, animate, useReducedMotion, useMotionValue, useTransform } from 'framer-motion';
 import { Sparkle, CaretLeft, CaretRight, FastForward } from '@phosphor-icons/react';
 import clsx from 'clsx';
+import { useTranslations } from 'next-intl';
 import {
   playCardFling,
   playCardReveal,
@@ -117,6 +118,7 @@ const STRIP_CLIP = toPolygon([...crimpTop(), ...tearLine().reverse()]);
 const BODY_CLIP = toPolygon([...tearLine(), ...crimpBottomReversed()]);
 
 export function PackArt({ name, theme, cardCount }: { name: string; theme?: BoosterPackTheme | null; cardCount: number }) {
+  const t = useTranslations('inventory.reveal');
   const textColor = theme?.textColor || '#fff';
   return (
     <div
@@ -133,7 +135,7 @@ export function PackArt({ name, theme, cardCount }: { name: string; theme?: Boos
       {/* Tear guide */}
       <div className="absolute inset-x-3 border-t-2 border-dashed border-white/40" style={{ top: `${TEAR_Y}%` }} />
       <div className="absolute right-3 text-[9px] font-black tracking-[0.3em] text-white/60 uppercase" style={{ top: `calc(${TEAR_Y}% + 4px)` }}>
-        tear here
+        {t('tearHere')}
       </div>
 
       <div className="absolute inset-x-0 top-[24%] flex flex-col items-center text-center px-5">
@@ -143,11 +145,11 @@ export function PackArt({ name, theme, cardCount }: { name: string; theme?: Boos
           {name}
         </h3>
         <div className="mt-3 text-[10px] font-bold uppercase tracking-[0.3em] bg-black/25 px-3 py-1 rounded-full" style={{ color: textColor }}>
-          {cardCount} Cards
+          {t('packCards', { count: cardCount })}
         </div>
       </div>
       <div className="absolute bottom-[10%] inset-x-0 text-center text-[10px] font-black tracking-[0.4em] text-white/50 uppercase">
-        Booster Pack
+        {t('boosterPack')}
       </div>
     </div>
   );
@@ -195,6 +197,7 @@ function BoosterPack({
   onTorn: () => void;
   onOpened: () => void;
 }) {
+  const t = useTranslations('inventory.reveal');
   const reduceMotion = useReducedMotion();
   const glowColor = theme?.accentColor || theme?.border || '#a78bfa';
   const spill = SPILL_RGB[bestRarity] ?? SPILL_RGB.Common;
@@ -312,7 +315,7 @@ function BoosterPack({
         >
           <motion.button
             type="button"
-            aria-label={`Tear open ${name}`}
+            aria-label={t('tearOpenAria', { name })}
             onClick={e => { if (e.detail === 0) ripAll(); }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -509,13 +512,14 @@ export function CardBack({ suspense }: { suspense: Suspense | null }) {
 // ─── NEW / DUP badge ────────────────────────────────────────────────────
 
 function NewDupBadge({ card, className }: { card: RevealCard; className?: string }) {
+  const t = useTranslations('inventory.reveal');
   return card.isDuplicate ? (
     <div className={clsx('bg-slate-900/90 backdrop-blur-xl text-rose-400 text-xs font-black px-3 py-1.5 rotate-12 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-rose-500/50 rounded-full pointer-events-none tracking-widest uppercase', className)}>
-      DUP <span className="text-rose-300 drop-shadow-[0_0_4px_rgba(244,63,94,0.8)]">+{card.fragmentsEarned}</span>
+      {t('dup')} <span className="text-rose-300 drop-shadow-[0_0_4px_rgba(244,63,94,0.8)]">+{card.fragmentsEarned}</span>
     </div>
   ) : (
     <div className={clsx('bg-slate-900/90 backdrop-blur-xl text-emerald-400 text-[10px] font-black px-3 py-1.5 -rotate-12 shadow-[0_4px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-emerald-500/50 rounded-full pointer-events-none tracking-widest uppercase', className)}>
-      NEW
+      {t('new')}
     </div>
   );
 }
@@ -551,6 +555,7 @@ function StackCard({
   onActivate: () => void;
   onSwipe: (dir: 1 | -1) => void;
 }) {
+  const t = useTranslations('inventory.reveal');
   const reduceMotion = useReducedMotion();
   const isTop = depth === 0;
   const pose = DEPTH_POSE[Math.min(depth, DEPTH_POSE.length - 1)];
@@ -656,7 +661,7 @@ function StackCard({
         }}
         role={isTop ? 'button' : undefined}
         tabIndex={isTop ? 0 : -1}
-        aria-label={isTop ? (isRevealed ? `${card.name}, ${card.rarity}. Next card` : 'Flip the card') : undefined}
+        aria-label={isTop ? (isRevealed ? t('nextCardAria', { name: card.name, rarity: card.rarity }) : t('flipCard')) : undefined}
       >
         {/* Suspense shake */}
         <motion.div
@@ -732,8 +737,9 @@ export function BoosterReveal({
   onComplete,
   packName = 'Booster',
   packTheme,
-  completeLabel = 'Add to collection',
+  completeLabel,
 }: BoosterRevealProps) {
+  const t = useTranslations('inventory.reveal');
   const reduceMotion = useReducedMotion();
   const isTouch = useIsTouchDevice();
   const sortedCards = useMemo(() => sortCards(cards), [cards]);
@@ -916,9 +922,9 @@ export function BoosterReveal({
       >
         <div className="text-center">
           <h2 className="text-5xl font-black text-white tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] mb-3 uppercase">
-            Pack Summary
+            {t('summary.title')}
           </h2>
-          <p className="text-slate-300 uppercase tracking-widest text-sm font-semibold">All revealed cards from this booster</p>
+          <p className="text-slate-300 uppercase tracking-widest text-sm font-semibold">{t('summary.subtitle')}</p>
         </div>
 
         {packDropFragments && (
@@ -931,7 +937,11 @@ export function BoosterReveal({
             <div className="inline-flex items-center gap-3 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-amber-500/50 shadow-[0_4px_20px_rgba(245,158,11,0.3),inset_0_1px_1px_rgba(255,255,255,0.1)]">
               <Sparkle size={24} weight="fill" className="text-amber-400 animate-pulse" />
               <span className="font-bold text-slate-200 text-lg">
-                Bonus: <span className="text-amber-400 font-black text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">+{packDropFragments.amount}</span> {packDropFragments.language} Fragments!
+                {t.rich('summary.bonus', {
+                  amount: packDropFragments.amount,
+                  language: packDropFragments.language,
+                  hl: chunks => <span className="text-amber-400 font-black text-xl drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">{chunks}</span>,
+                })}
               </span>
             </div>
           </motion.div>
@@ -963,7 +973,7 @@ export function BoosterReveal({
             onClick={onComplete}
             className="px-10 py-4 rounded-2xl bg-slate-100 hover:bg-white border border-white text-slate-900 font-extrabold tracking-[0.15em] text-sm uppercase transition-all shadow-[0_4px_20px_rgba(255,255,255,0.3),inset_0_2px_4px_rgba(255,255,255,1)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.5)] hover:-translate-y-1 active:translate-y-0 active:shadow-md"
           >
-            {completeLabel}
+            {completeLabel ?? t('summary.addToCollection')}
           </button>
         </motion.div>
       </motion.div>
@@ -979,17 +989,17 @@ export function BoosterReveal({
     .reverse(); // deepest first in the DOM, top card painted last
 
   let hint: string;
-  if (stage === 'tearing') hint = 'Pulling the cards out…';
-  else if (inPack) hint = isTouch ? 'Swipe across the top to tear it open, or tap' : 'Drag across the top to tear it open, or click';
-  else if (busy) hint = suspense?.rarity === 'Legendary' ? 'Something big is coming…' : suspense?.rarity === 'Epic' ? 'Feels special…' : '…';
-  else if (!isCurrentRevealed) hint = isTouch ? 'Tap the card to flip it' : 'Click or press Space to flip';
-  else hint = isTouch ? 'Tap or swipe to throw it aside' : 'Click, Space or → for the next card';
+  if (stage === 'tearing') hint = t('hints.pulling');
+  else if (inPack) hint = isTouch ? t('hints.tearTouch') : t('hints.tearMouse');
+  else if (busy) hint = suspense?.rarity === 'Legendary' ? t('hints.legendary') : suspense?.rarity === 'Epic' ? t('hints.epic') : '…';
+  else if (!isCurrentRevealed) hint = isTouch ? t('hints.flipTouch') : t('hints.flipMouse');
+  else hint = isTouch ? t('hints.nextTouch') : t('hints.nextMouse');
 
   const caption =
     !inPack && currentCard && isCurrentRevealed
       ? currentCard.isDuplicate
-        ? `${currentCard.shinyUpgrade ? 'Duplicate turned Shiny!' : 'Duplicate'} · +${currentCard.fragmentsEarned ?? 0} ${currentCard.primaryLanguage || ''} fragments`
-        : 'New card for your collection!'
+        ? t(currentCard.shinyUpgrade ? 'caption.duplicateShiny' : 'caption.duplicate', { amount: currentCard.fragmentsEarned ?? 0, language: currentCard.primaryLanguage || '' })
+        : t('caption.newCard')
       : null;
 
   return (
@@ -1031,7 +1041,7 @@ export function BoosterReveal({
           ))}
         </div>
         <span className="text-slate-400 font-bold tracking-widest text-xs" aria-live="polite">
-          {inPack ? `${total} cards` : `${Math.min(currentIndex + 1, total)} / ${total}`}
+          {inPack ? t('cardsCount', { count: total }) : `${Math.min(currentIndex + 1, total)} / ${total}`}
         </span>
       </div>
 
@@ -1054,7 +1064,7 @@ export function BoosterReveal({
             <button
               onClick={bringBack}
               disabled={currentIndex === 0 || busy}
-              aria-label="Bring back the previous card"
+              aria-label={t('prevCard')}
               className="hidden md:flex absolute left-10 top-1/2 -translate-y-1/2 p-4 rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors z-40 shadow-xl"
             >
               <CaretLeft size={32} weight="bold" className="text-white" />
@@ -1062,8 +1072,8 @@ export function BoosterReveal({
             <button
               onClick={() => flingTop(-1)}
               disabled={!isCurrentRevealed || busy}
-              aria-label={currentIndex === total - 1 ? 'View pack summary' : 'Next card'}
-              title={isCurrentRevealed ? undefined : 'Flip this card first'}
+              aria-label={currentIndex === total - 1 ? t('viewSummaryAria') : t('nextCard')}
+              title={isCurrentRevealed ? undefined : t('flipFirst')}
               className={clsx(
                 'hidden md:flex absolute right-10 top-1/2 -translate-y-1/2 p-4 rounded-full bg-slate-800 hover:bg-slate-700 transition-colors z-40 shadow-xl group',
                 'disabled:opacity-30 disabled:hover:bg-slate-800 disabled:cursor-not-allowed',
@@ -1113,7 +1123,7 @@ export function BoosterReveal({
             disabled={stage === 'tearing'}
             className="px-5 py-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold tracking-widest uppercase transition-colors disabled:opacity-40"
           >
-            Skip intro
+            {t('skipIntro')}
           </button>
         )}
         {!inPack && (
@@ -1122,14 +1132,14 @@ export function BoosterReveal({
             disabled={!isCurrentRevealed || busy}
             className="md:hidden px-5 py-2.5 rounded-full bg-slate-800 border border-slate-600 text-white text-xs font-bold tracking-widest uppercase shadow-lg transition-opacity disabled:opacity-0 disabled:pointer-events-none"
           >
-            {currentIndex === total - 1 ? 'View summary' : 'Next card'}
+            {currentIndex === total - 1 ? t('viewSummary') : t('nextCard')}
           </button>
         )}
         <button
           onClick={revealAll}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-indigo-600/90 hover:bg-indigo-500 border border-indigo-400/60 text-white text-xs font-black tracking-widest uppercase shadow-[0_0_18px_rgba(79,70,229,0.35)] transition-colors"
         >
-          Reveal all{!inPack && unrevealedLeft > 0 ? ` (${unrevealedLeft})` : ''}
+          {t('revealAll')}{!inPack && unrevealedLeft > 0 ? ` (${unrevealedLeft})` : ''}
           <FastForward size={14} weight="bold" />
         </button>
       </div>

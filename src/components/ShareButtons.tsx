@@ -5,6 +5,7 @@ import { useState, useSyncExternalStore } from 'react';
 const noSubscribe = () => () => {};
 import { toast } from 'react-hot-toast';
 import { Check, Copy, ShareNetwork, XLogo } from '@phosphor-icons/react';
+import { useTranslations } from 'next-intl';
 
 /**
  * Copies `text`; when the browser refuses the clipboard (permissions, old
@@ -21,13 +22,16 @@ export async function copyText(text: string, label = 'Copy this link:'): Promise
   }
 }
 
-/** First share pays a one-time bonus (the server ignores repeats and visitors). */
-export function claimShareBonus() {
+/**
+ * First share pays a one-time bonus (the server ignores repeats and visitors).
+ * `bonusMessage` builds the translated toast (English when omitted).
+ */
+export function claimShareBonus(bonusMessage?: (bits: number) => string) {
   fetch('/api/user/share-bonus', { method: 'POST' })
     .then(res => (res.ok ? res.json() : null))
     .then(data => {
       if (data?.granted) {
-        toast.success(`+${data.granted} BITS for your first share!`);
+        toast.success(bonusMessage ? bonusMessage(data.granted) : `+${data.granted} BITS for your first share!`);
         window.dispatchEvent(new Event('bits:refresh'));
       }
     })
@@ -37,20 +41,22 @@ export function claimShareBonus() {
 /** Copy link · post on X · the phone's share sheet (when available). */
 export function ShareButtons({ url, text, extra }: { url: string; text: string; extra?: React.ReactNode }) {
   const [copied, setCopied] = useState(false);
+  const t = useTranslations('common.share');
+  const bonusMessage = (bits: number) => t('firstShareBonus', { bits });
   // false on the server render, the real answer once hydrated (no mismatch)
   const canNativeShare = useSyncExternalStore(noSubscribe, () => typeof navigator.share === 'function', () => false);
 
   const copy = async () => {
-    await copyText(url);
+    await copyText(url, t('copyPrompt'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    claimShareBonus();
+    claimShareBonus(bonusMessage);
   };
 
   const nativeShare = async () => {
     try {
       await navigator.share({ title: 'GitGacha', text, url });
-      claimShareBonus();
+      claimShareBonus(bonusMessage);
     } catch { /* cancelled */ }
   };
 
@@ -60,14 +66,14 @@ export function ShareButtons({ url, text, extra }: { url: string; text: string; 
   return (
     <div className="flex flex-wrap justify-center gap-2 md:justify-start">
       <button onClick={copy} className={button}>
-        {copied ? <Check size={16} className="text-commit" /> : <Copy size={16} />} {copied ? 'Copied!' : 'Copy link'}
+        {copied ? <Check size={16} className="text-commit" /> : <Copy size={16} />} {copied ? t('copied') : t('copyLink')}
       </button>
-      <a href={xUrl} target="_blank" rel="noreferrer" onClick={claimShareBonus} className={button}>
-        <XLogo size={16} /> Post on X
+      <a href={xUrl} target="_blank" rel="noreferrer" onClick={() => claimShareBonus(bonusMessage)} className={button}>
+        <XLogo size={16} /> {t('postOnX')}
       </a>
       {canNativeShare && (
         <button onClick={nativeShare} className={button}>
-          <ShareNetwork size={16} /> Share…
+          <ShareNetwork size={16} /> {t('share')}
         </button>
       )}
       {extra}

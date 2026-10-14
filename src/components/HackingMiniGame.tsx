@@ -13,6 +13,7 @@ import {
 import { useAudioMuted } from '@/lib/audioManager';
 import { SpeakerHigh, SpeakerSlash, FastForward } from '@phosphor-icons/react';
 import './HackingMiniGame.css';
+import { useTranslations } from 'next-intl';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -41,6 +42,9 @@ interface FirewallState {
   corner: number; // corner node id where it spawned
   interval: number; // ms per step
 }
+
+type StatusKey = 'firewall' | 'secured' | 'granted';
+type CloseCallKey = 'escaped' | 'bypassed' | 'averted';
 
 interface HackingMiniGameProps {
   apiResolved: boolean;
@@ -186,6 +190,7 @@ export function HackingMiniGame({
   onComplete,
   onError,
 }: HackingMiniGameProps) {
+  const t = useTranslations('inventory.hacking');
   const [phase, setPhase] = useState<'intro' | 'playing' | 'completing' | 'access-granted'>('intro');
   const [grid, setGrid] = useState<GridData | null>(null);
   const [puzzleCount, setPuzzleCount] = useState(0);
@@ -197,7 +202,7 @@ export function HackingMiniGame({
   const [traceStarted, setTraceStarted] = useState(false);
 
   const [flashNodes, setFlashNodes] = useState(false);
-  const [statusText, setStatusText] = useState<string | null>(null);
+  const [statusText, setStatusText] = useState<StatusKey | null>(null);
   const [statusKey, setStatusKey] = useState(0);
   const [cascadePhase, setCascadePhase] = useState(false);
   const [gridAnimClass, setGridAnimClass] = useState('hacking-grid-enter');
@@ -212,7 +217,7 @@ export function HackingMiniGame({
   const [firewallPredictions, setFirewallPredictions] = useState<number[]>([]);
   const [proximityLevel, setProximityLevel] = useState<0 | 1 | 2>(0);
   const [collisionFlash, setCollisionFlash] = useState(false);
-  const [closeCallText, setCloseCallText] = useState<string | null>(null);
+  const [closeCallText, setCloseCallText] = useState<CloseCallKey | null>(null);
   const [statusIsFirewall, setStatusIsFirewall] = useState(false);
   const [firewallPrevPos, setFirewallPrevPos] = useState<{x: number; y: number}[]>([]);
 
@@ -553,7 +558,7 @@ export function HackingMiniGame({
           setCollisionFlash(true);
           playFirewallAlarm();
           setStatusIsFirewall(true);
-          setStatusText('FIREWALL DETECTED — REROUTING');
+          setStatusText('firewall');
           setStatusKey(prev => prev + 1);
 
           setTimeout(() => {
@@ -623,15 +628,11 @@ export function HackingMiniGame({
       }
     }
 
-    setStatusText('Node Secured');
+    setStatusText('secured');
     setStatusKey(prev => prev + 1);
 
     if (isCloseCall) {
-      const phrases = [
-        'Narrowly escaped detection',
-        'Close call — firewall bypassed',
-        'Security averted by milliseconds',
-      ];
+      const phrases: CloseCallKey[] = ['escaped', 'bypassed', 'averted'];
       setCloseCallText(phrases[Math.floor(Math.random() * phrases.length)]);
     }
 
@@ -648,7 +649,7 @@ export function HackingMiniGame({
 
         setTimeout(() => {
           setPhase('access-granted');
-          setStatusText('ACCESS GRANTED');
+          setStatusText('granted');
           setStatusKey(prev => prev + 1);
           setCloseCallText(null);
         }, 600);
@@ -831,32 +832,32 @@ export function HackingMiniGame({
 
         {/* Corner Readouts */}
         <div className="hacking-readout top-left">
-          TARGET: api.github.com<br />
-          PROTOCOL: HTTPS/2
+          {t('readout.target', { host: 'api.github.com' })}<br />
+          {t('readout.protocol', { protocol: 'HTTPS/2' })}
         </div>
         <div className="hacking-readout top-right">
-          PACK TYPE: {packName}<br />
-          STATUS: {apiResolved ? 'DATA RECEIVED' : 'FETCHING...'}
+          {t('readout.packType', { name: packName })}<br />
+          {t('readout.status', { status: apiResolved ? t('readout.dataReceived') : t('readout.fetching') })}
         </div>
         <div className="hacking-readout bottom-left">
-          {fakeIp} │ {phase === 'access-granted' ? 'TERMINATED' : 'CONNECTED'}
+          {fakeIp} │ {phase === 'access-granted' ? t('readout.terminated') : t('readout.connected')}
         </div>
         <div className="hacking-readout bottom-right">
-          NODES SECURED: {puzzleCount}<br />
-          GRID: {grid ? `${grid.rows}×${grid.cols}` : '---'}
+          {t('readout.nodesSecured', { count: puzzleCount })}<br />
+          {t('readout.grid', { size: grid ? `${grid.rows}×${grid.cols}` : '---' })}
         </div>
 
         {/* Status Text */}
         {statusText && (
           <div key={statusKey} className={`hacking-status ${statusIsFirewall ? 'firewall-alert' : ''}`}>
-            {statusText}
+            {t(`status.${statusText}`)}
           </div>
         )}
 
         {/* Close-call flavor text */}
         {closeCallText && (
           <div key={`cc-${statusKey}`} className="hacking-close-call">
-            {closeCallText}
+            {t(`closeCall.${closeCallText}`)}
           </div>
         )}
 
@@ -864,10 +865,10 @@ export function HackingMiniGame({
         {phase === 'intro' && (
           <div className="hacking-intro">
             <div className="hacking-intro-text">
-              Infiltrating GitHub servers…
+              {t('intro.title')}
             </div>
             <div className="hacking-intro-sub">
-              Route the signal to extract your developers
+              {t('intro.subtitle')}
             </div>
           </div>
         )}
@@ -876,7 +877,7 @@ export function HackingMiniGame({
         {phase === 'access-granted' && (
           <div className="hacking-access-granted">
             <div className="hacking-access-text">
-              ACCESS GRANTED
+              {t('status.granted')}
             </div>
           </div>
         )}
@@ -1102,7 +1103,7 @@ export function HackingMiniGame({
         <div className="hacking-hud">
           {/* Controls */}
           <div className="hacking-controls">
-            <span className="hacking-hud-label">Move:</span>
+            <span className="hacking-hud-label">{t('hud.move')}</span>
             <div className={`hacking-key ${pressedKey === 'W' ? 'pressed' : ''}`}>W</div>
             <div className={`hacking-key ${pressedKey === 'A' ? 'pressed' : ''}`}>A</div>
             <div className={`hacking-key ${pressedKey === 'S' ? 'pressed' : ''}`}>S</div>
@@ -1111,7 +1112,7 @@ export function HackingMiniGame({
 
           {/* Data Collected */}
           <div className="hacking-data-bar-container">
-            <span className="hacking-data-bar-label">Data Collected:</span>
+            <span className="hacking-data-bar-label">{t('hud.dataCollected')}</span>
             <div className="hacking-data-bar-track">
               <div
                 className="hacking-data-bar-fill"
@@ -1122,7 +1123,7 @@ export function HackingMiniGame({
 
           {/* Nodes Counter */}
           <div className="hacking-hud-label">
-            Nodes: {puzzleCount}
+            {t('hud.nodes', { count: puzzleCount })}
           </div>
 
           {/* Skip straight to the reveal */}
@@ -1133,10 +1134,10 @@ export function HackingMiniGame({
             onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
             disabled={skipRequested}
-            aria-label={skipRequested ? 'Skipping, waiting for the pack data' : 'Skip the mini-game and reveal the cards'}
-            title="Skip (Esc)"
+            aria-label={skipRequested ? t('hud.skippingAria') : t('hud.skipAria')}
+            title={t('hud.skipTitle')}
           >
-            {skipRequested ? 'Loading…' : 'Skip'}
+            {skipRequested ? t('hud.loading') : t('hud.skip')}
             <FastForward size={14} weight="bold" />
           </button>
 
@@ -1147,9 +1148,9 @@ export function HackingMiniGame({
             onClick={toggleMuted}
             onTouchStart={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
-            aria-label={isMuted ? 'Unmute sound' : 'Mute sound'}
+            aria-label={isMuted ? t('hud.unmuteAria') : t('hud.muteAria')}
             aria-pressed={isMuted}
-            title={isMuted ? 'Unmute' : 'Mute'}
+            title={isMuted ? t('hud.unmute') : t('hud.mute')}
           >
             {isMuted ? <SpeakerSlash size={16} weight="bold" /> : <SpeakerHigh size={16} weight="bold" />}
           </button>
