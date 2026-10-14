@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { getTranslations } from 'next-intl/server';
-import { CardArt, OG_BACKGROUND, OG_SIZE, RARITY_HEX, Wordmark, getShareCard } from '@/lib/shareCard';
+import { CardArt, OG_BACKGROUND, OG_SIZE, RARITY_HEX, Wordmark, getShareCard, localizeShareCard } from '@/lib/shareCard';
+import { getGameText } from '@/i18n/gameText.server';
 
 export const size = OG_SIZE;
 export const contentType = 'image/png';
@@ -9,10 +10,11 @@ export const alt = 'A developer card on GitGacha';
 /** Link preview of a card page: the card plus who it is. */
 export default async function Image({ params }: { params: Promise<{ login: string }> }) {
   const { login } = await params;
-  const [card, t] = await Promise.all([getShareCard(decodeURIComponent(login)), getTranslations('public.card.og')]);
-  if (!card) {
+  const [found, t, game] = await Promise.all([getShareCard(decodeURIComponent(login)), getTranslations('public.card.og'), getGameText('game')]);
+  if (!found) {
     return new ImageResponse(<div style={{ display: 'flex', width: '100%', height: '100%', background: OG_BACKGROUND, alignItems: 'center', justifyContent: 'center' }}><Wordmark size={80} /></div>, size);
   }
+  const card = localizeShareCard(found, game);
   return new ImageResponse(
     <div style={{ display: 'flex', width: '100%', height: '100%', background: OG_BACKGROUND, padding: 60, gap: 60, alignItems: 'center' }}>
       <CardArt card={card} signature={!!card.signatureOwner} scale={0.9} />

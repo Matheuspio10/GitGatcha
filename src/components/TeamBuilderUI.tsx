@@ -13,6 +13,8 @@ import clsx from 'clsx';
 import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
 import {
   LEAGUES,
+  LOYALTY_MILESTONES,
+  BALANCED_POWER_CAP_MULTIPLIER,
   COMBAT_LANGUAGES,
   PASSIVE,
   SYNERGY,
@@ -23,6 +25,7 @@ import {
 } from '@/lib/battleConfig';
 // battleResolver only imports battleConfig (no prisma / server code), so it is client-safe.
 import { getCardType, getTypeMultiplier, type CardType } from '@/lib/battleResolver';
+import { useGameText, type GameText } from '@/i18n/gameText';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -155,7 +158,7 @@ function cardType(card: TeamBuilderCard): CardType {
 }
 
 /** Mirrors applySynergies() in battleResolver.ts; numbers come from SYNERGY / PASSIVE. */
-function computeSynergies(cards: (TeamBuilderCard | null)[], t: TeamBuilderT): SynergyInfo[] {
+function computeSynergies(cards: (TeamBuilderCard | null)[], t: TeamBuilderT, battleText: GameText): SynergyInfo[] {
   const filled = cards.filter(Boolean) as TeamBuilderCard[];
   if (filled.length === 0) return [];
 
@@ -192,7 +195,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[], t: TeamBuilderT): S
     } else if (type === 'JavaScript') {
       results.push({
         label: `${count}× JavaScript`,
-        description: t('synergy.jsDesc', { chance: pct(SYNERGY.jsCallbackChance * mult), bonus: pct(PASSIVE.javascript.bonus) }),
+        description: t('synergy.jsDesc', { chance: pct(SYNERGY.jsCallbackChance * mult), bonus: pct(PASSIVE.javascript.bonus), passive: battleText('passives.JavaScript.name', 'Double Callback') }),
         color: 'text-yellow-400',
         icon: '⚡',
         active: true,
@@ -208,7 +211,7 @@ function computeSynergies(cards: (TeamBuilderCard | null)[], t: TeamBuilderT): S
     } else if (type === 'Go') {
       results.push({
         label: `${count}× Go`,
-        description: t('synergy.goDesc'),
+        description: t('synergy.goDesc', { passive: battleText('passives.Go.name', 'First Strike') }),
         color: 'text-cyan-300',
         icon: '⚡',
         active: true,
@@ -268,6 +271,7 @@ function CompactCard({
   onClick: () => void;
 }) {
   const t = useTranslations('teamBuilder');
+  const achText = useGameText('gameAchievements');
   const border = RARITY_COLOR[card.rarity] || RARITY_COLOR.Common;
   const langColor = LANG_COLOR[card.primaryLanguage || 'Unknown'] || LANG_COLOR.Unknown;
   const glow = RARITY_GLOW[card.rarity] || '';
@@ -319,7 +323,7 @@ function CompactCard({
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-bold text-white truncate">{card.name}</p>
           {card.loyaltyTier && card.loyaltyTier !== 'none' && (
-            <span className="text-xs flex-shrink-0" title={card.loyaltyTier.replace('_', ' ')}>
+            <span className="text-xs flex-shrink-0" title={achText(`loyalty.${card.loyaltyTier}.title`, card.loyaltyTier.replace('_', ' '))}>
               {card.loyaltyTier === 'veteran' ? '⭐' : card.loyaltyTier === 'trusted' ? '🛡️' : card.loyaltyTier === 'reliable' ? '🔥' : card.loyaltyTier === 'legendary_bond' ? '💎' : card.loyaltyTier === 'eternal' ? '♾️' : ''}
             </span>
           )}
@@ -359,13 +363,13 @@ function CompactCard({
         )}
         {(() => {
           const count = card.loyaltyCount || 0;
-          const thresholds = [10, 25, 50, 100, 200];
-          const tierNames = ['Veteran', 'Trusted', 'Reliable', 'L.Bond', 'Eternal'];
-          for (let i = 0; i < thresholds.length; i++) {
-            if (count < thresholds[i] && thresholds[i] - count <= 5) {
+          for (const m of LOYALTY_MILESTONES) {
+            if (count < m.threshold && m.threshold - count <= 5) {
+              // "Legendary Bond" is too long for the hint: short form from teamBuilder
+              const name = m.tier === 'legendary_bond' ? t('card.legendaryBondShort') : achText(`loyalty.${m.tier}.title`, m.title);
               return (
                 <p className="text-[7px] mt-0.5 font-bold text-amber-400 animate-pulse truncate">
-                  ~{tierNames[i]}!
+                  ~{name}!
                 </p>
               );
             }
@@ -518,7 +522,8 @@ function TeamSlot({
 
 function SynergyPanel({ slots, prevSynergyCountRef }: { slots: (TeamBuilderCard | null)[]; prevSynergyCountRef: React.MutableRefObject<number> }) {
   const t = useTranslations('teamBuilder');
-  const synergies = computeSynergies(slots, t);
+  const battleText = useGameText('gameBattle');
+  const synergies = computeSynergies(slots, t, battleText);
   const activeSynergies = synergies.filter(s => s.active);
   const [pulsing, setPulsing] = useState(false);
 
@@ -783,7 +788,8 @@ function ConfirmationModal({
   loading?: boolean;
 }) {
   const t = useTranslations('teamBuilder');
-  const synergies = computeSynergies(slots, t).filter(s => s.active);
+  const battleText = useGameText('gameBattle');
+  const synergies = computeSynergies(slots, t, battleText).filter(s => s.active);
   const filled = slots.filter(Boolean) as TeamBuilderCard[];
   const panelRef = useDialog(true, loading ? undefined : onCancel);
 
@@ -1299,6 +1305,7 @@ export default function TeamBuilderUI({
   userBits = 0,
 }: TeamBuilderProps) {
   const t = useTranslations('teamBuilder');
+  const battleText = useGameText('gameBattle');
   const [showTypeChart, setShowTypeChart] = useState(false);
   const [showConfirmRandom, setShowConfirmRandom] = useState(false);
   const [showFriendModal, setShowFriendModal] = useState(false);
@@ -1542,6 +1549,8 @@ export default function TeamBuilderUI({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {(Object.keys(LEAGUE_CONFIG) as LeagueMode[]).map(mode => {
               const cfg = LEAGUE_CONFIG[mode];
+              const label = battleText(`leagues.${mode}.label`, cfg.label);
+              const rules = battleText(`leagues.${mode}.rules`, cfg.rules, mode === 'BALANCED' ? { mult: BALANCED_POWER_CAP_MULTIPLIER } : undefined);
               const isActive = leagueMode === mode;
               const cantAfford = !!cfg.entryFee && userBits < cfg.entryFee;
               return (
@@ -1557,9 +1566,9 @@ export default function TeamBuilderUI({
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-lg">{cfg.icon}</span>
-                    <span className={clsx('text-xs font-bold', isActive ? cfg.color : 'text-slate-400')}>{cfg.label}</span>
+                    <span className={clsx('text-xs font-bold', isActive ? cfg.color : 'text-slate-400')}>{label}</span>
                   </div>
-                  <p className="text-[9px] text-slate-500 leading-tight">{cfg.entryFee ? t('league.rulesWithFee', { rules: cfg.rules, fee: cfg.entryFee }) : cfg.rules}</p>
+                  <p className="text-[9px] text-slate-500 leading-tight">{cfg.entryFee ? t('league.rulesWithFee', { rules, fee: cfg.entryFee }) : rules}</p>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[9px] text-yellow-400">+{cfg.winBits} BITS</span>
                     <span className="text-[9px] text-blue-400">+{cfg.winXp} XP</span>

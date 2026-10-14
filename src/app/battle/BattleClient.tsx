@@ -13,13 +13,14 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useBattleAudio } from './useBattleAudio';
 import { toast } from 'react-hot-toast';
-import { notifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
+import { useNotifyAchievements, AchievementUnlockNotice } from '@/lib/achievementToast';
 import type { BattleRewards, LeagueMode } from '@/lib/battleConfig';
 import { RankBadge } from '@/components/RankBadge';
 import { TowerPanel } from './TowerPanel';
 import { copyText } from '@/components/ShareButtons';
 import { challengeLink } from '@/lib/challenges';
-import { CHALLENGE_STAKE_MAX } from '@/lib/battleConfig';
+import { CHALLENGE_STAKE_MAX, LEAGUES } from '@/lib/battleConfig';
+import { useGameText } from '@/i18n/gameText';
 
 type RankedResult = { opponent: string | null; rating: { before: number; after: number } | null };
 
@@ -378,7 +379,10 @@ function BattleReplay({
   loyaltyUnlocks?: { cardId: string; cardName: string; milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[] }[];
   achievementsUnlocked?: AchievementUnlockNotice[];
 }) {
+  const notifyUnlocks = useNotifyAchievements();
   const t = useTranslations('battle');
+  const battleText = useGameText('gameBattle');
+  const achText = useGameText('gameAchievements');
   const [currentTurn, setCurrentTurn] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [speed, setSpeed] = useState<'normal' | 'fast'>('normal');
@@ -446,7 +450,7 @@ function BattleReplay({
         // Rewards were granted server-side; resync Navbar BITS / LevelUpModal now
         // (not at battle start, so the replay doesn't spoil the result).
         window.dispatchEvent(new Event('bits:refresh'));
-        notifyAchievements(achievementsRef.current);
+        notifyUnlocks(achievementsRef.current);
         achievementsRef.current = undefined;
       }, 2500);
       return () => clearTimeout(timer);
@@ -570,7 +574,7 @@ function BattleReplay({
               {winnerSide === 'CHALLENGER' ? t('results.victory') : t('results.defeat')}
             </h2>
             {leagueMode && leagueMode !== 'OPEN' && leagueMode !== 'RANKED' && (
-              <p className="text-xs text-slate-500 mt-2 uppercase tracking-wider">{t('results.league', { league: leagueMode })}</p>
+              <p className="text-xs text-slate-500 mt-2 uppercase tracking-wider">{battleText(`leagues.${leagueMode}.label`, LEAGUES[leagueMode as LeagueMode]?.label ?? leagueMode)}</p>
             )}
             {ranked && (
               <div className="mt-3 flex flex-col items-center gap-2">
@@ -666,7 +670,7 @@ function BattleReplay({
                     <div key={mi} className="flex items-center gap-3 bg-black/30 rounded-xl px-4 py-3 mt-2">
                       <div className="text-center">
                         <p className="text-xs text-slate-400 uppercase">{t('results.newTitle')}</p>
-                        <p className="text-lg font-black text-yellow-300">{m.title}</p>
+                        <p className="text-lg font-black text-yellow-300">{achText(`loyalty.${m.tier}.title`, m.title)}</p>
                       </div>
                       <div className="flex-1 flex flex-wrap gap-2 ml-4">
                         <span className="text-xs bg-red-500/20 text-red-400 font-bold px-2 py-1 rounded-lg border border-red-500/30">
@@ -679,7 +683,7 @@ function BattleReplay({
                         )}
                         {m.cosmetics.filter((c: string) => !c.includes('badge')).map((cosmetic: string, ci: number) => (
                           <span key={ci} className="text-xs bg-purple-500/20 text-purple-400 font-bold px-2 py-1 rounded-lg border border-purple-500/30">
-                            ✨ {cosmetic.replace(/_/g, ' ')}
+                            ✨ {achText(`loyaltyCosmetics.${cosmetic}`, cosmetic.replace(/_/g, ' '))}
                           </span>
                         ))}
                       </div>

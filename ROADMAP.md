@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da segunda parte do PT-BR (PR #56). **Ondas 1 a 6 completas**; onda 7 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da terceira parte do PT-BR (PR #57). **Ondas 1 a 7 completas.** O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 20 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 212 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 57 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 213 testes (`npm test`), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -55,10 +55,9 @@
 
 ## ▶️ Próximo passo
 
-**Onda 7 (celular, acessibilidade e idioma)**, uma PR por rodada:
-1. **PT-BR, parte 3 (7c-3):** os textos que vêm dos dados do jogo, que hoje aparecem em inglês mesmo em PT-BR: nomes e descrições dos packs, missões, conquistas, passos do "Primeiros passos", guia de BITS, passivas e regras das ligas, nomes das raridades (decidir se traduz), mensagens de erro das APIs e notificações; depois a wiki inteira (namespaces `game` e `wiki`).
+**Onda 8 (engenharia de fundo)**, uma PR por rodada, na ordem que fizer mais sentido (ver 2.8): índices e `select` nas consultas quentes; zod nas rotas; Sentry/logs e CSP; `proxy.ts`; testes de concorrência; reduzir o lint; e o que sobrou do PT-BR (textos gravados no banco em inglês, mensagens de erro das APIs; ver 2.5). Upgrade Prisma/Auth.js e JSON → tabelas são maiores e pedem planejamento.
 
-Depois: **onda 8** (engenharia de fundo, pode intercalar) e **onda 9** (grandes apostas e monetização).
+Depois: **onda 9** (grandes apostas e monetização).
 
 **Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
 - O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
@@ -121,6 +120,7 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #55 | Como escolher o idioma | Cookie `NEXT_LOCALE`, sem `/pt` na URL; o primeiro acesso segue o navegador (qualquer `pt` vira PT-BR). Seletor "EN/PT" no topo e no menu | `pickLocale` (`src/i18n/locales.ts`) |
 | #55 | Termos do PT-BR | "pack", "booster", "Shiny", "stamina", "Ranked", "rating" e "Daily Standup" ficam em inglês (jargão de jogo/dev); Forja, coringa, lealdade, treino, elo, temporada, Torre em português; "Changelog" virou "Novidades". Glossário completo em `docs/i18n.md` | `messages/pt-BR/*.json` |
 | #55 | Nomes das raridades | Em inglês por enquanto (Common… Legendary), também em PT-BR. Traduzir (Comum/Incomum/Raro/Épico/Lendário) entra na parte 3 se o dono quiser | — |
+| #57 | Nomes de packs, passivas e títulos em PT-BR | Traduzidos ("O Covil do JavaScript", "A Caixa Misteriosa", "Força Bruta", "Escudo de Ferro"); jargão de dev fica em inglês (Hot Reload, Double Callback, Null Safety, Cron Job, Type Safety; Pythonistas, Rust or Bust, Indie Hackers, Core Team). Mudar é só editar `messages/pt-BR/game*.json` | `messages/pt-BR/gamePacks.json`, `gameBattle.json`, `gameAchievements.json` |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -137,7 +137,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
 | **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
-| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR partes 1 e 2 (PR #55, #56) · falta: **PT-BR parte 3** (dados do jogo e wiki) (2.5) | 1 rodada, M–G |
+| **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
 | **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
@@ -353,6 +353,13 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Contraste AA:** o `slate-500` (texto secundário em 196 lugares) foi de 57% para 64% de luminosidade: 5,9:1 no fundo e 5,4:1 nos painéis (antes 4,5 e 4,1). Os textos em `slate-600` (2,8:1) passaram para `slate-500`.
 - **Som:** botão de som no topo com volume (salvo no navegador) e mudo, ligado ao ganho mestre do `audioManager`. Epic e Legendary ganharam sons próprios sintetizados por cima do de Rare: arpejo subindo no Epic, arpejo com acorde sustentado e brilho no Legendary.
 
+### Onda 7 — PT-BR, parte 3: dados do jogo e wiki (PR #57)
+- **Como funciona** (`src/i18n/gameText.ts`): os catálogos continuam em inglês em `src/lib` (servidor, testes e banco usam esse texto) e são traduzidos **onde aparecem**, pelo id do item (`packs.<id>.name`, `achievements.<id>.name`, `leagues.<MODO>.rules`…), com o inglês do código como reserva. Números vêm das constantes como `{variáveis}`, então a wiki e as cartas continuam seguindo `src/lib` (regra de ouro 6). Regras no `docs/i18n.md`.
+- **Feito em duas fases, por 10 agentes:** primeiro os catálogos (4 namespaces novos: `gamePacks`, `gameAchievements`, `gameBattle`, `game`; ~440 chaves, cada um conferido por script contra o texto do código), depois as telas (cada agente com arquivos exclusivos) e a wiki inteira (~190 chaves).
+- **Traduzido:** nomes, descrições e filtros dos packs (inclusive os de evento, "Pack da Semana Web"); missões (reconstruídas pelo tipo e alvo, porque a descrição fica gravada em inglês); conquistas, níveis, marcos de lealdade, títulos e molduras; regras das ligas, passivas (texto longo e curto da carta), elos, Torre, Sprints (com a legenda "1º 200 · 2º 120…"); títulos e motivos das cartas (também no PNG e nas prévias para redes sociais); primeiros passos, guia de BITS e motivos do histórico; o aviso de conquista desbloqueada (`useNotifyAchievements`); e a wiki inteira.
+- **Mudanças no inglês, de propósito:** a liga Legendary aparece como "LEGENDARY ONLY" (o nome oficial) no resultado; cosméticos e tiers de lealdade com inicial maiúscula; a recompensa de nível "JavaScript Coven" passa a mostrar o nome da loja, "The JavaScript Coven". Na wiki, alguns números que estavam escritos no texto agora vêm das constantes (desafio em 24 h, PHP em 1 HP, andar do mini-chefe).
+- **Ainda em inglês** (backlog 2.5): o que está gravado no banco (notificações, histórico de BITS, fragmentos, log das batalhas), mensagens de erro das APIs, e as raridades (decisão pendente).
+
 ### Onda 7 — PT-BR, parte 2 (PR #56)
 - **Traduzido (~520 textos), por 5 agentes em paralelo seguindo `docs/i18n.md`:** montador de time (namespace novo `teamBuilder`), Arena com replay, resultado, desafios, apostas e revanche, Torre; perfil, editar perfil, conectar GitHub e convites; ranking (abas, temporada, Sprints) e amigos com comparar coleção; início, login, pack de visitante, perfil e carta públicos (com as imagens de prévia), desafio por link e histórico de BITS. Agora **toda a interface tem português**; o que ainda aparece em inglês vem dos dados do jogo (parte 3).
 - Datas seguem o idioma (histórico de BITS, desafios, conquistas). A data de expiração do desafio passou de `toUTCString` para um formato legível nos dois idiomas, com "UTC" no fim.
@@ -394,7 +401,8 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Item | Esforço |
 |---|---|
 | Notificações: limitar e limpar a lista, que cresce sem fim | P |
-| **Português (PT-BR)** com next-intl, mantendo o inglês | partes 1 e 2 ✅ (PR #55, #56); parte 3 pendente |
+| ~~**Português (PT-BR)** com next-intl~~ | ✅ PR #55, #56, #57 |
+| PT-BR: o que ainda sai em inglês. Textos **gravados no banco** em inglês (mensagens de notificações, detalhes do histórico de BITS, origem dos fragmentos, log das batalhas) e as **mensagens de erro das APIs**. Caminho: gravar chave + valores em vez do texto pronto (notificações e log) e traduzir as rotas com `getTranslations`. Também o "Anonymous" do ranking (só para contas sem apelido) | M |
 
 ### 2.6 Áudio (restante)
 | Item | Esforço |

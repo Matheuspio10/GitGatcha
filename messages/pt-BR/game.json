@@ -1,1 +1,220 @@
-{}
+{
+  "missions": {
+    "daily": {
+      "OPEN_BOOSTER": "{count, plural, one {Abra um booster} other {Abra # boosters}}",
+      "WIN_BATTLE": "{count, plural, one {Vença uma batalha} other {Vença # batalhas}}",
+      "COLLECT_RARITY": "{count, plural, one {Consiga uma carta {rarity} ou melhor} other {Consiga # cartas {rarity} ou melhores}}",
+      "COLLECT_LANGUAGE": "{count, plural, one {Consiga um dev {language}} other {Consiga # devs {language}}}"
+    },
+    "weekly": {
+      "OPEN_BOOSTER": "{count, plural, one {Abra um booster esta semana} other {Abra # boosters esta semana}}",
+      "WIN_BATTLE": "{count, plural, one {Vença uma batalha esta semana} other {Vença # batalhas esta semana}}",
+      "COLLECT_RARITY": "{count, plural, one {Consiga uma carta {rarity} ou melhor esta semana} other {Consiga # cartas {rarity} ou melhores esta semana}}",
+      "COLLECT_LANGUAGE": "{count, plural, one {Consiga um dev {language} esta semana} other {Consiga # devs {language} esta semana}}"
+    },
+    "dev": {
+      "PushEvent": "Dê push num commit no GitHub hoje",
+      "PullRequestEvent_opened": "Abra um pull request hoje",
+      "IssuesEvent_opened": "Abra uma issue hoje",
+      "PullRequestReviewEvent": "Revise um pull request hoje",
+      "IssueCommentEvent": "Comente numa issue ou pull request hoje"
+    }
+  },
+  "onboardingSteps": {
+    "open-pack": {
+      "title": "Abra seu pack inicial",
+      "description": "Abra no seu inventário: um Rare ou melhor é garantido."
+    },
+    "collection": {
+      "title": "Conheça seus devs",
+      "description": "Veja suas cartas novas na coleção."
+    },
+    "team": {
+      "title": "Monte um time de 3",
+      "description": "Escolha 3 cartas no montador de time da Arena."
+    },
+    "battle": {
+      "title": "Lute sua primeira batalha",
+      "description": "Leve seu time para qualquer liga. Ganhando ou perdendo, conta."
+    }
+  },
+  "earnGuide": {
+    "gettingStarted": {
+      "title": "Primeiros passos",
+      "text": "A lista no canto paga {bits} BITS pelos seus primeiros passos."
+    },
+    "dailyReward": {
+      "title": "Recompensa diária",
+      "text": "Resgate na Loja todo dia: de {first} a {last} BITS numa sequência de {days} dias{hasPack, select, yes {, mais {packName} no dia {days}} other {}}."
+    },
+    "missions": {
+      "title": "Missões",
+      "text": "{daily} missões novas todo dia (troque uma se não curtir), {weekly} maiores toda semana e uma missão dev por atividade real no GitHub quando você conectar o GitHub."
+    },
+    "battles": {
+      "title": "Batalhas",
+      "text": "Batalhas pagam BITS e XP (a maioria das ligas paga um pouco até na derrota). Vença um time mais forte para ganhar até +{pct}% de BITS."
+    },
+    "sprints": {
+      "title": "Sprints",
+      "text": "Um tema diário e um semanal: suas {teamSize} cartas mais fortes do tema pontuam automaticamente, e os melhores jogadores ganham até {bits} BITS."
+    },
+    "levelUps": {
+      "title": "Subir de nível",
+      "text": "O XP de packs e batalhas faz você subir de nível, e cada nível novo dá BITS e boosters grátis."
+    },
+    "achievements": {
+      "title": "Conquistas",
+      "text": "{count} conquistas com recompensas Bronze, Prata e Ouro."
+    },
+    "github": {
+      "title": "Conectar GitHub",
+      "text": "+{bits} BITS e sua própria carta Signature, que nunca sai em packs."
+    },
+    "forge": {
+      "title": "Repetidas e a Forja",
+      "text": "Cartas repetidas viram fragmentos; gaste na Forja para invocar o dev que você quiser."
+    },
+    "pity": {
+      "title": "Garantia de Legendary",
+      "text": "Um Legendary é garantido pelo menos uma vez a cada {packs} packs."
+    }
+  },
+  "bitsReasons": {
+    "opening_balance": "Saldo quando o histórico começou",
+    "starting_bits": "BITS de boas-vindas",
+    "pack_purchase": "Compra de booster",
+    "forge": "Invocação na Forja",
+    "stamina_recover": "Recuperação de stamina",
+    "league_entry": "Taxa de entrada na liga",
+    "league_refund": "Taxa da liga devolvida",
+    "battle_reward": "Recompensa de batalha",
+    "mission": "Recompensa de missão",
+    "daily_login": "Recompensa diária",
+    "level_up": "Subiu de nível",
+    "achievement": "Conquista",
+    "github_link": "GitHub conectado",
+    "share_bonus": "Primeiro compartilhamento",
+    "onboarding": "Primeiros passos",
+    "referral": "Recompensa de convite",
+    "rank_promotion": "Promoção de elo",
+    "season_reward": "Recompensa de temporada",
+    "challenge_stake": "Aposta de desafio",
+    "challenge_payout": "Desafio vencido (apostas)",
+    "challenge_refund": "Aposta de desafio devolvida",
+    "tower_reward": "Andar da Torre concluído",
+    "sprint_reward": "Recompensa de Sprint",
+    "card_training": "Treino de carta"
+  },
+  "cardTitles": {
+    "one-hit-wonder": "Hit Único",
+    "flagship-builder": "Criador de Carro-Chefe",
+    "magnum-opus": "Magnum Opus",
+    "star-collector": "Colecionador de Estrelas",
+    "star-magnet": "Ímã de Estrelas",
+    "supernova": "Supernova",
+    "galaxy-brain": "Cérebro Galáctico",
+    "has-fans": "Tem Fãs",
+    "influencer": "Influencer",
+    "icon": "Ícone",
+    "living-legend": "Lenda Viva",
+    "forkable": "Forkável",
+    "fork-magnet": "Ímã de Forks",
+    "upstream-hero": "Herói do Upstream",
+    "fork-empire": "Império de Forks",
+    "side-hustler": "Rei do Bico",
+    "serial-starter": "Começador Serial",
+    "repo-factory": "Fábrica de Repos",
+    "repo-hoarder": "Acumulador de Repos",
+    "language-tourist": "Turista de Linguagens",
+    "polyglot": "Poliglota",
+    "babel-coder": "Programador de Babel",
+    "omniglot": "Oniglota",
+    "snippet-keeper": "Guardião de Snippets",
+    "copy-paste-artisan": "Artesão do Copia-e-Cola",
+    "gist-librarian": "Bibliotecário de Gists",
+    "gist-archmage": "Arquimago dos Gists",
+    "pre-cloud-elder": "Ancião Pré-Nuvem",
+    "remembers-svn": "Lembra do SVN",
+    "side-project-graveyard": "Cemitério de Side Projects",
+    "fork-bomb": "Fork Bomb",
+    "social-butterfly": "Borboleta Social",
+    "ancient-lurker": "Lurker Ancião",
+    "fresh-commit": "Commit Fresquinho",
+    "undefined-is-not-a-function": "undefined Não É uma Função",
+    "npm-install-everything": "npm install Tudo",
+    "any-abuser": "Viciado em any",
+    "ts-ignore-enjoyer": "Fã de @ts-ignore",
+    "indentation-enforcer": "Fiscal da Indentação",
+    "pip-install-wizard": "Mago do pip install",
+    "borrow-checker-victim": "Vítima do Borrow Checker",
+    "rewrite-it-in-rust": "Reescreve em Rust",
+    "if-err-nil": "if err != nil",
+    "gopher-wrangler": "Domador de Gophers",
+    "segfault-survivor": "Sobrevivente de Segfault",
+    "malloc-without-free": "malloc Sem free",
+    "template-wizard": "Mago dos Templates",
+    "undefined-behavior-fan": "Fã de Undefined Behavior",
+    "abstractfactorybean": "AbstractFactoryBean",
+    "enterprise-edition": "Enterprise Edition",
+    "nullreference-hunter": "Caçador de NullReference",
+    "visual-studio-loyalist": "Fiel ao Visual Studio",
+    "still-on-php-5": "Ainda no PHP 5",
+    "sign-collector": "Colecionador de $",
+    "monkey-patcher": "Monkey Patcher",
+    "rails-rider": "Piloto do Rails",
+    "enthusiast": "Entusiasta do !!",
+    "escaped-from-java": "Fugiu do Java",
+    "xcode-hostage": "Refém do Xcode",
+    "optional-unwrapper": "Desembrulhador de Optionals",
+    "widget-stacker": "Empilhador de Widgets",
+    "hot-reload-addict": "Viciado em Hot Reload",
+    "rm-rf-survivor": "Sobrevivente do rm -rf",
+    "sudo-make-me-a-sandwich": "sudo Faz um Sanduíche",
+    "is-html-a-language": "HTML É Linguagem?",
+    "div-nester": "Aninhador de '<div>'",
+    "center-that-div": "Centraliza Essa Div",
+    "important-abuser": "Abusador de !important",
+    "run-all-cells": "Executa Todas as Células",
+    "notebook-necromancer": "Necromante de Notebooks",
+    "works-on-my-machine": "Funciona na Minha Máquina",
+    "hello-world-survivor": "Sobrevivente do Hello World",
+    "stack-overflow-tourist": "Turista do Stack Overflow",
+    "professional-googler": "Googlador Profissional",
+    "commit-message-fix": "Mensagem de Commit: fix",
+    "console-log-debugger": "Debugger de console.log",
+    "readme-skimmer": "Leitor Dinâmico de README",
+    "tab-hoarder": "Acumulador de Abas",
+    "friday-deployer": "Deploy na Sexta",
+    "merge-conflict-magnet": "Ímã de Merge Conflict",
+    "todo-write-bio": "TODO: Escrever Bio",
+    "it-compiled-once": "Compilou Uma Vez",
+    "git-push-force": "git push --force",
+    "dark-mode-purist": "Purista do Dark Mode"
+  },
+  "cardRanks": {
+    "Common": "Novato {who}",
+    "Uncommon": "Hacker {who}",
+    "Rare": "Engenheiro {who}",
+    "Epic": "Arquiteto {who}",
+    "Legendary": "Soberano {who}"
+  },
+  "cardReasons": {
+    "flagship": "um repo com {stars} estrelas",
+    "stars": "{stars} estrelas",
+    "followers": "{followers} seguidores",
+    "forks": "{forks} forks",
+    "repos": "{repos} repos públicos",
+    "polyglot": "{languages} linguagens",
+    "gists": "{gists} gists",
+    "age": "no GitHub há {years} anos",
+    "fresh": "entrou no GitHub este ano",
+    "quiet": "um perfil discreto no GitHub",
+    "quirks": {
+      "side-project-graveyard": "{repos} repos, {stars} estrelas",
+      "fork-bomb": "{forks} forks, só {stars} estrelas",
+      "social-butterfly": "{followers} seguidores, {stars} estrelas",
+      "ancient-lurker": "{years} anos no GitHub, {repos, plural, =0 {nenhum repo} one {# repo} other {# repos}}"
+    }
+  }
+}

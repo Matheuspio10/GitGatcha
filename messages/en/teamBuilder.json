@@ -14,16 +14,17 @@
   "card": {
     "stamina": "Stamina: {value}/100",
     "exhaust": "Exhaust",
-    "fatigue": "Fatigue"
+    "fatigue": "Fatigue",
+    "legendaryBondShort": "L.Bond"
   },
   "synergy": {
     "title": "Team Synergy",
     "wiki": "Learn more in the Wiki",
     "empty": "Select cards to see synergies",
     "pythonDesc": "Every card heals {regen} of its ATK per turn (Python cards use their own {own} if higher; Jupyter counts as Python)",
-    "jsDesc": "Non-JS teammates get a {chance} Double Callback chance (+{bonus} damage)",
+    "jsDesc": "Non-JS teammates get a {chance} {passive} chance (+{bonus} damage)",
     "rustDesc": "All cards take {reduction} less damage",
-    "goDesc": "All cards gain First Strike on entry",
+    "goDesc": "All cards gain {passive} on entry",
     "mixed": "Mixed Team",
     "mixedDesc": "+{atk} ATK for all cards",
     "noneYet": "No synergy yet",

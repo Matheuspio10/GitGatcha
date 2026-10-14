@@ -6,9 +6,10 @@ import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import { calculateCurrentStamina, getStaminaMultiplier } from '@/lib/staminaUtils';
 import { useHoloGyro } from '@/lib/holoTilt';
-import { cardPassive } from '@/lib/battleConfig';
+import { cardPassive, cardPassiveMessage } from '@/lib/battleConfig';
 import { cardTitle, languageStyle, rarityLevel, serialHash, RARITY_ORDER, type DevProfile } from '@/lib/cardVisuals';
 import { useTranslations } from 'next-intl';
+import { useGameText } from '@/i18n/gameText';
 
 export type CardProps = {
   id?: string;
@@ -87,6 +88,9 @@ export function Card({
   ...profile
 }: CardProps) {
   const t = useTranslations('common.card');
+  const game = useGameText('game');
+  const battleText = useGameText('gameBattle');
+  const achText = useGameText('gameAchievements');
   const isSignature = edition === 'signature';
   const tier = loyaltyTier || 'none';
   const loyalty = LOYALTY_VISUALS[tier] || {};
@@ -96,9 +100,18 @@ export function Card({
   const rarityKey = (RARITY_ORDER as readonly string[]).includes(rarity) ? rarity : 'Common';
   const level = rarityLevel(rarityKey);
   const lang = languageStyle(primaryLanguage);
-  const passive = cardPassive(primaryLanguage, rarityKey);
+  const passiveEn = cardPassive(primaryLanguage, rarityKey);
+  const passiveMsg = cardPassiveMessage(primaryLanguage, rarityKey);
+  const passive = {
+    name: battleText(`${passiveMsg.key}.name`, passiveEn.name),
+    desc: battleText(`${passiveMsg.key}.desc`, passiveEn.desc, passiveMsg.values),
+  };
   const hash = serialHash(githubUsername);
-  const title = cardTitle(profile, primaryLanguage, rarityKey, githubUsername);
+  const titleEn = cardTitle(profile, primaryLanguage, rarityKey, githubUsername);
+  const title = {
+    title: game(titleEn.titleKey, titleEn.title, titleEn.titleValues),
+    reason: titleEn.reasonKey && titleEn.reason ? game(titleEn.reasonKey, titleEn.reason, titleEn.reasonValues) : null,
+  };
 
   const currentStamina = stamina !== undefined ? calculateCurrentStamina(stamina, lastUsedAt || new Date(), inActiveTeam || false) : undefined;
   const multiplier = currentStamina !== undefined ? getStaminaMultiplier(currentStamina) : 1;
@@ -166,7 +179,7 @@ export function Card({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   {loyalty.badgeIcon && (
-                    <span className="text-sm flex-shrink-0" title={tier.replace('_', ' ')}>{loyalty.badgeIcon}</span>
+                    <span className="text-sm flex-shrink-0" title={achText(`loyalty.${tier}.title`, tier.replace('_', ' '))}>{loyalty.badgeIcon}</span>
                   )}
                   <h3 className="gg-name">{name}</h3>
                 </div>

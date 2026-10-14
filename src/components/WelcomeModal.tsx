@@ -10,6 +10,7 @@ import {
 import type { EarnIcon, EarnWay } from '@/lib/earnGuide';
 import { useDialog } from '@/lib/useDialog';
 import { useTranslations } from 'next-intl';
+import { useGameText } from '@/i18n/gameText';
 
 const ICONS: Record<EarnIcon, React.ElementType> = {
   checklist: ListChecks,
@@ -32,6 +33,8 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
   const router = useRouter();
   const openButton = useRef<HTMLButtonElement>(null);
   const t = useTranslations('onboarding.welcome');
+  const game = useGameText('game');
+  const packText = useGameText('gamePacks');
 
   // Focus the main action without scrolling the dialog away from its top
   useEffect(() => { openButton.current?.focus({ preventScroll: true }); }, []);
@@ -99,8 +102,11 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
             <ul className="grid gap-2 sm:grid-cols-2">
               {guide.map(way => {
                 const Icon = ICONS[way.icon];
+                const values = way.packId && way.values
+                  ? { ...way.values, packName: packText(`packs.${way.packId}.name`, String(way.values.packName)) }
+                  : way.values;
                 return (
-                  <li key={way.title}>
+                  <li key={way.id}>
                     <Link
                       href={way.href}
                       onClick={() => close()}
@@ -108,8 +114,8 @@ export function WelcomeModal({ username, starterPackName, guestCards, guide }: {
                     >
                       <Icon size={22} weight="duotone" className="mt-0.5 shrink-0 text-indigo-300" />
                       <span>
-                        <span className="block text-sm font-bold text-white">{way.title}</span>
-                        <span className="block text-xs text-slate-400 leading-relaxed">{way.text}</span>
+                        <span className="block text-sm font-bold text-white">{game(`earnGuide.${way.id}.title`, way.title)}</span>
+                        <span className="block text-xs text-slate-400 leading-relaxed">{game(`earnGuide.${way.id}.text`, way.text, values)}</span>
                       </span>
                     </Link>
                   </li>

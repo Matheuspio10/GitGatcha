@@ -1,1 +1,231 @@
-{}
+{
+  "title": "GitGacha Wiki",
+  "menu": "Menu",
+  "searchPlaceholder": "Search the Wiki (mechanics, abilities, stats...)",
+  "clearSearch": "Clear search",
+  "sections": {
+    "getting-started": "Getting Started",
+    "cards-and-rarities": "Cards and Rarities",
+    "stats-explained": "Stats Explained",
+    "language-types": "Language Types and Advantages",
+    "passive-abilities": "Passive Abilities",
+    "battle-system": "Battle System",
+    "critical-hits-momentum": "Momentum",
+    "leagues-tournaments": "Leagues and Tournaments",
+    "stamina-system": "Stamina System",
+    "loyalty-system": "Loyalty Contract System",
+    "forge-system": "Forge System",
+    "team-synergies": "Team Synergies",
+    "daily-rewards": "Daily Rewards, Pity and Achievements",
+    "glossary": "Glossary"
+  },
+  "gettingStarted": {
+    "intro": "Welcome to GitGacha! GitGacha is an auto-battler card collection game where the cards are real developers based on their GitHub activity.",
+    "loopTitle": "The Core Gameplay Loop",
+    "openPacks": "<b>Open Packs:</b> Spend BITS to open Gacha packs in the <link>Store</link> to acquire developer cards.",
+    "buildTeam": "<b>Build a Team:</b> Pick 3 developers from your collection in the <link>Arena</link>. Factor in their Languages, Stats, and Synergies.",
+    "battle": "<b>Battle:</b> Fight computer teams in the leagues to earn BITS & XP, or challenge friends in PvP to climb the <link>rating ladder</link>."
+  },
+  "cards": {
+    "intro": "Cards are ranked in {count} rarity tiers. A card's rarity comes from the developer's real GitHub <b>followers</b>; a developer whose repositories collect lots of <b>stars</b> is promoted one tier as a bonus. Rarity applies a multiplier to the card's base stats.",
+    "random": "Boosters are truly random: within a booster's theme, <em>every</em> GitHub developer of the drawn rarity with at least one public repository has exactly the same chance to drop — famous or brand new, including you.",
+    "pullRate": "Standard pull rate: ~{pct}% of cards",
+    "followersOpen": "{min}+ followers",
+    "followersRange": "{min}–{max} followers",
+    "baseStats": "{followers}. Base stats x{mult, number}.",
+    "starBonus": "With {stars}+ stars the card is promoted one tier."
+  },
+  "stats": {
+    "atkTitle": "Attack (ATK)",
+    "defTitle": "Defense (DEF)",
+    "hpTitle": "Health (HP)",
+    "powerTitle": "Power",
+    "atkDamage": "Damage per hit: <code>ATK × {k} / ({k} + DEF)</code>, minimum 1. ATK also sets how much Python and Jupyter Notebook cards regenerate.",
+    "defBlock": "Blocks a share of every hit: <code>DEF / ({k} + DEF)</code>. {k} DEF halves the damage taken, and DEF never blocks more than {max}. Diminishing returns: repo spam helps, but never makes a card immune.",
+    "hpTurnCap": "If a single matchup lasts {turns} turns, the card with the higher remaining HP % wins it (an exact tie knocks out both).",
+    "powerFormula": "<code>ATK + DEF + HP</code>. Used for sorting in the collection and for the Balanced League team cap.",
+    "multiplierNote": "Every stat is then multiplied by the card's rarity multiplier (minimum {atk} ATK, {def} DEF and {hp} HP). The formulas are tuned with a battle simulator so that rarity matters but upsets happen, and ATK, DEF and HP all decide fights.",
+    "formula": {
+      "fame": {
+        "atk": "ATK grows with fame: {base, number} + {scale, number} × log10(stars + forks + {offset, number})^{power, number}. More stars always means more ATK, with diminishing returns.",
+        "def": "DEF comes from the body of work: {hasBase, select, yes {{base, number} + } other {}}{scale, number} × (repos + {gistWeight, number} × gists)^{exponent, number} + {followers, number} × log10(1 + followers). Repos and gists count up to {repoCap, number} each.",
+        "hp": "HP comes from experience and reach: {base, number} + {years, number} × account age in years (up to {maxYears, number}) + {followers, number} × log10(1 + followers)."
+      },
+      "impact": {
+        "atk": "ATK comes from impact — stars and forks earned per follower: impact = (stars + forks + {offset, number}) / (followers + {offset, number}); ATK = {base, number} × impact^{exponent, number}, between {min, number} and {max, number}. Code starred far beyond its author's audience hits hard (a big audience already pays off in rarity).",
+        "def": "DEF comes from the body of work: {hasBase, select, yes {{base, number} + } other {}}{scale, number} × (repos + {gistWeight, number} × gists)^{exponent, number}. Repos and gists count up to {repoCap, number} each.",
+        "hp": "HP comes from experience: {base, number} + {years, number} × account age in years (up to {maxYears, number}){hasRepos, select, yes { + {repos, number} × ln(1 + repos)} other {}}{hasFollowers, select, yes { + {followers, number} × ln(1 + followers)} other {}}. Old accounts are tanky."
+      }
+    }
+  },
+  "types": {
+    "intro": "Having a Type Advantage grants a <good>{adv, number}x</good> multiplier to damage dealt. A disadvantage applies a <bad>{dis, number}x</bad> multiplier. CSS deals {dis, number}x to every typed language; Neutral cards (any other language) have no matchups.",
+    "languageType": "Language Type",
+    "strongAgainst": "Strong Against ({mult, number}x)",
+    "weakAgainst": "Weak Against ({mult, number}x)",
+    "everything": "Everything (except Neutral)",
+    "none": "None"
+  },
+  "passives": {
+    "intro": "{count} languages have a unique passive that activates during battle. Chance-based passives scale slightly with rarity (Rare is the baseline); bad luck such as CSS's zero-damage turns gets rarer on rarer cards. Cards with any other language are Neutral."
+  },
+  "battle": {
+    "intro": "GitGacha battles resolve completely automatically 3v3. Cards fight 1-on-1 until one is defeated, at which point the next card from that team enters the field.",
+    "slotsTitle": "The Slots",
+    "opener": "<b>Opener (Slot 1):</b> Enters first. Good for First-Strike cards or high sustain cards to build early Momentum.",
+    "mid": "<b>Mid (Slot 2):</b> The bridge. Often cleans up weak opponents or tanks the opponent's strong Mid.",
+    "closer": "<b>Closer (Slot 3):</b> Your strongest card. Enters last to win the match.",
+    "orderTitle": "Order of Operations",
+    "orderBefore": "<b>Before the battle:</b> Loyalty bonuses, then Stamina fatigue penalties, modify base stats. Team Synergies are applied.",
+    "orderEntry": "<b>On entry:</b> {ironShield} (Rust) goes up first, then every {firstStrike} (Go) lands at the same time, so it makes no difference who challenged whom. The shield lasts until the end of that turn.",
+    "orderTypes": "<b>Type Advantages:</b> Multipliers are checked between active combatants.",
+    "orderDamage": "<b>Damage Calculation:</b> Both cards attack each other at the same time: <code>ATK × {k} / ({k} + DEF)</code>, modified by the type multiplier, Momentum and the attacker's passive ({passives}).",
+    "orderDefense": "<b>Defense Checks:</b> {typeSafety}, {gracefulDegradation} and Rust Synergy reduce the hit; {dodge} and {ironShield} cancel it; {nullSafety} caps it.",
+    "orderResolution": "<b>Resolution:</b> HP is reduced ({errorSuppression} can keep a PHP card alive at {hp} HP). Survivors trigger {hotReload} and regeneration. A card at 0 HP is defeated and the next one enters.",
+    "decidedTitle": "How a Battle is Decided",
+    "decidedLastStanding": "The team that still has a card standing when the other runs out wins.",
+    "decidedTie": "If both last cards go down on the same turn, or the global turn limit stops the fight, the team with the higher remaining HP % wins. An exact tie goes to the <b>defender</b>."
+  },
+  "momentum": {
+    "title": "Momentum System",
+    "intro": "If a single card defeats <b>2 opponents in a row</b> without dying, it achieves <hl>Momentum</hl>.",
+    "onFire": "Displays an <b>On Fire</b> effect during battle.",
+    "bonus": "Grants <b>+{one} ATK and DEF</b> after the 2nd consecutive knockout and <b>+{two}</b> after the 3rd (a full sweep).",
+    "crits": "Only C# cards land critical hits; otherwise damage varies through types, passives and Momentum."
+  },
+  "leagues": {
+    "intro": "League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don't need to be online), and both ratings move. A saved team that holds earns its owner {defenseBits} BITS. Ranks: {ranks}. Seasons last a calendar month (UTC): the first time you reach a rank in a season pays {promotions} BITS, and at the end everyone who played PvP gets BITS for their peak rank ({seasonRewards}) before every rating moves halfway back to {startingRating}.",
+    "rewards": "Win: {winBits} BITS + {winXp} XP | Loss: {lossBits} BITS + {lossXp} XP",
+    "entryFee": "| Entry fee: {fee} BITS (net {net} on a win, -{loss} on a loss)",
+    "friendTitle": "Friend Challenges (PvP)",
+    "friendText": "Challenge a friend with any 3 cards; they have {hours} hours to answer with their own team, and only see how many cards and which rarities you sent. A card can only be in one pending challenge at a time. Friend challenges and Ranked are the only ways to change your <b>rating</b> (ELO, everyone starts at {rating}, K = {k}).",
+    "friendRewards": "Win: {winBits} BITS + {winXp} XP | Loss: {lossBits} BITS + {lossXp} XP (both players)",
+    "upsetTitle": "Upset Bonus",
+    "upsetText": "Beat a team of higher average rarity (Common = 0 … Legendary = {maxTier}, averaged over the 3 cards) and the win pays +{perTier}% BITS per tier of difference, up to +{max}%. Works in every league and in friend challenges; XP is unchanged.",
+    "towerTitle": "The Tower",
+    "towerText": "{floors} floors of computer teams that get harder, with a mini-boss on floor {miniBossFloor} and a Legendary boss on floor {finalFloor}. Every Monday (UTC) the tower gets a language theme and new teams, the same for everyone; you see the next opponents before you fight. The first clear of each floor in a week pays {rewards} BITS. The weekly ranking orders players by highest floor, then fewest attempts.",
+    "sprintsTitle": "Sprints",
+    "sprintsText": "Two competitions with a theme, with nothing to set up: when one ends, every player is scored by the power (ATK + DEF + HP) of their {teamSize} strongest cards of the theme. Only cards you had before the end count, and tied scores share the place (1, 1, 3). See them in Rankings → Sprints.",
+    "dailySprint": "<b>{name}</b> (midnight to midnight UTC): one language, in rotation ({languages}). BITS: {legend}.",
+    "weeklySprint": "<b>{name}</b> (Monday to Monday UTC): a family of languages ({families}). BITS: {legend}.",
+    "eventsTitle": "Weekly events",
+    "eventsIntro": "Each week follows the theme of the Weekly Sprint:",
+    "eventPack": "<b>Event pack</b>: {count} cards of the week's languages for {cost} BITS, at least one {rarity}. On sale only that week (Store → Weekly Event); one you bought can be opened later. Like every pack, each developer of the theme has the same chance.",
+    "devOfWeek": "<b>Dev of the Week</b>: a card of the theme ({rarity} or better) drawn at random when the week starts. Invoking it at the Forge costs {pct}% less fragments and BITS until the week ends.",
+    "balancedCap": "Balanced League cap: {mult, number}× the average power of every card in the game; the Arena shows the current value."
+  },
+  "stamina": {
+    "drain": "Developers get tired! Every battle (league or PvP) drains <red>{cost} Stamina</red> from each card used. As stamina drops, cards suffer penalties to their ATK and DEF in battles. At 0 stamina, they are Exhausted and cannot battle.",
+    "recovery": "Every card automatically recovers <b>{rate} Stamina per hour</b> (up to {max}), including the cards in your saved team. Alternatively, restore Stamina instantly in the Collection view for {cost} BITS per card.",
+    "range": "Stamina Range",
+    "status": "Status",
+    "penalty": "Battle Penalty",
+    "fresh": "Fresh ({pct}%)",
+    "tiring": "Tiring ({pct}%)",
+    "fatigued": "Fatigued ({pct}%)",
+    "exhausted": "Exhausted ({pct}%)",
+    "critical": "Critical ({pct}%)",
+    "drained": "Completely Drained",
+    "none": "None",
+    "atkDefPenalty": "-{pct}% ATK & DEF",
+    "cannotBattle": "Cannot Battle"
+  },
+  "loyalty": {
+    "intro": "Every battle a card fights (win or loss) adds to its <b>Loyalty</b>. As a card reaches Loyalty Milestones, it permanently unlocks <b>Stat Multipliers</b> (applied before every other battle modifier) and cosmetics.",
+    "stat": "+{atkDef} ATK & DEF{hasHp, select, yes {, +{hp} HP} other {}}",
+    "battlesRequired": "Battles Required",
+    "trainingTitle": "Training",
+    "trainingText": "Open a card in your Collection to train it. Each level adds +{bonus} ATK, DEF and HP in every battle, on top of Loyalty. Level <em>n</em> costs <em>n</em>× a step of BITS plus fragments of the card's language (wildcards cover the rest), the same fragments duplicates give. Commons can be trained the furthest, so a favourite card keeps up; a fully trained team about evens out with an untrained team one rarity up. The Balanced League cap still counts the card's base power.",
+    "trainingRarity": "<b>{rarity}</b>: up to level {maxLevel} (+{maxBonus}); step {stepBits} BITS + {stepFragments} fragments; full training {fullBits} BITS + {fullFragments} fragments."
+  },
+  "forge": {
+    "intro": "The <link>Forge</link> allows you to bypass the Gacha randomness and directly craft the exact developer card you want.",
+    "searching": "<b>Searching:</b> Type any valid GitHub username to pull that developer's live stats into the app.",
+    "fragments": "<b>Fragments:</b> Crafting requires Language Fragments matching the target developer's primary language (wildcards cover any shortfall), plus BITS. The cost depends on the card's rarity: {costs}.",
+    "cost": "{rarity} {fragments} fragments + {bits} BITS",
+    "earning": "<b>Earning Fragments:</b> Pulling a card you already have counts it (x2, x3…) and gives fragments of its language: {duplicates}. Each booster also has a {chance}% chance to drop {count} fragments of its theme (or most common) language.",
+    "wildcards": "<b>Wildcards:</b> Trade {rate} fragments of any language for 1 wildcard fragment. Wildcards pay for any language, and they are the only way to craft developers with no primary language.",
+    "shiny": "<b>Shiny:</b> Every pull has a {chance}% chance to be Shiny, duplicates included: a duplicate can turn your card Shiny.",
+    "wishlist": "<b>Wishlist:</b> Add developers to your Wishlist to easily track your fragment progress towards acquiring them."
+  },
+  "synergies": {
+    "intro": "Stacking cards of identical languages grants powerful Synergy passives to your entire team. Mixed diversity also grants bonuses.",
+    "requires": "Requires: {requirement}",
+    "mixed": {
+      "name": "Mixed Team Synergy",
+      "req": "3 different types",
+      "effect": "+{atk} ATK to ALL cards on the team."
+    },
+    "python": {
+      "name": "Python Synergy",
+      "req": "2 or 3 Python / Jupyter Notebook cards",
+      "effect": "Teammates regenerate HP equal to {regen} of their ATK each turn ({regenThree} with 3). Python and Jupyter cards heal at whichever rate is higher, theirs or the synergy's."
+    },
+    "rust": {
+      "name": "Rust Synergy",
+      "req": "2 or 3 Rust cards",
+      "effect": "All 3 cards take {reduction} less damage ({reductionThree} with 3 Rust cards)."
+    },
+    "js": {
+      "name": "JS Synergy",
+      "req": "2 or 3 JS cards",
+      "effect": "Non-JS teammates get a {chance} chance to Double Callback each turn ({chanceThree} with 3; JS cards keep their own chance)."
+    },
+    "go": {
+      "name": "Go Synergy",
+      "req": "2 or 3 Go cards",
+      "effect": "All 3 cards gain the Go {firstStrike} ability."
+    }
+  },
+  "daily": {
+    "title": "Daily Rewards ({days}-day login calendar)",
+    "text": "Claim a daily reward in the <link>Store</link> once every {cooldown} hours. Claiming again within {window} hours of your last claim advances your calendar; waiting longer restarts it at day 1. After day {days} a new cycle starts. Every claim also grants {xp} XP.",
+    "day": "Day {day}",
+    "pack": "+ {pack} (added to your Inventory)"
+  },
+  "sets": {
+    "title": "Language sets, titles and frames",
+    "text": "Every combat language is a set with one slot per rarity ({count} sets). Own a {rarities} card of a language and its set is complete (Collection → Language sets; the Forge can fill any slot). Sets and levels unlock profile cosmetics, equipped on your profile:",
+    "titles": "<b>Titles</b>: {titles}, plus \"{collector}\" for each complete set.",
+    "languageWord": "'<Language>'",
+    "frames": "<b>Avatar frames</b>: {frames}."
+  },
+  "pity": {
+    "title": "Legendary Pity",
+    "counter": "Every booster you open without a Legendary card adds 1 to your pity counter.",
+    "guarantee": "After <b>{count} packs in a row</b> without one, your next pack's last card is <hl>guaranteed Legendary</hl>.",
+    "reset": "Pulling any Legendary (including one promoted by the star bonus) resets the counter.",
+    "junk": "All-Common packs (Junk Drawer) don't count.",
+    "store": "The Store shows \"Legendary guaranteed within N packs\" and the per-card drop rates."
+  },
+  "achievements": {
+    "title": "Achievements",
+    "text": "Each achievement has {tiers} tiers; every tier pays BITS once, the moment you reach it. Progress is checked after opening packs, after battles, when you claim the daily reward and when you open your own profile.",
+    "tierList": "{rest} and {last}",
+    "achievement": "Achievement",
+    "requirement": "Requirement"
+  },
+  "glossary": {
+    "atk": { "term": "ATK", "def": "Base Attack stat. Determines damage dealt." },
+    "bits": { "term": "BITS", "def": "The in-game currency used to buy packs, craft in the Forge, enter the Legendary League and restore stamina." },
+    "closer": { "term": "Closer", "def": "The third and final card slot in a team." },
+    "common": { "def": "The lowest rarity tier ({mult, number}x stat multiplier)." },
+    "def": { "term": "DEF", "def": "Base Defense stat. Blocks DEF / ({k} + DEF) of every hit, up to {max}." },
+    "eternal": { "def": "The maximum Loyalty rank, reached at {battles} battles." },
+    "exhausted": { "term": "Exhausted", "def": "A card at 0 Stamina. Cannot participate in battles." },
+    "fragment": { "term": "Fragment", "def": "Currency earned from dupes, used in the Forge to craft specific cards." },
+    "hp": { "term": "HP", "def": "Health Points. Reaching 0 means defeat." },
+    "legendary": { "def": "The highest rarity tier ({mult, number}x stat multiplier). Very low pull rates." },
+    "rating": { "term": "Rating", "def": "PvP ELO score (Ranked and friend challenges) shown on the leaderboard, with a rank from {lowest} to {highest}. Starts at {rating}." },
+    "mid": { "term": "Mid", "def": "The second card slot in a team." },
+    "momentum": { "term": "Momentum", "def": "ATK/DEF bonus activated after a single card defeats 2 enemies in a row." },
+    "opener": { "term": "Opener", "def": "The first card slot. Enters battle first." },
+    "passive": { "term": "Passive", "def": "An innate ability specific to a language type." },
+    "power": { "term": "Power", "def": "Composite strength score of ATK, DEF, and HP." },
+    "synergy": { "term": "Synergy", "def": "Team-wide bonus granted by stacking similar card types." },
+    "typeAdvantage": { "term": "Type Advantage", "def": "When a language beats another, granting {mult, number}x damage." },
+    "veteran": { "def": "First Loyalty rank, reached at {battles} battles." },
+    "wishlist": { "term": "Wishlist", "def": "Forge feature measuring fragment progress for a target card." },
+    "xp": { "term": "XP", "def": "Account experience earned from battles and other activities. Leveling up grants reward boosters." }
+  }
+}

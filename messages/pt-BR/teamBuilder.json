@@ -14,16 +14,17 @@
   "card": {
     "stamina": "Stamina: {value}/100",
     "exhaust": "Exausta",
-    "fatigue": "Cansada"
+    "fatigue": "Cansada",
+    "legendaryBondShort": "Laço L."
   },
   "synergy": {
     "title": "Sinergia do time",
     "wiki": "Saiba mais na Wiki",
     "empty": "Escolha cartas para ver as sinergias",
     "pythonDesc": "Toda carta cura {regen} do próprio ATK por turno (cartas Python usam o próprio valor de {own} se for maior; Jupyter conta como Python)",
-    "jsDesc": "Aliados que não são JS ganham {chance} de chance de Double Callback (+{bonus} de dano)",
+    "jsDesc": "Aliados que não são JS ganham {chance} de chance de {passive} (+{bonus} de dano)",
     "rustDesc": "Todas as cartas recebem {reduction} menos dano",
-    "goDesc": "Todas as cartas ganham First Strike ao entrar",
+    "goDesc": "Todas as cartas ganham {passive} ao entrar",
     "mixed": "Time Misto",
     "mixedDesc": "+{atk} ATK para todas as cartas",
     "noneYet": "Sem sinergia ainda",

@@ -4,6 +4,7 @@ import { getPackById } from '@/lib/packDefinitions';
 import { GUEST_PACK_ID } from '@/lib/guestPack';
 import { STARTER_PACK_ID } from '@/lib/onboarding';
 import { getTranslations } from 'next-intl/server';
+import { getGameText } from '@/i18n/gameText.server';
 import TryClient from './TryClient';
 
 export async function generateMetadata() {
@@ -15,13 +16,14 @@ export async function generateMetadata() {
 export default async function TryPage() {
   if (await getCurrentUser()) redirect('/inventory');
   const pack = getPackById(GUEST_PACK_ID);
-  const t = await getTranslations('public.try');
+  const starterPack = getPackById(STARTER_PACK_ID);
+  const [t, packText] = await Promise.all([getTranslations('public.try'), getGameText('gamePacks')]);
   return (
     <TryClient
-      packName={pack?.name ?? t('fallbackPack')}
+      packName={pack ? packText(`packs.${pack.id}.name`, pack.name) : t('fallbackPack')}
       packTheme={pack?.visualTheme ?? null}
       cardCount={pack?.cardCount ?? 5}
-      starterPackName={getPackById(STARTER_PACK_ID)?.name ?? t('fallbackStarter')}
+      starterPackName={starterPack ? packText(`packs.${starterPack.id}.name`, starterPack.name) : t('fallbackStarter')}
     />
   );
 }

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
-import { notifyAchievements } from '@/lib/achievementToast';
+import { useNotifyAchievements } from '@/lib/achievementToast';
+import { usePackText } from '@/i18n/packText';
 import { LOGIN_CALENDAR_REWARDS, type LoginCalendarState } from '@/lib/loginCalendar';
 import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '@/lib/rarity';
 import { PITY_THRESHOLD } from '@/lib/pity';
@@ -111,6 +112,7 @@ interface PityStatus {
 /** 7-day login calendar: claimed / today / upcoming days, booster on day 7. */
 function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | null; cooldownMs: number }) {
   const t = useTranslations('store');
+  const packText = usePackText();
   const days = streak?.days ?? LOGIN_CALENDAR_REWARDS.map(r => ({ ...r, state: 'upcoming' as const }));
   return (
     <div className="w-full max-w-3xl mx-auto mt-6">
@@ -147,7 +149,7 @@ function LoginCalendar({ streak, cooldownMs }: { streak: LoginCalendarState | nu
                 <Coin size={20} weight="fill" className={d.state === 'upcoming' ? 'text-yellow-600' : 'text-yellow-400'} />
               )}
               <span className="text-xs font-black">{d.bits}</span>
-              {d.packId && <span className="text-[9px] leading-tight text-purple-300">+ {d.packName}</span>}
+              {d.packId && <span className="text-[9px] leading-tight text-purple-300">+ {packText.name(d.packId, d.packName ?? '')}</span>}
               {d.state === 'claimed' && <CheckCircle size={14} weight="fill" className="absolute top-1 right-1 text-green-400" />}
               {d.state === 'today' && <span className="text-[9px] font-bold text-emerald-300 uppercase">{t('calendar.today')}</span>}
               {isNext && <span className="text-[9px] font-mono text-slate-400">{formatCountdown(cooldownMs, t('ready'))}</span>}
@@ -236,6 +238,7 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
   onBuy: (openNow: boolean) => void;
 }) {
   const t = useTranslations('store.purchase');
+  const packText = usePackText();
   const panelRef = useDialog(!!pack, onCancel);
   return (
     <AnimatePresence>
@@ -253,9 +256,9 @@ function PurchaseConfirm({ pack, currency, pityDue, busy, onCancel, onBuy }: {
             onClick={e => e.stopPropagation()}
           >
             <h3 id="buy-title" className="text-2xl font-black text-white">
-              {t.rich('title', { name: pack.name, pack: chunks => <span style={{ color: pack.visualTheme.textColor }}>{chunks}</span> })}
+              {t.rich('title', { name: packText.name(pack.id, pack.name), pack: chunks => <span style={{ color: pack.visualTheme.textColor }}>{chunks}</span> })}
             </h3>
-            <p className="mt-1 text-sm text-slate-400">{pack.noPreview ? t('surprise') : pack.description}</p>
+            <p className="mt-1 text-sm text-slate-400">{pack.noPreview ? t('surprise') : packText.description(pack.id, pack.description)}</p>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-xl bg-slate-800/60 p-3">
@@ -328,6 +331,7 @@ export default function StoreClient({
    */
   missionsResetInMs?: number;
 }) {
+  const notifyUnlocks = useNotifyAchievements();
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState(userCurrency);
   const [packs, setPacks] = useState<PackInfo[]>([]);
@@ -349,6 +353,7 @@ export default function StoreClient({
   const [confirmPack, setConfirmPack] = useState<PackInfo | null>(null);
   const router = useRouter();
   const t = useTranslations('store');
+  const packText = usePackText();
 
   // Fetch packs catalog
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -462,10 +467,10 @@ export default function StoreClient({
         if (data.streak) setStreak(data.streak);
         toast.success(data.day ? t('daily.claimedDay', { day: data.day, amount: data.amount ?? 100 }) : t('daily.claimed', { amount: data.amount ?? 100 }));
         if (data.packGranted) {
-          toast.success(t('daily.packGranted', { pack: data.packGranted.packName }), { icon: '📦' });
+          toast.success(t('daily.packGranted', { pack: packText.name(data.packGranted.packId, data.packGranted.packName) }), { icon: '📦' });
         }
         refreshBits();
-        notifyAchievements(data.achievementsUnlocked);
+        notifyUnlocks(data.achievementsUnlocked);
         router.refresh();
       } else if (data.remainingMs) {
         if (data.streak) setStreak(data.streak);
@@ -543,7 +548,7 @@ export default function StoreClient({
               </div>
               <div>
                 <h4 className="font-bold text-white">{t('purchase.successTitle')}</h4>
-                <p className="text-sm text-slate-400">{t('purchase.successText', { pack: purchaseNotification.packName })}</p>
+                <p className="text-sm text-slate-400">{t('purchase.successText', { pack: packText.name(purchaseNotification.packId, purchaseNotification.packName) })}</p>
               </div>
             </div>
             <button
@@ -649,7 +654,7 @@ export default function StoreClient({
             {...pressable(() => {
               if (loading) return;
               setConfirmPack(pack);
-            }, t('pack.ariaLabel', { name: pack.name, count: pack.cardCount, cost: pack.cost }))}
+            }, t('pack.ariaLabel', { name: packText.name(pack.id, pack.name), count: pack.cardCount, cost: pack.cost }))}
           >
             {/* The Pack Shape */}
             <div 
@@ -681,7 +686,7 @@ export default function StoreClient({
                   className="text-3xl font-black tracking-tighter mb-1 leading-none [text-shadow:0_2px_4px_rgba(0,0,0,0.8)]" 
                   style={{ color: pack.visualTheme.textColor }}
                 >
-                  {pack.name}
+                  {packText.name(pack.id, pack.name)}
                 </h3>
                 <div 
                   className="text-[10px] font-bold uppercase tracking-[0.3em] mb-6 bg-slate-900/40 backdrop-blur-sm border border-white/20 px-3 py-1 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" 
@@ -697,7 +702,7 @@ export default function StoreClient({
                 )}
                 
                 <p className="text-sm font-medium leading-snug line-clamp-4 mix-blend-luminosity opacity-90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" style={{ color: pack.visualTheme.textColor }}>
-                  {pack.noPreview ? t('pack.unknownContents') : pack.description}
+                  {pack.noPreview ? t('pack.unknownContents') : packText.description(pack.id, pack.description)}
                 </p>
               </div>
 

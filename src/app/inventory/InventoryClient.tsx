@@ -9,8 +9,9 @@ import { PackOdds } from '@/components/PackOdds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HackingMiniGame } from '@/components/HackingMiniGame';
 import { toast } from 'react-hot-toast';
-import { notifyAchievements } from '@/lib/achievementToast';
+import { useNotifyAchievements } from '@/lib/achievementToast';
 import { useTranslations } from 'next-intl';
+import { usePackText } from '@/i18n/packText';
 
 interface PackVisualTheme {
   gradient: string;
@@ -47,6 +48,7 @@ function getRarityBadgeColor(rarity: string | null): string {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function InventoryClient({ userId }: { userId: string }) {
+  const notifyUnlocks = useNotifyAchievements();
   const [packs, setPacks] = useState<InventoryPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [opening, setOpening] = useState(false);
@@ -61,6 +63,9 @@ export default function InventoryClient({ userId }: { userId: string }) {
   
   const router = useRouter();
   const t = useTranslations('inventory');
+  // Inventory items keep the English pack name: show packs by id
+  const packText = usePackText();
+  const packName = (pack: InventoryPack) => packText.name(pack.packId, pack.packName);
 
   const fetchInventory = async () => {
     try {
@@ -138,7 +143,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
           setPackDropFragments(data.packDropFragments);
         }
         checkWishlistProgress(data);
-        notifyAchievements(data.achievementsUnlocked);
+        notifyUnlocks(data.achievementsUnlocked);
 
         // Update local inventory count
         setPacks(prev => prev.map(p => p.packId === pack.packId ? { ...p, count: p.count - 1 } : p).filter(p => p.count > 0));
@@ -188,7 +193,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
           <HackingMiniGame
             apiResolved={apiState === 'SUCCESS'}
             apiError={apiState === 'ERROR'}
-            packName={selectedPack.packName}
+            packName={packName(selectedPack)}
             onComplete={handleHackingComplete}
             onError={handleHackingError}
           />
@@ -217,7 +222,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                 cards={cards as (CardProps & { isDuplicate?: boolean; fragmentsEarned?: number })[]}
                 packDropFragments={packDropFragments}
                 onComplete={resetView}
-                packName={selectedPack.packName}
+                packName={packName(selectedPack)}
                 packTheme={selectedPack.visualTheme}
               />
             </motion.div>
@@ -265,7 +270,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                 if (opening) return;
                 // If it's a click without dragging, we'll just open the modal or start the flow
                 setSelectedPack(pack);
-              }, t('pack.openAria', { name: pack.packName, count: pack.count }))}
+              }, t('pack.openAria', { name: packName(pack), count: pack.count }))}
             >
               <div 
                 className="relative aspect-[2/3] rounded-2xl border-4 shadow-xl flex flex-col items-center overflow-hidden transition-all duration-300"
@@ -287,7 +292,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                     className="text-3xl font-black tracking-tighter drop-shadow-lg mb-1 leading-none" 
                     style={{ color: pack.visualTheme?.textColor || '#fff' }}
                   >
-                    {pack.packName}
+                    {packName(pack)}
                   </h3>
                   <div 
                     className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-80 mb-6 bg-black/20 px-3 py-1 rounded-full" 
@@ -340,7 +345,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
             >
               <h3 id="open-pack-title" className="text-2xl font-black mb-2 flex items-center gap-2">
                 {t.rich('confirm.title', {
-                  name: selectedPack.packName,
+                  name: packName(selectedPack),
                   pack: chunks => <span style={{ color: selectedPack.visualTheme?.textColor || '#fff' }}>{chunks}</span>,
                 })}
               </h3>
@@ -354,7 +359,7 @@ export default function InventoryClient({ userId }: { userId: string }) {
                 {selectedPack.activeFilters && (
                   <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700">
                     <span className="text-slate-300 font-medium text-sm">{t('confirm.activeFilter')}</span>
-                    <span className="text-indigo-400 font-bold text-sm text-right max-w-[60%]">{selectedPack.activeFilters}</span>
+                    <span className="text-indigo-400 font-bold text-sm text-right max-w-[60%]">{packText.filters({ id: selectedPack.packId, category: selectedPack.category, activeFilters: selectedPack.activeFilters })}</span>
                   </div>
                 )}
                 

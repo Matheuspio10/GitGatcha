@@ -3,17 +3,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { ShareButtons } from '@/components/ShareButtons';
-import { getShareCard, siteUrl } from '@/lib/shareCard';
+import { getShareCard, localizeShareCard, siteUrl } from '@/lib/shareCard';
 import { getCurrentUser } from '@/lib/session';
-import { cardPassive } from '@/lib/battleConfig';
+import { cardPassive, cardPassiveMessage } from '@/lib/battleConfig';
 import { getTranslations } from 'next-intl/server';
+import { getGameText } from '@/i18n/gameText.server';
 
 type Props = { params: Promise<{ login: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { login } = await params;
-  const [card, t] = await Promise.all([getShareCard(decodeURIComponent(login)), getTranslations('public.card')]);
-  if (!card) return { title: t('notFound') };
+  const [found, t, game] = await Promise.all([getShareCard(decodeURIComponent(login)), getTranslations('public.card'), getGameText('game')]);
+  if (!found) return { title: t('notFound') };
+  const card = localizeShareCard(found, game);
   const description = t('metaDescription', { rarity: card.rarity, title: card.title, atk: card.atk, def: card.def, hp: card.hp });
   const ogTitle = t('ogTitle', { name: card.name });
   return {
@@ -27,10 +29,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /** Public page of one developer card (shareable, no login). */
 export default async function CardPage({ params }: Props) {
   const { login } = await params;
-  const [card, user, t] = await Promise.all([getShareCard(decodeURIComponent(login)), getCurrentUser(), getTranslations('public.card')]);
-  if (!card) notFound();
+  const [found, user, t, game, battleText] = await Promise.all([
+    getShareCard(decodeURIComponent(login)), getCurrentUser(), getTranslations('public.card'), getGameText('game'), getGameText('gameBattle'),
+  ]);
+  if (!found) notFound();
+  const card = localizeShareCard(found, game);
 
-  const passive = cardPassive(card.primaryLanguage, card.rarity);
+  const passiveEn = cardPassive(card.primaryLanguage, card.rarity);
+  const passiveMsg = cardPassiveMessage(card.primaryLanguage, card.rarity);
+  const passive = {
+    name: battleText(`${passiveMsg.key}.name`, passiveEn.name),
+    desc: battleText(`${passiveMsg.key}.desc`, passiveEn.desc, passiveMsg.values),
+  };
   const url = `${siteUrl()}/card/${card.githubUsername}`;
 
   return (

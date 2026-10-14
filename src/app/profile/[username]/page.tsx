@@ -17,13 +17,14 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { EditProfileModal } from '@/components/EditProfileModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { AchievementView } from '@/lib/achievementUtils';
-import { notifyAchievements } from '@/lib/achievementToast';
+import { useNotifyAchievements } from '@/lib/achievementToast';
 import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { RankBadge } from '@/components/RankBadge';
 import { AvatarFrame, PlayerTitle } from '@/components/PlayerCosmetics';
 import { CosmeticsPicker } from '@/components/CosmeticsPicker';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
 import { useLocale, useTranslations } from 'next-intl';
+import { useGameText } from '@/i18n/gameText';
 
 interface FriendInfo {
   id: string;
@@ -102,6 +103,7 @@ const LANGUAGE_COLORS: Record<string, string> = {
   'Haskell': '#5e5086', 'Lua': '#000080', 'R': '#276dc3', 'Shell': '#89e051',
 };
 
+/** Labels are translated in the component: milestone tiers via gameAchievements `loyalty.<tier>.title`, none/rookie via profile `topCards.loyalty.*`. */
 const LOYALTY_TIER_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   'none': { label: 'Unranked', color: 'text-slate-500', bg: 'bg-slate-800' },
   'rookie': { label: 'Rookie', color: 'text-slate-400', bg: 'bg-slate-800' },
@@ -112,12 +114,14 @@ const LOYALTY_TIER_LABELS: Record<string, { label: string; color: string; bg: st
   'eternal': { label: 'Eternal', color: 'text-pink-400', bg: 'bg-pink-500/10' },
 };
 
-const LEAGUE_LABELS: Record<string, { label: string; color: string }> = {
-  'OPEN': { label: 'Open', color: 'text-slate-300' },
-  'COMMON': { label: 'Common', color: 'text-green-400' },
-  'BALANCED': { label: 'Balanced', color: 'text-blue-400' },
-  'DIVERSITY': { label: 'Diversity', color: 'text-purple-400' },
-  'LEGENDARY': { label: 'Legendary', color: 'text-amber-400' },
+/** Short league labels are translated: profile `battles.leagues.<MODE>`. Other modes show as OPEN. */
+type ProfileLeague = 'OPEN' | 'COMMON' | 'BALANCED' | 'DIVERSITY' | 'LEGENDARY';
+const LEAGUE_COLORS: Record<ProfileLeague, string> = {
+  'OPEN': 'text-slate-300',
+  'COMMON': 'text-green-400',
+  'BALANCED': 'text-blue-400',
+  'DIVERSITY': 'text-purple-400',
+  'LEGENDARY': 'text-amber-400',
 };
 
 const PRESET_GRADIENTS: Record<string, string> = {
@@ -137,6 +141,7 @@ function getBannerStyle(bannerImage?: string | null): React.CSSProperties {
 }
 
 export default function ProfilePage() {
+  const notifyUnlocks = useNotifyAchievements();
   const { data: session, update: updateSession } = useSession();
   const params = useParams();
   const profileUsername = decodeURIComponent(params.username as string);
@@ -151,6 +156,7 @@ export default function ProfilePage() {
   const [expandedBattle, setExpandedBattle] = useState<string | null>(null);
   const [achievementPopover, setAchievementPopover] = useState<string | null>(null);
   const t = useTranslations('profile');
+  const achText = useGameText('gameAchievements');
   const tShare = useTranslations('common.share');
   const locale = useLocale();
 
@@ -168,7 +174,7 @@ export default function ProfilePage() {
       if (res.ok) {
         setProfile(data);
         // Own profile: tiers reached since the last sync were just persisted and paid
-        notifyAchievements(data.achievementsUnlocked);
+        notifyUnlocks(data.achievementsUnlocked);
       }
       else setError(data.error);
     } catch { setError(t('loadFailed')); }
@@ -447,7 +453,8 @@ export default function ProfilePage() {
             {profile.achievements.map(achievement => {
               const isActive = achievementPopover === achievement.id;
               const style = TIER_STYLES[achievement.tier] ?? TIER_STYLES[0];
-              const tierLabel = style.label || t('achievements.locked');
+              const tierLabel = style.label ? achText(`tiers.${achievement.tier}`, style.label) : t('achievements.locked');
+              const name = achText(`achievements.${achievement.id}.name`, achievement.name);
               return (
                 <div
                   key={achievement.id}
@@ -455,14 +462,14 @@ export default function ProfilePage() {
                 >
                   <button
                     onClick={() => setAchievementPopover(isActive ? null : achievement.id)}
-                    aria-label={t('achievements.ariaLabel', { name: achievement.name, state: achievement.unlocked ? tierLabel : t('achievements.lockedState') })}
+                    aria-label={t('achievements.ariaLabel', { name, state: achievement.unlocked ? tierLabel : t('achievements.lockedState') })}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all w-[104px] hover:-translate-y-1 cursor-pointer ${style.ring} ${style.bg} ${
                       achievement.unlocked ? 'hover:border-indigo-500/50' : 'opacity-70'
                     } ${isActive ? 'ring-2 ring-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : ''}`}
                   >
                     <span className={`text-2xl ${achievement.unlocked ? '' : 'grayscale'}`}>{achievement.icon}</span>
                     <span className={`text-[10px] font-bold text-center leading-tight ${achievement.unlocked ? 'text-slate-200' : 'text-slate-400'}`}>
-                      {achievement.name}
+                      {name}
                     </span>
                     <span className={`text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${style.text}`}>
                       {!achievement.unlocked && <Lock size={9} />}
@@ -491,15 +498,18 @@ export default function ProfilePage() {
                   const achievement = profile.achievements.find(a => a.id === achievementPopover);
                   if (!achievement) return null;
                   const maxed = achievement.nextThreshold === null;
+                  const description = achText(`achievements.${achievement.id}.description`, achievement.description, {
+                    n: achievement.nextThreshold ?? achievement.tiers[achievement.tiers.length - 1]?.threshold ?? '',
+                  });
                   return (
                     <div className="mt-2 bg-slate-800/60 border border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-4 shadow-inner">
                       <div className={`text-4xl bg-slate-900/50 w-16 h-16 shrink-0 flex items-center justify-center rounded-xl border border-slate-700/50 shadow-md ${achievement.unlocked ? '' : 'grayscale'}`}>
                         {achievement.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-white mb-1">{achievement.name}</div>
+                        <div className="text-sm font-bold text-white mb-1">{achText(`achievements.${achievement.id}.name`, achievement.name)}</div>
                         <div className="text-xs text-slate-400 leading-relaxed">
-                          {maxed ? t('achievements.completed', { description: achievement.description }) : t('achievements.next', { description: achievement.description })}
+                          {maxed ? t('achievements.completed', { description }) : t('achievements.next', { description })}
                           {!maxed && achievement.nextReward !== null && (
                             <span className="text-yellow-400 font-bold"> · {t('achievements.reward', { reward: achievement.nextReward })}</span>
                           )}
@@ -527,7 +537,7 @@ export default function ProfilePage() {
                                 }`}
                               >
                                 {tier.unlocked ? <Check size={10} weight="bold" /> : <Lock size={10} weight="bold" />}
-                                {t('achievements.tierChip', { name: tier.name, threshold: tier.threshold, reward: tier.reward })}
+                                {t('achievements.tierChip', { name: achText(`tiers.${tier.tier}`, tier.name), threshold: tier.threshold, reward: tier.reward })}
                               </span>
                             );
                           })}
@@ -590,7 +600,11 @@ export default function ProfilePage() {
           {profile.topCards.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6">
               {profile.topCards.map((card, i) => {
-                const tier = LOYALTY_TIER_LABELS[card.loyaltyTier || 'none'] || LOYALTY_TIER_LABELS['none'];
+                const tierKey = LOYALTY_TIER_LABELS[card.loyaltyTier || 'none'] ? (card.loyaltyTier || 'none') : 'none';
+                const tier = LOYALTY_TIER_LABELS[tierKey];
+                const tierLabel = tierKey === 'none' ? t('topCards.loyalty.unranked')
+                  : tierKey === 'rookie' ? t('topCards.loyalty.rookie')
+                  : achText(`loyalty.${tierKey}.title`, tier.label);
                 const isEternal = card.loyaltyTier === 'eternal';
                 return (
                   <div key={i} className={`relative pt-6 pb-4 px-3 rounded-2xl border flex flex-col items-center text-center transition-all hover:-translate-y-2 ${
@@ -625,7 +639,7 @@ export default function ProfilePage() {
                     </div>
                     {/* Loyalty Tier Badge */}
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${tier.bg} ${tier.color} border border-current/20 relative z-10`}>
-                      {tier.label}
+                      {tierLabel}
                     </span>
                   </div>
                 );
@@ -651,7 +665,7 @@ export default function ProfilePage() {
 
             <div className="space-y-2">
               {profile.recentBattles.map((battle) => {
-                const league = LEAGUE_LABELS[battle.leagueMode] || LEAGUE_LABELS['OPEN'];
+                const leagueMode: ProfileLeague = Object.prototype.hasOwnProperty.call(LEAGUE_COLORS, battle.leagueMode) ? (battle.leagueMode as ProfileLeague) : 'OPEN';
                 const isExpanded = expandedBattle === battle.id;
                 return (
                   <div key={battle.id} className="border border-slate-800 rounded-xl overflow-hidden">
@@ -662,7 +676,7 @@ export default function ProfilePage() {
                       <UserAvatar username={battle.opponentUsername} image={battle.opponentImage} size="sm" />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm text-white truncate">{battle.opponentUsername}</div>
-                        <span className={`text-[10px] font-bold ${league.color}`}>{league.label}</span>
+                        <span className={`text-[10px] font-bold ${LEAGUE_COLORS[leagueMode]}`}>{t(`battles.leagues.${leagueMode}`)}</span>
                       </div>
                       <div className={`px-3 py-1 rounded-lg text-xs font-black ${
                         battle.won ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'

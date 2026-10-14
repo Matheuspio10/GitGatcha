@@ -15,6 +15,7 @@ import { STARTER_PACK_ID } from "@/lib/onboarding";
 import { siteUrl } from "@/lib/siteUrl";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
+import { getGameText } from "@/i18n/gameText.server";
 
 // Display (logo, headings) · UI (body, card names) · Mono (numbers, hashes) · Script (Signature autograph)
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["600", "800"], variable: '--font-unbounded' });
@@ -63,7 +64,7 @@ export default async function RootLayout({
           {user?.onboarding && !user.onboarding.welcomeSeen && (
             <WelcomeModal
               username={user.username}
-              starterPackName={getPackById(STARTER_PACK_ID)?.name ?? 'Starter pack'}
+              starterPackName={(await getGameText('gamePacks'))(`packs.${STARTER_PACK_ID}.name`, getPackById(STARTER_PACK_ID)?.name ?? 'Starter pack')}
               guestCards={user.onboarding.guestCards ?? 0}
               guide={buildEarnGuide(user.username)}
             />

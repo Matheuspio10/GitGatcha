@@ -1,0 +1,177 @@
+{
+  "packs": {
+    "javascript-coven": {
+      "name": "The JavaScript Coven",
+      "description": "Dark rituals written in async/await. Enter if you dare.",
+      "filters": "Languages: JavaScript, TypeScript"
+    },
+    "pythonistas": {
+      "name": "Pythonistas",
+      "description": "Zen masters of readable code and data sorcery.",
+      "filters": "Primary Language: Python"
+    },
+    "rust-or-bust": {
+      "name": "Rust or Bust",
+      "description": "They chose the hard path. Their code never crashes.",
+      "filters": "Primary Language: Rust"
+    },
+    "css-wizards": {
+      "name": "CSS Wizards",
+      "description": "Nobody understands how they do it. Neither do they.",
+      "filters": "Primary Language: CSS"
+    },
+    "go-gophers": {
+      "name": "The Go Gophers",
+      "description": "Fast, simple, concurrent. Just like them.",
+      "filters": "Primary Language: Go"
+    },
+    "ruby-relics": {
+      "name": "Ruby Relics",
+      "description": "From the golden age of Rails. Still shipping.",
+      "filters": "Primary Language: Ruby"
+    },
+    "cpp-ancients": {
+      "name": "C++ Ancients",
+      "description": "They were writing memory management before you were born.",
+      "filters": "Languages: C, C++"
+    },
+    "open-source-heroes": {
+      "name": "The Open Source Heroes",
+      "description": "They build for everyone. Legends of the commons.",
+      "filters": "Stats: >50 Repos, >100 Followers"
+    },
+    "solo-architects": {
+      "name": "The Solo Architects",
+      "description": "They ship alone. Entire ecosystems built by one person.",
+      "filters": "Stats: >30 Repos"
+    },
+    "silent-giants": {
+      "name": "The Silent Giants",
+      "description": "Underrated. Underknown. Unstoppable.",
+      "filters": "Stats: >20 Repos"
+    },
+    "maintainers": {
+      "name": "The Maintainers",
+      "description": "The ones keeping the open source world from falling apart.",
+      "filters": "Stats: >50 Repos"
+    },
+    "github-ogs": {
+      "name": "GitHub OGs",
+      "description": "They were here before the hype. Before the green squares. Before everything.",
+      "filters": "Era: Created < 2010"
+    },
+    "new-blood": {
+      "name": "New Blood",
+      "description": "Fresh accounts. Explosive trajectories. Watch them rise.",
+      "filters": "Era: Created > 2022"
+    },
+    "the-fossils": {
+      "name": "The Fossils",
+      "description": "Abandoned but not forgotten. Their legacy lives on in your node_modules.",
+      "filters": "Era: Created < 2015, >10 Repos"
+    },
+    "big-tech": {
+      "name": "Big Tech Pack",
+      "description": "The ones with the badges and the free lunches.",
+      "filters": "Public members of Google, Microsoft, Meta, AWS, Apple, Netflix, GitHub…"
+    },
+    "indie-hackers": {
+      "name": "Indie Hackers",
+      "description": "No office. No boss. Just shipping.",
+      "filters": "Stats: >20 Repos"
+    },
+    "brazilian-devs": {
+      "name": "Brazilian Devs",
+      "description": "Caffeine-powered. Ship at 2am. Born for the grind."
+    },
+    "american-devs": {
+      "name": "American Devs",
+      "description": "From Silicon Valley to everywhere. Building the future at scale."
+    },
+    "indian-devs": {
+      "name": "Indian Devs",
+      "description": "A billion minds. Infinite possibilities. Jugaad kings."
+    },
+    "german-devs": {
+      "name": "German Devs",
+      "description": "Engineered to perfection. Zero exceptions."
+    },
+    "japanese-devs": {
+      "name": "Japanese Devs",
+      "description": "Precision in every commit. Code as art form."
+    },
+    "british-devs": {
+      "name": "British Devs",
+      "description": "Keep calm and push to main. Tea-driven development."
+    },
+    "canadian-devs": {
+      "name": "Canadian Devs",
+      "description": "Sorry for being so good. They're unfairly polite AND talented."
+    },
+    "french-devs": {
+      "name": "French Devs",
+      "description": "Elegance in every algorithm. Code with an accent."
+    },
+    "chinese-devs": {
+      "name": "Chinese Devs",
+      "description": "Scaling to billions. Everything is a distributed system."
+    },
+    "korean-devs": {
+      "name": "Korean Devs",
+      "description": "K-code wave. Esports reflexes applied to debugging."
+    },
+    "australian-devs": {
+      "name": "Australian Devs",
+      "description": "Coding upside down. Everything's trying to kill their uptime."
+    },
+    "legendary-drop": {
+      "name": "The Legendary Drop",
+      "description": "Absurdly expensive. Absurdly worth it.",
+      "filters": "Any Account"
+    },
+    "junk-drawer": {
+      "name": "The Junk Drawer",
+      "description": "You'll get a lot of cards. You won't know any of them. That's the point.",
+      "filters": "Any Account (>0 Repos)"
+    },
+    "mystery-box": {
+      "name": "The Mystery Box",
+      "description": "Could be anything. Could be a Legendary. Could be five Commons. Good luck.",
+      "filters": "Mystery"
+    },
+    "event-web": {
+      "description": "Browsers, frameworks and one more div. Only this week."
+    },
+    "event-systems": {
+      "description": "Close to the metal and proud of it. Only this week."
+    },
+    "event-data": {
+      "description": "Notebooks, models and a lot of pandas. Only this week."
+    },
+    "event-enterprise": {
+      "description": "Factories of factories, shipped on time. Only this week."
+    },
+    "event-scripting": {
+      "description": "One-liners that run half the internet. Only this week."
+    },
+    "event-mobile": {
+      "description": "Shipping to the pocket of everyone. Only this week."
+    }
+  },
+  "eventPack": {
+    "name": "{theme} Pack"
+  },
+  "filters": {
+    "region": "Region: {locations}",
+    "weeklyEvent": "Weekly event · Languages: {languages}"
+  },
+  "categories": {
+    "event": "Weekly Event",
+    "language": "Language & Stack",
+    "contributor": "Contributor Type",
+    "era": "Era",
+    "company": "Company & Origin",
+    "regional": "Regional",
+    "rarity": "Rarity-Focused"
+  }
+}

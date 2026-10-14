@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { ArrowsClockwise, CheckCircle, Circle, GithubLogo } from '@phosphor-icons/react';
 import { useTranslations } from 'next-intl';
-import { missionRequiredCount, type MissionPeriod } from '@/lib/missionUtils';
+import { missionRequiredCount, parseCollectTarget, type MissionPeriod } from '@/lib/missionUtils';
+import { useGameText, type GameText } from '@/i18n/gameText';
 
 export interface MissionInfo {
   id: string;
@@ -19,6 +20,24 @@ export interface MissionInfo {
 
 function requiredFor(um: MissionInfo): number {
   return typeof um.required === 'number' ? um.required : missionRequiredCount(um.mission.type, um.mission.targetValue);
+}
+
+/**
+ * The stored description is English: rebuild it from the mission's type and
+ * target (namespace `game`, `missions.*`), keeping the stored text as fallback.
+ */
+function missionText(game: GameText, period: MissionPeriod, m: { description: string; type: string; targetValue: string | null }): string {
+  if (period === 'dev') return game(`missions.dev.${(m.targetValue ?? '').replace(/:/g, '_')}`, m.description);
+  const key = `missions.${period}.${m.type}`;
+  if (m.type === 'COLLECT_RARITY' || m.type === 'COLLECT_LANGUAGE') {
+    const { value, count } = parseCollectTarget(m.targetValue);
+    if (value === null) return m.description;
+    return game(key, m.description, m.type === 'COLLECT_RARITY' ? { count, rarity: value } : { count, language: value });
+  }
+  if (m.type === 'OPEN_BOOSTER' || m.type === 'WIN_BATTLE') {
+    return game(key, m.description, { count: missionRequiredCount(m.type, m.targetValue) });
+  }
+  return m.description;
 }
 
 function formatDuration(ms: number): string {
@@ -35,13 +54,14 @@ async function post(url: string, fallbackError: string, body?: object) {
 }
 
 function MissionCard({ um, action }: { um: MissionInfo; action?: React.ReactNode }) {
+  const game = useGameText('game');
   const required = requiredFor(um);
   return (
     <div className={`flex flex-col p-5 rounded-2xl border backdrop-blur-sm transition-all ${
       um.completed ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-white/5 hover:border-white/20'
     }`}>
       <div className="flex justify-between items-start gap-3">
-        <h3 className={`font-bold ${um.completed ? 'text-green-400' : 'text-white'}`}>{um.mission.description}</h3>
+        <h3 className={`font-bold ${um.completed ? 'text-green-400' : 'text-white'}`}>{missionText(game, um.period, um.mission)}</h3>
         {um.completed ? <CheckCircle className="text-green-500 shrink-0" size={22} weight="fill" /> : <Circle className="text-slate-500 shrink-0" size={22} />}
       </div>
       <div className="flex justify-between items-end mt-auto pt-4 gap-3">
@@ -67,6 +87,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
   weeklyResetInMs: number;
 }) {
   const t = useTranslations('store.missions');
+  const game = useGameText('game');
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const daily = missions.filter(m => m.period === 'daily');
@@ -77,7 +98,7 @@ export function MissionsPanel({ missions, canReroll, githubConnected, weeklyRese
     setBusy(um.id);
     try {
       const data = await post('/api/missions/reroll', t('error'), { userMissionId: um.id });
-      toast.success(t('newMission', { description: data.mission.description }));
+      toast.success(t('newMission', { description: missionText(game, 'daily', data.mission) }));
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);

@@ -33,7 +33,6 @@
   "results": {
     "victory": "VICTORY!",
     "defeat": "DEFEAT",
-    "league": "{league} League",
     "ranked": "Ranked",
     "rankedVs": "Ranked vs {opponent}",
     "upsetTitle": "You beat a team of higher average rarity",

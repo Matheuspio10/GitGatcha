@@ -20,6 +20,9 @@ import en_social from '../../messages/en/social.json';
 import en_profile from '../../messages/en/profile.json';
 import en_public from '../../messages/en/public.json';
 import en_game from '../../messages/en/game.json';
+import en_gameBattle from '../../messages/en/gameBattle.json';
+import en_gameAchievements from '../../messages/en/gameAchievements.json';
+import en_gamePacks from '../../messages/en/gamePacks.json';
 import en_wiki from '../../messages/en/wiki.json';
 import ptBR_common from '../../messages/pt-BR/common.json';
 import ptBR_nav from '../../messages/pt-BR/nav.json';
@@ -36,15 +39,18 @@ import ptBR_social from '../../messages/pt-BR/social.json';
 import ptBR_profile from '../../messages/pt-BR/profile.json';
 import ptBR_public from '../../messages/pt-BR/public.json';
 import ptBR_game from '../../messages/pt-BR/game.json';
+import ptBR_gameBattle from '../../messages/pt-BR/gameBattle.json';
+import ptBR_gameAchievements from '../../messages/pt-BR/gameAchievements.json';
+import ptBR_gamePacks from '../../messages/pt-BR/gamePacks.json';
 import ptBR_wiki from '../../messages/pt-BR/wiki.json';
 
-export const NAMESPACES = ['common', 'nav', 'store', 'inventory', 'collection', 'forge', 'onboarding', 'notifications', 'battle', 'teamBuilder', 'leaderboard', 'social', 'profile', 'public', 'game', 'wiki'] as const;
+export const NAMESPACES = ['common', 'nav', 'store', 'inventory', 'collection', 'forge', 'onboarding', 'notifications', 'battle', 'teamBuilder', 'leaderboard', 'social', 'profile', 'public', 'game', 'gamePacks', 'gameAchievements', 'gameBattle', 'wiki'] as const;
 
 /** English is the source of truth: its shape types every key (see global.d.ts). */
-const EN = { common: en_common, nav: en_nav, store: en_store, inventory: en_inventory, collection: en_collection, forge: en_forge, onboarding: en_onboarding, notifications: en_notifications, battle: en_battle, teamBuilder: en_teamBuilder, leaderboard: en_leaderboard, social: en_social, profile: en_profile, public: en_public, game: en_game, wiki: en_wiki };
+const EN = { common: en_common, nav: en_nav, store: en_store, inventory: en_inventory, collection: en_collection, forge: en_forge, onboarding: en_onboarding, notifications: en_notifications, battle: en_battle, teamBuilder: en_teamBuilder, leaderboard: en_leaderboard, social: en_social, profile: en_profile, public: en_public, game: en_game, gamePacks: en_gamePacks, gameAchievements: en_gameAchievements, gameBattle: en_gameBattle, wiki: en_wiki };
 export type Messages = typeof EN;
 
 // Portuguese must have the same keys (messages.test.ts also checks placeholders)
-const PT_BR: Messages = { common: ptBR_common, nav: ptBR_nav, store: ptBR_store, inventory: ptBR_inventory, collection: ptBR_collection, forge: ptBR_forge, onboarding: ptBR_onboarding, notifications: ptBR_notifications, battle: ptBR_battle, teamBuilder: ptBR_teamBuilder, leaderboard: ptBR_leaderboard, social: ptBR_social, profile: ptBR_profile, public: ptBR_public, game: ptBR_game, wiki: ptBR_wiki };
+const PT_BR: Messages = { common: ptBR_common, nav: ptBR_nav, store: ptBR_store, inventory: ptBR_inventory, collection: ptBR_collection, forge: ptBR_forge, onboarding: ptBR_onboarding, notifications: ptBR_notifications, battle: ptBR_battle, teamBuilder: ptBR_teamBuilder, leaderboard: ptBR_leaderboard, social: ptBR_social, profile: ptBR_profile, public: ptBR_public, game: ptBR_game, gamePacks: ptBR_gamePacks, gameAchievements: ptBR_gameAchievements, gameBattle: ptBR_gameBattle, wiki: ptBR_wiki };
 
 export const MESSAGES: Record<Locale, Messages> = { en: EN, 'pt-BR': PT_BR };

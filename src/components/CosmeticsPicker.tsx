@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { Lock, Check, IdentificationBadge } from '@phosphor-icons/react';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
 import { useTranslations } from 'next-intl';
+import { useGameText } from '@/i18n/gameText';
+import { frameText, titleText } from '@/components/PlayerCosmetics';
 
 type Option<T> = T & { requirement: string; unlocked: boolean };
 interface CosmeticsState {
@@ -22,6 +24,7 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
   const [busy, setBusy] = useState(false);
   const [showLocked, setShowLocked] = useState(false);
   const tr = useTranslations('collection.cosmetics');
+  const achText = useGameText('gameAchievements');
 
   useEffect(() => {
     fetch('/api/profile/cosmetics')
@@ -83,12 +86,12 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
               key={t.id}
               disabled={busy || !t.unlocked}
               onClick={() => equip({ title: t.id })}
-              title={t.unlocked ? t.label : tr('locked', { requirement: t.requirement })}
+              title={t.unlocked ? titleText(achText, t) : tr('locked', { requirement: titleText(achText, t, 'requirement') })}
               className={chip(state.equipped.title?.id === t.id, t.unlocked)}
             >
               {t.unlocked ? (state.equipped.title?.id === t.id && <Check size={12} weight="bold" />) : <Lock size={12} />}
-              <span className={t.unlocked ? t.color : ''}>{t.label}</span>
-              {!t.unlocked && <span className="font-normal">· {t.requirement}</span>}
+              <span className={t.unlocked ? t.color : ''}>{titleText(achText, t)}</span>
+              {!t.unlocked && <span className="font-normal">· {titleText(achText, t, 'requirement')}</span>}
             </button>
           ))}
         </div>
@@ -103,12 +106,12 @@ export function CosmeticsPicker({ onChange }: { onChange: (equipped: CosmeticsSt
               key={f.id}
               disabled={busy || !f.unlocked}
               onClick={() => equip({ frame: f.id })}
-              title={f.unlocked ? tr('frameLabel', { label: f.label }) : tr('locked', { requirement: f.requirement })}
+              title={f.unlocked ? tr('frameLabel', { label: frameText(achText, f) }) : tr('locked', { requirement: frameText(achText, f, 'requirement') })}
               className={chip(state.equipped.frame?.id === f.id, f.unlocked)}
             >
               <span className={`h-4 w-4 rounded-full ${f.unlocked ? '' : 'opacity-30'}`} style={{ background: f.ring }} />
-              {f.label}
-              {!f.unlocked && <span className="font-normal">· {f.requirement}</span>}
+              {frameText(achText, f)}
+              {!f.unlocked && <span className="font-normal">· {frameText(achText, f, 'requirement')}</span>}
             </button>
           ))}
         </div>
