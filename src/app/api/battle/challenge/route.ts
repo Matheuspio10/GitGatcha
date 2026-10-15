@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCardType } from '@/lib/battleResolver';
 import { getCardStamina } from '@/lib/staminaService';
-import { withUserLock, UserFacingError } from '@/lib/userLock';
+import { asJson, withUserLock, UserFacingError } from '@/lib/userLock';
 import { spendBits } from '@/lib/bitsLedger';
 import { CHALLENGE_TTL_HOURS } from '@/lib/battleConfig';
 import { OPEN_CHALLENGE } from '@/lib/challenges';
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
         data: {
           challengerId: userId,
           defenderId: defender?.id ?? null,
-          challengerTeam: challengerTeam as any,
+          challengerTeam: asJson(challengerTeam),
           status: 'PENDING',
           isRandom: false,
           expiresAt,

@@ -4,8 +4,9 @@ import { sizedAvatar } from '@/lib/avatarUrl';
 import React, { useState, useEffect } from 'react';
 import { WILDCARD, WILDCARD_EXCHANGE_RATE, maxWildcardsFrom, needsWildcards, planFragmentPayment } from '@/lib/fragments';
 import { EmptyState } from '@/components/EmptyState';
-import { Card } from '@/components/Card';
-import { useSession } from 'next-auth/react';
+import { Card, type CardProps } from '@/components/Card';
+import type { SerializablePack } from '@/lib/packDefinitions';
+import type { InvocationCost } from '@/lib/weeklyEvents';
 import { MagnifyingGlass, ClockCounterClockwise, Star, Sparkle, Hammer, Coin, BookOpenText } from '@phosphor-icons/react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
@@ -57,8 +58,16 @@ export type FeaturedDevInfo = {
   endsInMs: number;
 };
 
+/** What /api/forge/search answers for a GitHub login. */
+interface ForgeSearchResult {
+  stats: CardProps;
+  cost: InvocationCost;
+  fullCost: InvocationCost;
+  featured: boolean;
+  recommendedPacks: SerializablePack[];
+}
+
 export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: string; featuredDev?: FeaturedDevInfo | null }) {
-  const { data: session } = useSession();
   const t = useTranslations('forge');
   const packText = usePackText();
   const locale = useLocale();
@@ -71,10 +80,10 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchResult, setSearchResult] = useState<ForgeSearchResult | null>(null);
   
   const [isInvoking, setIsInvoking] = useState(false);
-  const [revealedCard, setRevealedCard] = useState<any>(null);
+  const [revealedCard, setRevealedCard] = useState<CardProps | null>(null);
 
   useEffect(() => {
     fetchWallet();
@@ -109,7 +118,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       } else {
         toast.error(data.error || t('toasts.notFound'));
       }
-    } catch (e) {
+    } catch {
       toast.error(t('toasts.searchFailed'));
     } finally {
       setIsSearching(false);
@@ -151,7 +160,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       } else {
         toast.error(data.error || t('toasts.invokeFailed'));
       }
-    } catch (e) {
+    } catch {
       toast.error(t('toasts.invokeFailed'));
     } finally {
       setIsInvoking(false);
@@ -179,7 +188,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       } else {
         toast.error(data.error || t('toasts.wishlistFailed'));
       }
-    } catch (e) {
+    } catch {
       toast.error(t('toasts.wishlistFailed'));
     }
   };
@@ -277,7 +286,6 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
       {/* Dev of the Week (weekly event) */}
       {featuredDev && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-950/40 to-slate-900 p-5 shadow-xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           {featuredDev.avatarUrl ? <img src={sizedAvatar(featuredDev.avatarUrl, 56)} alt="" className="h-14 w-14 rounded-full border-2 border-fuchsia-400/60" /> : <span className="h-14 w-14 rounded-full bg-slate-700" />}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">{t('featured.label', { percent: featuredDev.discountPercent })}</p>
@@ -456,7 +464,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                       {t('recommendation.text', { lang })}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
-                      {searchResult.recommendedPacks.map((pack: any) => (
+                      {searchResult.recommendedPacks.map(pack => (
                         <Link href={`/store#pack-${pack.id}`} key={pack.id} className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-lg hover:border-indigo-500/50 transition-colors group cursor-pointer block">
                           <div className="w-10 h-10 rounded shadow-md" style={{ background: pack.visualTheme?.gradient }}></div>
                           <div>

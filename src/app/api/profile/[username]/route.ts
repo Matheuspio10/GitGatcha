@@ -7,7 +7,7 @@ import { collectionProgress } from '@/lib/collections';
 import { equippedCosmetics } from '@/lib/cosmeticsService';
 import { apiError } from '@/lib/apiResponse';
 
-function computeWinStreak(battles: any[], userId: string): number {
+function computeWinStreak(battles: { winnerId: string | null }[], userId: string): number {
   let maxStreak = 0;
   let currentStreak = 0;
   // battles should be sorted by completedAt ascending
@@ -42,7 +42,21 @@ export async function GET(
           { name: { equals: username, mode: 'insensitive' } }
         ]
       },
-      include: {
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        level: true,
+        xp: true,
+        rating: true,
+        createdAt: true,
+        image: true,
+        bio: true,
+        bannerImage: true,
+        preferredLanguage: true,
+        title: true,
+        frame: true,
+        notifications: true,
         seasonResults: { select: { seasonId: true, peakRating: true }, orderBy: { seasonId: 'desc' }, take: 12 },
         cards: {
             include: {
@@ -95,8 +109,8 @@ export async function GET(
               user: { select: { id: true, username: true, name: true, level: true, image: true } },
             }
         }
-      } as any,
-    }) as any;
+      },
+    });
 
     if (!userProfile) {
       return apiError('common.userNotFound', 404);
@@ -105,31 +119,31 @@ export async function GET(
     // Calculate derived stats
     const totalCards = userProfile.cards.length;
     const allBattles = [...userProfile.battlesAsChallenger, ...userProfile.battlesAsDefender];
-    const completedBattles = allBattles.filter((b: any) => b.status === 'COMPLETED');
-    const battlesWon = completedBattles.filter((b: any) => b.winnerId === userProfile.id).length;
+    const completedBattles = allBattles.filter(b => b.status === 'COMPLETED');
+    const battlesWon = completedBattles.filter(b => b.winnerId === userProfile.id).length;
     const battlesLost = completedBattles.length - battlesWon;
 
     // Total BITS earned
-    const totalBitsEarned = completedBattles.reduce((sum: number, b: any) => {
+    const totalBitsEarned = completedBattles.reduce((sum, b) => {
       if (b.winnerId === userProfile.id) return sum + (b.rewardBits || 0);
       return sum + 10; // losers get ~10 bits
     }, 0);
 
     // Highest win streak 
     const sortedBattles = completedBattles
-      .filter((b: any) => b.completedAt)
-      .sort((a: any, b: any) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime());
+      .filter(b => b.completedAt)
+      .sort((a, b) => a.completedAt!.getTime() - b.completedAt!.getTime());
     const highestWinStreak = computeWinStreak(sortedBattles, userProfile.id);
 
     // Build normalized friends list from both directions
     const friendsList = [
-      ...userProfile.friendships.map((f: any) => ({
+      ...userProfile.friendships.map(f => ({
         id: f.friend.id,
         username: f.friend.username || f.friend.name || 'Unknown',
         level: f.friend.level,
         image: f.friend.image || null,
       })),
-      ...userProfile.friendRequests.map((f: any) => ({
+      ...userProfile.friendRequests.map(f => ({
         id: f.user.id,
         username: f.user.username || f.user.name || 'Unknown',
         level: f.user.level,
@@ -141,21 +155,21 @@ export async function GET(
     // Get top cards (highest stats or rarity)
     // The player's own Signature card (from connecting GitHub) always leads
     const topCards = userProfile.cards
-        .map((uc: any) => ({ ...uc.card, quantity: uc.quantity, isShiny: uc.isShiny, edition: uc.edition, loyaltyTier: uc.loyaltyTier, loyaltyCount: uc.loyaltyCount }))
-        .sort((a: any, b: any) => Number(b.edition === 'signature') - Number(a.edition === 'signature') || (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
+        .map(uc => ({ ...uc.card, quantity: uc.quantity, isShiny: uc.isShiny, edition: uc.edition, loyaltyTier: uc.loyaltyTier, loyaltyCount: uc.loyaltyCount }))
+        .sort((a, b) => Number(b.edition === 'signature') - Number(a.edition === 'signature') || (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp))
         .slice(0, 5);
 
     // Get showcase cards (loyalty system Hall of Fame)
     const showcaseCards = userProfile.cards
-        .filter((uc: any) => uc.loyaltyTier === 'reliable' || uc.loyaltyTier === 'legendary_bond' || uc.loyaltyTier === 'eternal')
-        .sort((a: any, b: any) => {
+        .filter(uc => uc.loyaltyTier === 'reliable' || uc.loyaltyTier === 'legendary_bond' || uc.loyaltyTier === 'eternal')
+        .sort((a, b) => {
             if (a.showcaseOrder !== null && b.showcaseOrder !== null) return a.showcaseOrder - b.showcaseOrder;
             if (a.showcaseOrder !== null) return -1;
             if (b.showcaseOrder !== null) return 1;
             return b.loyaltyCount - a.loyaltyCount;
         })
         .slice(0, 6)
-        .map((uc: any) => ({
+        .map(uc => ({
             ...uc.card,
             quantity: uc.quantity,
             isShiny: uc.isShiny,
@@ -165,17 +179,19 @@ export async function GET(
         }));
 
     // Language sets (one slot per rarity) and the equipped title and frame
-    const sets = collectionProgress(userProfile.cards.map((uc: { card: { primaryLanguage: string | null; rarity: string } }) => uc.card));
+    const sets = collectionProgress(userProfile.cards.map(uc => uc.card));
 
     // Check for Prestige Badge
-    const hasLegendaryBondPrestige = userProfile.cards.some((uc: any) => uc.loyaltyCount >= 100);
+    const hasLegendaryBondPrestige = userProfile.cards.some(uc => uc.loyaltyCount >= 100);
 
     // Check for level ups in the last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const notifications = Array.isArray(userProfile.notifications) ? userProfile.notifications as any[] : [];
-    const hasLeveledUpRecently = notifications.some((n: any) => {
+    const notifications = Array.isArray(userProfile.notifications)
+      ? userProfile.notifications as { type?: string; timestamp?: string }[]
+      : [];
+    const hasLeveledUpRecently = notifications.some(n => {
         if (n.type === 'LEVEL_UP') {
-            const notifDate = new Date(n.timestamp);
+            const notifDate = new Date(n.timestamp ?? 0);
             return notifDate >= oneDayAgo;
         }
         return false;
@@ -183,18 +199,18 @@ export async function GET(
 
     // Recent battles (last 10)
     const recentBattles = completedBattles
-      .filter((b: any) => b.completedAt)
-      .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+      .filter(b => b.completedAt)
+      .sort((a, b) => b.completedAt!.getTime() - a.completedAt!.getTime())
       .slice(0, 10)
-      .map((b: any) => {
+      .map(b => {
         const isChallenger = b.challengerId === userProfile.id;
-        const opponent = isChallenger ? b.defender : b.challenger;
+        const opponent = 'defender' in b ? b.defender : b.challenger;
         const opponentUsername = opponent?.username || opponent?.name || 'Unknown';
         const opponentImage = opponent?.image || null;
         const won = b.winnerId === userProfile.id;
         
         // Compute score from log
-        const log = Array.isArray(b.log) ? b.log : [];
+        const log = Array.isArray(b.log) ? b.log as { type?: string; winner?: string }[] : [];
         let playerScore = 0;
         let opponentScore = 0;
         for (const entry of log) {

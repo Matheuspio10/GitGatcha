@@ -13,7 +13,6 @@ export const MAX_STAMINA = 100;
 export function calculateCurrentStamina(
   storedStamina: number,
   lastUsedAt: Date | string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _inActiveTeam: boolean = false,
   now: Date = new Date()
 ): number {

@@ -5,7 +5,7 @@ import { apiError } from '@/lib/apiResponse';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await getServerSession();
     if (!session || !session.user?.email) {
@@ -30,8 +30,8 @@ export async function GET(req: Request) {
         ],
       },
       include: {
-        user: { select: { id: true, username: true, name: true, level: true } },
-        friend: { select: { id: true, username: true, name: true, level: true } },
+        user: { select: { id: true, username: true, name: true, level: true, image: true } },
+        friend: { select: { id: true, username: true, name: true, level: true, image: true } },
       },
     });
 
@@ -44,6 +44,7 @@ export async function GET(req: Request) {
         id: rawFriendData.id,
         username: rawFriendData.username || rawFriendData.name || 'Unknown',
         level: rawFriendData.level,
+        image: rawFriendData.image,
       };
       
       return {

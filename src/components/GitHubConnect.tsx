@@ -139,7 +139,6 @@ function SignatureReadme({ login, name }: { login: string; name: string }) {
 
   return (
     <div className="mb-3 flex items-center gap-3 rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={imagePath} alt={t('imageAlt', { name })} width={60} height={84} className="rounded-md shrink-0" loading="lazy" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-bold text-fuchsia-200">{t('title')}</p>

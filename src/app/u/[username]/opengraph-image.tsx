@@ -27,7 +27,6 @@ export default async function Image({ params }: { params: Promise<{ username: st
       <div style={{ display: 'flex', gap: 28, marginTop: 'auto' }}>
         {best.map(c => (
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 14, borderRadius: 18, background: 'rgba(255,255,255,0.06)', border: `3px solid ${c.edition === 'signature' ? '#FF4FA3' : RARITY_HEX[c.rarity] ?? '#888'}` }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={avatarFor(c.githubUsername, c.avatarUrl, 120)} width={84} height={84} alt="" style={{ borderRadius: 14 }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', fontSize: 26, fontWeight: 700 }}>{c.name.length > 16 ? `${c.name.slice(0, 15)}…` : c.name}</div>

@@ -48,3 +48,8 @@ export function asRecord(value: unknown): Record<string, number> {
 export function asArray<T = Prisma.JsonValue>(value: unknown): T[] {
   return Array.isArray(value) ? [...(value as T[])] : [];
 }
+
+/** Typed app data going into a JSON column (interfaces have no index signature, so Prisma won't take them as is). */
+export function asJson(value: unknown): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}

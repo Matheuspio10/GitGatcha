@@ -1,16 +1,16 @@
 'use client';
 
 import { sizedAvatar } from '@/lib/avatarUrl';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  Trophy, Sword, UserPlus, 
+  Trophy, Sword,
   Users, UserMinus, Star,
   Sparkle, Plus, Clock,
   ShareNetwork, Coin, Lightning, Medal,
-  Lock, Info, CaretDown, CaretUp, Copy, Check
+  Lock, CaretDown, CaretUp, Check
 } from '@phosphor-icons/react';
 import { getXPProgress } from '@/lib/xpService';
 import { Card } from '@/components/Card';
@@ -53,10 +53,44 @@ interface RecentBattle {
   playerScore: number;
   opponentScore: number;
   date: string;
-  challengerTeam: any;
-  defenderTeam: any;
-  log: any;
+  challengerTeam: BattleTeamCard[] | null;
+  defenderTeam: BattleTeamCard[] | null;
+  log: unknown;
   isChallenger: boolean;
+}
+
+/** A card as saved in a battle's team snapshot (only the fields shown). */
+interface BattleTeamCard {
+  name: string;
+  avatarUrl?: string | null;
+  atk: number;
+  def: number;
+  hp: number;
+}
+
+/** A card on the profile (top cards and Hall of Fame): the Card row plus the owner's copy. */
+interface ProfileCard {
+  id: string;
+  name: string;
+  githubUsername: string;
+  avatarUrl: string | null;
+  flavorText: string;
+  atk: number;
+  def: number;
+  hp: number;
+  rarity: string;
+  primaryLanguage: string | null;
+  quantity: number;
+  isShiny: boolean;
+  edition: string;
+  loyaltyTier: string;
+  loyaltyCount: number;
+}
+
+/** The parts of /api/friends this page reads. */
+interface FriendsResponse {
+  friends: { friendshipId: string; user: { username: string | null } }[];
+  outgoingRequests: { id: string; user: { username: string | null } }[];
 }
 
 interface ProfileData {
@@ -87,13 +121,13 @@ interface ProfileData {
     totalBitsEarned: number;
     highestWinStreak: number;
   };
-  topCards: any[];
+  topCards: ProfileCard[];
   friends: FriendInfo[];
   recentBattles: RecentBattle[];
   achievements: Achievement[];
   hasLeveledUpRecently: boolean;
   hasLegendaryBondPrestige: boolean;
-  showcaseCards: any[];
+  showcaseCards: ProfileCard[];
 }
 
 const LANGUAGE_COLORS: Record<string, string> = {
@@ -161,14 +195,7 @@ export default function ProfilePage() {
   const tShare = useTranslations('common.share');
   const locale = useLocale();
 
-  useEffect(() => {
-    fetchProfile();
-    if (session?.user?.email && profileUsername !== session.user.name) {
-      checkFriendStatus();
-    }
-  }, [profileUsername, session]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch(`/api/profile/${profileUsername}`);
       const data = await res.json();
@@ -180,21 +207,30 @@ export default function ProfilePage() {
       else setError(data.error);
     } catch { setError(t('loadFailed')); }
     finally { setLoading(false); }
-  };
+  }, [profileUsername, notifyUnlocks, t]);
 
-  const checkFriendStatus = async () => {
+  const checkFriendStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/friends', { cache: 'no-store' });
-      const data = await res.json();
+      const data: FriendsResponse = await res.json();
       if (res.ok) {
-        const isFriend = data.friends.find((f: any) => (f.user.username || '').toLowerCase() === profileUsername.toLowerCase());
+        const isFriend = data.friends.find(f => (f.user.username || '').toLowerCase() === profileUsername.toLowerCase());
         if (isFriend) { setFriendStatus('FRIENDS'); setFriendshipId(isFriend.friendshipId); return; }
-        const isOutgoing = data.outgoingRequests.find((r: any) => (r.user.username || '').toLowerCase() === profileUsername.toLowerCase());
+        const isOutgoing = data.outgoingRequests.find(r => (r.user.username || '').toLowerCase() === profileUsername.toLowerCase());
         if (isOutgoing) { setFriendStatus('PENDING'); setFriendshipId(isOutgoing.id); return; }
         setFriendStatus('NONE');
       }
     } catch (err) { console.error('Failed to check friend status', err); }
-  };
+  }, [profileUsername]);
+
+  const sessionEmail = session?.user?.email;
+  const sessionName = session?.user?.name;
+  useEffect(() => {
+    fetchProfile();
+    if (sessionEmail && profileUsername !== sessionName) {
+      checkFriendStatus();
+    }
+  }, [fetchProfile, checkFriendStatus, profileUsername, sessionEmail, sessionName]);
 
   const handleAddFriend = async () => {
     try {
@@ -225,7 +261,7 @@ export default function ProfilePage() {
     claimShareBonus(bits => tShare('firstShareBonus', { bits }));
   };
 
-  const isOwnProfile = (session?.user as any)?.username === profileUsername || session?.user?.name === profileUsername;
+  const isOwnProfile = session?.user?.username === profileUsername || session?.user?.name === profileUsername;
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center flex-1 py-32">
@@ -565,7 +601,7 @@ export default function ProfilePage() {
             </p>
             
             <div className="flex flex-none overflow-x-auto gap-6 sm:gap-8 pb-8 pt-2 snap-x snap-mandatory hide-scrollbar relative z-10">
-              {profile.showcaseCards.map((card: any) => (
+              {profile.showcaseCards.map(card => (
                 <div key={card.id} className="snap-center sm:snap-start shrink-0">
                   <Card
                     id={card.id}
@@ -706,7 +742,7 @@ export default function ProfilePage() {
                             <div className="grid grid-cols-2 gap-4 mt-3">
                               <div>
                                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.yourTeam')}</div>
-                                {(battle.isChallenger ? battle.challengerTeam : battle.defenderTeam)?.map((c: any, idx: number) => (
+                                {(battle.isChallenger ? battle.challengerTeam : battle.defenderTeam)?.map((c, idx) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
                                     <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.name}.png`, 24)} alt={c.name} className="w-6 h-6 rounded-full" />
                                     <span className="text-xs font-bold text-white truncate">{c.name}</span>
@@ -716,7 +752,7 @@ export default function ProfilePage() {
                               </div>
                               <div>
                                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t('battles.opponentTeam')}</div>
-                                {(battle.isChallenger ? battle.defenderTeam : battle.challengerTeam)?.map((c: any, idx: number) => (
+                                {(battle.isChallenger ? battle.defenderTeam : battle.challengerTeam)?.map((c, idx) => (
                                   <div key={idx} className="flex items-center gap-2 py-1.5">
                                     <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.name}.png`, 24)} alt={c.name} className="w-6 h-6 rounded-full" />
                                     <span className="text-xs font-bold text-white truncate">{c.name}</span>

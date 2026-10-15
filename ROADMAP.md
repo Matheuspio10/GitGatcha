@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da segunda rodada da onda 9 (PR #63). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 15/10/2026, ao fim da rodada de lint da onda 8 (PR #64). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 236 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 236 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -43,7 +43,7 @@
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
 | `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio. Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
-| `node scripts/lint-budget.mjs` | Lint com orçamento de erros (o mesmo do CI) |
+| `npm run lint` | Lint (o mesmo do CI): reprova com qualquer erro |
 | `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
@@ -64,10 +64,9 @@
 4. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
 5. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
-**Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61). Próximas, em ordem sugerida:
-1. **Reduzir o lint** (98 erros, quase todos `any`).
-2. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
-3. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
+**Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
+1. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
+2. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
 
 Depois: **onda 9** (grandes apostas e monetização).
 
@@ -88,6 +87,7 @@ Depois: **onda 9** (grandes apostas e monetização).
 - **Nunca** passar uma URL de banco real como `--shadow-database-url` do Prisma: ele limpa o banco (apagou o dev em 13/10/2026). Para conferir schema × migrações, escrever o SQL da migração à mão e aplicar com `npx prisma migrate deploy` no dev.
 - Scripts de edição longos com apóstrofos dentro de heredoc no Bash do Windows quebram; gravar o script num arquivo e rodar com `python arquivo.py`.
 - `git push`/merge de PR antes do CI terminar já aconteceu uma vez (#39); conferir o status antes.
+- **`eslint --fix` para tirar comentários `eslint-disable` que sobraram deixa lixo** (`{ }` no JSX, linha em branco). Apagar essas linhas à mão.
 - **Ao adicionar dependência, gerar o lock com o npm do CI** (Node 22 → npm 10): `npx -y npm@10.9.2 install --package-lock-only`. O npm 11 local omite dependências opcionais que o `npm ci` do CI exige, e o CI falha no Install (aconteceu na #55).
 
 ## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
@@ -377,6 +377,15 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 8 — lint zerado (PR #64)
+- **De 98 erros e 56 avisos para 0 e 0.** Os 93 `any` viraram tipos de verdade: a rota do perfil e o `battleService` usam os tipos do Prisma; a Arena, o perfil, a coleção, a forja e a página de amigos ganharam tipos para o que a API devolve (resultado e resumo da batalha, histórico, cartas do perfil, busca da forja, amigos). Colunas JSON usam `asJson` / `asArray` (`userLock.ts`) e tipos exportados (`StoredNotification`, `SavedMilestone`, `LifetimeStats`, `SerializablePack`).
+- **Hooks do React:** o número de dano flutuante sorteia a posição uma vez só (antes, a cada render); o "há 5 min" do sino usa um relógio em estado que anda a cada minuto. O sequenciador do replay e o polling do sino ficam com o aviso desligado e o motivo escrito (são máquinas de tempo de propósito). O `useGameText` agora é estável entre renders, o que deixou pôr as dependências certas nos efeitos sem repetir o som de vitória.
+- **Perfil:** a consulta do perfil pedia a linha inteira do usuário; agora pede só as colunas que usa (regra de ouro 6). Com as dependências certas, o perfil busca de novo só quando o nome ou a sessão mudam.
+- **Achado de passagem:** a lista de amigos não mandava o avatar (a página sempre mostrava a letra); agora manda. Desafios entre amigos não carregam mais a linha inteira dos dois jogadores.
+- Código morto removido (ícones e constantes não usados na Arena e na coleção, `getGridSize` do minigame, prop de oponentes recentes sempre vazia). O aviso de `<img>` foi desligado no `eslint.config.mjs`: as imagens são avatares do GitHub já pedidos no tamanho certo ou uploads em data URL, e o `next/image` só os mandaria para o otimizador pago da Vercel.
+- **CI:** o orçamento de lint saiu; o passo agora é `npm run lint`, que reprova com qualquer erro.
+- Testado no dev: perfil (sem busca repetida), batalha rápida até o resumo, amigos, detalhes da carta na coleção, busca na forja e o sino.
+
 ### Onda 9 — carta viva (PR #63)
 - **As cartas acompanham o dev de verdade** (`src/lib/livingCards.ts`, `livingCardService.ts`): a cada 7 dias uma carta é atualizada pelo perfil do GitHub: status (fórmula atual), nome, avatar, bio e o retrato que dá o título da carta. Wiki explica, com o número da constante.
 - **Rodízio sem cron novo, no padrão do GitPacks 🅶:** uma vaga global a cada 5 minutos (reaproveita a tabela do limite de requisições, sem migração), disparada depois da resposta da chamada de saldo que toda página faz (`after()` em `/api/user/currency`); 3 cartas por vaga, sempre as atualizadas há mais tempo (`FOR UPDATE SKIP LOCKED`, então duas instâncias nunca pegam a mesma). O cron diário atualiza mais 30, para andar mesmo sem tráfego. Cada instância só tenta a vaga uma vez por minuto.
@@ -447,7 +456,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 
 ### CI e backup (PR #35)
 - **CI** (`.github/workflows/ci.yml`): em todo PR e push na `main`, roda `tsc`, lint, `npm test` e `next build`, sem banco.
-- **Orçamento de lint** (`scripts/lint-budget.mjs`): reprova só se o número de erros passar do orçamento. Baixar o número sempre que cair.
+- **Orçamento de lint** (`scripts/lint-budget.mjs`): reprova só se o número de erros passar do orçamento. Baixar o número sempre que cair. *(Aposentado na PR #64: com o lint zerado, o CI roda `npm run lint` puro.)*
 - **Backup diário** 🅶 (`.github/workflows/backup.yml`): `pg_dump` da produção, gzip e criptografia com age antes de tocar o disco; artifact por 30 dias. Configuração e restauração em [`docs/backup.md`](docs/backup.md).
 
 ---
@@ -498,7 +507,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | ~~Validação com zod em todas as rotas~~ | ✅ PR #59 (e os erros traduzidos) |
 | Sentry/logs estruturados + registrar os headers de limite do GitHub | P |
 | ~~`next.config.ts`: otimização de imagens e headers de segurança (CSP)~~ | ✅ PR #60 (CSP em report-only; falta ligar) |
-| Reduzir os 98 erros de lint (quase todos `any`) | M |
+| ~~Reduzir os 98 erros de lint (quase todos `any`)~~ | ✅ PR #64 (0 erros e 0 avisos) |
 | ~~Migrar `middleware.ts` para `proxy.ts`~~ | ✅ PR #58 |
 | Atualizar Prisma 6 → 7/8 e next-auth v4 → Auth.js v5 (planejar) | M |
 

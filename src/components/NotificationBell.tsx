@@ -26,6 +26,12 @@ interface Notification {
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  // "5 min ago" labels: the clock is state (render stays pure) and ticks once a minute
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const [count, setCount] = useState(0);
   
   // Track previously seen IDs so we know what's "new" to pop as a toast
@@ -65,6 +71,8 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
+    // The state is set when the fetch resolves, not synchronously (the rule can't see past the await)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 10000); // Poll every 10s for snappier toasts
     return () => clearInterval(interval);
@@ -115,7 +123,7 @@ export function NotificationBell() {
   };
 
   const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
+    const diff = now - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return t('timeAgo.justNow');
     if (mins < 60) return t('timeAgo.minutes', { count: mins });
@@ -127,7 +135,7 @@ export function NotificationBell() {
   const displayCount = count;
 
   // Helper to render the body of a Level Up notification specifically
-  const renderLevelUpBody = (notif: Notification, isToast = false) => {
+  const renderLevelUpBody = (notif: Notification) => {
     const levels = notif.payload?.levelsCrossed || [0];
     const maxLevel = Math.max(...levels);
     // The payload only keeps English names: map them back to pack ids (unknown names stay as stored)
@@ -193,7 +201,7 @@ export function NotificationBell() {
               
               <div className="flex-1 min-w-0 pr-6">
                 {toast.type === 'LEVEL_UP' ? (
-                  renderLevelUpBody(toast, true)
+                  renderLevelUpBody(toast)
                 ) : (
                   <>
                     <p className="text-sm font-bold text-white mb-1">{t('toastTitle', { type: toast.type })}</p>

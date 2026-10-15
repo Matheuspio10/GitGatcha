@@ -4,23 +4,27 @@ import { useState, useEffect } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/Navbar';
 import { UserAvatar } from '@/components/UserAvatar';
 import Link from 'next/link';
-import { Users, UserPlus, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons/react';
+import { Users, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons/react';
 import { InvitePanel } from '@/components/InvitePanel';
 import { CompareCollection } from '@/components/CompareCollection';
 import { FriendsFeed } from '@/components/FriendsFeed';
 import { useTranslations } from 'next-intl';
+
+/** One player in /api/friends. */
+type FriendUser = { id: string; username: string; level: number; image?: string | null };
+type FriendRow = { friendshipId: string; user: FriendUser };
+type RequestRow = { id: string; user: FriendUser };
 
 export default function FriendsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const t = useTranslations('social');
   
-  const [friends, setFriends] = useState<any[]>([]);
-  const [incoming, setIncoming] = useState<any[]>([]);
-  const [outgoing, setOutgoing] = useState<any[]>([]);
+  const [friends, setFriends] = useState<FriendRow[]>([]);
+  const [incoming, setIncoming] = useState<RequestRow[]>([]);
+  const [outgoing, setOutgoing] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   // Friend whose collection is being compared with yours

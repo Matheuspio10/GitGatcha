@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 
 /**
@@ -23,9 +24,13 @@ function fromTranslator(t: LooseTranslator): GameText {
   return (key, fallback, values) => (t.has(key) ? t(key, values) : fallback);
 }
 
-/** Client and server components (not async): `const gameText = useGameText('gamePacks')`. */
+/**
+ * Client and server components (not async): `const gameText = useGameText('gamePacks')`.
+ * Stable between renders (like the translator), so it can sit in effect dependencies.
+ */
 export function useGameText(namespace: GameNamespace): GameText {
-  return fromTranslator(useTranslations(namespace) as unknown as LooseTranslator);
+  const t = useTranslations(namespace) as unknown as LooseTranslator;
+  return useMemo(() => fromTranslator(t), [t]);
 }
 
 // Async server code: getGameText in ./gameText.server.ts

@@ -106,7 +106,6 @@ export function TowerPanel({ userCards, powerCap, userBits, onResult }: {
               <ul className="mt-3 grid gap-2 sm:grid-cols-3">
                 {state.next.opponents.map(o => (
                   <li key={o.name} className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     {o.avatarUrl && <img src={sizedAvatar(o.avatarUrl, 32)} alt="" width={32} height={32} className="rounded-lg" />}
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-white">{o.name}</span>
