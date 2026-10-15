@@ -4,7 +4,8 @@ import { sizedAvatar } from '@/lib/avatarUrl';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from '@phosphor-icons/react';
+import { X, Gift, ArrowLeft } from '@phosphor-icons/react';
+import { GiftPanel } from '@/components/GiftPanel';
 import { useDialog } from '@/lib/useDialog';
 import { useTranslations } from 'next-intl';
 
@@ -50,6 +51,8 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
   const [data, setData] = useState<Comparison | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [side, setSide] = useState<'theirs' | 'mine'>('theirs');
+  // A card of mine they don't have, being given to them
+  const [giving, setGiving] = useState<MiniCard | null>(null);
   const panelRef = useDialog(true, onClose);
   const t = useTranslations('social.comparison');
 
@@ -84,7 +87,28 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
       {error !== null && <p className="p-6 text-sm text-red-300">{error || t('error')}</p>}
       {!data && error === null && <div className="m-6 h-40 animate-pulse rounded-xl bg-slate-800/50" />}
 
-      {data && list && (
+      {data && giving && (
+        <div className="flex-1 overflow-y-auto p-5">
+          <button onClick={() => setGiving(null)} className="mb-3 inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-white">
+            <ArrowLeft size={14} /> {t('backToList')}
+          </button>
+          <GiftPanel
+            cardId={giving.id}
+            friend={username}
+            compact
+            onGiven={() => {
+              setData(prev => prev && {
+                ...prev,
+                shared: prev.shared + 1,
+                onlyMine: { total: prev.onlyMine.total - 1, cards: prev.onlyMine.cards.filter(c => c.id !== giving.id) },
+              });
+              setGiving(null);
+            }}
+          />
+        </div>
+      )}
+
+      {data && list && !giving && (
         <>
           <div className="flex gap-2 px-5 pt-4">
             {(['theirs', 'mine'] as const).map(s => (
@@ -103,14 +127,24 @@ function ComparePanel({ username, onClose }: { username: string; onClose: () => 
             ) : (
               <ul className="grid gap-2 sm:grid-cols-2">
                 {list.cards.map(c => (
-                  <li key={c.id}>
-                    <Link href={`/card/${c.githubUsername}`} target="_blank" className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-2 hover:border-slate-600">
+                  <li key={c.id} className="flex items-center gap-1">
+                    <Link href={`/card/${c.githubUsername}`} target="_blank" className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-800 bg-slate-800/40 p-2 hover:border-slate-600">
                       <img src={sizedAvatar(c.avatarUrl || `https://github.com/${c.githubUsername}.png`, 36)} alt="" width={36} height={36} className="rounded-lg" loading="lazy" />
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-bold text-white">{c.name}</span>
                         <span className={`block text-xs ${RARITY_TEXT[c.rarity] ?? 'text-slate-400'}`}>{c.rarity}{c.primaryLanguage ? ` · ${c.primaryLanguage}` : ''}</span>
                       </span>
                     </Link>
+                    {side === 'mine' && (
+                      <button
+                        onClick={() => setGiving(c)}
+                        className="shrink-0 rounded-xl border border-pink-500/30 p-2.5 text-pink-300 hover:bg-pink-500/10"
+                        title={t('give', { username })}
+                        aria-label={t('giveCard', { card: c.name, username })}
+                      >
+                        <Gift size={18} weight="fill" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

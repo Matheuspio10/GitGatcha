@@ -9,6 +9,7 @@ import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import { TRAINING_BONUS_PER_LEVEL } from '@/lib/training';
 import { TrainingPanel } from '@/components/TrainingPanel';
+import { GiftPanel } from '@/components/GiftPanel';
 import { CardDownloadButton } from '@/components/CardDownloadButton';
 import { LanguageSets } from '@/components/LanguageSets';
 import { collectionProgress } from '@/lib/collections';
@@ -656,6 +657,16 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                  setLocalCards(prev => prev.map(c => (c.userCardId === selectedCard.userCardId ? { ...c, trainingLevel } : c)));
                }}
              />
+
+             {/* Gift to a friend (the card leaves the collection) */}
+             {selectedCard.edition !== 'signature' && <GiftPanel
+               key={`gift-${selectedCard.id}`}
+               cardId={selectedCard.id!}
+               onGiven={() => {
+                 setLocalCards(prev => prev.filter(c => c.userCardId !== selectedCard.userCardId));
+                 setSelectedCard(null);
+               }}
+             />}
 
              {/* Loyalty Progress Section */}
              <div className="w-full bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">

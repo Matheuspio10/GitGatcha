@@ -147,7 +147,8 @@
     "earning": "<b>Como ganhar fragmentos:</b> tirar uma carta que você já tem conta como repetida (x2, x3…) e dá fragmentos da linguagem dela: {duplicates}. Cada booster também tem {chance}% de chance de dar {count} fragmentos da linguagem do tema (ou da mais comum).",
     "wildcards": "<b>Coringas:</b> troque {rate} fragmentos de qualquer linguagem por 1 fragmento coringa. Os coringas pagam qualquer linguagem e são a única forma de criar devs sem linguagem principal.",
     "shiny": "<b>Shiny:</b> toda carta tirada tem {chance}% de chance de ser Shiny, repetidas incluídas: uma repetida pode deixar a sua carta Shiny.",
-    "wishlist": "<b>Lista de desejos:</b> adicione devs à sua lista de desejos para acompanhar fácil o seu progresso de fragmentos até conseguir cada um."
+    "wishlist": "<b>Lista de desejos:</b> adicione devs à sua lista de desejos para acompanhar fácil o seu progresso de fragmentos até conseguir cada um.",
+    "gifts": "<b>Presentes:</b> dê uma carta sua a um amigo (ela sai da sua coleção; o Shiny vai junto, treino e lealdade recomeçam). Quem dá paga uma taxa que sai do jogo: {fees}. A partir do nível {level}, até {sendLimit} presentes enviados e {receiveLimit} recebidos por dia. A carta Signature, as cartas do time ativo e as de um desafio em aberto não podem ser presenteadas."
   },
   "synergies": {
     "intro": "Juntar cartas da mesma linguagem dá passivas de Sinergia poderosas para o time todo. Times variados também ganham bônus.",
@@ -207,26 +208,85 @@
     "requirement": "Requisito"
   },
   "glossary": {
-    "atk": { "term": "ATK", "def": "Atributo base de ataque. Define o dano causado." },
-    "bits": { "term": "BITS", "def": "A moeda do jogo, usada para comprar packs, criar cartas na Forja, entrar na liga Só Legendary e recuperar stamina." },
-    "closer": { "term": "Fechamento", "def": "A terceira e última posição de carta em um time." },
-    "common": { "def": "O nível de raridade mais baixo (multiplicador de atributos {mult, number}x)." },
-    "def": { "term": "DEF", "def": "Atributo base de defesa. Bloqueia DEF / ({k} + DEF) de cada golpe, até {max}." },
-    "eternal": { "def": "O nível máximo de lealdade, alcançado com {battles} batalhas." },
-    "exhausted": { "term": "Exausta", "def": "Uma carta com 0 de stamina. Não pode participar de batalhas." },
-    "fragment": { "term": "Fragmento", "def": "Moeda ganha com repetidas, usada na Forja para criar cartas específicas." },
-    "hp": { "term": "HP", "def": "Pontos de vida. Chegar a 0 significa derrota." },
-    "legendary": { "def": "O nível de raridade mais alto (multiplicador de atributos {mult, number}x). Chances muito baixas de sair." },
-    "rating": { "term": "Rating", "def": "Pontuação ELO do PvP (Ranked e desafios entre amigos) mostrada no ranking, com um elo de {lowest} a {highest}. Começa em {rating}." },
-    "mid": { "term": "Meio", "def": "A segunda posição de carta em um time." },
-    "momentum": { "term": "Momentum", "def": "Bônus de ATK/DEF ativado quando uma única carta derrota 2 inimigos seguidos." },
-    "opener": { "term": "Abertura", "def": "A primeira posição de carta. Entra na batalha primeiro." },
-    "passive": { "term": "Passiva", "def": "Uma habilidade inata própria de um tipo de linguagem." },
-    "power": { "term": "Poder", "def": "Pontuação de força que combina ATK, DEF e HP." },
-    "synergy": { "term": "Sinergia", "def": "Bônus para o time todo ao juntar cartas de tipos parecidos." },
-    "typeAdvantage": { "term": "Vantagem de tipo", "def": "Quando uma linguagem vence outra, dando {mult, number}x de dano." },
-    "veteran": { "def": "Primeiro nível de lealdade, alcançado com {battles} batalhas." },
-    "wishlist": { "term": "Lista de desejos", "def": "Recurso da Forja que mede o progresso de fragmentos para uma carta escolhida." },
-    "xp": { "term": "XP", "def": "Experiência da conta ganha em batalhas e outras atividades. Subir de nível dá boosters de recompensa." }
+    "atk": {
+      "term": "ATK",
+      "def": "Atributo base de ataque. Define o dano causado."
+    },
+    "bits": {
+      "term": "BITS",
+      "def": "A moeda do jogo, usada para comprar packs, criar cartas na Forja, entrar na liga Só Legendary e recuperar stamina."
+    },
+    "closer": {
+      "term": "Fechamento",
+      "def": "A terceira e última posição de carta em um time."
+    },
+    "common": {
+      "def": "O nível de raridade mais baixo (multiplicador de atributos {mult, number}x)."
+    },
+    "def": {
+      "term": "DEF",
+      "def": "Atributo base de defesa. Bloqueia DEF / ({k} + DEF) de cada golpe, até {max}."
+    },
+    "eternal": {
+      "def": "O nível máximo de lealdade, alcançado com {battles} batalhas."
+    },
+    "exhausted": {
+      "term": "Exausta",
+      "def": "Uma carta com 0 de stamina. Não pode participar de batalhas."
+    },
+    "fragment": {
+      "term": "Fragmento",
+      "def": "Moeda ganha com repetidas, usada na Forja para criar cartas específicas."
+    },
+    "hp": {
+      "term": "HP",
+      "def": "Pontos de vida. Chegar a 0 significa derrota."
+    },
+    "legendary": {
+      "def": "O nível de raridade mais alto (multiplicador de atributos {mult, number}x). Chances muito baixas de sair."
+    },
+    "rating": {
+      "term": "Rating",
+      "def": "Pontuação ELO do PvP (Ranked e desafios entre amigos) mostrada no ranking, com um elo de {lowest} a {highest}. Começa em {rating}."
+    },
+    "mid": {
+      "term": "Meio",
+      "def": "A segunda posição de carta em um time."
+    },
+    "momentum": {
+      "term": "Momentum",
+      "def": "Bônus de ATK/DEF ativado quando uma única carta derrota 2 inimigos seguidos."
+    },
+    "opener": {
+      "term": "Abertura",
+      "def": "A primeira posição de carta. Entra na batalha primeiro."
+    },
+    "passive": {
+      "term": "Passiva",
+      "def": "Uma habilidade inata própria de um tipo de linguagem."
+    },
+    "power": {
+      "term": "Poder",
+      "def": "Pontuação de força que combina ATK, DEF e HP."
+    },
+    "synergy": {
+      "term": "Sinergia",
+      "def": "Bônus para o time todo ao juntar cartas de tipos parecidos."
+    },
+    "typeAdvantage": {
+      "term": "Vantagem de tipo",
+      "def": "Quando uma linguagem vence outra, dando {mult, number}x de dano."
+    },
+    "veteran": {
+      "def": "Primeiro nível de lealdade, alcançado com {battles} batalhas."
+    },
+    "wishlist": {
+      "term": "Lista de desejos",
+      "def": "Recurso da Forja que mede o progresso de fragmentos para uma carta escolhida."
+    },
+    "xp": {
+      "term": "XP",
+      "def": "Experiência da conta ganha em batalhas e outras atividades. Subir de nível dá boosters de recompensa."
+    }
   }
 }

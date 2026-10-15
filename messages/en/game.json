@@ -104,7 +104,8 @@
     "challenge_refund": "Challenge stake refunded",
     "tower_reward": "Tower floor cleared",
     "sprint_reward": "Sprint reward",
-    "card_training": "Card training"
+    "card_training": "Card training",
+    "card_gift": "Card gift"
   },
   "cardTitles": {
     "one-hit-wonder": "One-Hit Wonder",

@@ -186,5 +186,22 @@
   "notifications": {
     "updateFailed": "Não deu para atualizar as notificações"
   },
-  "referrals": {}
+  "referrals": {},
+  "gifts": {
+    "cardRequired": "Escolha uma carta para presentear",
+    "friendRequired": "Escolha um amigo",
+    "cardNotFound": "Você não tem esta carta",
+    "friendNotFound": "Jogador não encontrado",
+    "self": "Você não pode presentear a si mesmo",
+    "notFriends": "Você só pode presentear amigos",
+    "signature": "A sua carta Signature não pode ser presenteada",
+    "level": "Você pode presentear cartas a partir do nível {min}",
+    "activeTeam": "Esta carta está no seu time ativo. Tire-a do time antes.",
+    "pendingChallenge": "Esta carta está num desafio em aberto. Espere ele acabar ou cancele.",
+    "dailySendLimit": "Você pode presentear {limit} cartas por dia. Volte amanhã.",
+    "dailyReceiveLimit": "{name} já recebeu {limit} presentes hoje",
+    "alreadyOwned": "{name} já tem {card}",
+    "loadFailed": "Não deu para carregar as opções de presente",
+    "failed": "Não deu para presentear a carta"
+  }
 }

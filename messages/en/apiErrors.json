@@ -186,5 +186,22 @@
   "notifications": {
     "updateFailed": "Failed to update notifications"
   },
-  "referrals": {}
+  "referrals": {},
+  "gifts": {
+    "cardRequired": "Choose a card to give",
+    "friendRequired": "Choose a friend",
+    "cardNotFound": "You don't have this card",
+    "friendNotFound": "Player not found",
+    "self": "You can't give a card to yourself",
+    "notFriends": "You can only give cards to friends",
+    "signature": "Your Signature card can't be given away",
+    "level": "You can give cards from level {min}",
+    "activeTeam": "This card is in your active team. Take it out first.",
+    "pendingChallenge": "This card is in an open challenge. Wait for it to end or cancel it.",
+    "dailySendLimit": "You can give {limit} cards a day. Come back tomorrow.",
+    "dailyReceiveLimit": "{name} already got {limit} gifts today",
+    "alreadyOwned": "{name} already has {card}",
+    "loadFailed": "Couldn't load the gift options",
+    "failed": "Couldn't give the card"
+  }
 }

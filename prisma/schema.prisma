@@ -69,6 +69,8 @@ model User {
   seasonResults       SeasonResult[]
   towerRuns           TowerRun[]
   sprintResults       SprintResult[]
+  giftsSent           CardGift[]      @relation("GiftsSent")
+  giftsReceived       CardGift[]      @relation("GiftsReceived")
 
   @@index([referredById])
 }
@@ -133,6 +135,7 @@ model Card {
   profileUpdatedAt DateTime?
 
   owners         UserCard[]
+  gifts          CardGift[]
   battlesAsChallenger Battle[] @relation("ChallengerCard")
   battlesAsDefender   Battle[] @relation("DefenderCard")
 
@@ -372,6 +375,26 @@ model GuestPull {
 
 // Every change to a player's BITS (append-only), written in the same transaction
 // as the balance change (src/lib/bitsLedger.ts). Amount is signed.
+// A card one player gave to a friend (giftService.ts): for the daily limits and
+// so the friends' feed doesn't show the gift as a pull
+model CardGift {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  cardId     String
+  isShiny    Boolean  @default(false)
+  // BITS the sender paid (gone from the game)
+  fee        Int
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("GiftsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("GiftsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  card     Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, createdAt])
+  @@index([receiverId, createdAt])
+}
+
 model BitsTransaction {
   id           String   @id @default(uuid())
   userId       String
