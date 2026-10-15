@@ -45,6 +45,7 @@
     "hpTurnCap": "If a single matchup lasts {turns} turns, the card with the higher remaining HP % wins it (an exact tie knocks out both).",
     "powerFormula": "<code>ATK + DEF + HP</code>. Used for sorting in the collection and for the Balanced League team cap.",
     "multiplierNote": "Every stat is then multiplied by the card's rarity multiplier (minimum {atk} ATK, {def} DEF and {hp} HP). The formulas are tuned with a battle simulator so that rarity matters but upsets happen, and ATK, DEF and HP all decide fights.",
+    "livingCards": "Living cards: every {days} days a card is refreshed from its developer's GitHub profile, so its stats follow the real developer (more stars and repositories, a stronger card; fewer, a weaker one). Rarity and language never change in a refresh, and a developer whose profile now belongs to another rarity keeps the old stats until someone pulls them again from a pack.",
     "formula": {
       "fame": {
         "atk": "ATK grows with fame: {base, number} + {scale, number} × log10(stars + forks + {offset, number})^{power, number}. More stars always means more ATK, with diminishing returns.",

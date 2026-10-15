@@ -4,6 +4,8 @@ import { rebuildFallbackPools } from '@/lib/fallbackPoolService';
 import { closeDueSeasons } from '@/lib/seasonService';
 import { maintainSprints } from '@/lib/sprintService';
 import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
+import { refreshLivingCards } from '@/lib/livingCardService';
+import { LIVING_CARD_CRON_BATCH } from '@/lib/livingCards';
 
 // Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
 export const maxDuration = 300;
@@ -48,12 +50,15 @@ export async function GET(req: Request) {
     });
     // Draws the Dev of the Week on the week's first run (otherwise the first visit does)
     await getFeaturedDevLogin().catch((err: unknown) => console.error('[Cron] Dev of the Week failed:', err));
+    // Living cards: a batch every day even without traffic (never throws)
+    const livingCards = await refreshLivingCards({ batch: LIVING_CARD_CRON_BATCH, useSlot: false });
     const results = await rebuildFallbackPools();
 
     return NextResponse.json({
       success: true,
       seasonsClosed,
       sprintsClosed,
+      livingCards: livingCards && { refreshed: livingCards.refreshed, changed: livingCards.changed.length, missing: livingCards.missing.length },
       report: results,
       timestamp: new Date().toISOString(),
     });

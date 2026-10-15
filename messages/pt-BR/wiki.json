@@ -45,6 +45,7 @@
     "hpTurnCap": "Se um único confronto durar {turns} turnos, vence a carta com a maior % de HP restante (um empate exato derruba as duas).",
     "powerFormula": "<code>ATK + DEF + HP</code>. Usado para ordenar a coleção e para o limite de time da Liga Equilibrada.",
     "multiplierNote": "Depois, todo atributo é multiplicado pelo multiplicador de raridade da carta (mínimo de {atk} ATK, {def} DEF e {hp} HP). As fórmulas são ajustadas com um simulador de batalhas para que a raridade importe mas zebras aconteçam, e ATK, DEF e HP decidam as lutas.",
+    "livingCards": "Cartas vivas: a cada {days} dias a carta é atualizada pelo perfil do dev no GitHub, e os status acompanham o dev de verdade (mais estrelas e repositórios, carta mais forte; menos, mais fraca). Raridade e linguagem nunca mudam na atualização, e um dev cujo perfil passou para outra raridade mantém os status antigos até alguém tirá-lo de novo num pack.",
     "formula": {
       "fame": {
         "atk": "O ATK cresce com a fama: {base, number} + {scale, number} × log10(estrelas + forks + {offset, number})^{power, number}. Mais estrelas sempre dão mais ATK, com retorno decrescente.",
