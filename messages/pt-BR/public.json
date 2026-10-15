@@ -119,5 +119,26 @@
     "emptyAction": "Ir para a loja",
     "newest": "← Mais recentes",
     "older": "Mais antigos →"
+  },
+  "replay": {
+    "notFound": "Replay não encontrado · GitGacha",
+    "title": "{a} x {b}",
+    "metaDescription": "{winner} venceu esta batalha do GitGacha. Assista ao replay: três devs de verdade do GitHub de cada lado.",
+    "ogTitle": "{a} x {b} no GitGacha",
+    "computer": "Computador",
+    "tower": "Torre",
+    "won": "{name} venceu",
+    "watch": "Assistir ao replay",
+    "close": "Fechar",
+    "teamOf": "Time de {name}",
+    "winner": "Vencedor",
+    "shareText": "{a} x {b} no GitGacha: assista à batalha",
+    "backToArena": "Voltar para a Arena →",
+    "ctaTitle": "Monte o seu time",
+    "ctaText": "Abra um pack grátis de devs de verdade do GitHub, sem precisar de conta.",
+    "ctaButton": "Abrir um pack grátis",
+    "og": {
+      "won": "{name} vence"
+    }
   }
 }

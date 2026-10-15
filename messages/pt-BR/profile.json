@@ -71,7 +71,8 @@
       "BALANCED": "Equilibrada",
       "DIVERSITY": "Diversidade",
       "LEGENDARY": "Legendary"
-    }
+    },
+    "watch": "Assistir ao replay"
   },
   "friends": {
     "title": "Amigos",

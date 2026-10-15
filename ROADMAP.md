@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 15/10/2026, ao fim da rodada de lint da onda 8 (PR #64). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 15/10/2026, ao fim da terceira rodada da onda 9 (PR #65). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -57,12 +57,11 @@
 
 ## ▶️ Próximo passo
 
-**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63). Ordem sugerida para o resto, do menor risco ao maior:
-1. **Animações e replay de batalha** (3.5): o log de cada batalha já é gravado; o replay pode reaproveitá-lo, com link para compartilhar.
-2. **Presentear cartas** (3.4): só cartas ganhas, com taxa em BITS.
-3. **Trocas entre jogadores** (3.4), depois do presente.
-4. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
-5. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
+**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65). Ordem sugerida para o resto, do menor risco ao maior:
+1. **Presentear cartas** (3.4): só cartas ganhas, com taxa em BITS.
+2. **Trocas entre jogadores** (3.4), depois do presente.
+3. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
+4. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
 1. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
@@ -137,6 +136,8 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #63 | Carta viva muda a raridade? | **Não**: raridade e linguagem ficam; só os status (e só enquanto o dev continua na mesma faixa). Um novo sorteio do mesmo dev num pack continua atualizando a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
+| #65 | Quem pode ver um replay | Qualquer um com o link (o id é um UUID, não dá para adivinhar), sem login; mostra os nomes dos dois jogadores e os times, como o perfil já mostra | `src/app/replay/[id]/page.tsx` |
+| #65 | A página do replay mostra o vencedor antes de assistir? | Sim (título, prévia do link e selo "Vencedor"); outra opção: esconder até o fim do replay | `src/app/replay/[id]/page.tsx`, `opengraph-image.tsx` |
 | #62 | O que entra no feed de amigos | Cartas Epic/Legendary e Shiny de Rare para cima; conquistas; pódio de Sprint (top 3); Torre conquistada. Últimos 14 dias, até 40 eventos | `FEED_*` (`activityFeed.ts`) |
 | #62 | Quem vê o feed | Só amigos aceitos; o próprio jogador não aparece no próprio feed; sem opção de esconder a própria atividade | `getFriendsFeed` (`activityFeedService.ts`) |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
@@ -157,7 +158,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63) · falta: animações e replay de batalha (3.5), presentes e trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65) · falta: presentes e trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -377,6 +378,17 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 9 — replay e animações de batalha (PR #65)
+- **Replay de qualquer batalha 3v3** em `/replay/<id>`, página pública (sem login, como `/u/<jogador>`): os dois times, o vencedor, a liga e a data, o botão "Assistir ao replay" e os botões de compartilhar. O link tem prévia própria (os dois times lado a lado e o vencedor). Reaproveita o log que toda batalha já grava; não precisou de migração. As 208 batalhas do sistema antigo 1v1 (no dev) não têm log e não ganham replay (a página responde 404 e não aparece botão).
+- **Onde aparece:** "Compartilhar o replay" no resultado de toda batalha (liga, Ranked, Torre e desafio aceito), "Assistir" em cada batalha do histórico da Arena e "Assistir ao replay" nas batalhas recentes do perfil.
+- **De que lado:** quem jogou assiste da própria cadeira (o defensor de um desafio vê o próprio time embaixo, como já acontecia ao aceitar); quem não jogou assiste do lado do desafiante, com os nomes dos dois no topo e "Fulano venceu!" no fim. Rever não paga nada nem repete toasts; o resultado de quem assiste mostra só o resumo da batalha.
+- **"Assistir de novo"** no fim de todo replay, inclusive logo depois de lutar.
+- **Animações** (3.5): pausa no impacto (mais longa no crítico), tremida da tela fraca no golpe normal e forte no crítico, o card atingido pisca, o KO se desfaz em estilhaços da cor da raridade e a barra de HP tem rastro (a parte perdida fica clara e drena depois). Quem pede menos movimento no sistema (`prefers-reduced-motion`) não recebe tremidas nem estilhaços.
+- **Código:** o replay saiu do `BattleClient` (de ~1.500 para ~600 linhas) para `src/components/BattleReplay.tsx`; tipos, validação do log, troca de lado e placar em `src/lib/battleReplay.ts` (testados), leitura do banco em `battleReplayService.ts`.
+- **Achado de passagem:** o placar das batalhas recentes do perfil saía sempre 0–0 (procurava um formato de log antigo); agora conta os nocautes. O perfil também parou de mandar o log inteiro de 10 batalhas na resposta.
+- Testado no dev: replay de batalha entre jogadores (lado e nomes certos, Derrota para quem perdeu), de batalha de outro jogador (modo espectador), sem login, 404 em batalha antiga, prévia do link, compartilhar no resultado de uma batalha nova, histórico, perfil e celular.
+- Continua em inglês: as frases do log de batalha ("X dealt 44 damage."), que são gravadas no banco (ver "PT-BR dos textos gravados no banco" na onda 8).
+
 ### Onda 8 — lint zerado (PR #64)
 - **De 98 erros e 56 avisos para 0 e 0.** Os 93 `any` viraram tipos de verdade: a rota do perfil e o `battleService` usam os tipos do Prisma; a Arena, o perfil, a coleção, a forja e a página de amigos ganharam tipos para o que a API devolve (resultado e resumo da batalha, histórico, cartas do perfil, busca da forja, amigos). Colunas JSON usam `asJson` / `asArray` (`userLock.ts`) e tipos exportados (`StoredNotification`, `SavedMilestone`, `LifetimeStats`, `SerializablePack`).
 - **Hooks do React:** o número de dano flutuante sorteia a posição uma vez só (antes, a cada render); o "há 5 min" do sino usa um relógio em estado que anda a cada minuto. O sequenciador do replay e o polling do sino ficam com o aviso desligado e o motivo escrito (são máquinas de tempo de propósito). O `useGameText` agora é estável entre renders, o que deixou pôr as dependências certas nos efeitos sem repetir o som de vitória.
@@ -547,8 +559,8 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.5 Visual de batalha
 | Feature | Descrição | Esforço |
 |---|---|---|
-| Animações de combate | Avanço, pausa no impacto, tremida de tela, KO se desfazendo, barra de HP com rastro | M |
-| Replay de batalha | Assistir de novo / compartilhar | M |
+| ~~Animações de combate~~ | ✅ PR #65 (pausa no impacto, tremida mais forte no crítico, KO em estilhaços, HP com rastro) | — |
+| ~~Replay de batalha~~ | ✅ PR #65 (`/replay/<id>`, público, com prévia; no resultado, histórico e perfil) | — |
 
 ---
 

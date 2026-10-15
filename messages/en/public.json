@@ -119,5 +119,26 @@
     "emptyAction": "Go to the store",
     "newest": "← Newest",
     "older": "Older →"
+  },
+  "replay": {
+    "notFound": "Replay not found · GitGacha",
+    "title": "{a} vs {b}",
+    "metaDescription": "{winner} won this GitGacha battle. Watch the replay: three real GitHub devs on each side.",
+    "ogTitle": "{a} vs {b} on GitGacha",
+    "computer": "Computer",
+    "tower": "Tower",
+    "won": "{name} won",
+    "watch": "Watch the replay",
+    "close": "Close",
+    "teamOf": "{name}'s team",
+    "winner": "Winner",
+    "shareText": "{a} vs {b} on GitGacha: watch the battle",
+    "backToArena": "Back to the Arena →",
+    "ctaTitle": "Build your own team",
+    "ctaText": "Open a free pack of real GitHub devs, no account needed.",
+    "ctaButton": "Open a free pack",
+    "og": {
+      "won": "{name} wins"
+    }
   }
 }
