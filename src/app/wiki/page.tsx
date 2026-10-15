@@ -48,6 +48,7 @@ import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils'
 import { INVOCATION_COSTS } from '@/lib/forgeService';
 import { COLLECTION_LANGUAGES, FRAMES, TITLES } from '@/lib/collections';
 import { GIFT_DAILY_RECEIVE_LIMIT, GIFT_DAILY_SEND_LIMIT, GIFT_FEE, GIFT_MIN_LEVEL } from '@/lib/gifts';
+import { TRADE_DAILY_LIMIT, TRADE_EXPIRY_HOURS, TRADE_MAX_CARDS, TRADE_MAX_PENDING, TRADE_MIN_LEVEL } from '@/lib/trades';
 import { TRAINING_BONUS_PER_LEVEL, TRAINING_BITS_PER_STEP, TRAINING_FRAGMENTS_PER_STEP, TRAINING_MAX_LEVEL, fullTrainingCost } from '@/lib/training';
 import {
   MagnifyingGlass,
@@ -806,6 +807,7 @@ export default function WikiPage() {
                   <li>{t.rich('forge.shiny', { b: strong, chance: Math.round(SHINY_CHANCE * 100) })}</li>
                   <li>{t.rich('forge.wishlist', { b: strong })}</li>
                   <li>{t.rich('forge.gifts', { b: strong, fees: RARITY_ORDER.map(r => `${r} ${GIFT_FEE[r]}`).join(' · '), level: GIFT_MIN_LEVEL, sendLimit: GIFT_DAILY_SEND_LIMIT, receiveLimit: GIFT_DAILY_RECEIVE_LIMIT })}</li>
+                  <li>{t.rich('forge.trades', { b: strong, max: TRADE_MAX_CARDS, hours: TRADE_EXPIRY_HOURS, level: TRADE_MIN_LEVEL, daily: TRADE_DAILY_LIMIT, pending: TRADE_MAX_PENDING })}</li>
                 </ul>
               </div>
             </section>

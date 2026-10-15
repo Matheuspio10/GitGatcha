@@ -13,7 +13,7 @@
       "coins": "+ {coins} Coins",
       "claim": "Claim Reward"
     },
-    "toastTitle": "{type, select, friend_request {New friend request} battle_challenge {New battle challenge} card_gift {You got a gift!} other {New notification}}",
+    "toastTitle": "{type, select, friend_request {New friend request} battle_challenge {New battle challenge} card_gift {You got a gift!} trade_offer {You got a trade proposal} trade_result {A trade was answered} other {New notification}}",
     "viewDetails": "View Details",
     "markAllRead": "Mark all as read",
     "allRead": "All Read",

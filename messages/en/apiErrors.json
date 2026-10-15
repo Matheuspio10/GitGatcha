@@ -203,5 +203,33 @@
     "alreadyOwned": "{name} already has {card}",
     "loadFailed": "Couldn't load the gift options",
     "failed": "Couldn't give the card"
+  },
+  "trades": {
+    "friendRequired": "Choose a friend",
+    "actionRequired": "Choose accept, decline or cancel",
+    "loadFailed": "Couldn't load your trades",
+    "failed": "Couldn't complete the trade",
+    "friendNotFound": "Player not found",
+    "self": "You can't trade with yourself",
+    "notFriends": "You can only trade with friends",
+    "emptySide": "Pick at least one card on each side",
+    "tooManyCards": "Up to {max} cards on each side",
+    "duplicateCard": "The same card can't be on both sides",
+    "level": "You can trade from level {min}",
+    "friendLevel": "{name} can trade from level {min}",
+    "tooManyPending": "You already have {max} open proposals. Wait for answers or cancel one.",
+    "cantAfford": "You need {fee} BITS for this trade's fee",
+    "friendCantAfford": "{name} doesn't have the BITS for their fee right now",
+    "cardGone": "A card in this trade is no longer with {name}",
+    "signature": "{card} is a Signature card: it can't be traded",
+    "activeTeam": "{card} is in {name}'s active team",
+    "pendingChallenge": "{card} is in an open challenge of {name}",
+    "alreadyOwned": "{name} already has {card}",
+    "dailyLimit": "You can make {limit} trades a day. Come back tomorrow.",
+    "friendDailyLimit": "{name} already made {limit} trades today",
+    "notFound": "Trade not found",
+    "notYours": "This isn't your call",
+    "notPending": "This trade was already answered",
+    "expired": "This proposal expired"
   }
 }

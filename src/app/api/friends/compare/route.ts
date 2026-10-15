@@ -34,10 +34,15 @@ export async function GET(req: Request) {
   if (!friendship) return apiError('friends.compareFriendsOnly', 403);
 
   const cardSelect = { id: true, githubUsername: true, name: true, rarity: true, avatarUrl: true, primaryLanguage: true } as const;
-  const [mine, theirs] = await Promise.all([
-    prisma.userCard.findMany({ where: { userId }, select: { card: { select: cardSelect } } }),
-    prisma.userCard.findMany({ where: { userId: friend.id }, select: { card: { select: cardSelect } } }),
+  // locked: copies that can't change hands (Signature, active team), shown disabled in gifts and trades
+  const copySelect = { edition: true, inActiveTeam: true, card: { select: cardSelect } } as const;
+  const [mineCopies, theirCopies] = await Promise.all([
+    prisma.userCard.findMany({ where: { userId }, select: copySelect }),
+    prisma.userCard.findMany({ where: { userId: friend.id }, select: copySelect }),
   ]);
+  const withLock = (copies: typeof mineCopies) =>
+    copies.map(uc => ({ card: { ...uc.card, locked: uc.edition === 'signature' || uc.inActiveTeam } }));
+  const [mine, theirs] = [withLock(mineCopies), withLock(theirCopies)];
   const mineIds = new Set(mine.map(uc => uc.card.id));
   const theirIds = new Set(theirs.map(uc => uc.card.id));
   const sortList = <T extends { rarity: string; name: string }>(list: T[]) =>

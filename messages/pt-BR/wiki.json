@@ -148,7 +148,8 @@
     "wildcards": "<b>Coringas:</b> troque {rate} fragmentos de qualquer linguagem por 1 fragmento coringa. Os coringas pagam qualquer linguagem e são a única forma de criar devs sem linguagem principal.",
     "shiny": "<b>Shiny:</b> toda carta tirada tem {chance}% de chance de ser Shiny, repetidas incluídas: uma repetida pode deixar a sua carta Shiny.",
     "wishlist": "<b>Lista de desejos:</b> adicione devs à sua lista de desejos para acompanhar fácil o seu progresso de fragmentos até conseguir cada um.",
-    "gifts": "<b>Presentes:</b> dê uma carta sua a um amigo (ela sai da sua coleção; o Shiny vai junto, treino e lealdade recomeçam). Quem dá paga uma taxa que sai do jogo: {fees}. A partir do nível {level}, até {sendLimit} presentes enviados e {receiveLimit} recebidos por dia. A carta Signature, as cartas do time ativo e as de um desafio em aberto não podem ser presenteadas."
+    "gifts": "<b>Presentes:</b> dê uma carta sua a um amigo (ela sai da sua coleção; o Shiny vai junto, treino e lealdade recomeçam). Quem dá paga uma taxa que sai do jogo: {fees}. A partir do nível {level}, até {sendLimit} presentes enviados e {receiveLimit} recebidos por dia. A carta Signature, as cartas do time ativo e as de um desafio em aberto não podem ser presenteadas.",
+    "trades": "<b>Trocas:</b> troque cartas com um amigo: em \"Comparar coleções\", escolha até {max} cartas do amigo e até {max} suas. O amigo aceita ou recusa na página de Amigos; a proposta expira em {hours} horas. Cada lado paga a taxa de presente das cartas que entrega, a partir do nível {level}, até {daily} trocas por dia e {pending} propostas em aberto. As mesmas cartas que não podem ser presenteadas não podem ser trocadas, e tudo é conferido de novo no aceite."
   },
   "synergies": {
     "intro": "Juntar cartas da mesma linguagem dá passivas de Sinergia poderosas para o time todo. Times variados também ganham bônus.",

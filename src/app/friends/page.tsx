@@ -10,6 +10,7 @@ import { Users, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons
 import { InvitePanel } from '@/components/InvitePanel';
 import { CompareCollection } from '@/components/CompareCollection';
 import { FriendsFeed } from '@/components/FriendsFeed';
+import { TradesPanel } from '@/components/TradesPanel';
 import { useTranslations } from 'next-intl';
 
 /** One player in /api/friends. */
@@ -193,6 +194,8 @@ export default function FriendsPage() {
                   </div>
                 )}
               </div>
+
+              <TradesPanel />
 
               <FriendsFeed hasFriends={friends.length > 0} />
             </div>

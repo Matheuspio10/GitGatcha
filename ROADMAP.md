@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 15/10/2026, ao fim da quarta rodada da onda 9 (PR #66). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 15/10/2026, ao fim da quinta rodada da onda 9 (PR #67). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -13,13 +13,13 @@
 
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 22 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 249 testes (`npm test`) e 7 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 23 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 253 testes (`npm test`) e 9 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -42,7 +42,7 @@
 | Comando | Para quê |
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
-| `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio, presentes (a mesma carta em rajada; dois amigos presenteando um ao outro ao mesmo tempo). Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
+| `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio, presentes (a mesma carta em rajada; dois amigos presenteando um ao outro ao mesmo tempo), trocas (aceites em rajada; aceitar uma troca enquanto a mesma carta é presenteada). Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
 | `npm run lint` | Lint (o mesmo do CI): reprova com qualquer erro |
 | `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
@@ -57,10 +57,9 @@
 
 ## ▶️ Próximo passo
 
-**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66). Ordem sugerida para o resto, do menor risco ao maior:
-1. **Trocas entre jogadores** (3.4): reaproveita a transferência dos presentes (as duas travas, o que vai junto e o que zera); falta a proposta e o aceite dos dois lados.
-2. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
-3. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
+**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66), trocas (PR #67). Ordem sugerida para o resto:
+1. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva). Pede planejamento antes (pontuação, rodadas, mercado).
+2. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
 1. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
@@ -135,6 +134,11 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #63 | Carta viva muda a raridade? | **Não**: raridade e linguagem ficam; só os status (e só enquanto o dev continua na mesma faixa). Um novo sorteio do mesmo dev num pack continua atualizando a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
+| #67 | Taxa da troca | Cada lado paga a taxa de presente das cartas que entrega (então uma troca "desigual" custa o mesmo que o presente equivalente) | `tradeFee` (`trades.ts`) |
+| #67 | Tamanho e limites | Até 3 cartas de cada lado, pelo menos 1 de cada; 3 trocas concluídas por dia por jogador; 5 propostas abertas; expira em 72 h | `TRADE_MAX_CARDS`, `TRADE_DAILY_LIMIT`, `TRADE_MAX_PENDING`, `TRADE_EXPIRY_HOURS` (`trades.ts`) |
+| #67 | Quem pode trocar | Amigos, os dois a partir do nível 5 (o mesmo dos presentes) | `TRADE_MIN_LEVEL` (`trades.ts`) |
+| #67 | A proposta reserva as cartas? | Não: nada fica preso enquanto espera; tudo é conferido de novo no aceite (se uma carta saiu, a troca falha com o motivo) | `respondTrade` (`tradeService.ts`) |
+| #67 | Contraproposta | Não feita: quem recebe só aceita ou recusa (e pode mandar outra proposta) | — |
 | #66 | Taxa do presente (paga por quem dá, sai do jogo) | Common 25 · Uncommon 60 · Rare 150 · Epic 400 · Legendary 1000 BITS | `GIFT_FEE` (`gifts.ts`) |
 | #66 | Quem pode presentear | Só entre amigos aceitos, a partir do nível 5 (contas novas não repassam o pack inicial para a conta principal) | `GIFT_MIN_LEVEL` (`gifts.ts`), `sendGift` (`giftService.ts`) |
 | #66 | Limite diário | 3 enviados e 3 recebidos por jogador por dia (UTC) | `GIFT_DAILY_SEND_LIMIT`, `GIFT_DAILY_RECEIVE_LIMIT` (`gifts.ts`) |
@@ -165,7 +169,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66) · falta: trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66), trocas (PR #67) · falta: Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -385,6 +389,15 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 9 — trocas de cartas (PR #67)
+- **Propor uma troca** pela comparação de coleções em Amigos: o botão "Propor troca" transforma as duas listas ("Você ainda não tem" e "Só você tem") em seleção (até 3 de cada lado, com contador). Cartas que não podem mudar de dono (Signature, time ativo) aparecem travadas; o rodapé mostra quantas cartas cada um dá e as duas taxas.
+- **Painel "Trocas"** na página de Amigos (`#trades`): propostas recebidas (aceitar / recusar), enviadas (cancelar), quantas trocas você já fez hoje e as últimas 10 encerradas (feita, recusada, cancelada, expirou). Notificação no sino para a proposta e para a resposta.
+- **Regras** (`src/lib/trades.ts`, testadas; na wiki, seção da Forja): até 3 cartas de cada lado e pelo menos 1 de cada (dar sem receber é presente), cada lado paga a taxa de presente das cartas que entrega, os dois a partir do nível 5, 3 trocas por dia, 5 propostas abertas, expira em 72 horas. Vale tudo o que vale para presentes: Signature, time ativo e desafio em aberto bloqueados; Shiny e stamina vão junto; treino e lealdade zeram.
+- **Nada fica reservado** enquanto a proposta espera. No aceite, uma transação com as travas dos dois jogadores confere tudo de novo (as cartas ainda estão com cada um, ninguém já tem o que vai receber, limites, níveis, os BITS das duas taxas) e só então move as cartas. A troca é marcada como feita dentro da mesma transação: dois aceites ao mesmo tempo não rodam duas vezes.
+- **Código:** a parte comum com os presentes saiu para `src/lib/cardTransfer.ts` (travar os jogadores sempre na mesma ordem, cartas presas em desafio, mover a carta). Tabela nova `CardTrade` (migração `20261102000000_card_trades`, aditiva, conferida com `prisma migrate diff` contra o dev). O feed de amigos também ignora cartas recebidas em troca.
+- **Concorrência** (2 cenários novos, 9 no total, todos passam): 6 aceites da mesma proposta → 1 passa, as cartas trocam uma vez e cada lado paga uma vez; aceitar uma troca enquanto quem propôs presenteia a mesma carta a outro amigo → só um dos dois acontece, nenhuma carta duplica.
+- Testado no dev: proposta pela comparação (cartas travadas, contadores, taxas), proposta recebida aceita pelo painel (as cartas trocaram de dono, taxa dos dois lados, notificações), cancelamento e a wiki.
+
 ### Onda 9 — presentes de cartas (PR #66)
 - **Presentear uma carta a um amigo** pelo detalhe da carta na Coleção (painel "Presentear um amigo", como o de treino) ou pelo "Só você tem" da comparação de coleções em Amigos (botão de presente em cada carta, com o amigo já escolhido). O painel mostra a taxa, quantos presentes ainda dá para mandar hoje e quais amigos podem receber (quem já tem o dev ou já recebeu o máximo do dia aparece desabilitado); a confirmação diz o que fica para trás (treino e lealdade, quando há).
 - **Regras** (`src/lib/gifts.ts`, testadas; números e regras na wiki, seção da Forja): só entre amigos, a partir do nível 5, 3 enviados e 3 recebidos por dia, taxa por raridade paga por quem dá (sai do jogo). A Signature, as cartas do time ativo (o time salvo do Ranked) e as de um desafio em aberto não podem ser presenteadas. A carta sai de quem dá; vão junto o Shiny e a stamina; treino, lealdade, estatísticas e vitrine zeram.
@@ -569,7 +582,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Feature | Descrição | Esforço |
 |---|---|---|
 | ~~Presentear cartas~~ | ✅ PR #66 (entre amigos, com taxa em BITS e limite diário) | — |
-| Trocas entre jogadores | Depois do presente; sem valor em dinheiro | G |
+| ~~Trocas entre jogadores~~ | ✅ PR #67 (proposta pela comparação de coleções, aceite na página de Amigos) | — |
 | ~~Feed de atividade de amigos~~ | ✅ PR #62 (cartas, conquistas, Sprints, Torre) | — |
 
 ### 3.5 Visual de batalha

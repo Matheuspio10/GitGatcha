@@ -13,7 +13,7 @@
       "coins": "+ {coins} BITS",
       "claim": "Resgatar recompensa"
     },
-    "toastTitle": "{type, select, friend_request {Novo pedido de amizade} battle_challenge {Novo desafio de batalha} card_gift {Você ganhou um presente!} other {Nova notificação}}",
+    "toastTitle": "{type, select, friend_request {Novo pedido de amizade} battle_challenge {Novo desafio de batalha} card_gift {Você ganhou um presente!} trade_offer {Você recebeu uma proposta de troca} trade_result {Uma troca foi respondida} other {Nova notificação}}",
     "viewDetails": "Ver detalhes",
     "markAllRead": "Marcar todas como lidas",
     "allRead": "Todas lidas",
