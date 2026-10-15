@@ -636,5 +636,7 @@ export const PACK_CATEGORIES: { key: PackCategory; label: string }[] = [
 
 /** Serializable pack info for the frontend (strips the sampler pool definition); every pack by default */
 export function getSerializablePacks(packs: PackDefinition[] = [...ALL_PACKS, ...EVENT_PACKS]) {
-  return packs.map(({ pool, ...rest }) => rest);
+  return packs.map(({ pool: _pool, ...rest }) => rest);
 }
+
+export type SerializablePack = ReturnType<typeof getSerializablePacks>[number];

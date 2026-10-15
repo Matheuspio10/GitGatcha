@@ -131,7 +131,6 @@ export function SprintBoard({ sprint, now, viewerId, event }: { sprint: SprintSt
               {sprint.yourCards.map(c => (
                 <li key={c.githubUsername}>
                   <Link href={`/card/${encodeURIComponent(c.githubUsername)}`} className="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-2 hover:border-slate-600">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     {c.avatarUrl ? <img src={sizedAvatar(c.avatarUrl, 32)} alt="" className="h-8 w-8 rounded-full" /> : <span className="h-8 w-8 rounded-full bg-slate-700" />}
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1 truncate text-sm font-bold text-white">

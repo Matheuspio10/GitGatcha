@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
-import { withUserLock } from '@/lib/userLock';
+import { asArray, asJson, withUserLock } from '@/lib/userLock';
+import type { StoredNotification } from '@/lib/notifications';
 import { apiError, readBody } from '@/lib/apiResponse';
 import { z } from 'zod';
 
@@ -78,12 +79,9 @@ export async function GET() {
       }),
     ];
 
-    const unreadDbNotifications = Array.isArray(dbUser.notifications) 
-      ? (dbUser.notifications as any[]).filter(n => !n.read).map(n => ({
-          ...n,
-          createdAt: new Date(n.timestamp),
-        }))
-      : [];
+    const unreadDbNotifications = asArray<StoredNotification>(dbUser.notifications)
+      .filter(n => !n.read)
+      .map(n => ({ ...n, createdAt: new Date(n.timestamp) }));
 
     const allNotifications = [...standardNotifications, ...unreadDbNotifications].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -118,7 +116,7 @@ export async function POST(request: Request) {
       });
       if (!dbUser) return null;
 
-      let notifications = Array.isArray(dbUser.notifications) ? [...(dbUser.notifications as any[])] : [];
+      let notifications = asArray<StoredNotification>(dbUser.notifications);
       if (markAll) {
         notifications = notifications.map(n => ({ ...n, read: true }));
       } else if (notificationId) {
@@ -130,7 +128,7 @@ export async function POST(request: Request) {
       await tx.user.update({
         select: { id: true },
         where: { id: userId },
-        data: { notifications: notifications as any }
+        data: { notifications: asJson(notifications) }
       });
       return notifications;
     });

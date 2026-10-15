@@ -12,7 +12,7 @@ import { getClientIp, rateLimit } from '@/lib/rateLimit';
 
 export const authOptions: NextAuthOptions = {
   // The adapter is typed for a plain client; the global `omit: password` only drops a column it never reads
-  adapter: PrismaAdapter(prisma as unknown as Parameters<typeof PrismaAdapter>[0]) as any,
+  adapter: PrismaAdapter(prisma as unknown as Parameters<typeof PrismaAdapter>[0]) as unknown as NextAuthOptions['adapter'],
   session: {
     strategy: 'jwt',
   },
@@ -114,8 +114,8 @@ export const authOptions: NextAuthOptions = {
 
       if (user) {
         token.sub = user.id;
-        token.username = (user as any).username;
-        token.hasSetupProfile = (user as any).hasSetupProfile;
+        token.username = user.username;
+        token.hasSetupProfile = user.hasSetupProfile;
       }
 
       if (trigger === 'update') {

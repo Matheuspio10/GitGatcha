@@ -166,7 +166,7 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
       let data;
       try {
         data = JSON.parse(resText);
-      } catch (e) {
+      } catch {
         console.error('Non-JSON response:', resText);
         throw new Error(t('errors.server', { status: res.status, statusText: res.statusText }));
       }
@@ -175,8 +175,8 @@ export function EditProfileModal({ isOpen, onClose, currentProfile, onSave }: Ed
 
       onSave();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }

@@ -85,6 +85,8 @@ Added a **Changelog button** to the main navigation bar. Displays a floating mod
       createdAt: new Date('2026-03-15T02:30:00Z'),
     },
   });
+  console.log('Created v1.6 changelog:', v1_6.id);
+
   const v1_7 = await prisma.changelogEntry.create({
     data: {
       version: 'v1.7 — March 16, 2026',

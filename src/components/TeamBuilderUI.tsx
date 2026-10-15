@@ -913,11 +913,9 @@ function ConfirmationModal({
 // ─── Friend Selection Modal ───────────────────────────────────────────────────
 
 function FriendModal({
-  recentOpponents,
   onSelect,
   onCancel,
 }: {
-  recentOpponents: string[];
   onSelect: (username: string) => void;
   onCancel: () => void;
 }) {
@@ -1535,9 +1533,6 @@ export default function TeamBuilderUI({
     );
   }
 
-  // Recent opponents (from outgoing challenges stored in userCards context - we pass a simpler mock)
-  const recentOpponents: string[] = [];
-
   return (
     <div className="space-y-5">
 
@@ -1834,7 +1829,6 @@ export default function TeamBuilderUI({
         )}
         {showFriendModal && (
           <FriendModal
-            recentOpponents={recentOpponents}
             onSelect={handleFriendSelect}
             onCancel={() => setShowFriendModal(false)}
           />

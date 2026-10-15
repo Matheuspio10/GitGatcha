@@ -265,14 +265,6 @@ export function HackingMiniGame({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Grid size calculator
-  const getGridSize = useCallback(() => {
-    const maxSize = isMobile ? 5 : 7;
-    const baseSize = 4;
-    const growth = Math.floor(puzzleCount / 2);
-    return Math.min(baseSize + growth, maxSize);
-  }, [puzzleCount, isMobile]);
-
   // ── Firewall BFS across raw grid coordinates (ignoring edge connections) ──
   const firewallBFS = useCallback((gridData: GridData, startId: number, endId: number): number[] | null => {
     const visited = new Set<number>();

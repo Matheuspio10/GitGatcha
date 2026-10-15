@@ -8,6 +8,16 @@ import { apiError, readBody } from '@/lib/apiResponse';
 import { z } from 'zod';
 
 const MAX_WISHLIST = 5;
+
+/** One entry of User.wishlist (read defensively: old rows may be partial). */
+type WishlistEntry = {
+  username?: string;
+  name?: string;
+  avatarUrl?: string | null;
+  primaryLanguage?: string;
+  rarity?: string;
+  fragmentsRequired?: number;
+} | null;
 const bodySchema = z.object({ username: z.string().trim().max(100).optional() }).optional();
 
 export async function POST(req: Request) {
@@ -23,7 +33,7 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
     if (!user) return apiError('common.userNotFound', 404);
 
-    const wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
+    const wishlist = Array.isArray(user.wishlist) ? [...user.wishlist as WishlistEntry[]] : [];
 
     if (wishlist.length >= MAX_WISHLIST) {
       return apiError('forge.wishlistFull', 400, { max: MAX_WISHLIST });
@@ -79,7 +89,7 @@ export async function DELETE(req: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, wishlist: true } });
     if (!user) return apiError('common.userNotFound', 404);
 
-    let wishlist: any[] = Array.isArray(user.wishlist) ? [...user.wishlist] : [];
+    let wishlist = Array.isArray(user.wishlist) ? [...user.wishlist as WishlistEntry[]] : [];
     wishlist = wishlist.filter(w => w && w.username && w.username.toLowerCase() !== username.toLowerCase());
 
     await prisma.user.update({

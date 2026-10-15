@@ -74,7 +74,6 @@ export function FriendsFeed({ hasFriends }: { hasFriends: boolean }) {
   const icon = (e: FeedEvent) => {
     if (e.type === 'pull') {
       return e.avatarUrl
-        // eslint-disable-next-line @next/next/no-img-element
         ? <img src={sizedAvatar(e.avatarUrl, 32)} alt="" width={32} height={32} className="h-8 w-8 rounded-lg object-cover" loading="lazy" />
         : <RarityGem rarity={e.rarity} size={20} />;
     }

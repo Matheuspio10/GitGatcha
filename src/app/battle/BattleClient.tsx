@@ -3,13 +3,12 @@
 import { sizedAvatar } from '@/lib/avatarUrl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { EmptyState } from '@/components/EmptyState';
-import { Card, CardProps } from '@/components/Card';
 import TeamBuilderUI, { TeamBuilderCard } from '@/components/TeamBuilderUI';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import {
-  Sword, Shield, Heart, Lightning, Trophy, Clock, Users,
-  GameController, ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText, Crown } from '@phosphor-icons/react';
+  Sword, Lightning, Trophy, Clock, Users,
+  ArrowClockwise, Skull, Sparkle, ArrowRight, Star, ChartBar, BookOpenText, Crown } from '@phosphor-icons/react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useBattleAudio } from './useBattleAudio';
@@ -32,11 +31,45 @@ interface BattleApiResult {
   defenderTeam?: TeamCard[];
   winnerSide: 'CHALLENGER' | 'DEFENDER';
   rewards: BattleRewards;
-  battleStats?: unknown[];
-  loyaltyUnlocks?: unknown[];
+  battleStats?: BattleStat[];
+  loyaltyUnlocks?: LoyaltyUnlock[];
   achievementsUnlocked?: AchievementUnlockNotice[];
   ranked?: RankedResult | null;
   tower?: unknown;
+}
+
+/** One card's line in the results summary (battleService buildBattleStats). */
+interface BattleStat {
+  cardId: string;
+  name: string;
+  team: 'CHALLENGER' | 'DEFENDER';
+  damageDealt: number;
+  damageReceived: number;
+  passivesTriggered: number;
+  critsLanded: number;
+  momentumAchieved: boolean;
+}
+
+/** Loyalty milestones a card reached in this battle. */
+interface LoyaltyUnlock {
+  cardId: string;
+  cardName: string;
+  milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[];
+}
+
+/** A finished battle from /api/battle/history (only the fields shown). */
+interface HistoryBattle {
+  id: string;
+  challengerId: string;
+  winnerId: string | null;
+  isRandom: boolean;
+  leagueMode: string | null;
+  stake: number;
+  completedAt: string;
+  challenger: { username: string | null } | null;
+  defender: { username: string | null } | null;
+  challengerTeam: TeamCardJson[] | null;
+  defenderTeam: TeamCardJson[] | null;
 }
 
 // Types
@@ -71,6 +104,12 @@ interface TeamCard {
   avatarUrl?: string | null;
 }
 
+/** A team card as an API sends it: older battles saved no maxHp. */
+type TeamCardJson = Omit<TeamCard, 'maxHp'> & { maxHp?: number };
+
+const withMaxHp = (cards: TeamCardJson[] | null | undefined): TeamCard[] =>
+  (cards ?? []).map(c => ({ ...c, maxHp: c.maxHp || c.hp }));
+
 type Tab = 'Quick Battle' | 'Tower' | 'Challenge' | 'History';
 
 /** Message key of each Arena tab (battle.tabs.*). */
@@ -81,68 +120,18 @@ const TAB_KEYS: Record<Tab, 'quick' | 'tower' | 'challenge' | 'history'> = {
   History: 'history',
 };
 
-const RARITY_GLOW: Record<string, string> = {
-  Common: 'ring-slate-500',
-  Uncommon: 'ring-green-500',
-  Rare: 'ring-blue-500',
-  Epic: 'ring-purple-500',
-  Legendary: 'ring-yellow-400',
-};
-
-const EVENT_COLOR: Record<string, string> = {
-  damage: 'text-red-400',
-  passive: 'text-purple-400',
-  synergy: 'text-cyan-400',
-  defeat: 'text-red-500',
-  type_advantage: 'text-yellow-400',
-  enter_field: 'text-blue-400',
-  draw: 'text-slate-400',
-  battle_start: 'text-green-400',
-  battle_end: 'text-yellow-300',
-};
-
-const EVENT_ICON: Record<string, string> = {
-  damage: '⚔️',
-  passive: '✨',
-  synergy: '🔗',
-  defeat: '💀',
-  type_advantage: '🔥',
-  enter_field: '→',
-  draw: '🤝',
-  battle_start: '🥊',
-  battle_end: '🏆',
-};
-
-function StatBar({ label, current, max, color, large }: { label: string; current: number; max: number; color: string; large?: boolean }) {
-  const pct = Math.max(0, Math.min(100, (current / max) * 100));
-  const hpColor = label === 'HP' ? (pct > 50 ? 'bg-green-500' : pct > 25 ? 'bg-yellow-500' : 'bg-red-500') : color;
-  return (
-    <div className={clsx('w-full', large ? 'space-y-0.5' : 'space-y-0')}>
-      <div className="flex justify-between text-[9px]">
-        <span className="text-slate-500 uppercase tracking-wider">{label}</span>
-        <span className="text-slate-400 font-bold">{Math.max(0, current)}/{max}</span>
-      </div>
-      <div className={clsx('w-full rounded-full overflow-hidden', large ? 'h-3 bg-slate-800' : 'h-1.5 bg-slate-800/60')}>
-        <motion.div
-          className={clsx('h-full rounded-full', hpColor)}
-          initial={{ width: '100%' }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function FloatingDamage({ value, side, isCrit }: { value: number; side: 'top' | 'bottom'; isCrit?: boolean }) {
   const t = useTranslations('battle.replay');
   const fontSize = Math.min(48, 20 + Math.floor(value / 100) * 6);
-  // Random horizontal offset between -30px and 30px
-  const randomX = Math.floor(Math.random() * 60) - 30;
+  // Random horizontal offset between -30px and 30px, plus a drift; drawn once per number
+  const [{ randomX, drift }] = useState(() => ({
+    randomX: Math.floor(Math.random() * 60) - 30,
+    drift: Math.random() * 40 - 20,
+  }));
   return (
     <motion.div
       initial={{ opacity: 1, y: 0, x: randomX, scale: 0.5 }}
-      animate={{ opacity: 0, y: side === 'top' ? 80 : -80, x: randomX + (Math.random() * 40 - 20), scale: 1.5 }}
+      animate={{ opacity: 0, y: side === 'top' ? 80 : -80, x: randomX + drift, scale: 1.5 }}
       transition={{ duration: 1.0, ease: 'easeOut' }}
       className={clsx(
         'absolute z-40 font-black pointer-events-none drop-shadow-lg',
@@ -359,7 +348,6 @@ function BattleReplay({
   winnerSide,
   rewards,
   onReset,
-  userId,
   leagueMode,
   battleStats,
   loyaltyUnlocks,
@@ -374,10 +362,9 @@ function BattleReplay({
   winnerSide: 'CHALLENGER' | 'DEFENDER';
   rewards: BattleRewards;
   onReset: () => void;
-  userId: string;
   leagueMode?: string;
-  battleStats?: any[];
-  loyaltyUnlocks?: { cardId: string; cardName: string; milestones: { tier: string; title: string; atkDefBonus: number; hpBonus: number; cosmetics: string[] }[] }[];
+  battleStats?: BattleStat[];
+  loyaltyUnlocks?: LoyaltyUnlock[];
   achievementsUnlocked?: AchievementUnlockNotice[];
 }) {
   const notifyUnlocks = useNotifyAchievements();
@@ -430,8 +417,6 @@ function BattleReplay({
   const activeDCardId = activeCTurn?.dCardId;
   const done = currentTurn >= log.length - 1;
 
-  const interval = speed === 'fast' ? 400 : 1500;
-
   // ── SEQUENCE STATE ──
   // Instead of just mapping over turns, we break each turn's events into sequence states for specific animations
   const [subseqIdx, setSubseqIdx] = useState(0); // Which event in the current turn we are playing
@@ -456,9 +441,11 @@ function BattleReplay({
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [done, playSound, winnerSide]);
+  }, [done, playSound, winnerSide, notifyUnlocks]);
 
-  // Auto-play Sequencer
+  // Auto-play Sequencer: a timed state machine, so it sets the animation state
+  // as each event starts (the timers below advance it).
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!playing || done) return;
 
@@ -536,7 +523,8 @@ function BattleReplay({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [currentTurn, subseqIdx, playing, done, speed, log, challengerTeam]);
+  }, [currentTurn, subseqIdx, playing, done, speed, log, challengerTeam, playSound]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -627,7 +615,7 @@ function BattleReplay({
               </a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {battleStats.map((stat: any, i: number) => (
+              {battleStats.map((stat, i) => (
                 <div key={i} className={clsx('rounded-xl p-3 border', stat.team === 'CHALLENGER' ? 'border-blue-500/20 bg-blue-500/5' : 'border-red-500/20 bg-red-500/5')}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-white">{stat.name}</span>
@@ -1085,8 +1073,8 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     defenderTeam: TeamCard[];
     winnerSide: 'CHALLENGER' | 'DEFENDER';
     rewards: BattleRewards;
-    battleStats?: any[];
-    loyaltyUnlocks?: any[];
+    battleStats?: BattleStat[];
+    loyaltyUnlocks?: LoyaltyUnlock[];
     achievementsUnlocked?: AchievementUnlockNotice[];
     ranked?: RankedResult | null;
     /** Tower battles show no league label. */
@@ -1102,7 +1090,7 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
   const [respondingToChallenger, setRespondingToChallenger] = useState<string>(respondFrom ?? '');
 
   // History state
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryBattle[]>([]);
 
   const fetchChallenges = useCallback(async () => {
     try {
@@ -1125,29 +1113,13 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
     if (tab === 'History') fetchHistory();
   }, [tab, fetchChallenges, fetchHistory]);
 
-  const toTeamCard = (c: TeamBuilderCard): TeamCard => ({
-    id: c.id!,
-    name: c.name,
-    atk: c.atk,
-    def: c.def,
-    hp: c.hp,
-    maxHp: c.hp,
-    rarity: c.rarity,
-    primaryLanguage: c.primaryLanguage,
-    avatarUrl: c.avatarUrl,
-  });
-
   /** Turns a battle API response (league, Ranked or Tower) into the replay. */
   const showBattleResult = (data: BattleApiResult) => {
     // Use challenger team from API so IDs match the battle log
-    const cTeam: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({
-      ...c,
-      maxHp: c.maxHp || c.hp,
-    }));
     setReplayData({
       log: data.log,
-      challengerTeam: cTeam,
-      defenderTeam: (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp })),
+      challengerTeam: withMaxHp(data.challengerTeam),
+      defenderTeam: withMaxHp(data.defenderTeam),
       winnerSide: data.winnerSide,
       rewards: data.rewards,
       battleStats: data.battleStats,
@@ -1238,8 +1210,8 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
       if (data.success) {
         // The API returns teams from the battle's perspective (challenger = who sent, defender = us)
         // For the replay UI, we swap so "us" (defender) is shown as CHALLENGER (bottom)
-        const cTeamRaw: TeamCard[] = (data.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
-        const dTeamRaw: TeamCard[] = (data.challengerTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
+        const cTeamRaw = withMaxHp(data.defenderTeam);
+        const dTeamRaw = withMaxHp(data.challengerTeam);
 
         // Swap the log's c/d references to match our perspective swap
         const swappedLog = (data.log || []).map((turn: TurnLog) => ({
@@ -1291,7 +1263,6 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
           rewards={replayData.rewards}
           ranked={replayData.ranked}
           onReset={resetBattle}
-          userId={userId}
           leagueMode={replayData.fromTower ? undefined : leagueMode}
           battleStats={replayData.battleStats}
           loyaltyUnlocks={replayData.loyaltyUnlocks}
@@ -1511,15 +1482,15 @@ export default function BattleClient({ userCards, userId, powerCap, userBits }: 
               actions={[{ label: t('history.start'), onClick: () => setTab('Quick Battle') }]}
             />
           ) : (
-            history.map((battle: any) => {
+            history.map(battle => {
               const isChallenger = battle.challengerId === userId;
               const didWin = battle.winnerId === userId;
               const opponentName = isChallenger
                 ? (battle.defender?.username || t('history.randomOpponent'))
                 : (battle.challenger?.username || '???');
 
-              const cTeam: TeamCard[] = (battle.challengerTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
-              const dTeam: TeamCard[] = (battle.defenderTeam || []).map((c: any) => ({ ...c, maxHp: c.maxHp || c.hp }));
+              const cTeam = withMaxHp(battle.challengerTeam);
+              const dTeam = withMaxHp(battle.defenderTeam);
 
               return (
                 <div key={battle.id} className={`bg-slate-900/60 border rounded-xl p-4 transition-all ${didWin ? 'border-green-500/20' : 'border-red-500/20'}`}>

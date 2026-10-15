@@ -1,4 +1,6 @@
-import { lockUser, withUserLock, Tx } from './userLock';
+import { asArray, asJson, lockUser, withUserLock, Tx } from './userLock';
+import type { StoredNotification } from './notifications';
+import type { Prisma } from '@prisma/client';
 import { addBits, type BitsReason } from './bitsLedger';
 
 // ─── Level Progression ──────────────────────────────────────────────────
@@ -204,7 +206,7 @@ export async function grantXP(
     }
   }
 
-  const data: Record<string, unknown> = {
+  const data: Prisma.UserUpdateInput = {
     xp: newXP,
     level: newLevel,
   };
@@ -212,11 +214,11 @@ export async function grantXP(
   if (levelUps.length > 0) {
     const currentInventory: InventoryItem[] = Array.isArray(user.inventory) ? (user.inventory as unknown as InventoryItem[]) : [];
     const currentPendingRewards: LevelUpReward[] = Array.isArray(user.pendingRewards) ? (user.pendingRewards as unknown as LevelUpReward[]) : [];
-    const currentNotifications: any[] = Array.isArray(user.notifications) ? (user.notifications as any[]) : [];
+    const currentNotifications = asArray<StoredNotification>(user.notifications);
 
-    data.inventory = addToInventory(currentInventory, newInventoryItems);
-    data.pendingRewards = [...currentPendingRewards, ...levelUps];
-    data.notifications = [...currentNotifications, {
+    data.inventory = asJson(addToInventory(currentInventory, newInventoryItems));
+    data.pendingRewards = asJson([...currentPendingRewards, ...levelUps]);
+    const levelUpNotice: StoredNotification = {
       id: uuidv4(),
       type: 'LEVEL_UP',
       timestamp: new Date().toISOString(),
@@ -226,10 +228,11 @@ export async function grantXP(
         packNames: levelUps.flatMap(reward => reward.packNames),
         totalCoins: levelUpCoins
       }
-    }];
+    };
+    data.notifications = asJson([...currentNotifications, levelUpNotice]);
   }
 
-  await tx.user.update({ select: { id: true }, where: { id: userId }, data: data as any });
+  await tx.user.update({ select: { id: true }, where: { id: userId }, data });
   // BITS through the ledger (same transaction)
   await addBits(userId, additionalCurrency, currencyReason, { tx, detail: currencyDetail });
   await addBits(userId, levelUpCoins, 'level_up', { tx, detail: `Level ${levelUps.map(r => r.level).join(', ')}` });

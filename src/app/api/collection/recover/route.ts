@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { withUserLock } from '@/lib/userLock';
-import { getCardStamina, STAMINA_RECOVERY_RATE_PER_HOUR, MAX_STAMINA } from '@/lib/staminaService';
 import { apiError, readBody } from '@/lib/apiResponse';
 import { idSchema } from '@/lib/validation';
 import { z } from 'zod';

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import CollectionClient from './CollectionClient';
 import { OnboardingStepMarker } from '@/components/OnboardingStepMarker';
+import type { LifetimeStats, SavedMilestone } from '@/lib/loyaltyService';
 
 export default async function CollectionPage() {
   const user = await getCurrentUser();
@@ -37,8 +38,8 @@ export default async function CollectionPage() {
     inActiveTeam: uc.inActiveTeam,
     loyaltyCount: uc.loyaltyCount,
     loyaltyTier: uc.loyaltyTier,
-    loyaltyMilestones: uc.loyaltyMilestones as any[],
-    lifetimeStats: uc.lifetimeStats as any,
+    loyaltyMilestones: uc.loyaltyMilestones as SavedMilestone[],
+    lifetimeStats: uc.lifetimeStats as LifetimeStats | null,
     showcaseOrder: uc.showcaseOrder,
     trainingLevel: uc.trainingLevel,
   }));

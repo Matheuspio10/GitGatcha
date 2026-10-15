@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { EmptyState } from '@/components/EmptyState';
 import toast from 'react-hot-toast';
 import { CardProps, Card } from '@/components/Card';
-import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Trophy, Sword, Shield, Heart, Fire, Crown, BookOpenText, ShareNetwork } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Star, ListDashes, SquaresFour, GithubLogo, X, Lightning, Fire, BookOpenText, ShareNetwork } from '@phosphor-icons/react';
 import { claimShareBonus, copyText } from '@/components/ShareButtons';
 import { calculateCurrentStamina } from '@/lib/staminaUtils';
 import { TRAINING_BONUS_PER_LEVEL } from '@/lib/training';
@@ -14,6 +14,7 @@ import { LanguageSets } from '@/components/LanguageSets';
 import { collectionProgress } from '@/lib/collections';
 import { pressable, useDialog } from '@/lib/useDialog';
 import clsx from 'clsx';
+import type { LifetimeStats, SavedMilestone } from '@/lib/loyaltyService';
 import { useLocale, useTranslations } from 'next-intl';
 
 type ExtendedCard = CardProps & {
@@ -23,8 +24,8 @@ type ExtendedCard = CardProps & {
   edition?: string;
   loyaltyCount?: number;
   loyaltyTier?: string;
-  loyaltyMilestones?: any[];
-  lifetimeStats?: any;
+  loyaltyMilestones?: SavedMilestone[];
+  lifetimeStats?: LifetimeStats | null;
   showcaseOrder?: number | null;
   trainingLevel?: number;
 };
@@ -118,7 +119,7 @@ function LoyaltyBadge({ tier, size = 'sm' }: { tier: string; size?: 'sm' | 'md' 
   );
 }
 
-function LoyaltyProgressBar({ count, tier }: { count: number; tier: string }) {
+function LoyaltyProgressBar({ count }: { count: number }) {
   const t = useTranslations('collection.loyalty');
   const next = getNextMilestone(count);
 
@@ -292,11 +293,11 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
         // Optimistically update the local state to 100 stamina
         setLocalCards(prev => prev.map(c => 
           c.userCardId === card.userCardId 
-            ? { ...c, stamina: 100, lastUsedAt: new Date().toISOString() as any } 
+            ? { ...c, stamina: 100, lastUsedAt: new Date().toISOString() } 
             : c
         ));
         if (selectedCard && selectedCard.userCardId === card.userCardId) {
-          setSelectedCard({ ...selectedCard, stamina: 100, lastUsedAt: new Date().toISOString() as any });
+          setSelectedCard({ ...selectedCard, stamina: 100, lastUsedAt: new Date().toISOString() });
         }
       }
     } catch (err) {
@@ -665,15 +666,15 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                  </h3>
                  <LoyaltyBadge tier={selectedCard.loyaltyTier || 'none'} size="md" />
                </div>
-               <LoyaltyProgressBar count={selectedCard.loyaltyCount || 0} tier={selectedCard.loyaltyTier || 'none'} />
+               <LoyaltyProgressBar count={selectedCard.loyaltyCount || 0} />
 
                {/* Milestone History */}
                <div className="space-y-2 mt-4">
                  <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t('loyalty.milestones')}</p>
                  {MILESTONE_ORDER.map(tier => {
                    const info = LOYALTY_TIERS[tier];
-                   const milestones = (selectedCard.loyaltyMilestones || []) as any[];
-                   const completed = milestones.find((m: any) => m.tier === tier);
+                   const milestones = selectedCard.loyaltyMilestones || [];
+                   const completed = milestones.find(m => m.tier === tier);
                    const battlesRemaining = Math.max(0, info.threshold - (selectedCard.loyaltyCount || 0));
                    
                    return (

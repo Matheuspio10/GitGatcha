@@ -77,7 +77,6 @@ export function CardArt({ card, signature = false, scale = 1 }: { card: ShareCar
           <div style={{ display: 'flex', fontSize: s(14), padding: `${s(3)}px ${s(10)}px`, borderRadius: s(8), background: lang.color, color: lang.ink, fontWeight: 700 }}>{lang.abbr}</div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: s(16) }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={avatarFor(card.githubUsername, card.avatarUrl)} width={s(190)} height={s(190)} alt="" style={{ borderRadius: s(18), border: `${s(3)}px solid ${color}` }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: s(16) }}>

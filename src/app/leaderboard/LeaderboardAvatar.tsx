@@ -26,7 +26,6 @@ export function LeaderboardAvatar({ username, image }: { username: string; image
         {initial}
       </span>
       {isUsableImage(image) && (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={image}
           alt=""

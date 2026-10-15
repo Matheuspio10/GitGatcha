@@ -6,7 +6,7 @@ import { resolve3v3Battle, BattleCard, BattleResult, getCardType } from './battl
 import { spendCardStamina } from './staminaService';
 import { processPostBattleCardStats, MilestoneUnlock } from './loyaltyService';
 import { grantXP } from './xpService';
-import { lockUser, withUserLock, UserFacingError } from './userLock';
+import { asJson, lockUser, withUserLock, UserFacingError } from './userLock';
 import { pushNotification } from './notifications';
 import { closeDueSeasons, recordSeasonProgress } from './seasonService';
 import { RANKED_SEARCH_WINDOWS } from './ranks';
@@ -148,7 +148,7 @@ function buildBattleStats(battleResult: BattleResult, cTeam: BattleCard[]) {
 
 export async function resolveRandomBattle(
   challengerId: string,
-  challengerTeamCards: any[],
+  challengerTeamCards: RankedTeamCard[],
   leagueMode: string = 'OPEN',
   options: { powerCap?: number } = {}
 ) {
@@ -161,7 +161,7 @@ export async function resolveRandomBattle(
     hp: c.hp,
     maxHp: c.hp,
     stamina: c.stamina ?? 100,
-    rarity: c.rarity as any,
+    rarity: c.rarity as BattleCard['rarity'],
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
@@ -181,7 +181,7 @@ export async function resolveRandomBattle(
     hp: c.hp,
     maxHp: c.hp,
     stamina: 100, // Random opponents start with 100 stamina
-    rarity: c.rarity as any,
+    rarity: c.rarity as BattleCard['rarity'],
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
@@ -202,13 +202,13 @@ export async function resolveRandomBattle(
       data: {
         challengerId,
         defenderId: null,
-        challengerTeam: cTeam as any, // initial state
-        defenderTeam: dTeam as any, // initial state
-        log: battleResult.log as any, // the turn-by-turn history
+        challengerTeam: asJson(cTeam), // initial state
+        defenderTeam: asJson(dTeam), // initial state
+        log: asJson(battleResult.log), // the turn-by-turn history
         status: 'COMPLETED',
         isRandom: true,
         leagueMode,
-        battleStats: battleStats as any,
+        battleStats: asJson(battleStats),
         winnerId: playerWon ? challengerId : '__SYSTEM__',
         rewardBits: rewards.bits,
         completedAt: new Date(),
@@ -232,7 +232,7 @@ export async function resolveRandomBattle(
   const xpResult = await afterBattle('XP', null, () => grantXP(challengerId, rewards.xp));
 
   // Spend stamina from the cards' current value (floor 0)
-  await afterBattle('Stamina', undefined, () => spendCardStamina(challengerTeamCards.map((c) => c.id as string)));
+  await afterBattle('Stamina', undefined, () => spendCardStamina(challengerTeamCards.map(c => c.id)));
 
   // --- Loyalty Processing for challenger cards ---
   const loyaltyUnlocks: { cardId: string; cardName: string; milestones: MilestoneUnlock[] }[] = [];
@@ -276,15 +276,15 @@ function findBattleWithPlayers(battleId: string) {
   return prisma.battle.findUnique({
     where: { id: battleId },
     include: {
-      challenger: true,
-      defender: true,
+      challenger: { select: { username: true } },
+      defender: { select: { username: true } },
     },
   });
 }
 
 export async function resolveFriendBattle(
   battleId: string,
-  defenderTeamCards: any[]
+  defenderTeamCards: RankedTeamCard[]
 ) {
   await closeDueSeasons();
   const battle = await findBattleWithPlayers(battleId);
@@ -309,12 +309,12 @@ export async function resolveFriendBattle(
 
 async function finishFriendBattle(
   battle: NonNullable<Awaited<ReturnType<typeof findBattleWithPlayers>>>,
-  defenderTeamCards: any[],
+  defenderTeamCards: RankedTeamCard[],
 ) {
   const battleId = battle.id;
 
-  const cTeamRaw = battle.challengerTeam as any as BattleCard[];
-  const cTeam: BattleCard[] = cTeamRaw.map((c: any) => ({
+  const cTeamRaw = battle.challengerTeam as unknown as BattleCard[];
+  const cTeam: BattleCard[] = cTeamRaw.map(c => ({
     id: c.id,
     name: c.name,
     atk: c.atk,
@@ -338,7 +338,7 @@ async function finishFriendBattle(
     hp: c.hp,
     maxHp: c.hp,
     stamina: c.stamina ?? 100,
-    rarity: c.rarity as any,
+    rarity: c.rarity as BattleCard['rarity'],
     primaryLanguage: c.primaryLanguage,
     type: getCardType(c),
     avatarUrl: c.avatarUrl,
@@ -361,17 +361,13 @@ async function finishFriendBattle(
   const updatedBattle = await prisma.battle.update({
     where: { id: battleId },
     data: {
-      defenderTeam: dTeam as any,
-      log: battleResult.log as any,
+      defenderTeam: asJson(dTeam),
+      log: asJson(battleResult.log),
       status: 'COMPLETED',
       winnerId,
       rewardBits: challengerRewards.bits + defenderRewards.bits,
-      battleStats: buildBattleStats(battleResult, cTeam) as any,
+      battleStats: asJson(buildBattleStats(battleResult, cTeam)),
       completedAt: new Date(),
-    },
-    include: {
-      challenger: true,
-      defender: true,
     },
   });
 
@@ -401,7 +397,7 @@ async function finishFriendBattle(
   // CURRENT stamina. The challenger snapshot can be up to 24h old: writing
   // "snapshot − 20" would restore stamina spent in other battles meanwhile.
   await spendCardStamina([
-    ...cTeamRaw.map((c: any) => c.id as string),
+    ...cTeamRaw.map(c => c.id),
     ...dTeam.map((c) => c.id),
   ]);
 
@@ -451,8 +447,6 @@ async function finishFriendBattle(
 
 
 // ─── Ranked (ghost PvP) ──────────────────────────────────────────────────────
-
-const asJson = (value: unknown) => value as Prisma.InputJsonValue;
 
 /** Thrown before anything is written when no player has a saved team to fight. */
 export class NoRankedOpponentError extends Error {

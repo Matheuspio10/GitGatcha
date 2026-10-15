@@ -7,6 +7,11 @@ import { LOYALTY_MILESTONES, getLoyaltyBonuses, getMilestoneForTier, type Loyalt
 export { LOYALTY_MILESTONES, getLoyaltyBonuses, getMilestoneForTier };
 export type { LoyaltyMilestone };
 
+/** A milestone a card reached, as saved in UserCard.loyaltyMilestones. */
+export type SavedMilestone = { tier: string; unlockedAt: string };
+/** UserCard.lifetimeStats: totals over every battle the card fought. */
+export type LifetimeStats = Partial<Record<'damageDealt' | 'battlesWon' | 'critsLanded' | 'passivesTriggered', number>>;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getNextMilestone(currentCount: number): LoyaltyMilestone | null {
@@ -55,7 +60,7 @@ interface LoyaltyState {
 /** One more battle for a card: loyalty count, newly reached milestones and lifetime stats (pure). */
 export function applyBattleToCard(card: LoyaltyState, stats: PostBattleCardStats, now = new Date()) {
   const loyaltyCount = card.loyaltyCount + 1;
-  const loyaltyMilestones = Array.isArray(card.loyaltyMilestones) ? [...(card.loyaltyMilestones as { tier: string; unlockedAt: string }[])] : [];
+  const loyaltyMilestones = Array.isArray(card.loyaltyMilestones) ? [...(card.loyaltyMilestones as SavedMilestone[])] : [];
   const existingTiers = new Set(loyaltyMilestones.map(m => m.tier));
 
   const unlocks: MilestoneUnlock[] = [];
@@ -75,7 +80,7 @@ export function applyBattleToCard(card: LoyaltyState, stats: PostBattleCardStats
     }
   }
 
-  const existingStats = (card.lifetimeStats || {}) as Partial<Record<'damageDealt' | 'battlesWon' | 'critsLanded' | 'passivesTriggered', number>>;
+  const existingStats = (card.lifetimeStats || {}) as LifetimeStats;
   const lifetimeStats = {
     damageDealt: (existingStats.damageDealt || 0) + stats.damageDealt,
     battlesWon: (existingStats.battlesWon || 0) + (stats.won ? 1 : 0),

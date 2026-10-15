@@ -29,8 +29,9 @@ export function SetupProfileModal() {
 
   // Pre-fill the input with their generated username if they have one but just haven't confirmed it
   useEffect(() => {
-    if (isTargeted && session?.user?.username && !username) {
-      setUsername(session.user.username);
+    const generated = session?.user?.username;
+    if (isTargeted && generated) {
+      setUsername(current => current || generated);
     }
   }, [isTargeted, session?.user?.username]);
 
@@ -68,9 +69,9 @@ export function SetupProfileModal() {
       router.push('/store');
       router.refresh(); // Refresh layout specifically to let the navbar notice changes
       
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }

@@ -37,8 +37,8 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Lint (error budget)
-        run: node scripts/lint-budget.mjs
+      - name: Lint
+        run: npm run lint
 
       - name: Tests
         run: npm test
