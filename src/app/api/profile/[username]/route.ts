@@ -6,6 +6,7 @@ import { getAchievementViews, syncAchievementsSafe } from '@/lib/achievementServ
 import { collectionProgress } from '@/lib/collections';
 import { equippedCosmetics } from '@/lib/cosmeticsService';
 import { apiError } from '@/lib/apiResponse';
+import { isReplayLog, knockouts } from '@/lib/battleReplay';
 
 function computeWinStreak(battles: { winnerId: string | null }[], userId: string): number {
   let maxStreak = 0;
@@ -209,19 +210,12 @@ export async function GET(
         const opponentImage = opponent?.image || null;
         const won = b.winnerId === userProfile.id;
         
-        // Compute score from log
-        const log = Array.isArray(b.log) ? b.log as { type?: string; winner?: string }[] : [];
-        let playerScore = 0;
-        let opponentScore = 0;
-        for (const entry of log) {
-          if (entry.type === 'ROUND_END' || entry.winner) {
-            if (entry.winner === (isChallenger ? 'CHALLENGER' : 'DEFENDER')) {
-              playerScore++;
-            } else if (entry.winner === (isChallenger ? 'DEFENDER' : 'CHALLENGER')) {
-              opponentScore++;
-            }
-          }
-        }
+        // Score: cards each side knocked out (old 1v1 battles saved no log: 0–0)
+        const log: unknown = b.log;
+        const hasReplay = isReplayLog(log);
+        const score = hasReplay ? knockouts(log) : { challenger: 0, defender: 0 };
+        const playerScore = isChallenger ? score.challenger : score.defender;
+        const opponentScore = isChallenger ? score.defender : score.challenger;
         
         return {
           id: b.id,
@@ -234,7 +228,7 @@ export async function GET(
           date: b.completedAt,
           challengerTeam: b.challengerTeam,
           defenderTeam: b.defenderTeam,
-          log: b.log,
+          hasReplay,
           isChallenger,
         };
       });

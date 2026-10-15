@@ -48,7 +48,11 @@
     "staminaPenalty": "Stamina Penalty",
     "staminaLost": "Your team cards lost <b>20 Stamina</b>.",
     "fatigued": "Fatigued cards (<60 STA) suffer stat penalties. Go to your <link>Collection</link> to recover!",
-    "fightAgain": "FIGHT AGAIN"
+    "fightAgain": "FIGHT AGAIN",
+    "winnerIs": "{name} won!",
+    "watchAgain": "Watch again",
+    "shareReplay": "Share the replay",
+    "shareText": "Watch my battle on GitGacha"
   },
   "challenge": {
     "create": "Create a Challenge",
@@ -93,7 +97,8 @@
     "stake": "Stake {amount}",
     "rematch": "Rematch",
     "challenger": "Challenger",
-    "defender": "Defender"
+    "defender": "Defender",
+    "watch": "Watch"
   },
   "tower": {
     "loading": "Loading the tower",

@@ -48,7 +48,11 @@
     "staminaPenalty": "Penalidade de stamina",
     "staminaLost": "As cartas do seu time perderam <b>20 de stamina</b>.",
     "fatigued": "Cartas cansadas (<60 STA) sofrem penalidades nos atributos. Vá até a sua <link>Coleção</link> para recuperar!",
-    "fightAgain": "LUTAR DE NOVO"
+    "fightAgain": "LUTAR DE NOVO",
+    "winnerIs": "{name} venceu!",
+    "watchAgain": "Assistir de novo",
+    "shareReplay": "Compartilhar o replay",
+    "shareText": "Assista à minha batalha no GitGacha"
   },
   "challenge": {
     "create": "Criar um desafio",
@@ -93,7 +97,8 @@
     "stake": "Aposta {amount}",
     "rematch": "Revanche",
     "challenger": "Desafiante",
-    "defender": "Defensor"
+    "defender": "Defensor",
+    "watch": "Assistir"
   },
   "tower": {
     "loading": "Carregando a torre",

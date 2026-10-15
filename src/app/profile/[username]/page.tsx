@@ -10,7 +10,7 @@ import {
   Users, UserMinus, Star,
   Sparkle, Plus, Clock,
   ShareNetwork, Coin, Lightning, Medal,
-  Lock, CaretDown, CaretUp, Check
+  Lock, CaretDown, CaretUp, Check, Play
 } from '@phosphor-icons/react';
 import { getXPProgress } from '@/lib/xpService';
 import { Card } from '@/components/Card';
@@ -26,6 +26,7 @@ import { CosmeticsPicker } from '@/components/CosmeticsPicker';
 import type { PublicFrame, PublicTitle } from '@/lib/collections';
 import { useLocale, useTranslations } from 'next-intl';
 import { useGameText } from '@/i18n/gameText';
+import { replayPath } from '@/lib/battleReplay';
 
 interface FriendInfo {
   id: string;
@@ -55,7 +56,8 @@ interface RecentBattle {
   date: string;
   challengerTeam: BattleTeamCard[] | null;
   defenderTeam: BattleTeamCard[] | null;
-  log: unknown;
+  /** Old 1v1 battles saved no turn log: no replay. */
+  hasReplay: boolean;
   isChallenger: boolean;
 }
 
@@ -761,6 +763,14 @@ export default function ProfilePage() {
                                 ))}
                               </div>
                             </div>
+                            {battle.hasReplay && (
+                              <Link
+                                href={replayPath(battle.id)}
+                                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-bold text-indigo-300 hover:bg-indigo-500/20"
+                              >
+                                <Play size={12} weight="fill" /> {t('battles.watch')}
+                              </Link>
+                            )}
                           </div>
                         </motion.div>
                       )}
