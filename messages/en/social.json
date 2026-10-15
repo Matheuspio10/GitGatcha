@@ -33,5 +33,17 @@
     "accept": "Accept the request from {name}",
     "decline": "Decline the request from {name}",
     "cancel": "Cancel the request to {name}"
+  },
+  "feed": {
+    "title": "Friends' activity",
+    "subtitle": "Last {days} days",
+    "empty": "Nothing new yet. When your friends pull an Epic or a Legendary, unlock an achievement, reach a Sprint podium or conquer the Tower, it shows up here.",
+    "noFriends": "Add friends to follow what they pull and win.",
+    "error": "Could not load the activity.",
+    "pull": "<who>{user}</who> pulled <card>{name}</card>",
+    "pullShiny": "<who>{user}</who> pulled a Shiny <card>{name}</card>",
+    "achievement": "<who>{user}</who> unlocked {achievement} ({tier})",
+    "sprint": "<who>{user}</who> finished #{position} in the {sprint} · {theme}",
+    "tower": "<who>{user}</who> conquered {tower}"
   }
 }

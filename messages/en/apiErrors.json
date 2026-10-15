@@ -161,7 +161,8 @@
     "alreadyRequested": "Friend request already sent or users are already friends",
     "usernameRequired": "username is required",
     "playerNotFound": "Player not found",
-    "compareFriendsOnly": "You can only compare collections with friends"
+    "compareFriendsOnly": "You can only compare collections with friends",
+    "feedFailed": "Could not load the activity feed"
   },
   "user": {
     "usernameLength": "Username must be between 3 and 20 characters.",

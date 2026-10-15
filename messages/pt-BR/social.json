@@ -33,5 +33,17 @@
     "accept": "Aceitar o pedido de {name}",
     "decline": "Recusar o pedido de {name}",
     "cancel": "Cancelar o pedido para {name}"
+  },
+  "feed": {
+    "title": "Atividade dos amigos",
+    "subtitle": "Últimos {days} dias",
+    "empty": "Nada de novo ainda. Quando seus amigos tirarem uma Epic ou Legendary, desbloquearem uma conquista, subirem ao pódio de uma Sprint ou conquistarem a Torre, aparece aqui.",
+    "noFriends": "Adicione amigos para acompanhar o que eles tiram e vencem.",
+    "error": "Não deu para carregar as atividades.",
+    "pull": "<who>{user}</who> tirou <card>{name}</card>",
+    "pullShiny": "<who>{user}</who> tirou <card>{name}</card> Shiny",
+    "achievement": "<who>{user}</who> desbloqueou {achievement} ({tier})",
+    "sprint": "<who>{user}</who> ficou em {position}º na {sprint} · {theme}",
+    "tower": "<who>{user}</who> conquistou a {tower}"
   }
 }
