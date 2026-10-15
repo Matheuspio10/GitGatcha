@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da primeira rodada da onda 9 (PR #62). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da segunda rodada da onda 9 (PR #63). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 232 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 236 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -57,13 +57,12 @@
 
 ## ▶️ Próximo passo
 
-**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62). Ordem sugerida para o resto, do menor risco ao maior:
-1. **Carta "viva"** (3.3): status atualizados aos poucos conforme o dev real evolui, em rodízio e sem cron. Precisa decidir antes se a **raridade** pode mudar quando o dev ganha seguidores (hoje ela é fixa desde a criação da carta).
-2. **Animações e replay de batalha** (3.5): o log de cada batalha já é gravado; o replay pode reaproveitá-lo, com link para compartilhar.
-3. **Presentear cartas** (3.4): só cartas ganhas, com taxa em BITS.
-4. **Trocas entre jogadores** (3.4), depois do presente.
-5. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
-6. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
+**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63). Ordem sugerida para o resto, do menor risco ao maior:
+1. **Animações e replay de batalha** (3.5): o log de cada batalha já é gravado; o replay pode reaproveitá-lo, com link para compartilhar.
+2. **Presentear cartas** (3.4): só cartas ganhas, com taxa em BITS.
+3. **Trocas entre jogadores** (3.4), depois do presente.
+4. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
+5. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61). Próximas, em ordem sugerida:
 1. **Reduzir o lint** (98 erros, quase todos `any`).
@@ -135,6 +134,9 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #55 | Termos do PT-BR | "pack", "booster", "Shiny", "stamina", "Ranked", "rating" e "Daily Standup" ficam em inglês (jargão de jogo/dev); Forja, coringa, lealdade, treino, elo, temporada, Torre em português; "Changelog" virou "Novidades". Glossário completo em `docs/i18n.md` | `messages/pt-BR/*.json` |
 | #55 | Nomes das raridades | Em inglês por enquanto (Common… Legendary), também em PT-BR. Traduzir (Comum/Incomum/Raro/Épico/Lendário) entra na parte 3 se o dono quiser | — |
 | #57 | Nomes de packs, passivas e títulos em PT-BR | Traduzidos ("O Covil do JavaScript", "A Caixa Misteriosa", "Força Bruta", "Escudo de Ferro"); jargão de dev fica em inglês (Hot Reload, Double Callback, Null Safety, Cron Job, Type Safety; Pythonistas, Rust or Bust, Indie Hackers, Core Team). Mudar é só editar `messages/pt-BR/game*.json` | `messages/pt-BR/gamePacks.json`, `gameBattle.json`, `gameAchievements.json` |
+| #63 | Carta viva muda a raridade? | **Não**: raridade e linguagem ficam; só os status (e só enquanto o dev continua na mesma faixa). Um novo sorteio do mesmo dev num pack continua atualizando a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
+| #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
+| #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
 | #62 | O que entra no feed de amigos | Cartas Epic/Legendary e Shiny de Rare para cima; conquistas; pódio de Sprint (top 3); Torre conquistada. Últimos 14 dias, até 40 eventos | `FEED_*` (`activityFeed.ts`) |
 | #62 | Quem vê o feed | Só amigos aceitos; o próprio jogador não aparece no próprio feed; sem opção de esconder a própria atividade | `getFriendsFeed` (`activityFeedService.ts`) |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
@@ -155,7 +157,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62) · falta: carta "viva" (3.3), animações e replay de batalha (3.5), presentes e trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63) · falta: animações e replay de batalha (3.5), presentes e trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -375,6 +377,15 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 9 — carta viva (PR #63)
+- **As cartas acompanham o dev de verdade** (`src/lib/livingCards.ts`, `livingCardService.ts`): a cada 7 dias uma carta é atualizada pelo perfil do GitHub: status (fórmula atual), nome, avatar, bio e o retrato que dá o título da carta. Wiki explica, com o número da constante.
+- **Rodízio sem cron novo, no padrão do GitPacks 🅶:** uma vaga global a cada 5 minutos (reaproveita a tabela do limite de requisições, sem migração), disparada depois da resposta da chamada de saldo que toda página faz (`after()` em `/api/user/currency`); 3 cartas por vaga, sempre as atualizadas há mais tempo (`FOR UPDATE SKIP LOCKED`, então duas instâncias nunca pegam a mesma). O cron diário atualiza mais 30, para andar mesmo sem tráfego. Cada instância só tenta a vaga uma vez por minuto.
+- **Raridade e linguagem nunca mudam no rodízio** (coleções, sets, ranking de colecionador e tipo de batalha dependem delas). Os status são recalculados para a raridade da própria carta; o teste garante que, na mesma raridade, dá exatamente o mesmo número de um sorteio novo.
+  - **Dev que mudou de faixa** (a carta é Common, mas o perfil hoje é Epic) **mantém os status**: recalcular com o multiplicador de Common e números de Epic faria uma Common fortíssima e quebraria "Legendary vence Common". Só nome, avatar e retrato são atualizados.
+  - **Achado:** tirar de novo num pack um dev que já tem carta já reescrevia a carta inteira, inclusive raridade e linguagem (`upsertCard`). Isso continua, de propósito: a carta entregue precisa ter a raridade que o pack sorteou.
+- **Conta apagada ou renomeada** (o GitHub responde 404): a carta fica como está e vai para o fim da fila. No dev, as 5 cartas mais antigas eram desses casos (por isso nunca tinham retrato). **GitHub sem cota:** a carta volta para o lugar dela na fila.
+- Testado no dev: 12 Legendaries conhecidas atualizadas, 2 mudaram um ponto (`hiteshchoudhary` 72/139/737 → 72/140/738); as contas que não existem mais foram para o fim da fila.
+
 ### Onda 9 — feed de amigos (PR #62)
 - **"Atividade dos amigos"** na página de Amigos: o que os amigos aceitos fizeram nos últimos 14 dias, do mais novo para o mais antigo (até 40 eventos), com avatar, link para o perfil, link para a página pública da carta e "há 3 horas" no idioma do jogador.
 - **Sem tabela nova e sem escrita no banco:** o feed é montado na hora (`src/lib/activityFeedService.ts`, rota `GET /api/feed`) a partir do que já tem data e estrutura. Por isso já nasce com o histórico das últimas duas semanas:
@@ -515,7 +526,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | ~~**Treinar cartas**~~ | ✅ PR #51 | — |
 | ~~**Coleções/sets**~~ | ✅ PR #52 (por linguagem, uma vaga por raridade) | — |
 | **Wishlist ativa** | Itens da wishlist com chance levemente maior (cuidado com a regra de ouro 1: seria um viés explícito e anunciado) | P |
-| **Carta "viva"** | Atualizar status periodicamente conforme o dev real evolui. Padrão do GitPacks 🅶: a cada requisição, tentar pegar uma vaga global (`UPDATE … WHERE updated_at < agora-5min RETURNING`) e atualizar **a carta mais desatualizada**, em rodízio, sem cron. Respeitar a regra 4 (`STAT_VERSION`) | M |
+| ~~**Carta "viva"**~~ | ✅ PR #63 (rodízio a cada 5 min + cron; raridade e linguagem fixas) | — |
 
 ### 3.4 Social
 | Feature | Descrição | Esforço |

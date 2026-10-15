@@ -40,6 +40,7 @@ import {
   typeWeaknesses,
 } from '@/lib/battleConfig';
 import { ACTIVE_RARITY_MULTIPLIER as RARITY_STAT_MULTIPLIER, FAME_FORMULA, IMPACT_FORMULA, STAT_FORMULA, STAT_MINIMUMS } from '@/lib/cardStats';
+import { LIVING_CARD_REFRESH_DAYS } from '@/lib/livingCards';
 import { DAILY_COOLDOWN_MS, LOGIN_CALENDAR_DAYS, LOGIN_CALENDAR_REWARDS, LOGIN_STREAK_WINDOW_MS } from '@/lib/loginCalendar';
 import { PITY_THRESHOLD } from '@/lib/pity';
 import { ACHIEVEMENTS, TIER_NAMES } from '@/lib/achievementUtils';
@@ -478,6 +479,7 @@ export default function WikiPage() {
                   </div>
                   <p className="text-sm text-slate-300">{t.rich('stats.powerFormula', { code })}</p>
                   <p className="text-sm text-slate-400 mt-2">{t('stats.multiplierNote', { atk: STAT_MINIMUMS.atk, def: STAT_MINIMUMS.def, hp: STAT_MINIMUMS.hp })}</p>
+                  <p className="text-sm text-slate-400 mt-2">{t('stats.livingCards', { days: LIVING_CARD_REFRESH_DAYS })}</p>
                 </div>
               </div>
             </section>

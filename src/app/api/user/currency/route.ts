@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { apiError } from '@/lib/apiResponse';
+import { refreshLivingCards } from '@/lib/livingCardService';
 
 export async function GET() {
   try {
@@ -16,6 +17,10 @@ export async function GET() {
     });
 
     if (!user) return apiError('common.userNotFound', 404);
+
+    // Every page polls this: a few cards follow their developer after the response
+    // (one global slot every few minutes, see livingCards.ts)
+    after(() => refreshLivingCards());
 
     return NextResponse.json({ currency: user.currency });
   } catch (error) {
