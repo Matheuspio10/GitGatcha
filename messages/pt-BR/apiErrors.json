@@ -161,7 +161,8 @@
     "alreadyRequested": "O pedido já foi enviado ou vocês já são amigos",
     "usernameRequired": "Informe o nome de usuário",
     "playerNotFound": "Jogador não encontrado",
-    "compareFriendsOnly": "Você só pode comparar coleções com amigos"
+    "compareFriendsOnly": "Você só pode comparar coleções com amigos",
+    "feedFailed": "Não deu para carregar as atividades"
   },
   "user": {
     "usernameLength": "O nome de usuário precisa ter entre 3 e 20 caracteres.",

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Users, UserPlus, Check, X, Shield, Sword, ArrowsLeftRight } from '@phosphor-icons/react';
 import { InvitePanel } from '@/components/InvitePanel';
 import { CompareCollection } from '@/components/CompareCollection';
+import { FriendsFeed } from '@/components/FriendsFeed';
 import { useTranslations } from 'next-intl';
 
 export default function FriendsPage() {
@@ -188,6 +189,8 @@ export default function FriendsPage() {
                   </div>
                 )}
               </div>
+
+              <FriendsFeed hasFriends={friends.length > 0} />
             </div>
 
             {/* Requests Col */}

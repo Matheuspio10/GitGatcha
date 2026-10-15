@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 14/10/2026, ao fim da quarta rodada da onda 8 (PR #61). **Ondas 1 a 7 completas**; onda 8 em andamento. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 14/10/2026, ao fim da primeira rodada da onda 9 (PR #62). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,7 +14,7 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 21 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 229 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
+- 232 testes (`npm test`) e 5 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros, lint com 98 erros e 56 avisos (quase todos `any` antigos). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -57,7 +57,15 @@
 
 ## ▶️ Próximo passo
 
-**Onda 8 (engenharia de fundo)**, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61). Próximas, em ordem sugerida:
+**Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62). Ordem sugerida para o resto, do menor risco ao maior:
+1. **Carta "viva"** (3.3): status atualizados aos poucos conforme o dev real evolui, em rodízio e sem cron. Precisa decidir antes se a **raridade** pode mudar quando o dev ganha seguidores (hoje ela é fixa desde a criação da carta).
+2. **Animações e replay de batalha** (3.5): o log de cada batalha já é gravado; o replay pode reaproveitá-lo, com link para compartilhar.
+3. **Presentear cartas** (3.4): só cartas ganhas, com taxa em BITS.
+4. **Trocas entre jogadores** (3.4), depois do presente.
+5. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva).
+6. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
+
+**Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61). Próximas, em ordem sugerida:
 1. **Reduzir o lint** (98 erros, quase todos `any`).
 2. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
 3. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
@@ -127,6 +135,8 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #55 | Termos do PT-BR | "pack", "booster", "Shiny", "stamina", "Ranked", "rating" e "Daily Standup" ficam em inglês (jargão de jogo/dev); Forja, coringa, lealdade, treino, elo, temporada, Torre em português; "Changelog" virou "Novidades". Glossário completo em `docs/i18n.md` | `messages/pt-BR/*.json` |
 | #55 | Nomes das raridades | Em inglês por enquanto (Common… Legendary), também em PT-BR. Traduzir (Comum/Incomum/Raro/Épico/Lendário) entra na parte 3 se o dono quiser | — |
 | #57 | Nomes de packs, passivas e títulos em PT-BR | Traduzidos ("O Covil do JavaScript", "A Caixa Misteriosa", "Força Bruta", "Escudo de Ferro"); jargão de dev fica em inglês (Hot Reload, Double Callback, Null Safety, Cron Job, Type Safety; Pythonistas, Rust or Bust, Indie Hackers, Core Team). Mudar é só editar `messages/pt-BR/game*.json` | `messages/pt-BR/gamePacks.json`, `gameBattle.json`, `gameAchievements.json` |
+| #62 | O que entra no feed de amigos | Cartas Epic/Legendary e Shiny de Rare para cima; conquistas; pódio de Sprint (top 3); Torre conquistada. Últimos 14 dias, até 40 eventos | `FEED_*` (`activityFeed.ts`) |
+| #62 | Quem vê o feed | Só amigos aceitos; o próprio jogador não aparece no próprio feed; sem opção de esconder a própria atividade | `getFriendsFeed` (`activityFeedService.ts`) |
 | #46 | Seletor de liga na aba de desafio | Continua aparecendo, mas não muda nada nos desafios entre amigos (já era assim) | `TeamBuilderUI` |
 
 ---
@@ -145,7 +155,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | Liga estilo Cartola (3.2), carta "viva" (3.3), presentes e trocas (3.4), animações e replay de batalha (3.5), feed de amigos; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62) · falta: carta "viva" (3.3), animações e replay de batalha (3.5), presentes e trocas (3.4), Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -365,6 +375,16 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### Onda 9 — feed de amigos (PR #62)
+- **"Atividade dos amigos"** na página de Amigos: o que os amigos aceitos fizeram nos últimos 14 dias, do mais novo para o mais antigo (até 40 eventos), com avatar, link para o perfil, link para a página pública da carta e "há 3 horas" no idioma do jogador.
+- **Sem tabela nova e sem escrita no banco:** o feed é montado na hora (`src/lib/activityFeedService.ts`, rota `GET /api/feed`) a partir do que já tem data e estrutura. Por isso já nasce com o histórico das últimas duas semanas:
+  - **cartas tiradas** (`UserCard.createdAt`): Epic ou Legendary, ou Shiny de Rare para cima (Shiny Common/Uncommon sai em ~5% das cartas e viraria ruído). A Signature não conta (é presente por conectar o GitHub);
+  - **conquistas** desbloqueadas, com nome e nível (Bronze/Prata/Ouro) traduzidos;
+  - **pódio de Sprint** (1º a 3º), com o nome do Sprint e do tema traduzidos;
+  - **Torre conquistada** (último andar da semana).
+- Marcos de nível e promoções de elo ficaram de fora: só existem como texto livre em inglês no histórico de BITS. Entram se um dia houver uma tabela de eventos.
+- Regras puras com teste (`src/lib/activityFeed.ts`). Testado no navegador com dados temporários de cada tipo na conta de teste 1 (removidos depois), nos dois idiomas.
+
 ### Onda 8 — testes de concorrência, rodada 4 (PR #61)
 - **`scripts/concurrency-test.ts`** (`npm run test:concurrency`): dispara rajadas de requisições paralelas nas rotas de verdade do servidor de dev, logado como jogadores descartáveis criados no banco de dev (cookie de sessão gerado com o `NEXTAUTH_SECRET`; BITS iniciais entram pelo histórico). Apaga tudo no fim, inclusive os `RecentPull` que não têm chave estrangeira. Recusa rodar se o `DATABASE_URL` não for a branch dev ou se o servidor não for localhost.
 - **Cenários e o que confere:**
@@ -502,7 +522,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|---|
 | Presentear cartas | Só cartas ganhas, com taxa em BITS | M |
 | Trocas entre jogadores | Depois do presente; sem valor em dinheiro | G |
-| Feed de atividade de amigos | "Fulano tirou uma Legendary" | M |
+| ~~Feed de atividade de amigos~~ | ✅ PR #62 (cartas, conquistas, Sprints, Torre) | — |
 
 ### 3.5 Visual de batalha
 | Feature | Descrição | Esforço |
