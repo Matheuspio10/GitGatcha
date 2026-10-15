@@ -24,6 +24,7 @@ export const BITS_REASONS = {
   tower_reward: 'Tower floor cleared',
   sprint_reward: 'Sprint reward',
   card_training: 'Card training',
+  card_gift: 'Card gift',
 } as const;
 
 export type BitsReason = keyof typeof BITS_REASONS;

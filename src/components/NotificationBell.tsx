@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, UserPlus, Sword, X, ArrowCircleUp, Checks } from '@phosphor-icons/react';
+import { Bell, UserPlus, Sword, X, ArrowCircleUp, Checks, Gift } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { packIdForEnglishName, usePackText } from '@/i18n/packText';
 
 interface Notification {
   id: string;
-  type: 'friend_request' | 'battle_challenge' | 'LEVEL_UP';
+  type: 'friend_request' | 'battle_challenge' | 'LEVEL_UP' | 'card_gift' | (string & {});
   from?: string;
   message?: string;
   actionUrl?: string;
@@ -196,6 +196,7 @@ export function NotificationBell() {
               }`}>
                 {toast.type === 'friend_request' ? <UserPlus size={20} weight="bold" /> :
                  toast.type === 'battle_challenge' ? <Sword size={20} weight="bold" /> :
+                 toast.type === 'card_gift' ? <Gift size={20} weight="fill" /> :
                  <ArrowCircleUp size={24} weight="fill" />}
               </div>
               
@@ -311,6 +312,7 @@ export function NotificationBell() {
                         }`}>
                           {notif.type === 'friend_request' ? <UserPlus size={18} weight="bold" /> :
                            notif.type === 'battle_challenge' ? <Sword size={18} weight="bold" /> :
+                           notif.type === 'card_gift' ? <Gift size={18} weight="fill" /> :
                            <ArrowCircleUp size={20} weight="fill" />}
                         </div>
                         

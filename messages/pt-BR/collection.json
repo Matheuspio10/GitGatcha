@@ -120,5 +120,39 @@
     "locked": "Bloqueado: {requirement}",
     "frameLabel": "Moldura {label}",
     "updateFailed": "Não deu para atualizar"
+  },
+  "gift": {
+    "title": "Presentear um amigo",
+    "intro": "Seu amigo recebe esta carta, com o Shiny se tiver. Ela sai da sua coleção.",
+    "start": "Presentear esta carta",
+    "loading": "Carregando…",
+    "loadFailed": "Não deu para carregar as opções de presente",
+    "fee": "Taxa: {fee} BITS",
+    "dailyLeft": "{left} de {limit} presentes restantes hoje",
+    "choose": "Escolha um amigo",
+    "noFriends": "Adicione amigos para presentear cartas.",
+    "findFriends": "Encontrar amigos",
+    "ownsShort": "já tem",
+    "fullShort": "já recebeu o máximo hoje",
+    "owns": "{friend} já tem esta carta.",
+    "full": "{friend} já recebeu {limit} presentes hoje. Tente amanhã.",
+    "notFriend": "{friend} não está na sua lista de amigos.",
+    "confirmTitle": "Dar {card} para {friend}?",
+    "confirmLoses": "A carta sai da sua coleção.",
+    "confirmShiny": "O Shiny vai junto.",
+    "confirm": "Presentear por {fee} BITS",
+    "back": "Voltar",
+    "sending": "Presenteando…",
+    "sent": "{card} agora é de {friend}!",
+    "failed": "Não deu para presentear a carta",
+    "blocked": {
+      "signature": "A carta Signature é o seu próprio perfil do GitHub: ela não pode ser presenteada.",
+      "level": "Você pode presentear cartas a partir do nível {min}.",
+      "activeTeam": "Esta carta está no seu time ativo. Tire-a do time para presentear.",
+      "pendingChallenge": "Esta carta está num desafio em aberto. Espere ele acabar ou cancele.",
+      "dailySendLimit": "Você já presenteou {limit} cartas hoje. Volte amanhã."
+    },
+    "confirmTraining": "O treino (nível {level}) fica para trás: a carta do seu amigo começa sem treino.",
+    "confirmLoyalty": "A lealdade ({count} batalhas) fica para trás: recomeça do zero com o seu amigo."
   }
 }

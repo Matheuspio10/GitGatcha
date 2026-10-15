@@ -120,5 +120,39 @@
     "locked": "Locked: {requirement}",
     "frameLabel": "{label} frame",
     "updateFailed": "Could not update"
+  },
+  "gift": {
+    "title": "Give to a friend",
+    "intro": "Your friend gets this card, Shiny included. It leaves your collection.",
+    "start": "Give this card",
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load the gift options",
+    "fee": "Fee: {fee} BITS",
+    "dailyLeft": "{left} of {limit} gifts left today",
+    "choose": "Choose a friend",
+    "noFriends": "Add friends to give them cards.",
+    "findFriends": "Find friends",
+    "ownsShort": "already has it",
+    "fullShort": "full for today",
+    "owns": "{friend} already has this card.",
+    "full": "{friend} already got {limit} gifts today. Try tomorrow.",
+    "notFriend": "{friend} isn't in your friends list.",
+    "confirmTitle": "Give {card} to {friend}?",
+    "confirmLoses": "The card leaves your collection.",
+    "confirmShiny": "The Shiny goes with it.",
+    "confirm": "Give for {fee} BITS",
+    "back": "Back",
+    "sending": "Giving…",
+    "sent": "{card} is now {friend}'s!",
+    "failed": "Couldn't give the card",
+    "blocked": {
+      "signature": "Your Signature card is your own GitHub profile: it can't be given away.",
+      "level": "You can give cards from level {min}.",
+      "activeTeam": "This card is in your active team. Take it out of the team to give it.",
+      "pendingChallenge": "This card is in an open challenge. Wait for it to end or cancel it.",
+      "dailySendLimit": "You already gave {limit} cards today. Come back tomorrow."
+    },
+    "confirmTraining": "Training (level {level}) stays behind: your friend's copy starts untrained.",
+    "confirmLoyalty": "Loyalty ({count} battles) stays behind: it starts over with your friend."
   }
 }

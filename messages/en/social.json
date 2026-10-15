@@ -27,7 +27,10 @@
     "mine": "You have, they don't ({count})",
     "nothingTheirs": "Nothing here: you have every card they have.",
     "nothingMine": "Nothing here: they have every card you have.",
-    "showing": "Showing the {shown} rarest of {total}."
+    "showing": "Showing the {shown} rarest of {total}.",
+    "backToList": "Back to the list",
+    "give": "Give to {username}",
+    "giveCard": "Give {card} to {username}"
   },
   "a11y": {
     "accept": "Accept the request from {name}",

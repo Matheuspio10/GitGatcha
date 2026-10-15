@@ -27,7 +27,10 @@
     "mine": "Só você tem ({count})",
     "nothingTheirs": "Nada aqui: você tem todas as cartas que seu amigo tem.",
     "nothingMine": "Nada aqui: seu amigo tem todas as cartas que você tem.",
-    "showing": "Mostrando as {shown} mais raras de {total}."
+    "showing": "Mostrando as {shown} mais raras de {total}.",
+    "backToList": "Voltar para a lista",
+    "give": "Presentear {username}",
+    "giveCard": "Presentear {username} com {card}"
   },
   "a11y": {
     "accept": "Aceitar o pedido de {name}",

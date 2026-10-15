@@ -147,7 +147,8 @@
     "earning": "<b>Earning Fragments:</b> Pulling a card you already have counts it (x2, x3…) and gives fragments of its language: {duplicates}. Each booster also has a {chance}% chance to drop {count} fragments of its theme (or most common) language.",
     "wildcards": "<b>Wildcards:</b> Trade {rate} fragments of any language for 1 wildcard fragment. Wildcards pay for any language, and they are the only way to craft developers with no primary language.",
     "shiny": "<b>Shiny:</b> Every pull has a {chance}% chance to be Shiny, duplicates included: a duplicate can turn your card Shiny.",
-    "wishlist": "<b>Wishlist:</b> Add developers to your Wishlist to easily track your fragment progress towards acquiring them."
+    "wishlist": "<b>Wishlist:</b> Add developers to your Wishlist to easily track your fragment progress towards acquiring them.",
+    "gifts": "<b>Gifts:</b> give one of your cards to a friend (it leaves your collection; the Shiny goes with it, training and loyalty start over). The sender pays a fee that leaves the game: {fees}. From level {level}, up to {sendLimit} gifts sent and {receiveLimit} received per day. The Signature card, cards in your active team and cards in an open challenge can't be given."
   },
   "synergies": {
     "intro": "Stacking cards of identical languages grants powerful Synergy passives to your entire team. Mixed diversity also grants bonuses.",
@@ -207,26 +208,85 @@
     "requirement": "Requirement"
   },
   "glossary": {
-    "atk": { "term": "ATK", "def": "Base Attack stat. Determines damage dealt." },
-    "bits": { "term": "BITS", "def": "The in-game currency used to buy packs, craft in the Forge, enter the Legendary League and restore stamina." },
-    "closer": { "term": "Closer", "def": "The third and final card slot in a team." },
-    "common": { "def": "The lowest rarity tier ({mult, number}x stat multiplier)." },
-    "def": { "term": "DEF", "def": "Base Defense stat. Blocks DEF / ({k} + DEF) of every hit, up to {max}." },
-    "eternal": { "def": "The maximum Loyalty rank, reached at {battles} battles." },
-    "exhausted": { "term": "Exhausted", "def": "A card at 0 Stamina. Cannot participate in battles." },
-    "fragment": { "term": "Fragment", "def": "Currency earned from dupes, used in the Forge to craft specific cards." },
-    "hp": { "term": "HP", "def": "Health Points. Reaching 0 means defeat." },
-    "legendary": { "def": "The highest rarity tier ({mult, number}x stat multiplier). Very low pull rates." },
-    "rating": { "term": "Rating", "def": "PvP ELO score (Ranked and friend challenges) shown on the leaderboard, with a rank from {lowest} to {highest}. Starts at {rating}." },
-    "mid": { "term": "Mid", "def": "The second card slot in a team." },
-    "momentum": { "term": "Momentum", "def": "ATK/DEF bonus activated after a single card defeats 2 enemies in a row." },
-    "opener": { "term": "Opener", "def": "The first card slot. Enters battle first." },
-    "passive": { "term": "Passive", "def": "An innate ability specific to a language type." },
-    "power": { "term": "Power", "def": "Composite strength score of ATK, DEF, and HP." },
-    "synergy": { "term": "Synergy", "def": "Team-wide bonus granted by stacking similar card types." },
-    "typeAdvantage": { "term": "Type Advantage", "def": "When a language beats another, granting {mult, number}x damage." },
-    "veteran": { "def": "First Loyalty rank, reached at {battles} battles." },
-    "wishlist": { "term": "Wishlist", "def": "Forge feature measuring fragment progress for a target card." },
-    "xp": { "term": "XP", "def": "Account experience earned from battles and other activities. Leveling up grants reward boosters." }
+    "atk": {
+      "term": "ATK",
+      "def": "Base Attack stat. Determines damage dealt."
+    },
+    "bits": {
+      "term": "BITS",
+      "def": "The in-game currency used to buy packs, craft in the Forge, enter the Legendary League and restore stamina."
+    },
+    "closer": {
+      "term": "Closer",
+      "def": "The third and final card slot in a team."
+    },
+    "common": {
+      "def": "The lowest rarity tier ({mult, number}x stat multiplier)."
+    },
+    "def": {
+      "term": "DEF",
+      "def": "Base Defense stat. Blocks DEF / ({k} + DEF) of every hit, up to {max}."
+    },
+    "eternal": {
+      "def": "The maximum Loyalty rank, reached at {battles} battles."
+    },
+    "exhausted": {
+      "term": "Exhausted",
+      "def": "A card at 0 Stamina. Cannot participate in battles."
+    },
+    "fragment": {
+      "term": "Fragment",
+      "def": "Currency earned from dupes, used in the Forge to craft specific cards."
+    },
+    "hp": {
+      "term": "HP",
+      "def": "Health Points. Reaching 0 means defeat."
+    },
+    "legendary": {
+      "def": "The highest rarity tier ({mult, number}x stat multiplier). Very low pull rates."
+    },
+    "rating": {
+      "term": "Rating",
+      "def": "PvP ELO score (Ranked and friend challenges) shown on the leaderboard, with a rank from {lowest} to {highest}. Starts at {rating}."
+    },
+    "mid": {
+      "term": "Mid",
+      "def": "The second card slot in a team."
+    },
+    "momentum": {
+      "term": "Momentum",
+      "def": "ATK/DEF bonus activated after a single card defeats 2 enemies in a row."
+    },
+    "opener": {
+      "term": "Opener",
+      "def": "The first card slot. Enters battle first."
+    },
+    "passive": {
+      "term": "Passive",
+      "def": "An innate ability specific to a language type."
+    },
+    "power": {
+      "term": "Power",
+      "def": "Composite strength score of ATK, DEF, and HP."
+    },
+    "synergy": {
+      "term": "Synergy",
+      "def": "Team-wide bonus granted by stacking similar card types."
+    },
+    "typeAdvantage": {
+      "term": "Type Advantage",
+      "def": "When a language beats another, granting {mult, number}x damage."
+    },
+    "veteran": {
+      "def": "First Loyalty rank, reached at {battles} battles."
+    },
+    "wishlist": {
+      "term": "Wishlist",
+      "def": "Forge feature measuring fragment progress for a target card."
+    },
+    "xp": {
+      "term": "XP",
+      "def": "Account experience earned from battles and other activities. Leveling up grants reward boosters."
+    }
   }
 }

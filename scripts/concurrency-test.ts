@@ -16,6 +16,7 @@ import { encode } from 'next-auth/jwt';
 import { prisma } from '../src/lib/prisma';
 import { addBits } from '../src/lib/bitsLedger';
 import { ALL_PACKS } from '../src/lib/packDefinitions';
+import { GIFT_DAILY_SEND_LIMIT, GIFT_MIN_LEVEL } from '../src/lib/gifts';
 
 const DEV_DB_HOST = 'ep-weathered-hill';
 const BASE_URL = process.argv[2] ?? 'http://localhost:3005';
@@ -62,6 +63,8 @@ async function cleanup() {
   if (created.length === 0) return;
   await prisma.battle.deleteMany({ where: { OR: [{ challengerId: { in: created } }, { defenderId: { in: created } }] } });
   await prisma.userMission.deleteMany({ where: { userId: { in: created } } });
+  await prisma.cardGift.deleteMany({ where: { OR: [{ senderId: { in: created } }, { receiverId: { in: created } }] } });
+  await prisma.friendship.deleteMany({ where: { OR: [{ userId: { in: created } }, { friendId: { in: created } }] } });
   await prisma.userCard.deleteMany({ where: { userId: { in: created } } });
   await prisma.recentPull.deleteMany({ where: { userId: { in: created } } });
   await prisma.user.deleteMany({ where: { id: { in: created } } });
@@ -230,6 +233,56 @@ async function testChallengeAccept() {
   check('no server errors', no500(results));
 }
 
+/** Accepted friends, and every player at the level that may give cards. */
+async function befriend(...players: Player[]) {
+  await prisma.user.updateMany({ where: { id: { in: players.map(p => p.id) } }, data: { level: GIFT_MIN_LEVEL } });
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      await prisma.friendship.create({ data: { userId: players[i].id, friendId: players[j].id, status: 'ACCEPTED' } });
+    }
+  }
+}
+
+async function testGiftSameCard() {
+  console.log('\nGift: 6 parallel gifts of the same card to 2 friends');
+  const [a, b, c] = await Promise.all([makePlayer('ga', 1000), makePlayer('gb', 0), makePlayer('gc', 0)]);
+  await befriend(a, b, c);
+  const [cardId] = await giveCards(a, 1, 12);
+  const results = await burst(6, i => call(a, 'POST', '/api/gifts', { cardId, toUsername: (i % 2 ? c : b).username }));
+  console.log(`  ${summary(results)}`);
+  check('exactly 1 gift goes through', results.filter(ok200).length === 1);
+  check('the others are told the card is gone', results.filter(r => !ok200(r)).every(r => r.body.code === 'gifts.cardNotFound'));
+  const owners = await prisma.userCard.findMany({ where: { cardId, userId: { in: [a.id, b.id, c.id] } }, select: { userId: true } });
+  check('the card exists once, with a friend', owners.length === 1 && owners[0].userId !== a.id, JSON.stringify(owners));
+  const fees = await prisma.bitsTransaction.count({ where: { userId: a.id, reason: 'card_gift' } });
+  check('the fee is paid once', fees === 1, `${fees} fee rows`);
+  const ledger = await ledgerMatches(a);
+  check('BITS history matches the balance', ledger.ok, ledger.detail);
+  check('no server errors', no500(results));
+}
+
+async function testGiftCross() {
+  console.log(`\nGift: 2 friends giving each other 4 cards each at once (limit ${GIFT_DAILY_SEND_LIMIT}/day)`);
+  const [a, b] = await Promise.all([makePlayer('xa', 5000), makePlayer('xb', 5000)]);
+  await befriend(a, b);
+  const [aCards, bCards] = await Promise.all([giveCards(a, 4, 13), giveCards(b, 4, 17)]);
+  const results = await burst(8, i => (i % 2
+    ? call(a, 'POST', '/api/gifts', { cardId: aCards[i >> 1], toUsername: b.username })
+    : call(b, 'POST', '/api/gifts', { cardId: bCards[i >> 1], toUsername: a.username })));
+  console.log(`  ${summary(results)}`);
+  const sentA = await prisma.cardGift.count({ where: { senderId: a.id } });
+  const sentB = await prisma.cardGift.count({ where: { senderId: b.id } });
+  check(`each sends exactly ${GIFT_DAILY_SEND_LIMIT} (no deadlock, limit held)`, sentA === GIFT_DAILY_SEND_LIMIT && sentB === GIFT_DAILY_SEND_LIMIT, `a ${sentA}, b ${sentB}`);
+  check('the rest hit a daily limit', results.filter(r => !ok200(r)).every(r => r.body.code === 'gifts.dailySendLimit' || r.body.code === 'gifts.dailyReceiveLimit'));
+  const total = await prisma.userCard.count({ where: { userId: { in: [a.id, b.id] }, cardId: { in: [...aCards, ...bCards] } } });
+  check('no card was lost or copied', total === 8, `${total} cards`);
+  for (const p of [a, b]) {
+    const ledger = await ledgerMatches(p);
+    check(`BITS history matches the balance (${p.username.slice(-2)})`, ledger.ok, ledger.detail);
+  }
+  check('no server errors', no500(results));
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
@@ -243,6 +296,8 @@ async function main() {
     await testDaily();
     await testChallengeCreation();
     await testChallengeAccept();
+    await testGiftSameCard();
+    await testGiftCross();
   } finally {
     await cleanup();
     await prisma.$disconnect();

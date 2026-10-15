@@ -23,7 +23,7 @@ export async function getFriendsFeed(userId: string, now = new Date()): Promise<
   const since = new Date(now.getTime() - FEED_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const take = FEED_LIMIT;
 
-  const [pulls, achievements, sprints, towers, users] = await Promise.all([
+  const [pulls, achievements, sprints, towers, users, gifts] = await Promise.all([
     prisma.userCard.findMany({
       where: {
         userId: { in: ids },
@@ -34,7 +34,7 @@ export async function getFriendsFeed(userId: string, now = new Date()): Promise<
           { isShiny: true, card: { rarity: { in: [...FEED_SHINY_RARITIES] } } },
         ],
       },
-      select: { id: true, userId: true, createdAt: true, isShiny: true, card: { select: { githubUsername: true, name: true, rarity: true, avatarUrl: true } } },
+      select: { id: true, userId: true, cardId: true, createdAt: true, isShiny: true, card: { select: { githubUsername: true, name: true, rarity: true, avatarUrl: true } } },
       orderBy: { createdAt: 'desc' },
       take,
     }),
@@ -57,14 +57,17 @@ export async function getFriendsFeed(userId: string, now = new Date()): Promise<
       take,
     }),
     prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, username: true, image: true } }),
+    // A card a friend received as a gift is not a pull
+    prisma.cardGift.findMany({ where: { receiverId: { in: ids }, createdAt: { gte: since } }, select: { receiverId: true, cardId: true } }),
   ]);
+  const gifted = new Set(gifts.map(g => `${g.receiverId}:${g.cardId}`));
 
   const people = new Map<string, FeedUser>();
   for (const u of users) if (u.username) people.set(u.id, { username: u.username, image: u.image });
   const achievementNames = new Map(ACHIEVEMENTS.map(a => [a.id, a.name]));
 
   const events: FeedEvent[][] = [
-    pulls.filter(p => isFeedPull(p.card.rarity, p.isShiny)).flatMap(p => {
+    pulls.filter(p => isFeedPull(p.card.rarity, p.isShiny) && !gifted.has(`${p.userId}:${p.cardId}`)).flatMap(p => {
       const user = people.get(p.userId);
       return user ? [{
         id: `pull:${p.id}`, type: 'pull' as const, at: p.createdAt.toISOString(), user,
