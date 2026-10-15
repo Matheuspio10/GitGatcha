@@ -203,5 +203,33 @@
     "alreadyOwned": "{name} já tem {card}",
     "loadFailed": "Não deu para carregar as opções de presente",
     "failed": "Não deu para presentear a carta"
+  },
+  "trades": {
+    "friendRequired": "Escolha um amigo",
+    "actionRequired": "Escolha aceitar, recusar ou cancelar",
+    "loadFailed": "Não deu para carregar as suas trocas",
+    "failed": "Não deu para concluir a troca",
+    "friendNotFound": "Jogador não encontrado",
+    "self": "Você não pode trocar consigo mesmo",
+    "notFriends": "Você só pode trocar com amigos",
+    "emptySide": "Escolha pelo menos uma carta de cada lado",
+    "tooManyCards": "No máximo {max} cartas de cada lado",
+    "duplicateCard": "A mesma carta não pode estar nos dois lados",
+    "level": "Você pode trocar a partir do nível {min}",
+    "friendLevel": "{name} só pode trocar a partir do nível {min}",
+    "tooManyPending": "Você já tem {max} propostas em aberto. Espere as respostas ou cancele uma.",
+    "cantAfford": "Você precisa de {fee} BITS para a taxa desta troca",
+    "friendCantAfford": "{name} não tem os BITS da taxa agora",
+    "cardGone": "Uma carta desta troca não está mais com {name}",
+    "signature": "{card} é uma carta Signature: não pode ser trocada",
+    "activeTeam": "{card} está no time ativo de {name}",
+    "pendingChallenge": "{card} está num desafio em aberto de {name}",
+    "alreadyOwned": "{name} já tem {card}",
+    "dailyLimit": "Você pode fazer {limit} trocas por dia. Volte amanhã.",
+    "friendDailyLimit": "{name} já fez {limit} trocas hoje",
+    "notFound": "Troca não encontrada",
+    "notYours": "Essa decisão não é sua",
+    "notPending": "Esta troca já foi respondida",
+    "expired": "Esta proposta expirou"
   }
 }

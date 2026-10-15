@@ -27,21 +27,28 @@ export function giftFee(rarity: string): number {
   return GIFT_FEE[rarity as Rarity] ?? GIFT_FEE.Common;
 }
 
+/** Why a copy can't change hands at all (gifts and trades), or null. */
+export type TransferBlock = 'signature' | 'activeTeam' | 'pendingChallenge';
+
+export function transferBlock(card: { edition: string; inActiveTeam: boolean; inPendingChallenge: boolean }): TransferBlock | null {
+  // The Signature is the player's own GitHub profile: it never changes hands
+  if (card.edition === 'signature') return 'signature';
+  // The saved Ranked team and open challenges point at this copy
+  if (card.inActiveTeam) return 'activeTeam';
+  if (card.inPendingChallenge) return 'pendingChallenge';
+  return null;
+}
+
 /** Why a card can't be given right now (a key of apiErrors.gifts), or null. */
-export type GiftBlock = 'signature' | 'activeTeam' | 'pendingChallenge' | 'level' | 'dailySendLimit';
+export type GiftBlock = TransferBlock | 'level' | 'dailySendLimit';
 
 export function giftBlock(
   card: { edition: string; inActiveTeam: boolean; inPendingChallenge: boolean },
   sender: { level: number; sentToday: number },
 ): GiftBlock | null {
-  // The Signature is the player's own GitHub profile: it never changes hands
   if (card.edition === 'signature') return 'signature';
   if (sender.level < GIFT_MIN_LEVEL) return 'level';
-  // The saved Ranked team and open challenges point at this copy
-  if (card.inActiveTeam) return 'activeTeam';
-  if (card.inPendingChallenge) return 'pendingChallenge';
-  if (sender.sentToday >= GIFT_DAILY_SEND_LIMIT) return 'dailySendLimit';
-  return null;
+  return transferBlock(card) ?? (sender.sentToday >= GIFT_DAILY_SEND_LIMIT ? 'dailySendLimit' : null);
 }
 
 /** Midnight UTC of `now`'s day: the daily limits reset then. */

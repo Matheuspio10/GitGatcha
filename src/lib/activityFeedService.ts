@@ -23,7 +23,7 @@ export async function getFriendsFeed(userId: string, now = new Date()): Promise<
   const since = new Date(now.getTime() - FEED_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const take = FEED_LIMIT;
 
-  const [pulls, achievements, sprints, towers, users, gifts] = await Promise.all([
+  const [pulls, achievements, sprints, towers, users, gifts, trades] = await Promise.all([
     prisma.userCard.findMany({
       where: {
         userId: { in: ids },
@@ -57,10 +57,20 @@ export async function getFriendsFeed(userId: string, now = new Date()): Promise<
       take,
     }),
     prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, username: true, image: true } }),
-    // A card a friend received as a gift is not a pull
+    // A card a friend received as a gift or in a trade is not a pull
     prisma.cardGift.findMany({ where: { receiverId: { in: ids }, createdAt: { gte: since } }, select: { receiverId: true, cardId: true } }),
+    prisma.cardTrade.findMany({
+      where: { status: 'ACCEPTED', respondedAt: { gte: since }, OR: [{ proposerId: { in: ids } }, { receiverId: { in: ids } }] },
+      select: { proposerId: true, receiverId: true, offeredCardIds: true, requestedCardIds: true },
+    }),
   ]);
-  const gifted = new Set(gifts.map(g => `${g.receiverId}:${g.cardId}`));
+  const gifted = new Set([
+    ...gifts.map(g => `${g.receiverId}:${g.cardId}`),
+    ...trades.flatMap(t => [
+      ...t.requestedCardIds.map(id => `${t.proposerId}:${id}`),
+      ...t.offeredCardIds.map(id => `${t.receiverId}:${id}`),
+    ]),
+  ]);
 
   const people = new Map<string, FeedUser>();
   for (const u of users) if (u.username) people.set(u.id, { username: u.username, image: u.image });

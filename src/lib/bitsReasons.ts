@@ -25,6 +25,7 @@ export const BITS_REASONS = {
   sprint_reward: 'Sprint reward',
   card_training: 'Card training',
   card_gift: 'Card gift',
+  card_trade: 'Card trade',
 } as const;
 
 export type BitsReason = keyof typeof BITS_REASONS;

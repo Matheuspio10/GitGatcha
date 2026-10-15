@@ -1,6 +1,7 @@
 import { prisma } from './prisma';
 import { spendBits } from './bitsLedger';
-import { lockUser, UserFacingError, type Tx } from './userLock';
+import { UserFacingError, type Tx } from './userLock';
+import { inPendingChallenge, lockPlayers, moveCard, ownedCardSelect } from './cardTransfer';
 import { pushNotification } from './notifications';
 import { areFriends } from './challengeService';
 import {
@@ -8,7 +9,6 @@ import {
   GIFT_DAILY_SEND_LIMIT,
   GIFT_MIN_LEVEL,
   giftBlock,
-  giftedCopy,
   giftFee,
   startOfUtcDay,
   type GiftBlock,
@@ -25,22 +25,6 @@ const sentToday = (db: Tx | typeof prisma, senderId: string, now = new Date()) =
 
 const receivedToday = (db: Tx | typeof prisma, receiverId: string, now = new Date()) =>
   db.cardGift.count({ where: { receiverId, createdAt: { gte: startOfUtcDay(now) } } });
-
-/** Whether an open challenge of the sender holds this copy in its saved team. */
-async function inPendingChallenge(db: Tx | typeof prisma, senderId: string, userCardId: string): Promise<boolean> {
-  const open = await db.battle.findMany({
-    where: { challengerId: senderId, status: { in: ['PENDING', 'RESOLVING'] } },
-    select: { challengerTeam: true },
-  });
-  return open.some(b => Array.isArray(b.challengerTeam)
-    && b.challengerTeam.some(c => !!c && typeof c === 'object' && (c as { id?: unknown }).id === userCardId));
-}
-
-const ownedCardSelect = {
-  id: true, cardId: true, isShiny: true, edition: true, inActiveTeam: true, stamina: true, lastUsedAt: true,
-  trainingLevel: true, loyaltyCount: true,
-  card: { select: { name: true, rarity: true, avatarUrl: true } },
-} as const;
 
 /** What the gift dialog shows for one of the player's cards: the fee, what blocks it and each friend. */
 export async function giftOptions(userId: string, cardId: string) {
@@ -109,7 +93,7 @@ export async function sendGift(senderId: string, cardId: string, receiverUsernam
 
   return prisma.$transaction(async (tx) => {
     // Both locks, always in the same order: two friends gifting each other at once can't deadlock
-    for (const id of [senderId, receiver.id].sort()) await lockUser(tx, id);
+    await lockPlayers(tx, [senderId, receiver.id]);
 
     const owned = await tx.userCard.findUnique({ where: { userId_cardId: { userId: senderId, cardId } }, select: ownedCardSelect });
     if (!owned) throw new UserFacingError('gifts.cardNotFound', 404);
@@ -131,8 +115,7 @@ export async function sendGift(senderId: string, cardId: string, receiverUsernam
     const balance = await spendBits(senderId, fee, 'card_gift', { tx, detail: `${owned.card.name} → ${receiver.username}` });
     if (balance === null) throw new UserFacingError('common.notEnoughBits');
 
-    await tx.userCard.delete({ where: { id: owned.id } });
-    const created = await tx.userCard.create({ data: giftedCopy(owned, receiver.id), select: { id: true } });
+    const created = await moveCard(tx, owned, receiver.id);
     await tx.cardGift.create({ data: { senderId, receiverId: receiver.id, cardId, isShiny: owned.isShiny, fee } });
 
     const from = sender?.username ?? sender?.name ?? 'A friend';

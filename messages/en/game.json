@@ -105,7 +105,8 @@
     "tower_reward": "Tower floor cleared",
     "sprint_reward": "Sprint reward",
     "card_training": "Card training",
-    "card_gift": "Card gift"
+    "card_gift": "Card gift",
+    "card_trade": "Card trade"
   },
   "cardTitles": {
     "one-hit-wonder": "One-Hit Wonder",

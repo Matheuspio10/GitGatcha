@@ -30,7 +30,19 @@
     "showing": "Mostrando as {shown} mais raras de {total}.",
     "backToList": "Voltar para a lista",
     "give": "Presentear {username}",
-    "giveCard": "Presentear {username} com {card}"
+    "giveCard": "Presentear {username} com {card}",
+    "trade": {
+      "start": "Propor troca",
+      "stop": "Cancelar troca",
+      "hint": "Escolha até {max} cartas do seu amigo e até {max} suas.",
+      "locked": "travada",
+      "summary": "Você dá {give, plural, one {# carta} other {# cartas}} e recebe {get, plural, one {# carta} other {# cartas}}",
+      "fees": "Sua taxa: {mine} BITS · taxa de {username}: {theirs} BITS (pagas no aceite)",
+      "send": "Enviar proposta",
+      "sending": "Enviando…",
+      "sent": "Proposta enviada para {username}!",
+      "failed": "Não deu para enviar a proposta"
+    }
   },
   "a11y": {
     "accept": "Aceitar o pedido de {name}",
@@ -48,5 +60,32 @@
     "achievement": "<who>{user}</who> desbloqueou {achievement} ({tier})",
     "sprint": "<who>{user}</who> ficou em {position}º na {sprint} · {theme}",
     "tower": "<who>{user}</who> conquistou a {tower}"
+  },
+  "trades": {
+    "title": "Trocas",
+    "empty": "Nenhuma troca ainda. Abra \"Comparar coleções\" com um amigo e escolha \"Propor troca\".",
+    "limits": "{done} de {limit} trocas feitas hoje",
+    "incoming": "Recebidas ({count})",
+    "outgoing": "Enviadas ({count})",
+    "history": "Últimas trocas ({count})",
+    "youGive": "Você dá",
+    "youGet": "Você recebe",
+    "yourFee": "Sua taxa: {fee} BITS",
+    "expires": "expira em {date}",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "cancel": "Cancelar",
+    "failed": "Não deu para atualizar a troca",
+    "done": {
+      "accept": "Troca feita! As cartas estão na sua coleção.",
+      "decline": "Você recusou a troca de {name}",
+      "cancel": "Proposta cancelada"
+    },
+    "status": {
+      "ACCEPTED": "Feita",
+      "DECLINED": "Recusada",
+      "CANCELLED": "Cancelada",
+      "EXPIRED": "Expirou"
+    }
   }
 }

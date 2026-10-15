@@ -63,6 +63,7 @@ async function cleanup() {
   if (created.length === 0) return;
   await prisma.battle.deleteMany({ where: { OR: [{ challengerId: { in: created } }, { defenderId: { in: created } }] } });
   await prisma.userMission.deleteMany({ where: { userId: { in: created } } });
+  await prisma.cardTrade.deleteMany({ where: { OR: [{ proposerId: { in: created } }, { receiverId: { in: created } }] } });
   await prisma.cardGift.deleteMany({ where: { OR: [{ senderId: { in: created } }, { receiverId: { in: created } }] } });
   await prisma.friendship.deleteMany({ where: { OR: [{ userId: { in: created } }, { friendId: { in: created } }] } });
   await prisma.userCard.deleteMany({ where: { userId: { in: created } } });
@@ -283,6 +284,60 @@ async function testGiftCross() {
   check('no server errors', no500(results));
 }
 
+async function propose(from: Player, to: Player, offered: string[], requested: string[]): Promise<string | undefined> {
+  const res = await call(from, 'POST', '/api/trades', { toUsername: to.username, offered, requested });
+  check('trade proposed', ok200(res), `${res.status} ${JSON.stringify(res.body).slice(0, 120)}`);
+  return res.body.id as string | undefined;
+}
+
+const holder = async (cardId: string, players: Player[]) =>
+  prisma.userCard.findMany({ where: { cardId, userId: { in: players.map(p => p.id) } }, select: { userId: true } });
+
+async function testTradeAccept() {
+  console.log('\nTrade: 6 parallel accepts of one proposal');
+  const [a, b] = await Promise.all([makePlayer('ta', 3000), makePlayer('tb', 3000)]);
+  await befriend(a, b);
+  const [[x], [y]] = await Promise.all([giveCards(a, 1, 21), giveCards(b, 1, 22)]);
+  const id = await propose(a, b, [x], [y]);
+  if (!id) return;
+  const results = await burst(6, () => call(b, 'POST', `/api/trades/${id}`, { action: 'accept' }));
+  console.log(`  ${summary(results)}`);
+  check('exactly 1 accept goes through', results.filter(ok200).length === 1);
+  check('the others are told it was answered', results.filter(r => !ok200(r)).every(r => r.body.code === 'trades.notPending'));
+  const [hx, hy] = await Promise.all([holder(x, [a, b]), holder(y, [a, b])]);
+  check('the cards swapped once', hx.length === 1 && hx[0].userId === b.id && hy.length === 1 && hy[0].userId === a.id);
+  const fees = await prisma.bitsTransaction.count({ where: { userId: { in: [a.id, b.id] }, reason: 'card_trade' } });
+  check('each side paid its fee once', fees === 2, `${fees} fee rows`);
+  for (const p of [a, b]) {
+    const ledger = await ledgerMatches(p);
+    check(`BITS history matches the balance (${p.username.slice(-2)})`, ledger.ok, ledger.detail);
+  }
+  check('no server errors', no500(results));
+}
+
+async function testTradeVersusGift() {
+  console.log('\nTrade vs gift: accepting a trade while the proposer gives the same card away');
+  const [a, b, c] = await Promise.all([makePlayer('va', 3000), makePlayer('vb', 3000), makePlayer('vc', 0)]);
+  await befriend(a, b, c);
+  const [[x], [y]] = await Promise.all([giveCards(a, 1, 23), giveCards(b, 1, 24)]);
+  const id = await propose(a, b, [x], [y]);
+  if (!id) return;
+  const results = await burst(6, i => (i % 2
+    ? call(b, 'POST', `/api/trades/${id}`, { action: 'accept' })
+    : call(a, 'POST', '/api/gifts', { cardId: x, toUsername: c.username })));
+  console.log(`  ${summary(results)}`);
+  const [hx, hy] = await Promise.all([holder(x, [a, b, c]), holder(y, [a, b, c])]);
+  check('the contested card exists once, away from the proposer', hx.length === 1 && hx[0].userId !== a.id, JSON.stringify(hx));
+  const traded = hx[0]?.userId === b.id;
+  check('the other card moved only if the trade won', hy.length === 1 && hy[0].userId === (traded ? a.id : b.id));
+  check('exactly one of the two went through', results.filter(ok200).length === 1, summary(results));
+  for (const p of [a, b, c]) {
+    const ledger = await ledgerMatches(p);
+    check(`BITS history matches the balance (${p.username.slice(-2)})`, ledger.ok, ledger.detail);
+  }
+  check('no server errors', no500(results));
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
@@ -298,6 +353,8 @@ async function main() {
     await testChallengeAccept();
     await testGiftSameCard();
     await testGiftCross();
+    await testTradeAccept();
+    await testTradeVersusGift();
   } finally {
     await cleanup();
     await prisma.$disconnect();

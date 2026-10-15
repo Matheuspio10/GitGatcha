@@ -71,6 +71,8 @@ model User {
   sprintResults       SprintResult[]
   giftsSent           CardGift[]      @relation("GiftsSent")
   giftsReceived       CardGift[]      @relation("GiftsReceived")
+  tradesProposed      CardTrade[]     @relation("TradesProposed")
+  tradesReceived      CardTrade[]     @relation("TradesReceived")
 
   @@index([referredById])
 }
@@ -393,6 +395,32 @@ model CardGift {
 
   @@index([senderId, createdAt])
   @@index([receiverId, createdAt])
+}
+
+// A card swap between two friends (tradeService.ts): the proposer offers some of
+// their cards for some of the receiver's. Nothing is reserved while it waits;
+// everything is checked again when the receiver accepts.
+model CardTrade {
+  id               String    @id @default(uuid())
+  proposerId       String
+  receiverId       String
+  // Card ids (Card.id): what the proposer gives, and what they ask for in return
+  offeredCardIds   String[]
+  requestedCardIds String[]
+  // PENDING, then ACCEPTED, DECLINED, CANCELLED (by the proposer) or EXPIRED
+  status           String    @default("PENDING")
+  // BITS each side paid on acceptance (gone from the game)
+  proposerFee      Int       @default(0)
+  receiverFee      Int       @default(0)
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime
+  respondedAt      DateTime?
+
+  proposer User @relation("TradesProposed", fields: [proposerId], references: [id], onDelete: Cascade)
+  receiver User @relation("TradesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([proposerId, status])
+  @@index([receiverId, status])
 }
 
 model BitsTransaction {

@@ -30,7 +30,19 @@
     "showing": "Showing the {shown} rarest of {total}.",
     "backToList": "Back to the list",
     "give": "Give to {username}",
-    "giveCard": "Give {card} to {username}"
+    "giveCard": "Give {card} to {username}",
+    "trade": {
+      "start": "Propose a trade",
+      "stop": "Cancel trade",
+      "hint": "Pick up to {max} of your friend's cards and up to {max} of yours.",
+      "locked": "locked",
+      "summary": "You give {give, plural, one {# card} other {# cards}} and get {get, plural, one {# card} other {# cards}}",
+      "fees": "Your fee: {mine} BITS · {username}'s fee: {theirs} BITS (paid on acceptance)",
+      "send": "Send proposal",
+      "sending": "Sending…",
+      "sent": "Proposal sent to {username}!",
+      "failed": "Couldn't send the proposal"
+    }
   },
   "a11y": {
     "accept": "Accept the request from {name}",
@@ -48,5 +60,32 @@
     "achievement": "<who>{user}</who> unlocked {achievement} ({tier})",
     "sprint": "<who>{user}</who> finished #{position} in the {sprint} · {theme}",
     "tower": "<who>{user}</who> conquered {tower}"
+  },
+  "trades": {
+    "title": "Trades",
+    "empty": "No trades yet. Open \"Compare collections\" with a friend and choose \"Propose a trade\".",
+    "limits": "{done} of {limit} trades made today",
+    "incoming": "Received ({count})",
+    "outgoing": "Sent ({count})",
+    "history": "Last trades ({count})",
+    "youGive": "You give",
+    "youGet": "You get",
+    "yourFee": "Your fee: {fee} BITS",
+    "expires": "expires {date}",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "failed": "Couldn't update the trade",
+    "done": {
+      "accept": "Trade done! The cards are in your collection.",
+      "decline": "You declined {name}'s trade",
+      "cancel": "Proposal cancelled"
+    },
+    "status": {
+      "ACCEPTED": "Done",
+      "DECLINED": "Declined",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    }
   }
 }

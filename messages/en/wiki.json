@@ -148,7 +148,8 @@
     "wildcards": "<b>Wildcards:</b> Trade {rate} fragments of any language for 1 wildcard fragment. Wildcards pay for any language, and they are the only way to craft developers with no primary language.",
     "shiny": "<b>Shiny:</b> Every pull has a {chance}% chance to be Shiny, duplicates included: a duplicate can turn your card Shiny.",
     "wishlist": "<b>Wishlist:</b> Add developers to your Wishlist to easily track your fragment progress towards acquiring them.",
-    "gifts": "<b>Gifts:</b> give one of your cards to a friend (it leaves your collection; the Shiny goes with it, training and loyalty start over). The sender pays a fee that leaves the game: {fees}. From level {level}, up to {sendLimit} gifts sent and {receiveLimit} received per day. The Signature card, cards in your active team and cards in an open challenge can't be given."
+    "gifts": "<b>Gifts:</b> give one of your cards to a friend (it leaves your collection; the Shiny goes with it, training and loyalty start over). The sender pays a fee that leaves the game: {fees}. From level {level}, up to {sendLimit} gifts sent and {receiveLimit} received per day. The Signature card, cards in your active team and cards in an open challenge can't be given.",
+    "trades": "<b>Trades:</b> swap cards with a friend: from \"Compare collections\", pick up to {max} of their cards and up to {max} of yours. Your friend accepts or declines on the Friends page; proposals expire after {hours} hours. Each side pays the gift fee of the cards it gives, from level {level}, up to {daily} trades a day and {pending} open proposals. The same cards as gifts can't be traded, and everything is checked again when the trade is accepted."
   },
   "synergies": {
     "intro": "Stacking cards of identical languages grants powerful Synergy passives to your entire team. Mixed diversity also grants bonuses.",

@@ -105,7 +105,8 @@
     "tower_reward": "Andar da Torre concluído",
     "sprint_reward": "Recompensa de Sprint",
     "card_training": "Treino de carta",
-    "card_gift": "Presente de carta"
+    "card_gift": "Presente de carta",
+    "card_trade": "Troca de cartas"
   },
   "cardTitles": {
     "one-hit-wonder": "Hit Único",
