@@ -17,6 +17,8 @@ import { prisma } from '../src/lib/prisma';
 import { addBits } from '../src/lib/bitsLedger';
 import { ALL_PACKS } from '../src/lib/packDefinitions';
 import { GIFT_DAILY_SEND_LIMIT, GIFT_MIN_LEVEL } from '../src/lib/gifts';
+import { closeRound } from '../src/lib/leagueService';
+import { LEAGUE_PARTICIPATION_BITS, leagueRewardFor } from '../src/lib/league';
 
 const DEV_DB_HOST = 'ep-weathered-hill';
 const BASE_URL = process.argv[2] ?? 'http://localhost:3005';
@@ -338,6 +340,36 @@ async function testTradeVersusGift() {
   check('no server errors', no500(results));
 }
 
+async function testLeagueClose() {
+  console.log('\nDev League: 4 parallel closes of one round');
+  // A round long gone, so nothing else in the database is due with it
+  const roundId = '2020-01-06';
+  const startsAt = new Date(`${roundId}T00:00:00Z`);
+  await prisma.leagueRound.deleteMany({ where: { id: roundId } });
+  await prisma.leagueRound.create({ data: { id: roundId, startsAt, endsAt: new Date(startsAt.getTime() + 7 * 24 * 3600_000) } });
+  try {
+    const players = await Promise.all([makePlayer('la', 0), makePlayer('lb', 0), makePlayer('lc', 0)]);
+    const points = [300, 120, 120]; // the last two tie for 2nd
+    await prisma.leagueLineup.createMany({
+      data: players.map((p, i) => ({ roundId, userId: p.id, cardIds: ['x1', 'x2', 'x3', 'x4', 'x5'], captainId: 'x1', cost: 10, points: points[i] })),
+    });
+    const results = await Promise.all([0, 1, 2, 3].map(() => closeRound(roundId, new Date())));
+    check('exactly 1 close goes through', results.filter(Boolean).length === 1, JSON.stringify(results));
+    const lineups = await prisma.leagueLineup.findMany({ where: { roundId }, select: { userId: true, position: true, rewardBits: true } });
+    const pos = (p: Player) => lineups.find(l => l.userId === p.id)?.position;
+    check('ranked with ties', pos(players[0]) === 1 && pos(players[1]) === 2 && pos(players[2]) === 2);
+    for (const [i, p] of players.entries()) {
+      const rows = await prisma.bitsTransaction.findMany({ where: { userId: p.id, reason: 'league_reward' }, select: { amount: true } });
+      const expected = LEAGUE_PARTICIPATION_BITS + leagueRewardFor(i === 0 ? 1 : 2);
+      check(`paid once, ${expected} BITS (${p.username.slice(-2)})`, rows.length === 1 && rows[0].amount === expected, JSON.stringify(rows));
+      const ledger = await ledgerMatches(p);
+      check(`BITS history matches the balance (${p.username.slice(-2)})`, ledger.ok, ledger.detail);
+    }
+  } finally {
+    await prisma.leagueRound.deleteMany({ where: { id: roundId } });
+  }
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
@@ -355,6 +387,7 @@ async function main() {
     await testGiftCross();
     await testTradeAccept();
     await testTradeVersusGift();
+    await testLeagueClose();
   } finally {
     await cleanup();
     await prisma.$disconnect();

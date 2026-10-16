@@ -231,5 +231,17 @@
     "notYours": "Essa decisão não é sua",
     "notPending": "Esta troca já foi respondida",
     "expired": "Esta proposta expirou"
+  },
+  "league": {
+    "marketNotReady": "O mercado da próxima rodada ainda está abrindo. Tente de novo em algumas horas.",
+    "teamSize": "Escolha exatamente 5 devs",
+    "duplicate": "O mesmo dev não pode ser escolhido duas vezes",
+    "notOnMarket": "Um dev escolhido não está no mercado desta rodada",
+    "self": "Você não pode escalar a si mesmo",
+    "captain": "Escolha um capitão entre os seus 5 devs",
+    "budget": "Esta escalação passa do orçamento",
+    "lineupRequired": "Envie os 5 devs e o capitão",
+    "loadFailed": "Não deu para carregar a Liga Dev",
+    "saveFailed": "Não deu para salvar a escalação"
   }
 }

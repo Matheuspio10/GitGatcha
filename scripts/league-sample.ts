@@ -2,7 +2,7 @@
  * Real numbers for the Cartola-style league plan (docs/liga-cartola.md):
  * draws developers that are cards in the game (a few per rarity), reads one
  * week of their GitHub activity (GraphQL contributionsCollection, 10 per
- * query) and scores it with the candidate formula below. Read-only: the
+ * query) and scores it with the league's scoring (src/lib/league.ts). Read-only: the
  * database is only read, GitHub only queried.
  *
  *   node --env-file=.env --env-file=.env.local --import tsx scripts/league-sample.ts [perRarity] [weekStart YYYY-MM-DD] [formWeeks]
@@ -10,6 +10,7 @@
 import { prisma } from '../src/lib/prisma';
 import { graphql } from '../src/lib/githubService';
 import { RARITY_ORDER } from '../src/lib/rarity';
+import { LEAGUE_SCORING, scoreActivity, type ContributionCounts } from '../src/lib/league';
 
 const PER_RARITY = Number(process.argv[2] ?? 12);
 // Default: the last full Monday–Sunday week (UTC)
@@ -23,21 +24,13 @@ const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 3600_000);
 /** Weeks before the sampled one to show each active developer's form. */
 const FORM_WEEKS = Number(process.argv[4] ?? 3);
 
-/** Candidate scoring: points per unit and the weekly cap on the units that count. */
-const RULES = {
-  commits: { points: 1, cap: 40 },
-  pullRequests: { points: 5, cap: 10 },
-  reviews: { points: 3, cap: 10 },
-  issues: { points: 2, cap: 10 },
-  activeDays: { points: 3, cap: 7 },
-} as const;
+/** The league's scoring (src/lib/league.ts). */
+const RULES = LEAGUE_SCORING;
 type Stat = keyof typeof RULES;
 
-interface Week { commits: number; pullRequests: number; reviews: number; issues: number; activeDays: number; privateCount: number }
+interface Week extends ContributionCounts { privateCount: number }
 
-function score(w: Week): number {
-  return (Object.keys(RULES) as Stat[]).reduce((sum, k) => sum + Math.min(w[k], RULES[k].cap) * RULES[k].points, 0);
-}
+const score = (w: Week) => scoreActivity(w);
 
 type Collection = {
   totalCommitContributions: number;
