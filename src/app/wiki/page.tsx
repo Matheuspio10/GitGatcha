@@ -48,6 +48,10 @@ import { MAX_STAMINA, STAMINA_RECOVERY_RATE_PER_HOUR } from '@/lib/staminaUtils'
 import { INVOCATION_COSTS } from '@/lib/forgeService';
 import { COLLECTION_LANGUAGES, FRAMES, TITLES } from '@/lib/collections';
 import { GIFT_DAILY_RECEIVE_LIMIT, GIFT_DAILY_SEND_LIMIT, GIFT_FEE, GIFT_MIN_LEVEL } from '@/lib/gifts';
+import {
+  LEAGUE_BUDGET, LEAGUE_CAPTAIN_MULTIPLIER, LEAGUE_CLOSE_DELAY_HOURS, LEAGUE_FORM_WEEKS, LEAGUE_MAX_DEV_POINTS, LEAGUE_OWNED_BONUS,
+  LEAGUE_PARTICIPATION_BITS, LEAGUE_PRICE_MAX, LEAGUE_PRICE_MIN, LEAGUE_PRICE_STEP, LEAGUE_REWARDS, LEAGUE_SCORING, LEAGUE_SHINY_BONUS, LEAGUE_TEAM_SIZE,
+} from '@/lib/league';
 import { TRADE_DAILY_LIMIT, TRADE_EXPIRY_HOURS, TRADE_MAX_CARDS, TRADE_MAX_PENDING, TRADE_MIN_LEVEL } from '@/lib/trades';
 import { TRAINING_BONUS_PER_LEVEL, TRAINING_BITS_PER_STEP, TRAINING_FRAGMENTS_PER_STEP, TRAINING_MAX_LEVEL, fullTrainingCost } from '@/lib/training';
 import {
@@ -128,6 +132,7 @@ const SECTIONS = [
   { id: 'forge-system' },
   { id: 'team-synergies' },
   { id: 'daily-rewards' },
+  { id: 'dev-league' },
   { id: 'glossary' },
 ] as const;
 
@@ -936,10 +941,29 @@ export default function WikiPage() {
               </div>
             </section>
 
-            {/* Section 14: Glossary */}
-            <section id="glossary" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
+            {/* Section 14: Dev League */}
+            <section id="dev-league" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
               <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">14</span>
+                {t('sections.dev-league')}
+              </h2>
+              <div className="prose prose-invert prose-orange max-w-none text-slate-300">
+                <p>{t.rich('devLeague.intro', { link: chunks => <Link href="/league" className="text-indigo-400 hover:underline">{chunks}</Link> })}</p>
+                <ul>
+                  <li>{t.rich('devLeague.round', { b: strong, hours: LEAGUE_CLOSE_DELAY_HOURS })}</li>
+                  <li>{t.rich('devLeague.market', { b: strong, min: LEAGUE_PRICE_MIN, max: LEAGUE_PRICE_MAX, step: LEAGUE_PRICE_STEP, weeks: LEAGUE_FORM_WEEKS, budget: LEAGUE_BUDGET, size: LEAGUE_TEAM_SIZE })}</li>
+                  <li>{t.rich('devLeague.scoring', { b: strong, rules: (Object.keys(LEAGUE_SCORING) as (keyof typeof LEAGUE_SCORING)[]).map(k => t('devLeague.rule', { what: t(`devLeague.stats.${k}`), points: LEAGUE_SCORING[k].points, cap: LEAGUE_SCORING[k].cap })).join(' · '), max: LEAGUE_MAX_DEV_POINTS })}</li>
+                  <li>{t.rich('devLeague.captain', { b: strong, times: LEAGUE_CAPTAIN_MULTIPLIER, owned: Math.round(LEAGUE_OWNED_BONUS * 100), shiny: Math.round(LEAGUE_SHINY_BONUS * 100) })}</li>
+                  <li>{t.rich('devLeague.prizes', { b: strong, participation: LEAGUE_PARTICIPATION_BITS, top: LEAGUE_REWARDS.map((r, i) => { const from = i === 0 ? 1 : LEAGUE_REWARDS[i - 1].upTo + 1; return `#${from === r.upTo ? from : `${from}–${r.upTo}`} ${r.bits}`; }).join(' · ') })}</li>
+                  <li>{t.rich('devLeague.data', { b: strong })}</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* Section 15: Glossary */}
+            <section id="glossary" className="scroll-mt-32 border-t border-slate-800/60 pt-12">
+              <h2 className="text-3xl font-black text-white mb-6 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">15</span>
                 {t('sections.glossary')}
               </h2>
 

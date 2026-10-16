@@ -30,6 +30,7 @@ const NAV_LINKS = [
   { key: 'forge', path: '/forge' },
   { key: 'battle', path: '/battle' },
   { key: 'leaderboard', path: '/leaderboard' },
+  { key: 'league', path: '/league' },
   { key: 'friends', path: '/friends' },
   { key: 'wiki', path: '/wiki' },
 ] as const;
@@ -104,7 +105,7 @@ export function Navbar({ username, currency: initialCurrency, userImage }: { use
         {username && (
           <nav className="hidden xl:flex flex-1 justify-center items-center gap-4 2xl:gap-6 text-sm 2xl:text-base font-bold text-slate-400 mx-4">
             {NAV_LINKS.map(link => (
-              <Link key={link.path} href={link.path} className={`transition-all ${pathname === link.path ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>{t(`links.${link.key}`)}</Link>
+              <Link key={link.path} href={link.path} className={`whitespace-nowrap transition-all ${pathname === link.path ? 'text-transparent bg-clip-text bg-gradient-to-r from-brand-a to-brand-b drop-shadow-[0_0_8px_rgba(255,79,163,0.5)] scale-110' : 'hover:text-white hover:scale-105'}`}>{t(`links.${link.key}`)}</Link>
             ))}
           </nav>
         )}

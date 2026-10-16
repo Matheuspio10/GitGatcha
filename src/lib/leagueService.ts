@@ -270,6 +270,31 @@ export async function maintainLeague(budgetMs: number, now = new Date()) {
 
 // ─── Reading ────────────────────────────────────────────────────────────────
 
+/** The player and their accepted friends who play the running round, best first. */
+async function friendsRanking(userId: string, roundId: string) {
+  const links = await prisma.friendship.findMany({
+    where: { status: 'ACCEPTED', OR: [{ userId }, { friendId: userId }] },
+    select: { userId: true, friendId: true },
+  });
+  const ids = [userId, ...links.map(f => (f.userId === userId ? f.friendId : f.userId))];
+  const rows = await prisma.leagueLineup.findMany({
+    where: { roundId, userId: { in: ids } },
+    orderBy: [{ points: 'desc' }, { updatedAt: 'asc' }],
+    select: { userId: true, points: true, user: { select: { username: true, image: true } } },
+  });
+  return rows.map(r => ({ username: r.user.username, image: r.user.image, points: r.points, you: r.userId === userId }));
+}
+
+/** The player's most recent closed round: points, place and BITS. */
+async function lastResult(userId: string) {
+  const lineup = await prisma.leagueLineup.findFirst({
+    where: { userId, round: { closedAt: { not: null } } },
+    orderBy: { roundId: 'desc' },
+    select: { roundId: true, points: true, position: true, rewardBits: true, round: { select: { _count: { select: { lineups: true } } } } },
+  });
+  return lineup && { roundId: lineup.roundId, points: lineup.points, position: lineup.position, rewardBits: lineup.rewardBits, players: lineup.round._count.lineups };
+}
+
 const cardSelect = { id: true, name: true, githubUsername: true, avatarUrl: true, rarity: true, primaryLanguage: true } as const;
 
 /** Everything the league page needs for one player: the market, their lineups and the running round's top. */
@@ -316,9 +341,22 @@ export async function getLeagueState(userId: string, now = new Date()) {
     };
   };
 
-  const totalCards = await prisma.card.count();
+  const runningLineup = await lineupView(running.id);
+  const [totalCards, ahead, friends, last] = await Promise.all([
+    prisma.card.count(),
+    runningLineup ? prisma.leagueLineup.count({ where: { roundId: running.id, points: { gt: runningLineup.points } } }) : Promise.resolve(0),
+    friendsRanking(userId, running.id),
+    lastResult(userId),
+  ]);
   return {
-    running: { id: running.id, startsAt: running.startsAt, endsAt: running.endsAt, players, lineup: await lineupView(running.id), top },
+    running: {
+      id: running.id, startsAt: running.startsAt, endsAt: running.endsAt, players,
+      lineup: runningLineup,
+      position: runningLineup ? ahead + 1 : null,
+      top,
+      friends,
+    },
+    last,
     next: { id: upcoming.id, startsAt: upcoming.startsAt, lineup: await lineupView(upcoming.id) },
     market: prices.map(p => ({ ...p.card, price: p.price, form: p.form, owned: ownership.get(p.card.id) ?? 'none' })),
     marketComplete: prices.length > 0 && (await prisma.leaguePrice.count({ where: { roundId: upcoming.id } })) >= totalCards,

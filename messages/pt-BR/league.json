@@ -1,0 +1,69 @@
+{
+  "title": "Liga Dev",
+  "subtitle": "Escale 5 devs de verdade toda semana. Eles pontuam com o que fazem de fato no GitHub.",
+  "wiki": "Como funciona",
+  "loading": "Carregando a liga…",
+  "loadFailed": "Não deu para carregar a Liga Dev",
+  "tabs": {
+    "lineup": "Escalação",
+    "round": "Rodada atual"
+  },
+  "rounds": {
+    "current": "Rodada de {start} a {end}",
+    "nextStarts": "A próxima rodada começa {date}: a sua escalação fecha nessa hora.",
+    "repeat": "Se você não mexer, a escalação desta rodada se repete."
+  },
+  "builder": {
+    "title": "Sua escalação para {date}",
+    "budget": "C$ {used} de {budget}",
+    "left": "Sobram C$ {left}",
+    "over": "Passa do orçamento em C$ {over}",
+    "empty": "Escolha 5 devs no mercado.",
+    "slot": "Vaga livre",
+    "captain": "Capitão ×{times}",
+    "makeCaptain": "Tornar {name} capitão",
+    "remove": "Tirar {name}",
+    "save": "Salvar escalação",
+    "saving": "Salvando…",
+    "saved": "Escalação salva para a rodada de {date}!",
+    "unsaved": "Alterações não salvas",
+    "savedState": "Salva",
+    "pickCaptain": "Escolha um capitão (coroa)"
+  },
+  "market": {
+    "title": "Mercado",
+    "count": "{count} devs",
+    "search": "Buscar por nome ou login",
+    "sort": {
+      "price": "Preço",
+      "form": "Forma",
+      "name": "Nome"
+    },
+    "onlyOwned": "Só cartas que eu tenho",
+    "form": "{points} pts/semana",
+    "price": "C$ {price}",
+    "owned": "sua carta +10%",
+    "shiny": "Shiny +20%",
+    "you": "você",
+    "add": "Escalar {name}",
+    "full": "Time completo",
+    "tooExpensive": "Passa do orçamento",
+    "incomplete": "O mercado ainda está sendo montado ({count} devs até agora). Volte mais tarde para ver o resto.",
+    "empty": "O mercado da próxima rodada abre em breve. Volte em algumas horas.",
+    "showMore": "Mostrar mais",
+    "noResults": "Nenhum dev encontrado."
+  },
+  "round": {
+    "noLineup": "Você não tem escalação nesta rodada. Monte a da próxima na aba Escalação.",
+    "points": "{points} pts",
+    "position": "{position}º de {players}",
+    "partials": "Pontos parciais, atualizados uma vez por dia. O GitHub pode mostrar a atividade com algumas horas de atraso.",
+    "stats": "{commits} commits · {prs} PRs · {reviews} revisões · {issues} issues · {days} dias ativos",
+    "notScored": "ainda sem pontos",
+    "top": "Top 10 da rodada",
+    "friends": "Entre amigos",
+    "noPlayers": "Ninguém jogando esta rodada ainda.",
+    "you": "você",
+    "last": "Última rodada ({date}): {points} pts, {position}º de {players}. +{bits} BITS."
+  }
+}

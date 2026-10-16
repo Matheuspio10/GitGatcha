@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 16/10/2026, ao fim da primeira rodada da Liga Dev (PR #69: dados e pontuação, ainda sem tela). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 16/10/2026, ao fim da segunda rodada da Liga Dev (PR #70: a página `/league`). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -19,7 +19,7 @@
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento; vão fechar e pagar na segunda) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -60,7 +60,7 @@
 ## ▶️ Próximo passo
 
 **Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66), trocas (PR #67). Ordem sugerida para o resto:
-1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69: tabelas, regras, leitura do GitHub, preços, parciais, fechamento e pagamento no cron, API). Próximas: **a tela** (página `/league` com mercado, escalação e capitão, parciais da rodada e ranking global e entre amigos; link no menu) e depois o acabamento (ranking entre amigos com prêmio? histórico por dev, ligas privadas na fase seguinte).
+1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69) e **a página `/league`** (PR #70: mercado, escalação com capitão e orçamento, parciais da rodada, ranking global e entre amigos, link "Liga Dev" no menu, seção na wiki). **Em produção:** o cron das 06:00 UTC monta o mercado da rodada de 19/10 em um ou dois dias; essa é a primeira rodada que dá para escalar, e ela fecha e paga na **segunda 26/10, 06:00 UTC**: conferir o pagamento e os números depois disso. Próximo acabamento, quando o dono quiser: ligas privadas com código (fase seguinte do plano), histórico de pontos por dev, aviso no sino quando a rodada fecha (já existe) e a escalação abrindo direto na Coleção.
 2. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
@@ -391,6 +391,29 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
+### Onda 9 — Liga Dev, rodada 2: a página (PR #70)
+- **Página `/league`** ("Liga Dev" no menu, logo depois de Rankings), protegida por login.
+- **Aba "Escalação"**, para a rodada que começa na próxima segunda:
+  - o mercado inteiro, com busca por nome ou login, ordenação por forma, preço ou nome e o filtro "só cartas que eu tenho";
+  - cada dev mostra raridade, linguagem, forma (pontos por semana), preço e o bônus de ter a carta (+10%, ou +20% Shiny);
+  - cinco vagas, a coroa do capitão (×2) e a barra do orçamento (fica vermelha e mostra quanto passou);
+  - salvar recusa com o motivo; você não aparece como opção (não dá para escalar a si mesmo);
+  - quem não mexer vê a escalação atual, que se repete;
+  - o prazo aparece no fuso de quem joga (a meia-noite UTC de segunda).
+- **Aba "Rodada atual"**:
+  - a sua escalação com os pontos de cada dev e os números por trás (commits, PRs, revisões, issues, dias ativos), já com capitão e bônus;
+  - total, posição entre todos, ranking "Entre amigos" e o top 10.
+
+  O resultado da sua última rodada fechada aparece no topo.
+- **API**: o estado da Liga ganhou a sua posição, o ranking entre amigos e a última rodada fechada.
+- **Wiki**: seção nova "Liga Dev" (14; o glossário virou a 15) com rodadas, mercado, pontuação, capitão e coleção, prêmios e dados, todos lidos das constantes de `league.ts`.
+- **De passagem**: os links do cabeçalho não quebram mais em duas linhas (com 9 links, "Liga Dev" quebrava em 1280 px).
+- **Testado no dev**:
+  - mercado de 847 devs (API em ~1,3 s, 205 KB);
+  - escalação montada pela busca, capitão trocado e escalação salva;
+  - aba da rodada com parciais reais;
+  - celular (um estouro de largura corrigido antes do PR), link no menu e wiki. Nenhum erro no console.
 
 ### Onda 9 — Liga Dev, rodada 1: dados e pontuação (PR #69)
 - **Ainda sem tela**: esta rodada monta tudo o que a página vai usar. O plano e as decisões estão em [`docs/liga-cartola.md`](docs/liga-cartola.md).
