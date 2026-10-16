@@ -231,5 +231,17 @@
     "notYours": "This isn't your call",
     "notPending": "This trade was already answered",
     "expired": "This proposal expired"
+  },
+  "league": {
+    "marketNotReady": "The market for the next round is still opening. Try again in a few hours.",
+    "teamSize": "Pick exactly 5 developers",
+    "duplicate": "The same developer can't be picked twice",
+    "notOnMarket": "A developer you picked isn't on this round's market",
+    "self": "You can't pick yourself",
+    "captain": "Choose a captain among your 5 developers",
+    "budget": "This lineup goes over the budget",
+    "lineupRequired": "Send the 5 developers and the captain",
+    "loadFailed": "Couldn't load the Dev League",
+    "saveFailed": "Couldn't save the lineup"
   }
 }

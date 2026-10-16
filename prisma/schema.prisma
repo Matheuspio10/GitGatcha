@@ -73,6 +73,7 @@ model User {
   giftsReceived       CardGift[]      @relation("GiftsReceived")
   tradesProposed      CardTrade[]     @relation("TradesProposed")
   tradesReceived      CardTrade[]     @relation("TradesReceived")
+  leagueLineups       LeagueLineup[]
 
   @@index([referredById])
 }
@@ -138,6 +139,8 @@ model Card {
 
   owners         UserCard[]
   gifts          CardGift[]
+  leaguePrices   LeaguePrice[]
+  leagueScores   LeagueDevScore[]
   battlesAsChallenger Battle[] @relation("ChallengerCard")
   battlesAsDefender   Battle[] @relation("DefenderCard")
 
@@ -421,6 +424,81 @@ model CardTrade {
 
   @@index([proposerId, status])
   @@index([receiverId, status])
+}
+
+// ─── Dev League (Cartola-style, league.ts / leagueService.ts) ────────────────
+
+// One week of the Dev League, Monday 00:00 to Monday 00:00 UTC. id = the Monday ("2026-10-19").
+model LeagueRound {
+  id       String    @id
+  startsAt DateTime
+  endsAt   DateTime
+  // Set once the final scores are in and the prizes paid
+  closedAt DateTime?
+
+  prices  LeaguePrice[]
+  scores  LeagueDevScore[]
+  lineups LeagueLineup[]
+
+  @@index([closedAt, endsAt])
+}
+
+// What a developer costs (C$) in a round, from the form of the weeks before.
+// price 0: GitHub no longer knows the account, so the developer is off the market.
+model LeaguePrice {
+  roundId String
+  cardId  String
+  price   Int
+  // Average weekly points over the form window
+  form    Int
+
+  round LeagueRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  card  Card        @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, cardId])
+}
+
+// A developer's points in a round and the counts behind them (updated daily while it runs).
+model LeagueDevScore {
+  roundId      String
+  cardId       String
+  points       Int      @default(0)
+  commits      Int      @default(0)
+  pullRequests Int      @default(0)
+  reviews      Int      @default(0)
+  issues       Int      @default(0)
+  activeDays   Int      @default(0)
+  // The GitHub account no longer answers: 0 points
+  missing      Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  round LeagueRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  card  Card        @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, cardId])
+  @@index([roundId, updatedAt])
+}
+
+// A player's five developers for a round. Editable until the round starts.
+model LeagueLineup {
+  roundId    String
+  userId     String
+  // Card ids (Card.id), 5 different developers
+  cardIds    String[]
+  captainId  String
+  // C$ at the round's prices when saved
+  cost       Int
+  // With the captain and the collection bonus; final when the round closes
+  points     Int      @default(0)
+  position   Int?
+  rewardBits Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  round LeagueRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roundId, userId])
+  @@index([roundId, points])
 }
 
 model BitsTransaction {

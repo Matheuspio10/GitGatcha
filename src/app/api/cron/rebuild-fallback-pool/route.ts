@@ -6,6 +6,11 @@ import { maintainSprints } from '@/lib/sprintService';
 import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 import { refreshLivingCards } from '@/lib/livingCardService';
 import { LIVING_CARD_CRON_BATCH } from '@/lib/livingCards';
+import { maintainLeague } from '@/lib/leagueService';
+
+/** The whole run stays under maxDuration: the league gets up to this, the sampler what is left. */
+const RUN_BUDGET_MS = 270_000;
+const LEAGUE_BUDGET_MS = 90_000;
 
 // Fluid compute: up to 300 s on Hobby (the job stops itself at ~270 s and resumes next run)
 export const maxDuration = 300;
@@ -15,6 +20,7 @@ export const maxDuration = 300;
  * scheduled in vercel.json. Vercel Cron sends `Authorization: Bearer $CRON_SECRET`.
  */
 export async function GET(req: Request) {
+  const startedAt = Date.now();
   // Verify cron secret
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
@@ -52,13 +58,16 @@ export async function GET(req: Request) {
     await getFeaturedDevLogin().catch((err: unknown) => console.error('[Cron] Dev of the Week failed:', err));
     // Living cards: a batch every day even without traffic (never throws)
     const livingCards = await refreshLivingCards({ batch: LIVING_CARD_CRON_BATCH, useSlot: false });
-    const results = await rebuildFallbackPools();
+    // Dev League: closes and pays finished rounds, partial points, next market (never throws)
+    const league = await maintainLeague(LEAGUE_BUDGET_MS);
+    const results = await rebuildFallbackPools(Math.max(30_000, RUN_BUDGET_MS - (Date.now() - startedAt)));
 
     return NextResponse.json({
       success: true,
       seasonsClosed,
       sprintsClosed,
       livingCards: livingCards && { refreshed: livingCards.refreshed, changed: livingCards.changed.length, missing: livingCards.missing.length },
+      league,
       report: results,
       timestamp: new Date().toISOString(),
     });
