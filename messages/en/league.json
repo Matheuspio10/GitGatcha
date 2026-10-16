@@ -1,0 +1,69 @@
+{
+  "title": "Dev League",
+  "subtitle": "Pick 5 real developers every week. They score with what they actually do on GitHub.",
+  "wiki": "How it works",
+  "loading": "Loading the league…",
+  "loadFailed": "Couldn't load the Dev League",
+  "tabs": {
+    "lineup": "Lineup",
+    "round": "This round"
+  },
+  "rounds": {
+    "current": "Round {start} – {end}",
+    "nextStarts": "Next round starts {date}: your lineup locks then.",
+    "repeat": "If you don't change it, this round's lineup repeats."
+  },
+  "builder": {
+    "title": "Your lineup for {date}",
+    "budget": "C$ {used} of {budget}",
+    "left": "C$ {left} left",
+    "over": "Over the budget by C$ {over}",
+    "empty": "Pick 5 developers from the market.",
+    "slot": "Empty slot",
+    "captain": "Captain ×{times}",
+    "makeCaptain": "Make {name} captain",
+    "remove": "Remove {name}",
+    "save": "Save lineup",
+    "saving": "Saving…",
+    "saved": "Lineup saved for the round of {date}!",
+    "unsaved": "Unsaved changes",
+    "savedState": "Saved",
+    "pickCaptain": "Choose a captain (crown)"
+  },
+  "market": {
+    "title": "Market",
+    "count": "{count} developers",
+    "search": "Search by name or login",
+    "sort": {
+      "price": "Price",
+      "form": "Form",
+      "name": "Name"
+    },
+    "onlyOwned": "Only cards I have",
+    "form": "{points} pts/week",
+    "price": "C$ {price}",
+    "owned": "your card +10%",
+    "shiny": "Shiny +20%",
+    "you": "you",
+    "add": "Add {name}",
+    "full": "Team full",
+    "tooExpensive": "Over the budget",
+    "incomplete": "The market is still being built ({count} developers so far). Check back later for the rest.",
+    "empty": "The next round's market opens soon. Come back in a few hours.",
+    "showMore": "Show more",
+    "noResults": "No developer matches."
+  },
+  "round": {
+    "noLineup": "You have no lineup this round. Build next round's in the Lineup tab.",
+    "points": "{points} pts",
+    "position": "#{position} of {players}",
+    "partials": "Partial points, updated once a day. GitHub can show activity a few hours late.",
+    "stats": "{commits} commits · {prs} PRs · {reviews} reviews · {issues} issues · {days} active days",
+    "notScored": "not scored yet",
+    "top": "Top 10 this round",
+    "friends": "Among friends",
+    "noPlayers": "Nobody is playing this round yet.",
+    "you": "you",
+    "last": "Last round ({date}): {points} pts, #{position} of {players}. +{bits} BITS."
+  }
+}

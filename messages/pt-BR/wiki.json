@@ -17,7 +17,8 @@
     "forge-system": "Sistema da Forja",
     "team-synergies": "Sinergias de time",
     "daily-rewards": "Recompensas diárias, garantia e conquistas",
-    "glossary": "Glossário"
+    "glossary": "Glossário",
+    "dev-league": "Liga Dev"
   },
   "gettingStarted": {
     "intro": "Bem-vindo ao GitGacha! O GitGacha é um jogo de coleção de cartas com batalhas automáticas em que as cartas são devs de verdade, baseadas na atividade deles no GitHub.",
@@ -288,6 +289,23 @@
     "xp": {
       "term": "XP",
       "def": "Experiência da conta ganha em batalhas e outras atividades. Subir de nível dá boosters de recompensa."
+    }
+  },
+  "devLeague": {
+    "intro": "A <link>Liga Dev</link> é um jogo semanal no estilo Cartola com devs de verdade: escale 5, e eles pontuam com o que fizeram de fato no GitHub naquela semana.",
+    "round": "<b>Rodadas:</b> de segunda a segunda (UTC). Você monta a escalação da próxima rodada durante a atual; ela fecha quando a rodada começa e, se você não mexer, a última se repete. As parciais são atualizadas uma vez por dia; a rodada fecha e paga {hours} horas depois do fim (o GitHub pode mostrar a atividade com atraso).",
+    "market": "<b>Mercado:</b> todo dev que é carta no jogo. Os preços vão de C$ {min} a C$ {max}: C$ {min} mais 1 a cada {step} pontos da forma média semanal das últimas {weeks} semanas (a raridade não conta; ela vem de seguidores, não de atividade). {size} devs diferentes, orçamento de C$ {budget}. Você não pode escalar a si mesmo.",
+    "scoring": "<b>Pontos por dev por semana:</b> {rules}. No máximo {max} por dev. O trabalho privado só conta pelos dias ativos.",
+    "rule": "{what} {points} (até {cap})",
+    "captain": "<b>Capitão e coleção:</b> os pontos do capitão contam {times}×. Ter a carta de um dev escalado soma {owned}% aos pontos dele ({shiny}% se for Shiny).",
+    "prizes": "<b>Prêmios:</b> {participation} BITS por escalação, mais o top global: {top} (empatados dividem a posição e o prêmio).",
+    "data": "<b>Dados:</b> as contagens de contribuição do próprio GitHub (commits no branch padrão, sem forks). Uma conta que não existe mais faz 0 e sai do mercado.",
+    "stats": {
+      "commits": "commit",
+      "pullRequests": "pull request",
+      "reviews": "revisão",
+      "issues": "issue",
+      "activeDays": "dia ativo"
     }
   }
 }

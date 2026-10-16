@@ -13,5 +13,6 @@ export const config = {
     "/inventory/:path*",
     "/forge/:path*",
     "/bits/:path*",
+    "/league/:path*",
   ]
 }

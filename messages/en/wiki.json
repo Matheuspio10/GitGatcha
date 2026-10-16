@@ -17,7 +17,8 @@
     "forge-system": "Forge System",
     "team-synergies": "Team Synergies",
     "daily-rewards": "Daily Rewards, Pity and Achievements",
-    "glossary": "Glossary"
+    "glossary": "Glossary",
+    "dev-league": "Dev League"
   },
   "gettingStarted": {
     "intro": "Welcome to GitGacha! GitGacha is an auto-battler card collection game where the cards are real developers based on their GitHub activity.",
@@ -288,6 +289,23 @@
     "xp": {
       "term": "XP",
       "def": "Account experience earned from battles and other activities. Leveling up grants reward boosters."
+    }
+  },
+  "devLeague": {
+    "intro": "The <link>Dev League</link> is a weekly fantasy game with real developers: pick 5, and they score with what they actually did on GitHub that week.",
+    "round": "<b>Rounds:</b> Monday to Monday (UTC). You build next round's lineup during the current one; it locks when the round starts, and if you don't change it, the last one repeats. Partial points update once a day; the round closes and pays {hours} hours after it ends (GitHub can show activity late).",
+    "market": "<b>Market:</b> every developer who is a card in the game. Prices go from C$ {min} to C$ {max}: C$ {min} plus 1 for every {step} points of average weekly form over the last {weeks} weeks (rarity doesn't matter; it comes from followers, not activity). {size} different developers, budget C$ {budget}. You can't pick yourself.",
+    "scoring": "<b>Points per developer per week:</b> {rules}. At most {max} per developer. Private work only counts through active days.",
+    "rule": "{what} {points} (up to {cap})",
+    "captain": "<b>Captain and collection:</b> the captain's points count {times}×. Owning the card of a developer you picked adds {owned}% to their points ({shiny}% if it's Shiny).",
+    "prizes": "<b>Prizes:</b> {participation} BITS for every lineup, plus the global top: {top} (tied players share the place and the prize).",
+    "data": "<b>Data:</b> GitHub's own contribution counts (commits on default branches, no forks). An account that no longer exists scores 0 and leaves the market.",
+    "stats": {
+      "commits": "commit",
+      "pullRequests": "pull request",
+      "reviews": "review",
+      "issues": "issue",
+      "activeDays": "active day"
     }
   }
 }
