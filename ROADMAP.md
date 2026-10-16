@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 15/10/2026, ao fim da quinta rodada da onda 9 (PR #67). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 15/10/2026, com o plano da Liga Dev (PR #68), depois da quinta rodada da onda 9 (PR #67). **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -46,6 +46,7 @@
 | `npm run lint` | Lint (o mesmo do CI): reprova com qualquer erro |
 | `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
+| `node --env-file=.env --env-file=.env.local --import tsx scripts/league-sample.ts [porRaridade] [AAAA-MM-DD] [semanasDeForma]` | Só leitura: sorteia devs que são cartas, lê uma semana de atividade no GitHub e aplica a pontuação candidata da Liga Dev (com a forma das semanas anteriores) |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
 | `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP. Ignora os resets de temporada: depois que uma temporada fecha, o `--apply` recusa sem `--force` |
@@ -58,7 +59,7 @@
 ## ▶️ Próximo passo
 
 **Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66), trocas (PR #67). Ordem sugerida para o resto:
-1. **Liga estilo Cartola** (3.2): a maior; reaproveita a atividade real do GitHub (missões de dev e carta viva). Pede planejamento antes (pontuação, rodadas, mercado).
+1. **Liga Dev, estilo Cartola** (3.2): **plano pronto em [`docs/liga-cartola.md`](docs/liga-cartola.md)** (PR #68), com números reais e 12 decisões (L1–L12) esperando o dono. Depois das respostas, implementar em 2 a 3 rodadas: dados e pontuação; mercado e escalação; rankings e prêmios.
 2. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
@@ -134,6 +135,7 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #63 | Carta viva muda a raridade? | **Não**: raridade e linguagem ficam; só os status (e só enquanto o dev continua na mesma faixa). Um novo sorteio do mesmo dev num pack continua atualizando a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
+| #68 | **Liga Dev (L1–L12)** | Plano, ainda não implementado: as 12 decisões (de onde vêm os devs, preço, bônus de ter a carta, pontuação, capitão, prêmios, nome, escopo) estão no fim de [`docs/liga-cartola.md`](docs/liga-cartola.md), cada uma com o padrão proposto | — |
 | #67 | Taxa da troca | Cada lado paga a taxa de presente das cartas que entrega (então uma troca "desigual" custa o mesmo que o presente equivalente) | `tradeFee` (`trades.ts`) |
 | #67 | Tamanho e limites | Até 3 cartas de cada lado, pelo menos 1 de cada; 3 trocas concluídas por dia por jogador; 5 propostas abertas; expira em 72 h | `TRADE_MAX_CARDS`, `TRADE_DAILY_LIMIT`, `TRADE_MAX_PENDING`, `TRADE_EXPIRY_HOURS` (`trades.ts`) |
 | #67 | Quem pode trocar | Amigos, os dois a partir do nível 5 (o mesmo dos presentes) | `TRADE_MIN_LEVEL` (`trades.ts`) |
