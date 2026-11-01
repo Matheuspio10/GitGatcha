@@ -119,5 +119,13 @@
     "confirm": "Sim",
     "cancel": "Não",
     "loadFailed": "Não deu para carregar as suas ligas privadas"
+  },
+  "invite": {
+    "title": "Novidade: a Liga Dev",
+    "text": "Escale {size} devs de verdade e eles pontuam com o que fazem no GitHub esta semana. Toda escalação ganha {bits} BITS, e o 1º lugar leva {top}.",
+    "locks": "As escalações fecham {date}",
+    "players": "{count, plural, one {# jogador já escalou} other {# jogadores já escalaram}}",
+    "cta": "Escalar meu time",
+    "hide": "Esconder até a próxima rodada"
   }
 }

@@ -119,5 +119,13 @@
     "confirm": "Yes",
     "cancel": "No",
     "loadFailed": "Couldn't load your private leagues"
+  },
+  "invite": {
+    "title": "New: the Dev League",
+    "text": "Pick {size} real developers and they score with what they actually do on GitHub this week. Every lineup earns {bits} BITS, and 1st place takes {top}.",
+    "locks": "Lineups lock {date}",
+    "players": "{count, plural, one {# player has} other {# players have}} picked already",
+    "cta": "Pick my team",
+    "hide": "Hide until the next round"
   }
 }

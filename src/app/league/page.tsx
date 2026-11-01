@@ -18,8 +18,8 @@ const TABS: readonly LeagueTab[] = ['lineup', 'round', 'groups'];
  */
 export default async function LeaguePage({ searchParams }: { searchParams: Promise<{ tab?: string; join?: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect('/login');
   const { tab, join } = await searchParams;
+  if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/league${join ? `?join=${encodeURIComponent(join)}` : ''}`)}`);
   const joinCode = join?.slice(0, 20);
   const initialTab = joinCode ? 'groups' : TABS.find(t => t === tab) ?? 'lineup';
   return <LeagueClient initialTab={initialTab} joinCode={joinCode} />;

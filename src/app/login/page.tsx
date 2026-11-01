@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { GithubLogo } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { Logo } from '@/components/Logo';
+import { safeCallbackPath } from '@/lib/callbackPath';
 import { useTranslations } from 'next-intl';
 
 function LoginContent() {
@@ -16,6 +17,8 @@ function LoginContent() {
   const [isRegistering, setIsRegistering] = useState(searchParams?.get('register') === 'true');
   const [loading, setLoading] = useState(false);
   const authError = searchParams?.get('error');
+  // The page that sent the visitor here (e.g. an invite link), or the store
+  const callbackUrl = safeCallbackPath(searchParams?.get('callbackUrl'));
   const AUTH_ERRORS: Record<string, string> = {
     OAuthAccountNotLinked: t('errors.oauthAccountNotLinked'),
     CredentialsSignin: t('errors.credentialsSignin'),
@@ -35,7 +38,7 @@ function LoginContent() {
           body: JSON.stringify({ email, password })
         });
         if (res.ok) {
-          await signIn('credentials', { email, password, callbackUrl: '/store' });
+          await signIn('credentials', { email, password, callbackUrl });
         } else {
           const data = await res.json();
           toast.error(data.error || t('errors.registrationFailed'));
@@ -44,7 +47,7 @@ function LoginContent() {
         toast.error(t('errors.generic'));
       }
     } else {
-      await signIn('credentials', { email, password, callbackUrl: '/store' });
+      await signIn('credentials', { email, password, callbackUrl });
     }
     setLoading(false);
   };
@@ -66,7 +69,7 @@ function LoginContent() {
         <div className="space-y-4 mb-8">
           <button
             type="button"
-            onClick={() => signIn('github', { callbackUrl: '/store' })}
+            onClick={() => signIn('github', { callbackUrl })}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#24292e] hover:bg-[#2f363d] text-white rounded-xl font-bold transition-colors"
           >
             <GithubLogo size={20} weight="fill" />
@@ -76,7 +79,7 @@ function LoginContent() {
           
           <button
             type="button"
-            onClick={() => signIn('google', { callbackUrl: '/store' })}
+            onClick={() => signIn('google', { callbackUrl })}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition-colors"
           >
             {/* Google Icon SVG */}

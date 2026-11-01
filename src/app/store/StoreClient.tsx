@@ -12,6 +12,7 @@ import { BOOSTER_SLOT_ODDS, RARITY_ORDER, averagePullRates, type Rarity } from '
 import { PITY_THRESHOLD } from '@/lib/pity';
 import { formatSeasonLeft } from '@/lib/seasons';
 import { PackOdds } from '@/components/PackOdds';
+import { LeagueInvite } from '@/components/LeagueInvite';
 import { MissionsPanel, type MissionInfo } from './MissionsPanel';
 import { pressable, useDialog } from '@/lib/useDialog';
 import {
@@ -318,6 +319,7 @@ export default function StoreClient({
   canRerollMission,
   githubConnected,
   profileHref,
+  leagueInvite,
 }: { 
   userCurrency: number;
   initialMissions: MissionInfo[];
@@ -325,6 +327,8 @@ export default function StoreClient({
   canRerollMission: boolean;
   githubConnected: boolean;
   profileHref: string;
+  /** The Dev League card for players with no lineup (null: nothing to show) */
+  leagueInvite?: { roundId: string; startsAt: string; players: number } | null;
   /**
    * Time left until the next daily mission refresh (midnight UTC), measured on
    * the server: counting down from it works even when the device clock is off.
@@ -569,6 +573,8 @@ export default function StoreClient({
         onCancel={() => setConfirmPack(null)}
         onBuy={openNow => confirmPack && handlePurchasePack(confirmPack, openNow)}
       />
+
+      {leagueInvite && <LeagueInvite {...leagueInvite} />}
 
       {/* Header */}
       <div className="text-center space-y-4">
