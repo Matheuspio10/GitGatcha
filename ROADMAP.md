@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 01/11/2026, ao fim da terceira rodada da Liga Dev (PR #71: ligas privadas com código). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 01/11/2026, ao fim da quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -14,10 +14,11 @@
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 25 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 263 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- Histórico de BITS conferido em produção em 01/11/2026 (20 jogadores, 188 linhas, 0 diferenças).
+- 265 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
-> **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
+> **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`; desde a PR #72 o navegador do app ficou logado na conta 1, para ver o convite da Liga na Loja). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
 > **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. Depois recebeu a migração da PR #71 (ligas privadas); em 01/11 a manutenção da Liga rodou à mão: fechou e pagou as rodadas `2026-10-12` e `2026-10-19` e repetiu a escalação da conta 2 na `2026-10-26`. Existe a liga privada "Liga de teste" (dona: conta 2; a conta 1 também está nela). As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
@@ -60,7 +61,7 @@
 ## ▶️ Próximo passo
 
 **Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66), trocas (PR #67). Ordem sugerida para o resto:
-1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69), **a página `/league`** (PR #70: mercado, escalação com capitão e orçamento, parciais da rodada, ranking global e entre amigos, link "Liga Dev" no menu, seção na wiki) e **ligas privadas com código** (PR #71). **Em produção, atrasado:** a primeira rodada que dava para escalar (19/10) fechou e pagou na segunda 26/10, 06:00 UTC; **falta conferir o pagamento e os números** (só leitura). Próximo acabamento, quando o dono quiser: histórico de pontos por dev, a escalação abrindo direto na Coleção e o link de convite sobrevivendo ao login (hoje quem abre `/league?join=…` deslogado cai em `/login` e depois vai para a loja, sem o código).
+1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69), **a página `/league`** (PR #70: mercado, escalação com capitão e orçamento, parciais da rodada, ranking global e entre amigos, link "Liga Dev" no menu, seção na wiki) **ligas privadas com código** (PR #71) e **o convite na Loja** (PR #72). **Em produção (conferido em 01/11, só leitura):** o cron fecha as rodadas na segunda por volta das 06:48 UTC e o mercado sai completo (755 de 755 devs), mas **ninguém escalou ainda**: 0 escalações nas rodadas de 12/10, 19/10 e 26/10, então nenhum BITS foi pago. A atividade geral também está baixa: 11 a 13 jogadores mexeram em BITS por semana desde 19/10, e houve 0 batalhas nos últimos 14 dias. A PR #72 pôs um cartão de convite no topo da Loja para quem não tem escalação; depois do deploy, olhar na rodada de 09/11 se apareceram escalações. Próximo acabamento, quando o dono quiser: histórico de pontos por dev e a escalação abrindo direto na Coleção.
 2. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
@@ -73,7 +74,6 @@ Depois: **onda 9** (grandes apostas e monetização).
 - O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
 - Configurar o backup diário: chave `age` + `BACKUP_AGE_RECIPIENT` + `BACKUP_DATABASE_URL` no GitHub ([`docs/backup.md`](docs/backup.md)). Sem isso o workflow "Database backup" falha.
 - Olhar os logs da Vercel (Logs → buscar `[CSP]`) alguns dias depois do deploy da #60 e me passar o que aparecer, para decidir se a CSP pode passar a bloquear.
-- Rodar uma vez a conferência do histórico de BITS em produção (só leitura): `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts`.
 - Responder a tabela "Decisões pendentes" abaixo.
 
 **Como trabalhamos (para o próximo chat):**
@@ -137,6 +137,7 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
 | #68 | **Liga Dev (L1–L12)** | ✅ O dono aceitou todos os padrões em 16/10/2026; em implementação (PR #69 em diante). Plano e decisões: as 12 decisões (de onde vêm os devs, preço, bônus de ter a carta, pontuação, capitão, prêmios, nome, escopo) estão no fim de [`docs/liga-cartola.md`](docs/liga-cartola.md), cada uma com o padrão proposto | — |
+| #72 | Convite da Liga | Cartão no topo da **Loja** (onde todos caem depois de entrar), só para quem não tem escalação na rodada atual nem na próxima e só quando o mercado da próxima já abriu. Fechar esconde até a rodada seguinte (no navegador). Sem notificação no sino: quem não entra no jogo não veria, e quem entra já cai na Loja | `leagueInvite` (`leagueService.ts`), `LeagueInvite.tsx` |
 | #71 | Ligas privadas: limites | Até 50 jogadores por liga; cada jogador em até 10 ligas e dono de até 3 | `LEAGUE_GROUP_MAX_MEMBERS`, `LEAGUE_GROUP_MAX_PER_PLAYER`, `LEAGUE_GROUP_MAX_OWNED` (`league.ts`) |
 | #71 | Ligas privadas pagam BITS? | **Não**: só o ranking (prêmio por liga criaria um jeito de fabricar BITS com contas e ligas de mentira) | — |
 | #71 | Placar geral da liga | Soma as rodadas **fechadas** desde a rodada em que a liga foi criada, para todos os membros, mesmo quem entrou depois (outra opção: só desde a entrada de cada um) | `listGroups` (`leagueGroupService.ts`) |
@@ -178,7 +179,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66), trocas (PR #67), Liga Dev estilo Cartola (PR #69, #70, #71) · falta: acabamentos da Liga; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66), trocas (PR #67), Liga Dev estilo Cartola (PR #69, #70, #71, #72) · falta: acabamentos da Liga; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -397,6 +398,20 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
+### Onda 9 — Liga Dev, rodada 4: a Liga na Loja e o convite que sobrevive ao login (PR #72)
+- **Por quê:** a conferência de produção em 01/11 mostrou 0 escalações em três rodadas; a Liga só aparecia no menu.
+- **Cartão "Novidade: a Liga Dev"** no topo da Loja:
+  - aparece só para quem não tem escalação na rodada atual nem na próxima (quem já jogou tem a escalação repetida sozinha) e só com o mercado da próxima rodada aberto;
+  - diz o que é, quanto paga (participação e 1º lugar, lidos das constantes), quando as escalações fecham (no fuso de quem joga) e quantos já escalaram;
+  - tem o botão "Escalar meu time", e o "x" esconde o cartão até a rodada seguinte.
+  - A consulta só lê (três contagens), roda a cada visita à Loja e, se falhar, a Loja abre sem o cartão.
+- **Login respeita o destino:** a página de login usava sempre a Loja. Agora segue o `callbackUrl` que o proxy manda (por exemplo `/league?join=CÓDIGO`), por e-mail, GitHub, Google ou cadastro novo. `safeCallbackPath` (`callbackPath.ts`, com testes) guarda só o caminho, então nunca leva para outro site e evita `/login`, `/api/` e endereços que o navegador leria como outro host.
+- **Testado no dev:**
+  - a conta 2 (com escalação) não vê o cartão; a conta 1 (sem escalação) vê;
+  - esconder sobrevive a recarregar;
+  - celular (375 px, sem rolagem lateral);
+  - link de convite aberto deslogado → login → volta para `/league?join=…` (no dev o next-auth troca a porta para a 3000 de `NEXTAUTH_URL`, como já acontecia; em produção é o mesmo endereço).
 
 ### Onda 9 — Liga Dev, rodada 3: ligas privadas (PR #71)
 - **Aba "Ligas privadas"** em `/league`:
@@ -653,7 +668,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.2 Modos de jogo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| ~~**Liga pessoal estilo Cartola**~~ | ✅ PR #69, #70, #71 (Liga Dev com mercado, escalação, rankings e ligas privadas). Falta: histórico de pontos por dev e a escalação a partir da Coleção | — |
+| ~~**Liga pessoal estilo Cartola**~~ | ✅ PR #69, #70, #71, #72 (Liga Dev com mercado, escalação, rankings, ligas privadas e o convite na Loja). Falta: histórico de pontos por dev e a escalação a partir da Coleção | — |
 | ~~**Eventos semanais**~~ | ✅ PR #50 (pack do evento e Dev da Semana). Rate-up ficou nas decisões pendentes | — |
 | ~~**Sprints 🅶**~~ | ✅ PR #49 (diário por linguagem, semanal por família). Tema de org (Big Tech) só quando houver mais cartas de membros de orgs | — |
 

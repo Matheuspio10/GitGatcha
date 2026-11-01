@@ -295,6 +295,24 @@ async function lastResult(userId: string) {
   return lineup && { roundId: lineup.roundId, points: lineup.points, position: lineup.position, rewardBits: lineup.rewardBits, players: lineup.round._count.lineups };
 }
 
+/**
+ * The store's invitation to the league, read-only (it runs on every store
+ * visit): for players with no lineup in the running round nor the next one
+ * (a lineup repeats by itself, so anyone who ever played is covered), once the
+ * next round's market is open. Null when there is nothing to invite to.
+ */
+export async function leagueInvite(userId: string, now = new Date()) {
+  const { current, next } = currentAndNextRound(now);
+  const nextId = roundIdOf(next);
+  const [mine, market, players] = await Promise.all([
+    prisma.leagueLineup.count({ where: { userId, roundId: { in: [roundIdOf(current), nextId] } } }),
+    prisma.leaguePrice.findFirst({ where: { roundId: nextId, price: { gt: 0 } }, select: { cardId: true } }),
+    prisma.leagueLineup.count({ where: { roundId: nextId } }),
+  ]);
+  if (mine > 0 || !market) return null;
+  return { roundId: nextId, startsAt: next.toISOString(), players };
+}
+
 const cardSelect = { id: true, name: true, githubUsername: true, avatarUrl: true, rarity: true, primaryLanguage: true } as const;
 
 /** Everything the league page needs for one player: the market, their lineups and the running round's top. */
