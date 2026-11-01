@@ -145,3 +145,63 @@ export function leagueRewardFor(position: number): number {
   if (!Number.isInteger(position) || position < 1) return 0;
   return LEAGUE_REWARDS.find(r => position <= r.upTo)?.bits ?? 0;
 }
+
+// ─── Private leagues ────────────────────────────────────────────────────────
+
+/** A private league: friends who joined with its code, ranked on the same lineups (no BITS of its own). */
+export const LEAGUE_GROUP_MAX_MEMBERS = 50;
+/** Private leagues a player can be in, their own included. */
+export const LEAGUE_GROUP_MAX_PER_PLAYER = 10;
+/** Private leagues a player can have created and still run. */
+export const LEAGUE_GROUP_MAX_OWNED = 3;
+export const LEAGUE_GROUP_NAME_MIN = 3;
+export const LEAGUE_GROUP_NAME_MAX = 32;
+/** No 0/O, 1/I/L: the code is read aloud and typed by hand. 31^8 codes. */
+export const LEAGUE_GROUP_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const LEAGUE_GROUP_CODE_LENGTH = 8;
+
+/** The code as stored ("K7QM2XRP"), from whatever was typed or pasted ("k7qm-2xrp"), or null if it can't be one. */
+export function normalizeGroupCode(input: string): string | null {
+  const code = input.toUpperCase().replace(/[\s-]/g, '');
+  if (code.length !== LEAGUE_GROUP_CODE_LENGTH) return null;
+  return [...code].every(ch => LEAGUE_GROUP_CODE_ALPHABET.includes(ch)) ? code : null;
+}
+
+/** "K7QM-2XRP": easier to read out. */
+export function formatGroupCode(code: string): string {
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
+}
+
+/** Inner spaces collapsed; the length is checked by the route. */
+export function cleanGroupName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ');
+}
+
+/** Who runs a league: its owner while they are in it, otherwise the member who joined first. */
+export function groupOwnerOf(ownerId: string | null, members: readonly { userId: string; joinedAt: Date }[]): string | null {
+  if (ownerId && members.some(m => m.userId === ownerId)) return ownerId;
+  const first = [...members].sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime() || a.userId.localeCompare(b.userId))[0];
+  return first?.userId ?? null;
+}
+
+export interface GroupStandingRow {
+  userId: string;
+  /** Points in the running round (partial), null without a lineup */
+  round: number | null;
+  /** Sum of the closed rounds since the league's first round */
+  overall: number;
+  /** Closed rounds played since the league's first round */
+  rounds: number;
+}
+
+/** A league table: best first, tied players share the place (callers pre-sort ties as they want them shown). */
+export function rankGroup<T extends GroupStandingRow>(rows: readonly T[], by: 'round' | 'overall'): (T & { position: number })[] {
+  const score = (r: T) => (by === 'round' ? r.round ?? -1 : r.overall);
+  const sorted = [...rows].sort((a, b) => score(b) - score(a));
+  const ranked: (T & { position: number })[] = [];
+  sorted.forEach((row, i) => {
+    const tied = i > 0 && score(sorted[i - 1]) === score(row);
+    ranked.push({ ...row, position: tied ? ranked[i - 1].position : i + 1 });
+  });
+  return ranked;
+}

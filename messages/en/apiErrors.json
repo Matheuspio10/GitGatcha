@@ -243,5 +243,22 @@
     "lineupRequired": "Send the 5 developers and the captain",
     "loadFailed": "Couldn't load the Dev League",
     "saveFailed": "Couldn't save the lineup"
+  },
+  "leagueGroups": {
+    "badCode": "That isn't an invite code. Codes have {length} letters and numbers, like K7QM-2XRP.",
+    "notFound": "No league has this code. It may have been changed by its owner.",
+    "codeRequired": "Type the invite code",
+    "alreadyMember": "You're already in this league",
+    "full": "This league is full ({max} players)",
+    "tooManyGroups": "You can be in at most {max} private leagues. Leave one first.",
+    "tooManyOwned": "You can run at most {max} private leagues",
+    "nameLength": "The name needs {min} to {max} characters",
+    "notMember": "You're not in this league",
+    "ownerOnly": "Only the league's owner can do that",
+    "removeSelf": "To leave your own league, use Leave",
+    "memberRequired": "Choose who to remove",
+    "actionRequired": "Choose what to do",
+    "loadFailed": "Couldn't load your private leagues",
+    "failed": "Couldn't do that. Try again."
   }
 }

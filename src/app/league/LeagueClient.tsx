@@ -15,6 +15,7 @@ import {
   lineupDevPoints,
   type Ownership,
 } from '@/lib/league';
+import LeagueGroups from './LeagueGroups';
 
 // ─── What GET /api/league answers ───────────────────────────────────────────
 
@@ -66,12 +67,14 @@ function Avatar({ dev, size }: { dev: DevCard; size: number }) {
   );
 }
 
-export default function LeagueClient() {
+export type LeagueTab = 'lineup' | 'round' | 'groups';
+
+export default function LeagueClient({ initialTab = 'lineup', joinCode }: { initialTab?: LeagueTab; joinCode?: string }) {
   const t = useTranslations('league');
   const locale = useLocale();
   const [state, setState] = useState<LeagueState | null>(null);
   const [failed, setFailed] = useState(false);
-  const [tab, setTab] = useState<'lineup' | 'round'>('lineup');
+  const [tab, setTab] = useState<LeagueTab>(initialTab);
 
   // Lineup being built (card ids in order) and its captain
   const [picks, setPicks] = useState<string[]>([]);
@@ -185,7 +188,7 @@ export default function LeagueClient() {
 
       {/* Tabs */}
       <div className="flex flex-wrap justify-center gap-2">
-        {(['lineup', 'round'] as const).map(key => (
+        {(['lineup', 'round', 'groups'] as const).map(key => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -353,8 +356,10 @@ export default function LeagueClient() {
             )}
           </section>
         </div>
-      ) : (
+      ) : tab === 'round' ? (
         <RoundView state={state} dayLabel={dayLabel} lastDay={lastDay} />
+      ) : (
+        <LeagueGroups joinCode={joinCode} />
       )}
     </div>
   );

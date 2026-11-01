@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 16/10/2026, ao fim da segunda rodada da Liga Dev (PR #70: a página `/league`). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 01/11/2026, ao fim da terceira rodada da Liga Dev (PR #71: ligas privadas com código). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -13,13 +13,13 @@
 
 ### Estado atual
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
-- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 24 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
-- 259 testes (`npm test`) e 10 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 25 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
+- 263 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`, o que costuma estar logado no navegador do app). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento; vão fechar e pagar na segunda) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. Depois recebeu a migração da PR #71 (ligas privadas); em 01/11 a manutenção da Liga rodou à mão: fechou e pagou as rodadas `2026-10-12` e `2026-10-19` e repetiu a escalação da conta 2 na `2026-10-26`. Existe a liga privada "Liga de teste" (dona: conta 2; a conta 1 também está nela). As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -42,7 +42,7 @@
 | Comando | Para quê |
 |---|---|
 | `npm test` | Testes puros, sem banco nem rede (~90 s, por causa do simulador) |
-| `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio, presentes (a mesma carta em rajada; dois amigos presenteando um ao outro ao mesmo tempo), trocas (aceites em rajada; aceitar uma troca enquanto a mesma carta é presenteada), fechamento da Liga Dev (4 ao mesmo tempo, paga uma vez). Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
+| `npm run test:concurrency` | Rajadas de requisições paralelas contra o servidor de dev (`npm run dev -- -p 3005` rodando) e o banco **dev**: compra, abertura, daily, criação e aceite de desafio, presentes (a mesma carta em rajada; dois amigos presenteando um ao outro ao mesmo tempo), trocas (aceites em rajada; aceitar uma troca enquanto a mesma carta é presenteada), fechamento da Liga Dev (4 ao mesmo tempo, paga uma vez), ligas privadas (um jogador a uma liga do teto entrando em várias ao mesmo tempo). Cria jogadores descartáveis e apaga no fim; recusa rodar fora da branch dev ou de localhost. Não roda no CI |
 | `npm run lint` | Lint (o mesmo do CI): reprova com qualquer erro |
 | `node --env-file=.env.prod --import tsx scripts/check-bits-ledger.ts` | Só leitura: confere se o histórico de BITS de cada jogador soma o saldo |
 | `node --import tsx scripts/balance-sim.ts [seed] [fame\|impact]` | Simulador de balanceamento |
@@ -60,7 +60,7 @@
 ## ▶️ Próximo passo
 
 **Onda 9 (grandes apostas)**, uma PR por rodada. Feito: feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes de cartas (PR #66), trocas (PR #67). Ordem sugerida para o resto:
-1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69) e **a página `/league`** (PR #70: mercado, escalação com capitão e orçamento, parciais da rodada, ranking global e entre amigos, link "Liga Dev" no menu, seção na wiki). **Em produção:** o cron das 06:00 UTC monta o mercado da rodada de 19/10 em um ou dois dias; essa é a primeira rodada que dá para escalar, e ela fecha e paga na **segunda 26/10, 06:00 UTC**: conferir o pagamento e os números depois disso. Próximo acabamento, quando o dono quiser: ligas privadas com código (fase seguinte do plano), histórico de pontos por dev, aviso no sino quando a rodada fecha (já existe) e a escalação abrindo direto na Coleção.
+1. **Liga Dev, estilo Cartola** (3.2), plano em [`docs/liga-cartola.md`](docs/liga-cartola.md) (PR #68; o dono aceitou os padrões L1–L12). Feito: **dados e pontuação** (PR #69), **a página `/league`** (PR #70: mercado, escalação com capitão e orçamento, parciais da rodada, ranking global e entre amigos, link "Liga Dev" no menu, seção na wiki) e **ligas privadas com código** (PR #71). **Em produção, atrasado:** a primeira rodada que dava para escalar (19/10) fechou e pagou na segunda 26/10, 06:00 UTC; **falta conferir o pagamento e os números** (só leitura). Próximo acabamento, quando o dono quiser: histórico de pontos por dev, a escalação abrindo direto na Coleção e o link de convite sobrevivendo ao login (hoje quem abre `/league?join=…` deslogado cai em `/login` e depois vai para a loja, sem o código).
 2. **Monetização** (Fase 4): só com parecer jurídico (ver os avisos na seção).
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
@@ -137,6 +137,12 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
 | #68 | **Liga Dev (L1–L12)** | ✅ O dono aceitou todos os padrões em 16/10/2026; em implementação (PR #69 em diante). Plano e decisões: as 12 decisões (de onde vêm os devs, preço, bônus de ter a carta, pontuação, capitão, prêmios, nome, escopo) estão no fim de [`docs/liga-cartola.md`](docs/liga-cartola.md), cada uma com o padrão proposto | — |
+| #71 | Ligas privadas: limites | Até 50 jogadores por liga; cada jogador em até 10 ligas e dono de até 3 | `LEAGUE_GROUP_MAX_MEMBERS`, `LEAGUE_GROUP_MAX_PER_PLAYER`, `LEAGUE_GROUP_MAX_OWNED` (`league.ts`) |
+| #71 | Ligas privadas pagam BITS? | **Não**: só o ranking (prêmio por liga criaria um jeito de fabricar BITS com contas e ligas de mentira) | — |
+| #71 | Placar geral da liga | Soma as rodadas **fechadas** desde a rodada em que a liga foi criada, para todos os membros, mesmo quem entrou depois (outra opção: só desde a entrada de cada um) | `listGroups` (`leagueGroupService.ts`) |
+| #71 | Quem entra | Qualquer um com o código, sem nível mínimo nem amizade (outra opção: só amigos) | `joinGroup` (`leagueGroupService.ts`) |
+| #71 | Poderes do dono | Remover membros e trocar o código (o antigo para de funcionar). Se o dono sai, a liga passa para o membro mais antigo; o último a sair apaga a liga. Sem banimento: o removido volta se ainda tiver o código | `leagueGroupService.ts` |
+| #71 | Código | 8 caracteres sem os que se confundem (0/O, 1/I/L), mostrado como `XXXX-XXXX`; aceita minúsculas e sem hífen | `LEAGUE_GROUP_CODE_*` (`league.ts`) |
 | #67 | Taxa da troca | Cada lado paga a taxa de presente das cartas que entrega (então uma troca "desigual" custa o mesmo que o presente equivalente) | `tradeFee` (`trades.ts`) |
 | #67 | Tamanho e limites | Até 3 cartas de cada lado, pelo menos 1 de cada; 3 trocas concluídas por dia por jogador; 5 propostas abertas; expira em 72 h | `TRADE_MAX_CARDS`, `TRADE_DAILY_LIMIT`, `TRADE_MAX_PENDING`, `TRADE_EXPIRY_HOURS` (`trades.ts`) |
 | #67 | Quem pode trocar | Amigos, os dois a partir do nível 5 (o mesmo dos presentes) | `TRADE_MIN_LEVEL` (`trades.ts`) |
@@ -172,7 +178,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
-| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66), trocas (PR #67) · falta: Liga estilo Cartola (3.2); depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
+| **9** | 🚀 Grandes apostas | ✅ feed de amigos (PR #62), carta viva (PR #63), replay e animações de batalha (PR #65), presentes (PR #66), trocas (PR #67), Liga Dev estilo Cartola (PR #69, #70, #71) · falta: acabamentos da Liga; depois **monetização** (Fase 4, com o histórico de BITS da onda 4 e parecer jurídico) | G |
 
 **Por que essa ordem:** a onda 1 tira dinheiro preso e bugs de balanceamento antes de trazer gente nova, e o CI protege as ondas seguintes. A onda 2 vem antes da 3 porque não adianta divulgar se o jogador novo se perde no primeiro minuto. A onda 4 dá o que fazer com as cartas repetidas, e a 5 dá sentido ao rating que já está correto.
 
@@ -391,6 +397,32 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
+### Onda 9 — Liga Dev, rodada 3: ligas privadas (PR #71)
+- **Aba "Ligas privadas"** em `/league`:
+  - criar uma liga (nome de 3 a 32 caracteres) e receber o código de convite;
+  - entrar com o código, vendo antes o nome, o tamanho e o dono;
+  - cada liga mostra o código, com botões para copiar o código e o link de convite (`/league?join=CÓDIGO`, que abre a aba já com a prévia; entrar ainda pede um clique);
+  - placar com duas visões: **esta rodada** (parciais) e **geral** (rodadas fechadas desde a criação da liga, com quantas cada um jogou); empates dividem a posição.
+- **Regras** (`league.ts`): até 50 jogadores por liga, 10 ligas por jogador, 3 como dono. A liga só ranqueia as escalações que todos já jogam; não tem escalação nem BITS próprios.
+- **Dono** (coroa na tabela): remove membros e troca o código, com confirmação em dois cliques. Se ele sai, a liga passa para o membro mais antigo; o último a sair apaga a liga.
+- **Notificações:** o dono fica sabendo quando alguém entra, e o removido é avisado (ícone novo no sino).
+- **Tabelas** (migração `20261104000000_dev_league_groups`, aditiva): `LeagueGroup` (nome, código único, dono, rodada inicial) e `LeagueGroupMember`.
+- **API:**
+  - `GET/POST /api/league/groups`: as suas ligas com os pontos de cada membro, ou criar uma;
+  - `GET/POST /api/league/groups/join`: prévia por código, ou entrar;
+  - `POST /api/league/groups/[id]`: sair, remover ou trocar o código.
+
+  Consultar e entrar por código têm limite de 20 por minuto, para ninguém adivinhar códigos.
+- **Concorrência:** entrar trava o jogador e depois a linha da liga, então os tetos de membros e de ligas por jogador valem com pedidos em rajada (cenário novo no `test:concurrency`). Nada trava um jogador segurando a liga; as notificações saem depois do commit.
+- **Wiki:** um item novo na seção da Liga Dev, lido das constantes.
+- **Testado no dev:**
+  - criar, entrar (pelo serviço, com o código em minúsculas e com hífen), código inválido e repetido;
+  - placar geral conferido à mão (866 + 449 = 1315 em 2 rodadas contra 875 em 1);
+  - troca de código (o link antigo responde "nenhuma liga tem esse código");
+  - remoção pela tela e as duas notificações;
+  - dono saindo (a liga passa para a conta 1) e o último saindo (a liga some);
+  - celular (375 px, sem rolagem lateral).
 
 ### Onda 9 — Liga Dev, rodada 2: a página (PR #70)
 - **Página `/league`** ("Liga Dev" no menu, logo depois de Rankings), protegida por login.
@@ -621,7 +653,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.2 Modos de jogo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Liga pessoal estilo Cartola** | Elenco de 5 devs com orçamento; pontos semanais vêm da atividade **real** no GitHub (commits, estrelas, PRs); ligas privadas com amigos | G |
+| ~~**Liga pessoal estilo Cartola**~~ | ✅ PR #69, #70, #71 (Liga Dev com mercado, escalação, rankings e ligas privadas). Falta: histórico de pontos por dev e a escalação a partir da Coleção | — |
 | ~~**Eventos semanais**~~ | ✅ PR #50 (pack do evento e Dev da Semana). Rate-up ficou nas decisões pendentes | — |
 | ~~**Sprints 🅶**~~ | ✅ PR #49 (diário por linguagem, semanal por família). Tema de org (Big Tech) só quando houver mais cartas de membros de orgs | — |
 

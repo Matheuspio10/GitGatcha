@@ -299,6 +299,7 @@
     "rule": "{what} {points} (up to {cap})",
     "captain": "<b>Captain and collection:</b> the captain's points count {times}×. Owning the card of a developer you picked adds {owned}% to their points ({shiny}% if it's Shiny).",
     "prizes": "<b>Prizes:</b> {participation} BITS for every lineup, plus the global top: {top} (tied players share the place and the prize).",
+    "groups": "<b>Private leagues:</b> create one and share its code or invite link. Members are ranked on the lineups they already play: this round, and overall since the league began. They pay no extra BITS. Up to {members} players per league; you can be in {perPlayer} and run {owned}.",
     "data": "<b>Data:</b> GitHub's own contribution counts (commits on default branches, no forks). An account that no longer exists scores 0 and leaves the market.",
     "stats": {
       "commits": "commit",

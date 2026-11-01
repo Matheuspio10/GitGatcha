@@ -1,6 +1,6 @@
 /**
  * Concurrency tests: fires bursts of parallel requests at a running dev server
- * (purchase, pack opening, daily reward, challenge stakes) and checks that each
+ * (purchase, pack opening, daily reward, challenge stakes, private leagues) and checks that each
  * one-time action happens exactly once and that BITS add up.
  *
  * Talks to the real routes through HTTP, signed in as throwaway players it
@@ -18,7 +18,7 @@ import { addBits } from '../src/lib/bitsLedger';
 import { ALL_PACKS } from '../src/lib/packDefinitions';
 import { GIFT_DAILY_SEND_LIMIT, GIFT_MIN_LEVEL } from '../src/lib/gifts';
 import { closeRound } from '../src/lib/leagueService';
-import { LEAGUE_PARTICIPATION_BITS, leagueRewardFor } from '../src/lib/league';
+import { LEAGUE_GROUP_CODE_ALPHABET, LEAGUE_GROUP_MAX_PER_PLAYER, LEAGUE_PARTICIPATION_BITS, leagueRewardFor } from '../src/lib/league';
 
 const DEV_DB_HOST = 'ep-weathered-hill';
 const BASE_URL = process.argv[2] ?? 'http://localhost:3005';
@@ -68,6 +68,7 @@ async function cleanup() {
   await prisma.cardTrade.deleteMany({ where: { OR: [{ proposerId: { in: created } }, { receiverId: { in: created } }] } });
   await prisma.cardGift.deleteMany({ where: { OR: [{ senderId: { in: created } }, { receiverId: { in: created } }] } });
   await prisma.friendship.deleteMany({ where: { OR: [{ userId: { in: created } }, { friendId: { in: created } }] } });
+  await prisma.leagueGroup.deleteMany({ where: { OR: [{ ownerId: { in: created } }, { members: { some: { userId: { in: created } } } }] } });
   await prisma.userCard.deleteMany({ where: { userId: { in: created } } });
   await prisma.recentPull.deleteMany({ where: { userId: { in: created } } });
   await prisma.user.deleteMany({ where: { id: { in: created } } });
@@ -370,6 +371,25 @@ async function testLeagueClose() {
   }
 }
 
+async function testLeagueGroupJoin() {
+  console.log(`\nPrivate leagues: a player one short of the cap (${LEAGUE_GROUP_MAX_PER_PLAYER}) joins 3 leagues at once, one of them 3 times`);
+  const [owner, p] = await Promise.all([makePlayer('go', 0), makePlayer('gp', 0)]);
+  const code = () => Array.from(randomBytes(8), b => LEAGUE_GROUP_CODE_ALPHABET[b % LEAGUE_GROUP_CODE_ALPHABET.length]).join('');
+  const groups = await Promise.all(Array.from({ length: LEAGUE_GROUP_MAX_PER_PLAYER + 2 }, (_, i) => prisma.leagueGroup.create({
+    data: { name: `cc ${RUN} ${i}`, code: code(), ownerId: owner.id, firstRoundId: '2026-10-19', members: { create: { userId: owner.id } } },
+    select: { id: true, code: true },
+  })));
+  const already = groups.slice(0, LEAGUE_GROUP_MAX_PER_PLAYER - 1);
+  await prisma.leagueGroupMember.createMany({ data: already.map(g => ({ groupId: g.id, userId: p.id })) });
+  const open = groups.slice(LEAGUE_GROUP_MAX_PER_PLAYER - 1).map(g => g.code);
+  const codes = [open[0], open[1], open[2], open[0], open[0]];
+  const results = await burst(codes.length, i => call(p, 'POST', '/api/league/groups/join', { code: codes[i] }));
+  check('exactly 1 join goes through', results.filter(ok200).length === 1, summary(results));
+  const count = await prisma.leagueGroupMember.count({ where: { userId: p.id } });
+  check(`member of exactly ${LEAGUE_GROUP_MAX_PER_PLAYER} leagues`, count === LEAGUE_GROUP_MAX_PER_PLAYER, `${count}`);
+  check('no server errors', no500(results));
+}
+
 // ---------------------------------------------------------------- main
 
 async function main() {
@@ -388,6 +408,7 @@ async function main() {
     await testTradeAccept();
     await testTradeVersusGift();
     await testLeagueClose();
+    await testLeagueGroupJoin();
   } finally {
     await cleanup();
     await prisma.$disconnect();
