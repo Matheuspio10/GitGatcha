@@ -49,7 +49,7 @@ import { INVOCATION_COSTS } from '@/lib/forgeService';
 import { COLLECTION_LANGUAGES, FRAMES, TITLES } from '@/lib/collections';
 import { GIFT_DAILY_RECEIVE_LIMIT, GIFT_DAILY_SEND_LIMIT, GIFT_FEE, GIFT_MIN_LEVEL } from '@/lib/gifts';
 import {
-  LEAGUE_BUDGET, LEAGUE_CAPTAIN_MULTIPLIER, LEAGUE_CLOSE_DELAY_HOURS, LEAGUE_FORM_WEEKS, LEAGUE_MAX_DEV_POINTS, LEAGUE_OWNED_BONUS,
+  LEAGUE_BUDGET, LEAGUE_CAPTAIN_MULTIPLIER, LEAGUE_CLOSE_DELAY_HOURS, LEAGUE_FORM_WEEKS, LEAGUE_GROUP_MAX_MEMBERS, LEAGUE_GROUP_MAX_OWNED, LEAGUE_GROUP_MAX_PER_PLAYER, LEAGUE_MAX_DEV_POINTS, LEAGUE_OWNED_BONUS,
   LEAGUE_PARTICIPATION_BITS, LEAGUE_PRICE_MAX, LEAGUE_PRICE_MIN, LEAGUE_PRICE_STEP, LEAGUE_REWARDS, LEAGUE_SCORING, LEAGUE_SHINY_BONUS, LEAGUE_TEAM_SIZE,
 } from '@/lib/league';
 import { TRADE_DAILY_LIMIT, TRADE_EXPIRY_HOURS, TRADE_MAX_CARDS, TRADE_MAX_PENDING, TRADE_MIN_LEVEL } from '@/lib/trades';
@@ -955,6 +955,7 @@ export default function WikiPage() {
                   <li>{t.rich('devLeague.scoring', { b: strong, rules: (Object.keys(LEAGUE_SCORING) as (keyof typeof LEAGUE_SCORING)[]).map(k => t('devLeague.rule', { what: t(`devLeague.stats.${k}`), points: LEAGUE_SCORING[k].points, cap: LEAGUE_SCORING[k].cap })).join(' · '), max: LEAGUE_MAX_DEV_POINTS })}</li>
                   <li>{t.rich('devLeague.captain', { b: strong, times: LEAGUE_CAPTAIN_MULTIPLIER, owned: Math.round(LEAGUE_OWNED_BONUS * 100), shiny: Math.round(LEAGUE_SHINY_BONUS * 100) })}</li>
                   <li>{t.rich('devLeague.prizes', { b: strong, participation: LEAGUE_PARTICIPATION_BITS, top: LEAGUE_REWARDS.map((r, i) => { const from = i === 0 ? 1 : LEAGUE_REWARDS[i - 1].upTo + 1; return `#${from === r.upTo ? from : `${from}–${r.upTo}`} ${r.bits}`; }).join(' · ') })}</li>
+                  <li>{t.rich('devLeague.groups', { b: strong, members: LEAGUE_GROUP_MAX_MEMBERS, perPlayer: LEAGUE_GROUP_MAX_PER_PLAYER, owned: LEAGUE_GROUP_MAX_OWNED })}</li>
                   <li>{t.rich('devLeague.data', { b: strong })}</li>
                 </ul>
               </div>

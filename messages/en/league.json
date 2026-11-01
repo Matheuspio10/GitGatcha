@@ -6,7 +6,8 @@
   "loadFailed": "Couldn't load the Dev League",
   "tabs": {
     "lineup": "Lineup",
-    "round": "This round"
+    "round": "This round",
+    "groups": "Private leagues"
   },
   "rounds": {
     "current": "Round {start} – {end}",
@@ -65,5 +66,58 @@
     "noPlayers": "Nobody is playing this round yet.",
     "you": "you",
     "last": "Last round ({date}): {points} pts, #{position} of {players}. +{bits} BITS."
+  },
+  "groups": {
+    "intro": "Play against your friends: a private league ranks its members on the lineups they already play. No extra BITS, just bragging rights.",
+    "create": {
+      "title": "Create a league",
+      "name": "League name",
+      "submit": "Create",
+      "creating": "Creating…",
+      "created": "League created! Share the code {code} with your friends."
+    },
+    "join": {
+      "title": "Join with a code",
+      "code": "Invite code",
+      "check": "Look up",
+      "submit": "Join {name}",
+      "joining": "Joining…",
+      "joined": "You joined {name}!",
+      "preview": "{name} · {members} players · run by {owner}",
+      "previewNoOwner": "{name} · {members} players",
+      "full": "This league is full.",
+      "already": "You're already in it."
+    },
+    "empty": "You're not in any private league yet. Create one or join with a friend's code.",
+    "limits": "Up to {members} players per league; you can be in {perPlayer} and run {owned}.",
+    "code": "Code",
+    "copyCode": "Copy code",
+    "copyLink": "Copy invite link",
+    "copied": "Copied!",
+    "copyPrompt": "Copy this:",
+    "members": "{count} of {max} players",
+    "by": {
+      "round": "This round",
+      "overall": "Overall"
+    },
+    "overallSince": "Closed rounds since {date}",
+    "roundPartial": "Partial points of the running round",
+    "noLineup": "no lineup",
+    "roundsPlayed": "{count, plural, one {# round} other {# rounds}}",
+    "owner": "Owner",
+    "you": "you",
+    "remove": "Remove {name}",
+    "confirmRemove": "Remove {name}?",
+    "removed": "{name} was removed",
+    "resetCode": "New code",
+    "confirmReset": "The old code stops working. Change it?",
+    "codeReset": "New code: {code}",
+    "leave": "Leave",
+    "confirmLeave": "Leave {name}?",
+    "confirmLeaveLast": "You're the last one: the league will be deleted. Leave?",
+    "left": "You left {name}",
+    "confirm": "Yes",
+    "cancel": "No",
+    "loadFailed": "Couldn't load your private leagues"
   }
 }

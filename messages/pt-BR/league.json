@@ -6,7 +6,8 @@
   "loadFailed": "Não deu para carregar a Liga Dev",
   "tabs": {
     "lineup": "Escalação",
-    "round": "Rodada atual"
+    "round": "Rodada atual",
+    "groups": "Ligas privadas"
   },
   "rounds": {
     "current": "Rodada de {start} a {end}",
@@ -65,5 +66,58 @@
     "noPlayers": "Ninguém jogando esta rodada ainda.",
     "you": "você",
     "last": "Última rodada ({date}): {points} pts, {position}º de {players}. +{bits} BITS."
+  },
+  "groups": {
+    "intro": "Jogue contra os seus amigos: uma liga privada ranqueia os membros pelas escalações que eles já jogam. Não paga BITS a mais; vale a moral.",
+    "create": {
+      "title": "Criar uma liga",
+      "name": "Nome da liga",
+      "submit": "Criar",
+      "creating": "Criando…",
+      "created": "Liga criada! Passe o código {code} para os seus amigos."
+    },
+    "join": {
+      "title": "Entrar com código",
+      "code": "Código de convite",
+      "check": "Procurar",
+      "submit": "Entrar em {name}",
+      "joining": "Entrando…",
+      "joined": "Você entrou em {name}!",
+      "preview": "{name} · {members} jogadores · de {owner}",
+      "previewNoOwner": "{name} · {members} jogadores",
+      "full": "Essa liga está cheia.",
+      "already": "Você já está nela."
+    },
+    "empty": "Você ainda não está em nenhuma liga privada. Crie uma ou entre com o código de um amigo.",
+    "limits": "Até {members} jogadores por liga; você pode estar em {perPlayer} e ser dono de {owned}.",
+    "code": "Código",
+    "copyCode": "Copiar código",
+    "copyLink": "Copiar link de convite",
+    "copied": "Copiado!",
+    "copyPrompt": "Copie isto:",
+    "members": "{count} de {max} jogadores",
+    "by": {
+      "round": "Esta rodada",
+      "overall": "Geral"
+    },
+    "overallSince": "Rodadas fechadas desde {date}",
+    "roundPartial": "Parciais da rodada em andamento",
+    "noLineup": "sem escalação",
+    "roundsPlayed": "{count, plural, one {# rodada} other {# rodadas}}",
+    "owner": "Dono",
+    "you": "você",
+    "remove": "Remover {name}",
+    "confirmRemove": "Remover {name}?",
+    "removed": "{name} foi removido",
+    "resetCode": "Novo código",
+    "confirmReset": "O código antigo deixa de funcionar. Trocar?",
+    "codeReset": "Novo código: {code}",
+    "leave": "Sair",
+    "confirmLeave": "Sair de {name}?",
+    "confirmLeaveLast": "Você é o último: a liga será apagada. Sair?",
+    "left": "Você saiu de {name}",
+    "confirm": "Sim",
+    "cancel": "Não",
+    "loadFailed": "Não deu para carregar as suas ligas privadas"
   }
 }

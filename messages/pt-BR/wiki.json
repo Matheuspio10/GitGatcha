@@ -299,6 +299,7 @@
     "rule": "{what} {points} (até {cap})",
     "captain": "<b>Capitão e coleção:</b> os pontos do capitão contam {times}×. Ter a carta de um dev escalado soma {owned}% aos pontos dele ({shiny}% se for Shiny).",
     "prizes": "<b>Prêmios:</b> {participation} BITS por escalação, mais o top global: {top} (empatados dividem a posição e o prêmio).",
+    "groups": "<b>Ligas privadas:</b> crie uma e passe o código ou o link de convite. Os membros são ranqueados pelas escalações que já jogam: na rodada e no geral, desde a criação da liga. Não pagam BITS a mais. Até {members} jogadores por liga; você pode estar em {perPlayer} e ser dono de {owned}.",
     "data": "<b>Dados:</b> as contagens de contribuição do próprio GitHub (commits no branch padrão, sem forks). Uma conta que não existe mais faz 0 e sai do mercado.",
     "stats": {
       "commits": "commit",

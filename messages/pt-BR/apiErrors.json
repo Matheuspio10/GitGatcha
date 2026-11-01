@@ -243,5 +243,22 @@
     "lineupRequired": "Envie os 5 devs e o capitão",
     "loadFailed": "Não deu para carregar a Liga Dev",
     "saveFailed": "Não deu para salvar a escalação"
+  },
+  "leagueGroups": {
+    "badCode": "Isso não é um código de convite. O código tem {length} letras e números, como K7QM-2XRP.",
+    "notFound": "Nenhuma liga tem esse código. Talvez o dono tenha trocado.",
+    "codeRequired": "Digite o código de convite",
+    "alreadyMember": "Você já está nessa liga",
+    "full": "Essa liga está cheia ({max} jogadores)",
+    "tooManyGroups": "Você pode estar em no máximo {max} ligas privadas. Saia de uma antes.",
+    "tooManyOwned": "Você pode ter no máximo {max} ligas privadas suas",
+    "nameLength": "O nome precisa ter de {min} a {max} caracteres",
+    "notMember": "Você não está nessa liga",
+    "ownerOnly": "Só o dono da liga pode fazer isso",
+    "removeSelf": "Para sair da sua própria liga, use Sair",
+    "memberRequired": "Escolha quem remover",
+    "actionRequired": "Escolha o que fazer",
+    "loadFailed": "Não deu para carregar as suas ligas privadas",
+    "failed": "Não deu para fazer isso. Tente de novo."
   }
 }

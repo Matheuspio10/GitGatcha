@@ -74,6 +74,8 @@ model User {
   tradesProposed      CardTrade[]     @relation("TradesProposed")
   tradesReceived      CardTrade[]     @relation("TradesReceived")
   leagueLineups       LeagueLineup[]
+  leagueGroupsOwned   LeagueGroup[]       @relation("LeagueGroupOwner")
+  leagueGroups        LeagueGroupMember[]
 
   @@index([referredById])
 }
@@ -499,6 +501,37 @@ model LeagueLineup {
 
   @@id([roundId, userId])
   @@index([roundId, points])
+}
+
+// A private Dev League: players who joined with its invite code, ranked among
+// themselves on the same lineups as everyone (no lineup or BITS of its own).
+model LeagueGroup {
+  id      String  @id @default(uuid())
+  name    String
+  // Invite code (LEAGUE_GROUP_CODE_LENGTH characters of LEAGUE_GROUP_CODE_ALPHABET)
+  code    String  @unique
+  // Null when the owner's account is gone: the earliest member runs it
+  ownerId String?
+  // The round running when it was created: the overall table counts from it
+  firstRoundId String
+  createdAt    DateTime @default(now())
+
+  owner   User?               @relation("LeagueGroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members LeagueGroupMember[]
+
+  @@index([ownerId])
+}
+
+model LeagueGroupMember {
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group LeagueGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
 }
 
 model BitsTransaction {

@@ -2,15 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import {
   LEAGUE_BUDGET,
+  LEAGUE_GROUP_CODE_ALPHABET,
+  LEAGUE_GROUP_CODE_LENGTH,
   LEAGUE_MAX_DEV_POINTS,
   LEAGUE_PRICE_MAX,
   LEAGUE_PRICE_MIN,
+  cleanGroupName,
   currentAndNextRound,
+  formatGroupCode,
+  groupOwnerOf,
   leagueRewardFor,
   lineupDevPoints,
   lineupError,
   lineupPoints,
+  normalizeGroupCode,
   priceFromForm,
+  rankGroup,
   roundIdOf,
   roundStartOf,
   scoreActivity,
@@ -76,4 +83,44 @@ test('prizes: the weekly Sprint table for the top 10, nothing after', () => {
   assert.strictEqual(leagueRewardFor(10), 150);
   assert.strictEqual(leagueRewardFor(11), 0);
   assert.strictEqual(leagueRewardFor(0), 0);
+});
+
+test('invite codes: typed or pasted loosely, stored strictly, no look-alike characters', () => {
+  assert.strictEqual(LEAGUE_GROUP_CODE_LENGTH, 8);
+  assert.strictEqual(normalizeGroupCode('k7qm-2xrp'), 'K7QM2XRP');
+  assert.strictEqual(normalizeGroupCode(' K7QM 2XRP '), 'K7QM2XRP');
+  assert.strictEqual(formatGroupCode('K7QM2XRP'), 'K7QM-2XRP');
+  assert.strictEqual(normalizeGroupCode('K7QM2XR'), null, 'too short');
+  assert.strictEqual(normalizeGroupCode('K7QM2XRP9'), null, 'too long');
+  assert.strictEqual(normalizeGroupCode('K7QM2XR0'), null, 'zero is not in the alphabet');
+  for (const ch of '01ILO') assert.ok(!LEAGUE_GROUP_CODE_ALPHABET.includes(ch), ch);
+});
+
+test('league names are trimmed with inner spaces collapsed', () => {
+  assert.strictEqual(cleanGroupName('  Os   Commiteiros '), 'Os Commiteiros');
+});
+
+test('a league is run by its owner, or by the earliest member when the owner is gone', () => {
+  const members = [
+    { userId: 'b', joinedAt: new Date('2026-10-02') },
+    { userId: 'a', joinedAt: new Date('2026-10-01') },
+    { userId: 'c', joinedAt: new Date('2026-10-01') },
+  ];
+  assert.strictEqual(groupOwnerOf('b', members), 'b');
+  assert.strictEqual(groupOwnerOf(null, members), 'a');
+  assert.strictEqual(groupOwnerOf('gone', members), 'a', 'same day: the id breaks the tie');
+  assert.strictEqual(groupOwnerOf('x', []), null);
+});
+
+test('league tables: by this round or overall, ties share the place, no lineup goes last', () => {
+  const rows = [
+    { userId: 'a', round: 40, overall: 300, rounds: 3 },
+    { userId: 'b', round: null, overall: 500, rounds: 4 },
+    { userId: 'c', round: 90, overall: 300, rounds: 3 },
+    { userId: 'd', round: 0, overall: 0, rounds: 0 },
+  ];
+  const overall = rankGroup(rows, 'overall');
+  assert.deepStrictEqual(overall.map(r => [r.userId, r.position]), [['b', 1], ['a', 2], ['c', 2], ['d', 4]]);
+  const round = rankGroup(rows, 'round');
+  assert.deepStrictEqual(round.map(r => [r.userId, r.position]), [['c', 1], ['a', 2], ['d', 3], ['b', 4]]);
 });
