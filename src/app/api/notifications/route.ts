@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { asArray, asJson, withUserLock } from '@/lib/userLock';
-import type { StoredNotification } from '@/lib/notifications';
+import { pruneNotifications, type StoredNotification } from '@/lib/notifications';
+import { playerName, storedText } from '@/lib/storedText';
+import { englishText } from '@/lib/storedTextEnglish';
 import { apiError, readBody } from '@/lib/apiResponse';
 import { z } from 'zod';
 
@@ -54,24 +56,24 @@ export async function GET() {
 
     const standardNotifications = [
       ...friendRequests.map(fr => {
-        const friendDisplayName = fr.user.username || fr.user.name || 'Unknown';
+        const text = storedText('friendRequest', { from: playerName(fr.user.username || fr.user.name) });
         return {
           id: fr.id,
           type: 'friend_request' as const,
-          from: friendDisplayName,
-          message: `${friendDisplayName} wants to be your friend`,
+          message: englishText(text),
+          text,
           actionUrl: '/friends',
           createdAt: fr.createdAt,
           read: false,
         };
       }),
       ...battleChallenges.map(bc => {
-        const challengerDisplayName = bc.challenger.username || bc.challenger.name || 'Unknown';
+        const text = storedText('battleChallenge', { from: playerName(bc.challenger.username || bc.challenger.name) });
         return {
           id: bc.id,
           type: 'battle_challenge' as const,
-          from: challengerDisplayName,
-          message: `${challengerDisplayName} challenged you to a 3v3 battle!`,
+          message: englishText(text),
+          text,
           actionUrl: '/battle',
           createdAt: bc.createdAt,
           read: false,
@@ -125,6 +127,7 @@ export async function POST(request: Request) {
         );
       }
 
+      notifications = pruneNotifications(notifications);
       await tx.user.update({
         select: { id: true },
         where: { id: userId },

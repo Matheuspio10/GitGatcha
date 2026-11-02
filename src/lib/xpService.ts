@@ -1,5 +1,5 @@
 import { asArray, asJson, lockUser, withUserLock, Tx } from './userLock';
-import type { StoredNotification } from './notifications';
+import { pruneNotifications, type StoredNotification } from './notifications';
 import type { Prisma } from '@prisma/client';
 import { addBits, type BitsReason } from './bitsLedger';
 
@@ -150,6 +150,7 @@ export interface GrantXPResult {
 }
 
 import { v4 as uuidv4 } from 'uuid';
+import { storedText, type StoredText } from './storedText';
 
 /**
  * Adds XP (and optionally BITS) and hands out level-up rewards.
@@ -161,7 +162,7 @@ export async function grantXP(
   additionalCurrency: number = 0,
   tx?: Tx,
   currencyReason: BitsReason = 'mission',
-  currencyDetail?: string,
+  currencyDetail?: string | StoredText,
 ): Promise<GrantXPResult> {
   if (!tx) return withUserLock(userId, (t) => grantXP(userId, amount, additionalCurrency, t, currencyReason, currencyDetail));
   await lockUser(tx, userId);
@@ -229,13 +230,13 @@ export async function grantXP(
         totalCoins: levelUpCoins
       }
     };
-    data.notifications = asJson([...currentNotifications, levelUpNotice]);
+    data.notifications = asJson(pruneNotifications([...currentNotifications, levelUpNotice]));
   }
 
   await tx.user.update({ select: { id: true }, where: { id: userId }, data });
   // BITS through the ledger (same transaction)
   await addBits(userId, additionalCurrency, currencyReason, { tx, detail: currencyDetail });
-  await addBits(userId, levelUpCoins, 'level_up', { tx, detail: `Level ${levelUps.map(r => r.level).join(', ')}` });
+  await addBits(userId, levelUpCoins, 'level_up', { tx, detail: storedText('levelDetail', { levels: levelUps.map(r => r.level).join(', ') }) });
 
   return {
     previousXP,

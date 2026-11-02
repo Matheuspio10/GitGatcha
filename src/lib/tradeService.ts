@@ -15,6 +15,7 @@ import {
   tradeFee,
   tradeShapeError,
 } from './trades';
+import { storedText } from './storedText';
 
 /**
  * Card trades between friends (rules in trades.ts). A proposal reserves
@@ -96,7 +97,7 @@ export async function proposeTrade(proposerId: string, toUsername: string, offer
       select: { id: true },
     });
     await pushNotification(tx, receiver.id, 'trade_offer',
-      `${name(proposer)} proposed a trade: ${mine.map(c => c.card.name).join(', ')} for ${requested.length} of your cards.`, '/friends#trades');
+      storedText('tradeOffer', { from: name(proposer), cards: mine.map(c => c.card.name), count: requested.length }), '/friends#trades');
     return { id: trade.id, fee };
   });
 }
@@ -179,7 +180,7 @@ export async function respondTrade(userId: string, tradeId: string, action: Trad
     return withUserLock(trade.proposerId, async (tx) => {
       const { count } = await tx.cardTrade.updateMany({ where: { id: tradeId, status: 'PENDING' }, data: { status: 'DECLINED', respondedAt: now } });
       if (count === 0) throw new UserFacingError('trades.notPending', 409);
-      await pushNotification(tx, trade.proposerId, 'trade_result', `${name(trade.receiver)} declined your trade.`, '/friends#trades');
+      await pushNotification(tx, trade.proposerId, 'trade_result', storedText('tradeDeclined', { who: name(trade.receiver) }), '/friends#trades');
       return { status: 'DECLINED' };
     });
   }
@@ -206,7 +207,7 @@ export async function respondTrade(userId: string, tradeId: string, action: Trad
 
     const proposerFee = tradeFee(given.map(c => c.card.rarity));
     const receiverFee = tradeFee(taken.map(c => c.card.rarity));
-    const detail = (to: Player) => `Trade with ${name(to)}`;
+    const detail = (to: Player) => storedText('tradeDetail', { name: name(to) });
     if (await spendBits(trade.proposerId, proposerFee, 'card_trade', { tx, detail: detail(trade.receiver) }) === null) {
       throw new UserFacingError('trades.friendCantAfford', 400, { name: name(trade.proposer) });
     }
@@ -218,7 +219,7 @@ export async function respondTrade(userId: string, tradeId: string, action: Trad
 
     await tx.cardTrade.update({ where: { id: tradeId }, data: { status: 'ACCEPTED', respondedAt: now, proposerFee, receiverFee } });
     await pushNotification(tx, trade.proposerId, 'trade_result',
-      `${name(trade.receiver)} accepted your trade! You got ${taken.map(c => c.card.name).join(', ')}.`, '/collection');
+      storedText('tradeAccepted', { who: name(trade.receiver), cards: taken.map(c => c.card.name) }), '/collection');
 
     return { status: 'ACCEPTED', fee: receiverFee, balance, got: given.map(c => c.card.name) };
   }, { maxWait: 10_000, timeout: 20_000 });

@@ -16,6 +16,7 @@ import {
   normalizeGroupCode,
   roundIdOf,
 } from './league';
+import { playerName, storedText, type StoredText } from './storedText';
 
 /**
  * Private Dev Leagues: a name, an invite code and its members. They rank the
@@ -53,10 +54,10 @@ async function lockGroup(tx: Tx, groupId: string) {
 }
 
 /** Sent after the commit, each under its player's lock (the list is a JSON column). */
-async function notify(userId: string | null, message: string) {
+async function notify(userId: string | null, text: StoredText) {
   if (!userId) return;
   try {
-    await withUserLock(userId, tx => pushNotification(tx, userId, 'league_group', message, '/league?tab=groups'));
+    await withUserLock(userId, tx => pushNotification(tx, userId, 'league_group', text, '/league?tab=groups'));
   } catch (err) {
     console.error('[League] group notification failed:', err);
   }
@@ -122,7 +123,7 @@ export async function joinGroup(userId: string, rawCode: string) {
   }, { maxWait: 10_000, timeout: 15_000 });
 
   const player = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
-  await notify(joined.ownerId, `${player?.username ?? 'Someone'} joined your Dev League "${joined.name}".`);
+  await notify(joined.ownerId, storedText('leagueGroupJoined', { player: playerName(player?.username), name: joined.name }));
   return { id: joined.id, name: joined.name };
 }
 
@@ -154,7 +155,7 @@ export async function removeMember(userId: string, groupId: string, memberId: st
     await tx.leagueGroupMember.delete({ where: { groupId_userId: { groupId, userId: memberId } } });
     return group.name;
   }, { maxWait: 10_000, timeout: 15_000 });
-  await notify(memberId, `You were removed from the Dev League "${name}".`);
+  await notify(memberId, storedText('leagueGroupRemoved', { name }));
   return { removed: memberId };
 }
 

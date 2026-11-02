@@ -13,6 +13,7 @@ import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { getGameText } from '@/i18n/gameText.server';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
+import { gameName, storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({
   cardIds: teamCardIdsSchema,
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
         return apiError('battle.entryFee', 400, { league: (await leagueText(leagueMode)).label, fee: entryFee });
       }
       // Conditional spend: parallel requests can't push the balance below zero
-      const charged = await spendBits(userId, entryFee, 'league_entry', { detail: league.label });
+      const charged = await spendBits(userId, entryFee, 'league_entry', { detail: storedText('name', { name: gameName.league(leagueMode, league.label) }) });
       if (charged === null) {
         return apiError('battle.entryFee', 400, { league: (await leagueText(leagueMode)).label, fee: entryFee });
       }
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
       // resolveRandomBattle only throws before the battle is saved (no opponent,
       // database error…): the battle never happened, so the entry fee goes back
       if (entryFee > 0) {
-        await addBits(userId, entryFee, 'league_refund', { detail: league.label });
+        await addBits(userId, entryFee, 'league_refund', { detail: storedText('name', { name: gameName.league(leagueMode, league.label) }) });
       }
       throw err;
     }

@@ -56,5 +56,6 @@
     "wonBy": "won by {names} ({score})",
     "nobody": "nobody took part",
     "youFinished": "you finished #{position}"
-  }
+  },
+  "anonymous": "Anonymous"
 }

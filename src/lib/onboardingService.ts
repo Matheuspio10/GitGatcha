@@ -15,6 +15,7 @@ import {
   isStepDone,
   parseOnboardingState,
 } from './onboarding';
+import { gameName, storedText } from './storedText';
 
 const asJson = (value: unknown) => value as Prisma.InputJsonValue;
 
@@ -93,7 +94,7 @@ export async function claimOnboardingStep(userId: string, stepId: OnboardingStep
     if (state.claimed?.includes(stepId)) throw new UserFacingError('onboarding.alreadyClaimed', 409);
     const next: OnboardingState = { ...state, claimed: [...(state.claimed ?? []), stepId] };
     await tx.user.update({ select: { id: true }, where: { id: userId }, data: { onboarding: asJson(next) } });
-    await addBits(userId, step.rewardBits, 'onboarding', { tx, detail: step.title });
+    await addBits(userId, step.rewardBits, 'onboarding', { tx, detail: storedText('name', { name: gameName.onboardingStep(step.id, step.title) }) });
     return step.rewardBits;
   });
 }

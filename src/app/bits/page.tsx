@@ -6,6 +6,9 @@ import { bitsReasonLabel } from '@/lib/bitsReasons';
 import { EmptyState } from '@/components/EmptyState';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getGameText } from '@/i18n/gameText.server';
+import { getStoredText } from '@/i18n/storedText.server';
+import { makePackText, packIdForEnglishName } from '@/i18n/packText';
+import { isStoredText } from '@/lib/storedText';
 
 export async function generateMetadata() {
   const t = await getTranslations('public.bits');
@@ -20,10 +23,17 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
   if (!user) redirect('/');
   const { before } = await searchParams;
   const beforeDate = before && !Number.isNaN(Date.parse(before)) ? new Date(before) : undefined;
-  const [rows, t, locale, game] = await Promise.all([
-    getBitsHistory(user.id, PAGE, beforeDate), getTranslations('public.bits'), getLocale(), getGameText('game'),
+  const [rows, t, locale, game, storedText, packText] = await Promise.all([
+    getBitsHistory(user.id, PAGE, beforeDate), getTranslations('public.bits'), getLocale(), getGameText('game'), getStoredText(),
+    Promise.all([getGameText('gamePacks'), getGameText('gameBattle')]).then(([packs, battle]) => makePackText(packs, battle)),
   ]);
   const fmt = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  // Rows from before detailText only have the English sentence; a pack purchase still names its pack
+  const detailOf = (row: (typeof rows)[number]) => {
+    if (isStoredText(row.detailText)) return storedText(row.detailText, row.detail);
+    const packId = row.reason === 'pack_purchase' && row.detail ? packIdForEnglishName(row.detail) : undefined;
+    return packId ? packText.name(packId, row.detail ?? '') : row.detail;
+  };
 
   return (
     <div className="mx-auto max-w-3xl py-6">
@@ -46,7 +56,7 @@ export default async function BitsHistoryPage({ searchParams }: { searchParams: 
             <li key={row.id} className="flex items-center gap-4 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-white">{game(`bitsReasons.${row.reason}`, bitsReasonLabel(row.reason))}</p>
-                <p className="truncate text-xs text-slate-500">{row.detail ? `${row.detail} · ` : ''}{fmt.format(row.createdAt)}</p>
+                <p className="truncate text-xs text-slate-500">{[detailOf(row), fmt.format(row.createdAt)].filter(Boolean).join(' · ')}</p>
               </div>
               <div className="text-right">
                 <p className={`font-mono font-bold ${row.amount >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>

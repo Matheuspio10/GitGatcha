@@ -9,6 +9,7 @@ import {
   newlyReachedTiers,
   tierName,
 } from './achievementUtils';
+import { gameName, ownText, storedText } from './storedText';
 
 export interface UnlockedAchievement {
   id: string;
@@ -93,7 +94,10 @@ export async function syncAchievements(userId: string): Promise<UnlockedAchievem
     }
     const total = unlocked.reduce((sum, a) => sum + a.reward, 0);
     if (total > 0) {
-      await addBits(userId, total, 'achievement', { tx, detail: unlocked.map(a => `${a.name} ${a.tierName}`).join(', ') });
+      const names = unlocked.map(a => ownText('achievementTier', `${a.name} ${a.tierName}`, {
+        name: gameName.achievement(a.id, a.name), tier: gameName.achievementTier(a.tier, a.tierName),
+      }));
+      await addBits(userId, total, 'achievement', { tx, detail: storedText('name', { name: names }) });
     }
     return unlocked;
   });

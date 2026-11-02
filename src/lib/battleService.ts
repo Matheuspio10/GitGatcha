@@ -23,6 +23,7 @@ import {
 } from './battleConfig';
 import { calculateNewRatings } from './ratings';
 import { pickOpponentTeam, OpponentCandidate } from './opponentPicker';
+import { gameName, playerName, storedText, winLoss } from './storedText';
 
 export { calculateNewRatings };
 
@@ -214,7 +215,8 @@ export async function resolveRandomBattle(
         completedAt: new Date(),
       }
     });
-    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: `${LEAGUES[isLeagueMode(leagueMode) ? leagueMode : 'OPEN'].label}${playerWon ? ' win' : ' loss'}` });
+    const mode = isLeagueMode(leagueMode) ? leagueMode : 'OPEN';
+    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: storedText('battleDetail', { league: gameName.league(mode, LEAGUES[mode].label), result: winLoss(playerWon) }) });
     return created;
   });
 
@@ -373,16 +375,16 @@ async function finishFriendBattle(
 
   // The winner takes both stakes (the battle is COMPLETED above, so this runs once)
   if (battle.stake > 0 && winnerId) {
-    const loserName = (challengerWon ? battle.defender?.username : battle.challenger?.username) ?? 'a friend';
-    await addBits(winnerId, battle.stake * 2, 'challenge_payout', { detail: `Stakes vs ${loserName}` });
+    const loserName = playerName(challengerWon ? battle.defender?.username : battle.challenger?.username, 'aFriend');
+    await addBits(winnerId, battle.stake * 2, 'challenge_payout', { detail: storedText('stakesDetail', { name: loserName }) });
   }
 
   // Grant rewards to both players
-  await addBits(battle.challengerId, challengerRewards.bits, 'battle_reward', { detail: `Friend challenge ${challengerWon ? 'win' : 'loss'}` });
+  await addBits(battle.challengerId, challengerRewards.bits, 'battle_reward', { detail: storedText('friendChallengeDetail', { result: winLoss(challengerWon) }) });
   const challengerXpResult = await grantXP(battle.challengerId, challengerRewards.xp);
 
   if (battle.defenderId) {
-    await addBits(battle.defenderId, defenderRewards.bits, 'battle_reward', { detail: `Friend challenge ${challengerWon ? 'loss' : 'win'}` });
+    await addBits(battle.defenderId, defenderRewards.bits, 'battle_reward', { detail: storedText('friendChallengeDetail', { result: winLoss(!challengerWon) }) });
 
     await grantXP(battle.defenderId, defenderRewards.xp);
 
@@ -527,8 +529,8 @@ export async function resolveRankedBattle(challengerId: string, challengerTeamCa
   const playerWon = battleResult.winner === 'CHALLENGER';
   const rewards = withUpsetBonus(calculateRewards(playerWon, 'RANKED'), playerWon ? upsetBonusPct(cTeam, dTeam) : 0);
   const battleStats = buildBattleStats(battleResult, cTeam);
-  const who = challenger.username ?? 'A player';
-  const against = opponent.username ?? 'a player';
+  const who = playerName(challenger.username);
+  const against = playerName(opponent.username);
 
   const battle = await prisma.$transaction(async (tx) => {
     const created = await tx.battle.create({
@@ -547,7 +549,7 @@ export async function resolveRankedBattle(challengerId: string, challengerTeamCa
         completedAt: new Date(),
       },
     });
-    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: `Ranked ${playerWon ? 'win' : 'loss'} vs ${against}` });
+    await addBits(challengerId, rewards.bits, 'battle_reward', { tx, detail: storedText('rankedDetail', { result: winLoss(playerWon), name: against }) });
     return created;
   });
 
@@ -574,10 +576,10 @@ export async function resolveRankedBattle(challengerId: string, challengerTeamCa
     const mine = ratingChange ? (playerWon ? ratingChange.loser : ratingChange.winner) : null;
     const delta = mine ? mine.after - mine.before : 0;
     const signed = `${delta >= 0 ? '+' : ''}${delta}`;
-    if (!playerWon) await addBits(opponent.id, RANKED_DEFENSE_WIN_BITS, 'battle_reward', { tx, detail: `Ranked defense vs ${who}` });
+    if (!playerWon) await addBits(opponent.id, RANKED_DEFENSE_WIN_BITS, 'battle_reward', { tx, detail: storedText('rankedDefenseDetail', { name: who }) });
     await pushNotification(tx, opponent.id, 'ranked_defense', playerWon
-      ? `${who} beat your saved team in Ranked (${signed} rating).`
-      : `Your saved team held against ${who} in Ranked (${signed} rating, +${RANKED_DEFENSE_WIN_BITS} BITS).`, '/battle');
+      ? storedText('rankedDefenseLost', { who, rating: signed })
+      : storedText('rankedDefenseHeld', { who, rating: signed, bits: RANKED_DEFENSE_WIN_BITS }), '/battle');
   }));
 
   const rating = ratingChange ? (playerWon ? ratingChange.winner : ratingChange.loser) : null;

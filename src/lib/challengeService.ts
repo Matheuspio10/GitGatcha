@@ -6,6 +6,7 @@ import { prisma } from './prisma';
 import { addBits, spendBits } from './bitsLedger';
 import { UserFacingError } from './userLock';
 import { CHALLENGE_STAKE_MAX } from './battleConfig';
+import { storedText, type StoredText } from './storedText';
 
 /** A valid stake (integer, 0..CHALLENGE_STAKE_MAX); anything else is an error for the player. */
 export function parseStake(value: unknown): number {
@@ -27,7 +28,7 @@ export async function areFriends(a: string, b: string): Promise<boolean> {
 }
 
 /** Ends a pending challenge (expired / cancelled) once, giving the challenger's stake back. */
-async function closePending(battleId: string, status: 'EXPIRED' | 'CANCELLED', reason: string): Promise<boolean> {
+async function closePending(battleId: string, status: 'EXPIRED' | 'CANCELLED', reason: StoredText): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const battle = await tx.battle.findUnique({ where: { id: battleId }, select: { challengerId: true, stake: true } });
     if (!battle) return false;
@@ -45,7 +46,7 @@ export async function expireChallenges(now = new Date()): Promise<number> {
     select: { id: true },
   });
   let expired = 0;
-  for (const b of due) if (await closePending(b.id, 'EXPIRED', 'Challenge expired')) expired++;
+  for (const b of due) if (await closePending(b.id, 'EXPIRED', storedText('challengeExpiredDetail'))) expired++;
   return expired;
 }
 
@@ -54,7 +55,7 @@ export async function cancelChallenge(battleId: string, userId: string) {
   const battle = await prisma.battle.findUnique({ where: { id: battleId }, select: { challengerId: true, status: true } });
   if (!battle || battle.challengerId !== userId) throw new UserFacingError('challenge.notFound', 404);
   if (battle.status !== 'PENDING') throw new UserFacingError('challenge.alreadyClosed');
-  if (!(await closePending(battleId, 'CANCELLED', 'Challenge cancelled'))) throw new UserFacingError('challenge.alreadyClosed');
+  if (!(await closePending(battleId, 'CANCELLED', storedText('challengeCancelledDetail')))) throw new UserFacingError('challenge.alreadyClosed');
 }
 
 /** An open (link) challenge that another player already took: the answer to the ones who lost the race. */
@@ -87,7 +88,7 @@ export async function joinChallenge(battleId: string, userId: string) {
   }
 
   if (battle.stake > 0) {
-    const paid = await spendBits(userId, battle.stake, 'challenge_stake', { detail: 'Accepted a challenge' });
+    const paid = await spendBits(userId, battle.stake, 'challenge_stake', { detail: storedText('challengeAcceptedDetail') });
     if (paid === null) {
       if (claimed) await prisma.battle.updateMany({ where: { id: battleId, defenderId: userId, status: 'PENDING' }, data: { defenderId: null } });
       throw new UserFacingError('challenge.stakeToMatch', 400, { stake: battle.stake });
@@ -98,6 +99,6 @@ export async function joinChallenge(battleId: string, userId: string) {
 
 /** Gives the defender's stake back (and frees an open challenge) when the battle could not be resolved. */
 export async function releaseDefender(battleId: string, userId: string, joined: { stake: number; claimed: boolean }) {
-  if (joined.stake > 0) await addBits(userId, joined.stake, 'challenge_refund', { detail: 'Challenge could not be resolved' });
+  if (joined.stake > 0) await addBits(userId, joined.stake, 'challenge_refund', { detail: storedText('challengeUnresolvedDetail') });
   if (joined.claimed) await prisma.battle.updateMany({ where: { id: battleId, defenderId: userId, status: 'PENDING' }, data: { defenderId: null } });
 }
