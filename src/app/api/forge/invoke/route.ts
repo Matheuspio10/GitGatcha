@@ -11,6 +11,7 @@ import { SHINY_CHANCE, WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
+import { storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({ username: z.string().trim().max(100).optional() }).optional();
 
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
           fragmentLogs: logs
         }
       });
-      await addBits(userId, -bits, 'forge', { tx, detail: `${stats.name || username}${featured ? ' (Dev of the Week)' : ''}` });
+      await addBits(userId, -bits, 'forge', { tx, detail: storedText('forgeDetail', { name: stats.name || username, featured: featured ? 'yes' : 'no' }) });
 
       const isShiny = randomInt(0, 1_000_000) < SHINY_CHANCE * 1_000_000;
       const userCard = await tx.userCard.create({

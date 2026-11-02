@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { maxTrainingLevel, trainingCost } from '@/lib/training';
+import { storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({ userCardId: idSchema.optional() }).optional();
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
       spend(WILDCARD, payment.fromWildcard);
 
       await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: logs } });
-      const currency = await addBits(userId, -cost.bits, 'card_training', { tx, detail: `${card.name} → level ${level}` });
+      const currency = await addBits(userId, -cost.bits, 'card_training', { tx, detail: storedText('trainingDetail', { card: card.name, level }) });
       await tx.userCard.update({ where: { id: userCard.id }, data: { trainingLevel: level } });
 
       return {

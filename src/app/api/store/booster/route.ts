@@ -11,6 +11,7 @@ import { activeEventPackId, isEventPackId } from '@/lib/weeklyEvents';
 import { apiError, readBody } from '@/lib/apiResponse';
 import { packIdSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { gameName, storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({ packId: packIdSchema.optional() }).optional();
 
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
         where: { id: userId },
         data: { inventory: [...asArray<InventoryItem>(user.inventory), newItem] as unknown as Prisma.InputJsonValue },
       });
-      const currency = await addBits(userId, -pack.cost, 'pack_purchase', { tx, detail: pack.name });
+      const currency = await addBits(userId, -pack.cost, 'pack_purchase', { tx, detail: storedText('name', { name: gameName.pack(pack.id, pack.name) }) });
       return { currency };
     });
 

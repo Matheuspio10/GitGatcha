@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 import type { Tx } from './userLock';
 import { pushNotification } from './notifications';
 import { REFERRAL_BONUS, REFERRAL_CAP, normalizeReferralCode, referrerStillPaid } from './referral';
+import { playerName, storedText, type StoredText } from './storedText';
 
 /**
  * Records who invited a NEW player (called when they pick their username, in
@@ -24,7 +25,7 @@ export async function attachReferrer(tx: Tx, userId: string, code: unknown): Pro
   return count === 1 ? referrer.id : null;
 }
 
-const notify = (tx: Tx, userId: string, message: string) => pushNotification(tx, userId, 'referral_reward', message, '/friends');
+const notify = (tx: Tx, userId: string, text: StoredText) => pushNotification(tx, userId, 'referral_reward', text, '/friends');
 
 /**
  * Pays the referral once the invited player has GitHub connected: both get
@@ -52,14 +53,16 @@ export async function payReferralIfEligible(userId: string): Promise<boolean> {
     if (claimed.count === 0) return false;
 
     const referrer = await tx.user.findUnique({ where: { id: referrerId }, select: { username: true } });
-    await addBits(userId, REFERRAL_BONUS, 'referral', { tx, detail: `Invited by ${referrer?.username ?? 'a friend'}` });
-    await notify(tx, userId, `Welcome bonus: +${REFERRAL_BONUS} BITS for joining with ${referrer?.username ?? 'a friend'}'s invite.`);
+    const referrerName = playerName(referrer?.username, 'aFriend');
+    await addBits(userId, REFERRAL_BONUS, 'referral', { tx, detail: storedText('invitedByDetail', { name: referrerName }) });
+    await notify(tx, userId, storedText('referralWelcome', { bits: REFERRAL_BONUS, referrer: referrerName }));
 
     // Paid referrals before this one (this one already has the flag)
     const paidBefore = (await tx.user.count({ where: { referredById: referrerId, referralRewardPaid: true } })) - 1;
     if (referrerStillPaid(paidBefore)) {
-      await addBits(referrerId, REFERRAL_BONUS, 'referral', { tx, detail: `${user.username ?? 'A friend'} joined` });
-      await notify(tx, referrerId, `${user.username ?? 'Your friend'} joined with your invite: +${REFERRAL_BONUS} BITS!`);
+      const friend = playerName(user.username);
+      await addBits(referrerId, REFERRAL_BONUS, 'referral', { tx, detail: storedText('friendJoinedDetail', { name: friend }) });
+      await notify(tx, referrerId, storedText('referralJoined', { friend, bits: REFERRAL_BONUS }));
     }
     return true;
   }, { maxWait: 10_000, timeout: 15_000 });

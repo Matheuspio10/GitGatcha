@@ -7,15 +7,27 @@
  * the two writes run in their own transaction.
  */
 import { prisma } from './prisma';
-import type { Tx } from './userLock';
+import { asJson, type Tx } from './userLock';
 import type { BitsReason } from './bitsReasons';
+import type { StoredText } from './storedText';
+import { englishText } from './storedTextEnglish';
 
 export type { BitsReason } from './bitsReasons';
 
 interface LedgerOptions {
   tx?: Tx;
-  /** Short context shown in the history ("The JavaScript Coven", "Win 2 Battles"…). */
-  detail?: string;
+  /**
+   * Short context shown in the history ("The JavaScript Coven", "Ranked win vs ana"…).
+   * Plain text for names only; anything with words is a StoredText, so it is translated.
+   */
+  detail?: string | StoredText;
+}
+
+/** The row's detail columns: the English sentence plus, when there is one, the stored text. */
+function detailColumns(detail: LedgerOptions['detail']) {
+  if (detail === undefined) return { detail: null };
+  if (typeof detail === 'string') return { detail };
+  return { detail: englishText(detail), detailText: asJson(detail) };
 }
 
 function inTransaction<T>(tx: Tx | undefined, fn: (db: Tx) => Promise<T>): Promise<T> {
@@ -32,7 +44,7 @@ export async function addBits(userId: string, amount: number, reason: BitsReason
       select: { currency: true },
     });
     await db.bitsTransaction.create({
-      data: { userId, amount, balanceAfter: user.currency, reason, detail: options.detail ?? null },
+      data: { userId, amount, balanceAfter: user.currency, reason, ...detailColumns(options.detail) },
     });
     return user.currency;
   });
@@ -54,7 +66,7 @@ export async function spendBits(userId: string, amount: number, reason: BitsReas
     if (rows.length === 0) return null;
     const balance = Number(rows[0].currency);
     await db.bitsTransaction.create({
-      data: { userId, amount: -amount, balanceAfter: balance, reason, detail: options.detail ?? null },
+      data: { userId, amount: -amount, balanceAfter: balance, reason, ...detailColumns(options.detail) },
     });
     return balance;
   });
@@ -66,6 +78,6 @@ export function getBitsHistory(userId: string, limit = 50, before?: Date) {
     where: { userId, ...(before ? { createdAt: { lt: before } } : {}) },
     orderBy: { createdAt: 'desc' },
     take: Math.min(Math.max(limit, 1), 100),
-    select: { id: true, amount: true, balanceAfter: true, reason: true, detail: true, createdAt: true },
+    select: { id: true, amount: true, balanceAfter: true, reason: true, detail: true, detailText: true, createdAt: true },
   });
 }

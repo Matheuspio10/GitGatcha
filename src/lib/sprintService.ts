@@ -14,6 +14,7 @@ import {
   type SprintKind,
   type SprintTheme,
 } from './sprints';
+import { gameName, storedText } from './storedText';
 
 const KINDS: SprintKind[] = ['daily', 'weekly'];
 
@@ -98,11 +99,12 @@ export async function closeDueSprints(now = new Date()): Promise<number> {
         });
       }
       // Paid in id order, the same lock order as the season close
-      const label = `${sprintKindLabel(kind)} · ${theme.name}`;
+      const label = { kind: gameName.sprintKind(kind, sprintKindLabel(kind)), theme: gameName.sprintTheme(theme) };
       for (const r of results.filter(r => r.rewardBits > 0).sort((a, b) => a.userId.localeCompare(b.userId))) {
         await lockUser(tx, r.userId);
-        await addBits(r.userId, r.rewardBits, 'sprint_reward', { tx, detail: `${label} · #${r.position}` });
-        await pushNotification(tx, r.userId, 'sprint_reward', `${label}: you finished #${r.position}. +${r.rewardBits} BITS!`, '/leaderboard?tab=sprints');
+        await addBits(r.userId, r.rewardBits, 'sprint_reward', { tx, detail: storedText('sprintDetail', { ...label, position: r.position }) });
+        await pushNotification(tx, r.userId, 'sprint_reward',
+          storedText('sprintReward', { ...label, position: r.position, bits: r.rewardBits }), '/leaderboard?tab=sprints');
       }
       await tx.sprint.update({ where: { id: sprint.id }, data: { closedAt: now } });
       return true;

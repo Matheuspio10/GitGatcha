@@ -12,6 +12,7 @@ import { areFriends, expireChallenges, parseStake } from '@/lib/challengeService
 import { teamCardIdsSchema } from '@/lib/playerTeam';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
+import { playerName, storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({
   defenderUsername: z.string().max(100).optional(),
@@ -146,7 +147,7 @@ export async function POST(req: Request) {
 
       // The challenger's stake is held until the challenge resolves, expires or is cancelled
       if (stake > 0) {
-        const paid = await spendBits(userId, stake, 'challenge_stake', { tx, detail: defender ? `Challenge vs ${defender.username}` : 'Open challenge' });
+        const paid = await spendBits(userId, stake, 'challenge_stake', { tx, detail: defender ? storedText('challengeVsDetail', { name: playerName(defender.username) }) : storedText('openChallengeDetail') });
         if (paid === null) throw new UserFacingError('challenge.stakeNotAffordable', 400, { stake });
       }
 

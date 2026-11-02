@@ -541,6 +541,8 @@ model BitsTransaction {
   balanceAfter Int
   reason       String
   detail       String?
+  // The detail as a message key + values (src/lib/storedText.ts); `detail` keeps its English sentence
+  detailText   Json?
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

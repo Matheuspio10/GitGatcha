@@ -20,6 +20,7 @@ import {
   scoreActivity,
   type Ownership,
 } from './league';
+import { storedText } from './storedText';
 
 /**
  * The Dev League in the database (rules in league.ts, plan in docs/liga-cartola.md).
@@ -231,9 +232,9 @@ export async function closeRound(roundId: string, now: Date): Promise<boolean> {
       const bits = LEAGUE_PARTICIPATION_BITS + prize;
       await tx.leagueLineup.update({ where: { roundId_userId: { roundId, userId: r.userId } }, data: { position: r.position, rewardBits: bits } });
       await lockUser(tx, r.userId);
-      await addBits(r.userId, bits, 'league_reward', { tx, detail: `Dev League ${roundId} · #${r.position}` });
+      await addBits(r.userId, bits, 'league_reward', { tx, detail: storedText('leagueRewardDetail', { round: roundId, position: r.position }) });
       await pushNotification(tx, r.userId, 'league_result',
-        `Dev League (week of ${roundId}): ${r.points} points, #${r.position} of ${ranked.length}. +${bits} BITS!`, '/league');
+        storedText('leagueResult', { round: roundId, points: r.points, position: r.position, total: ranked.length, bits }), '/league');
     }
     await tx.leagueRound.update({ where: { id: roundId }, data: { closedAt: now } });
     return true;

@@ -18,6 +18,7 @@ import {
   towerName,
   type TowerFloor,
 } from './tower';
+import { gameName, storedText } from './storedText';
 
 const asJson = (value: unknown) => value as Prisma.InputJsonValue;
 const cardSelect = { id: true, name: true, atk: true, def: true, hp: true, rarity: true, primaryLanguage: true, avatarUrl: true } as const;
@@ -136,7 +137,7 @@ export async function fightTower(userId: string, team: PlayerTeamCard[], now = n
       ? (await tx.towerRun.updateMany({ where: { id: run.id, cleared: floor.floor - 1 }, data: { cleared: floor.floor, attempts: { increment: 1 } } })).count === 1
       : false;
     if (!moved) await tx.towerRun.update({ where: { id: run.id }, data: { attempts: { increment: 1 } } });
-    if (moved) await addBits(userId, floor.rewardBits, 'tower_reward', { tx, detail: `${towerName(theme)} · floor ${floor.floor}` });
+    if (moved) await addBits(userId, floor.rewardBits, 'tower_reward', { tx, detail: storedText('towerDetail', { tower: gameName.tower(theme), floor: floor.floor }) });
     return { battle: created, firstClear: moved };
   });
 

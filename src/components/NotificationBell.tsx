@@ -7,12 +7,16 @@ import { Bell, UserPlus, Sword, X, ArrowCircleUp, Checks, Gift, ArrowsLeftRight,
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { packIdForEnglishName, usePackText } from '@/i18n/packText';
+import { useStoredText } from '@/i18n/storedText';
+import type { StoredText } from '@/lib/storedText';
 
 interface Notification {
   id: string;
   type: 'friend_request' | 'battle_challenge' | 'LEVEL_UP' | 'card_gift' | (string & {});
   from?: string;
   message?: string;
+  /** Translated here; `message` is its English sentence (and the only text of older entries). */
+  text?: StoredText;
   actionUrl?: string;
   createdAt: string;
   read?: boolean;
@@ -42,6 +46,7 @@ export function NotificationBell() {
   const router = useRouter();
   const t = useTranslations('notifications.bell');
   const packText = usePackText();
+  const storedText = useStoredText();
 
   const fetchNotifications = async () => {
     try {
@@ -208,7 +213,7 @@ export function NotificationBell() {
                 ) : (
                   <>
                     <p className="text-sm font-bold text-white mb-1">{t('toastTitle', { type: toast.type })}</p>
-                    <p className="text-sm text-slate-300">{toast.message}</p>
+                    <p className="text-sm text-slate-300">{storedText(toast.text, toast.message)}</p>
                     {toast.actionUrl && (
                       <Link 
                         href={toast.actionUrl}
@@ -326,7 +331,7 @@ export function NotificationBell() {
                           <div className="flex-1 min-w-0" onClick={() => { if(isUnread) markAsRead(notif.id); }}>
                             <Link href={notif.actionUrl || ''} onClick={() => setIsOpen(false)}>
                               <p className="text-sm text-slate-200 font-medium group-hover:text-white transition-colors">
-                                {notif.message}
+                                {storedText(notif.text, notif.message)}
                               </p>
                             </Link>
                             <p className="text-[11px] text-slate-500 mt-1 font-medium flex items-center justify-between">

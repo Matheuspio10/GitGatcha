@@ -13,6 +13,7 @@ import {
   startOfUtcDay,
   type GiftBlock,
 } from './gifts';
+import { playerName, storedText } from './storedText';
 
 /**
  * Card gifts between friends (rules in gifts.ts). The sender's copy is removed
@@ -118,8 +119,9 @@ export async function sendGift(senderId: string, cardId: string, receiverUsernam
     const created = await moveCard(tx, owned, receiver.id);
     await tx.cardGift.create({ data: { senderId, receiverId: receiver.id, cardId, isShiny: owned.isShiny, fee } });
 
-    const from = sender?.username ?? sender?.name ?? 'A friend';
-    await pushNotification(tx, receiver.id, 'card_gift', `${from} gave you ${owned.isShiny ? 'a Shiny ' : ''}${owned.card.name} (${owned.card.rarity})! It's in your collection.`, '/collection');
+    const from = playerName(sender?.username ?? sender?.name);
+    await pushNotification(tx, receiver.id, 'card_gift',
+      storedText('cardGift', { from, card: owned.card.name, rarity: owned.card.rarity, shiny: owned.isShiny ? 'yes' : 'no' }), '/collection');
 
     return { fee, balance, receiver: receiver.username, card: owned.card.name, receiverUserCardId: created.id };
   }, { maxWait: 10_000, timeout: 15_000 });

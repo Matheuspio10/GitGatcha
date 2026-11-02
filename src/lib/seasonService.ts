@@ -4,6 +4,7 @@ import { pushNotification } from './notifications';
 import { lockUser, type Tx } from './userLock';
 import { STARTING_RATING } from './battleConfig';
 import { PROMOTION_BITS, ranksReached, seasonEndFor, seasonRewardFor } from './seasons';
+import { gameName, storedText } from './storedText';
 
 /**
  * The open season, closing any that already ended first. Cheap when nothing
@@ -48,8 +49,9 @@ export async function closeDueSeasons(now = new Date()): Promise<number> {
         await tx.seasonResult.create({
           data: { seasonId: open.id, userId: p.id, finalRating: p.rating, peakRating: peak, tier: tier.id, rewardBits: bits, battles: p.seasonBattles },
         });
-        await addBits(p.id, bits, 'season_reward', { tx, detail: `Season ${open.id} · ${tier.name}` });
-        await pushNotification(tx, p.id, 'season_end', `Season ${open.id} is over: you peaked at ${tier.name}. +${bits} BITS! Ratings were reset halfway for Season ${open.id + 1}.`, '/leaderboard');
+        await addBits(p.id, bits, 'season_reward', { tx, detail: storedText('seasonRewardDetail', { season: open.id, tier: gameName.rank(tier) }) });
+        await pushNotification(tx, p.id, 'season_end',
+          storedText('seasonEnd', { season: open.id, tier: gameName.rank(tier), bits, next: open.id + 1 }), '/leaderboard');
       }
 
       // Soft reset (same rounding as Math.round): halfway back to the start
@@ -89,7 +91,10 @@ export async function recordSeasonProgress(tx: Tx, userId: string, newRating: nu
   for (const tier of reached) {
     const bits = PROMOTION_BITS[tier.id];
     if (bits <= 0) continue;
-    await addBits(userId, bits, 'rank_promotion', { tx, detail: `${tier.name}${season ? ` · Season ${season.id}` : ''}` });
-    await pushNotification(tx, userId, 'rank_promotion', `Promoted to ${tier.name}! +${bits} BITS`, '/leaderboard');
+    const detail = season
+      ? storedText('rankPromotionDetail', { tier: gameName.rank(tier), season: season.id })
+      : storedText('name', { name: gameName.rank(tier) });
+    await addBits(userId, bits, 'rank_promotion', { tx, detail });
+    await pushNotification(tx, userId, 'rank_promotion', storedText('rankPromotion', { tier: gameName.rank(tier), bits }), '/leaderboard');
   }
 }

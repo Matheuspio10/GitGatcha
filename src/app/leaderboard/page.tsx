@@ -63,7 +63,7 @@ async function getBattleCounts(): Promise<Map<string, BattleCounts>> {
 }
 
 /** Loads the players (without their avatar, which can be a large base64 string) and ranks them. */
-async function loadRows(ids: string[], counts: Map<string, BattleCounts>): Promise<LeaderboardRow[]> {
+async function loadRows(ids: string[], counts: Map<string, BattleCounts>, anonymous: string): Promise<LeaderboardRow[]> {
   if (ids.length === 0) return [];
   const users = await prisma.user.findMany({
     where: { id: { in: ids } },
@@ -74,7 +74,7 @@ async function loadRows(ids: string[], counts: Map<string, BattleCounts>): Promi
       const c = counts.get(u.id) ?? { totalBattles: 0, totalWins: 0, pvpWins: 0 };
       return {
         id: u.id,
-        displayName: u.username || u.name || 'Anonymous',
+        displayName: u.username || u.name || anonymous,
         linkName: u.username || u.name || 'Anonymous',
         image: null,
         rating: u.rating ?? STARTING_RATING,
@@ -281,11 +281,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
     });
     const ids = new Set<string>([currentUser.id]);
     for (const f of friendships) ids.add(f.userId === currentUser.id ? f.friendId : f.userId);
-    rows = await loadRows(Array.from(ids), counts);
+    rows = await loadRows(Array.from(ids), counts, t('anonymous'));
   } else {
     // Only players who finished at least one battle (hides never-played and test accounts)
     const ids = Array.from(counts.entries()).filter(([, c]) => c.totalBattles > 0).map(([id]) => id);
-    rows = (await loadRows(ids, counts)).slice(0, GLOBAL_LIMIT);
+    rows = (await loadRows(ids, counts, t('anonymous'))).slice(0, GLOBAL_LIMIT);
   }
   await attachImages(rows);
 
