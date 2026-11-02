@@ -342,6 +342,12 @@ export function BattleReplay({
   const t = useTranslations('battle');
   const battleText = useGameText('gameBattle');
   const achText = useGameText('gameAchievements');
+  // Logs saved before the events had a key only have the English sentence
+  const logText = useCallback(
+    (ev: { message: string; key?: string; values?: Record<string, string | number> }) =>
+      ev.key ? battleText(`log.${ev.key}`, ev.message, ev.values) : ev.message,
+    [battleText],
+  );
   const reduceMotion = useReducedMotion();
   const rewards = live?.rewards;
   const leagueMode = live?.leagueMode;
@@ -475,7 +481,7 @@ export function BattleReplay({
     let delay = 300; // default delay before next event
     
     if (ev.type === 'passive') {
-      setActivePassiveMsg(ev.message);
+      setActivePassiveMsg(logText(ev));
       setActiveAnim('passive');
       playSound('passive');
       delay = 1200; // Hold the pause for banner
@@ -514,7 +520,7 @@ export function BattleReplay({
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [currentTurn, subseqIdx, playing, done, speed, log, challengerTeam, playSound]);
+  }, [currentTurn, subseqIdx, playing, done, speed, log, challengerTeam, playSound, logText]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
@@ -970,7 +976,7 @@ export function BattleReplay({
                   className="flex items-start gap-2.5 py-1.5 px-2 rounded-lg hover:bg-slate-800/30 transition-colors"
                 >
                   <span className="flex-shrink-0 text-base leading-none mt-0.5">{LOG_ICONS[ev.type] || '•'}</span>
-                  <span className={clsx('text-[11px] leading-snug flex-1', LOG_COLORS[ev.type] || 'text-slate-400')}>{ev.message}</span>
+                  <span className={clsx('text-[11px] leading-snug flex-1', LOG_COLORS[ev.type] || 'text-slate-400')}>{logText(ev)}</span>
                 </motion.div>
               ))
             )}

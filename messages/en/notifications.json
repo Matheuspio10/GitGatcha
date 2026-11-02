@@ -73,6 +73,13 @@
     "levelDetail": "Level {levels}",
     "dayDetail": "Day {day}",
     "trainingDetail": "{card} → level {level}",
-    "forgeDetail": "{name}{featured, select, yes { (Dev of the Week)} other {}}"
+    "forgeDetail": "{name}{featured, select, yes { (Dev of the Week)} other {}}",
+    "genericBooster": "Generic Booster",
+    "fragmentPackDrop": "Pack drop - {pack}",
+    "fragmentDuplicate": "Duplicate - {rarity} {language} card",
+    "fragmentTraining": "Training - {card} (level {level})",
+    "fragmentExchangeFor": "Exchange for {count} wildcard",
+    "fragmentExchangeFrom": "Exchange from {language}",
+    "fragmentInvocation": "Invocation - {name}{featured, select, yes { (Dev of the Week)} other {}}"
   }
 }

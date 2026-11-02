@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { addBits } from '@/lib/bitsLedger';
-import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
+import { withUserLock, UserFacingError, asRecord, asArray, asJson } from '@/lib/userLock';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { idSchema } from '@/lib/validation';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 import { WILDCARD, planFragmentPayment } from '@/lib/fragments';
 import { maxTrainingLevel, trainingCost } from '@/lib/training';
 import { storedText } from '@/lib/storedText';
+import { fragmentLogEntry, type FragmentLogEntry } from '@/lib/fragmentLog';
 
 const bodySchema = z.object({ userCardId: idSchema.optional() }).optional();
 
@@ -51,16 +52,16 @@ export async function POST(req: Request) {
       if (user.currency < cost.bits) throw new UserFacingError('common.notEnoughBits');
 
       const level = userCard.trainingLevel + 1;
-      const logs = asArray(user.fragmentLogs);
+      const logs = asArray<FragmentLogEntry>(user.fragmentLogs);
       const spend = (language: string, amount: number) => {
         if (amount <= 0) return;
         wallet[language] = (wallet[language] || 0) - amount;
-        logs.unshift({ date: new Date().toISOString(), source: `Training - ${card.name} (level ${level})`, language, amount: -amount });
+        logs.unshift(fragmentLogEntry(storedText('fragmentTraining', { card: card.name, level }), language, -amount));
       };
       spend(lang, payment.fromLanguage);
       spend(WILDCARD, payment.fromWildcard);
 
-      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: logs } });
+      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: asJson(logs) } });
       const currency = await addBits(userId, -cost.bits, 'card_training', { tx, detail: storedText('trainingDetail', { card: card.name, level }) });
       await tx.userCard.update({ where: { id: userCard.id }, data: { trainingLevel: level } });
 

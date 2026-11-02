@@ -73,6 +73,13 @@
     "levelDetail": "Nível {levels}",
     "dayDetail": "Dia {day}",
     "trainingDetail": "{card} → nível {level}",
-    "forgeDetail": "{name}{featured, select, yes { (Dev da Semana)} other {}}"
+    "forgeDetail": "{name}{featured, select, yes { (Dev da Semana)} other {}}",
+    "genericBooster": "Booster genérico",
+    "fragmentPackDrop": "Drop de pack - {pack}",
+    "fragmentDuplicate": "Repetida - carta {rarity} de {language}",
+    "fragmentTraining": "Treino - {card} (nível {level})",
+    "fragmentExchangeFor": "{count, plural, one {Troca por # coringa} other {Troca por # coringas}}",
+    "fragmentExchangeFrom": "Troca de fragmentos de {language}",
+    "fragmentInvocation": "Invocação - {name}{featured, select, yes { (Dev da Semana)} other {}}"
   }
 }
