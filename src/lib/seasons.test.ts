@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { PROMOTION_BITS, SEASON_REWARD_BITS, ranksReached, seasonEndFor, seasonRewardFor, softResetRating } from './seasons';
+import { PLACEMENT_BATTLES, PLACEMENT_K_MULTIPLIER, PROMOTION_BITS, SEASON_REWARD_BITS, ranksReached, ratingKFor, seasonEndFor, seasonRewardFor, softResetRating } from './seasons';
 import { RANK_TIERS } from './ranks';
-import { STARTING_RATING } from './battleConfig';
+import { RATING_K_FACTOR, STARTING_RATING } from './battleConfig';
 
 test('soft reset moves every rating halfway back to the start', () => {
   assert.strictEqual(softResetRating(STARTING_RATING), STARTING_RATING);
@@ -29,4 +29,12 @@ test('rewards grow with the rank', () => {
     assert.ok(PROMOTION_BITS[ids[i]] > PROMOTION_BITS[ids[i - 1]]);
   }
   assert.strictEqual(seasonRewardFor(STARTING_RATING).tier.id, 'bronze');
+});
+
+test('placement: the first battles of a season use a bigger K', () => {
+  const big = RATING_K_FACTOR * PLACEMENT_K_MULTIPLIER;
+  for (let n = 0; n < PLACEMENT_BATTLES; n++) assert.strictEqual(ratingKFor(n), big);
+  assert.strictEqual(ratingKFor(PLACEMENT_BATTLES), RATING_K_FACTOR);
+  assert.strictEqual(ratingKFor(40), RATING_K_FACTOR);
+  assert.strictEqual(ratingKFor(0, 16, 0), 16);
 });

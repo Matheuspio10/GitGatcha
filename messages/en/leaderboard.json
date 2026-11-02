@@ -30,6 +30,7 @@
     "endsIn": "Ends in <time>{left}</time>. Ratings then reset halfway back to the start.",
     "yourPeak": "Your season peak",
     "battles": "{count, plural, one {# PvP battle} other {# PvP battles}} this season",
+    "placement": "Placement {done}/{total}: your rating moves {mult}× as much",
     "rank": "Rank",
     "firstTime": "First time this season",
     "endOfSeason": "End of season (peak)",

@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 02/11/2026, depois da rodada do PT-BR das batalhas (PR #76: o log do replay e a origem dos fragmentos na Forja saem no idioma de quem joga). Antes, o dono respondeu todas as decisões pendentes (PR #75: tudo mantido, menos a carta viva, que agora só sobe). Antes, a rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes" (vazia desde 02/11; as respondidas ficam logo abaixo, como referência).
+> Atualizado em 02/11/2026, depois da rodada das partidas de colocação (PR #77: as 5 primeiras batalhas valendo rating de cada temporada mexem 2× mais no rating, e o `recompute-ratings` passou a entender temporadas). Antes, o PT-BR das batalhas (PR #76: o log do replay e a origem dos fragmentos na Forja saem no idioma de quem joga). Antes, o dono respondeu todas as decisões pendentes (PR #75: tudo mantido, menos a carta viva, que agora só sobe). Antes, a rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes" (vazia desde 02/11; as respondidas ficam logo abaixo, como referência).
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -16,12 +16,12 @@
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 26 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - Histórico de BITS conferido em produção em 01/11/2026 (20 jogadores, 188 linhas, 0 diferenças).
 - **Backup diário funcionando desde 02/11/2026** (workflow "Database backup", 06:30 UTC): `pg_dump` da produção criptografado com a chave `age` do dono, guardado 30 dias nas Actions. A primeira execução (à mão) gerou 504 KB e o dono conseguiu abri-la. A chave privada fica só com o dono; sem ela os backups não abrem. Como restaurar: [`docs/backup.md`](docs/backup.md).
-- 275 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- 279 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`; desde a PR #72 o navegador do app ficou logado na conta 1, para ver o convite da Liga na Loja). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
 >
-> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. Depois recebeu a migração da PR #71 (ligas privadas); em 01/11 a manutenção da Liga rodou à mão: fechou e pagou as rodadas `2026-10-12` e `2026-10-19` e repetiu a escalação da conta 2 na `2026-10-26`. Existe a liga privada "Liga de teste" (dona: conta 2; a conta 1 também está nela). Depois recebeu a migração da PR #74 (`detailText` no histórico de BITS); a conta 1 ganhou quatro notificações de exemplo (presente, troca, elo, Sprint) e três linhas de exemplo no histórico (+1, +1, −2, saldo igual), e comprou um Pack da Semana de Sistemas. As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
+> **Banco de dev:** em 13/10/2026 foi restaurado como cópia da produção (depois de um erro meu, ver "Lições"). Desde então recebeu as migrações #38–#47 e dados de teste: a temporada 1 foi fechada à força (o dev está na temporada 2), há batalhas Ranked/Torre/desafios das contas de teste, e o Sprint diário `daily:2026-10-12` (Ruby Day) foi criado e fechado à mão para testar o pagamento (7 jogadores receberam BITS de sprint). Depois recebeu a migração da PR #50; a conta 2 comprou e abriu um Scripting Week Pack, e o Dev da Semana de `weekly:2026-10-12` é `holman`. Depois recebeu a migração da PR #51; a conta 2 treinou `matyhtf` até o nível 1. Depois recebeu a migração da PR #52; a conta 2 foi colocada no nível 12 à mão (para testar os cosméticos) e está com o título Contributor e a moldura Silver. Depois recebeu a migração da PR #66 (presentes); a conta 2 deu `Lucas Bruno` para a conta 1. Depois recebeu a migração da PR #67 (trocas); a conta 1 foi colocada no nível 5 à mão (para poder trocar) e as duas trocaram `Joko Eliyanto` por `Jovanka Samudra`. Depois recebeu a migração da PR #69 (Liga Dev); as rodadas `2026-10-12` e `2026-10-19` existem e o mercado da `2026-10-19` foi precificado à mão (`scripts/league-maintain.ts`). Para testar a tela, as duas contas ganharam escalações na rodada `2026-10-12` inseridas direto no banco (fora do orçamento) e a conta 2 salvou uma escalação para a `2026-10-19` pela página. Depois recebeu a migração da PR #71 (ligas privadas); em 01/11 a manutenção da Liga rodou à mão: fechou e pagou as rodadas `2026-10-12` e `2026-10-19` e repetiu a escalação da conta 2 na `2026-10-26`. Existe a liga privada "Liga de teste" (dona: conta 2; a conta 1 também está nela). Depois recebeu a migração da PR #74 (`detailText` no histórico de BITS); a conta 1 ganhou quatro notificações de exemplo (presente, troca, elo, Sprint) e três linhas de exemplo no histórico (+1, +1, −2, saldo igual), e comprou um Pack da Semana de Sistemas. Em 02/11 a conta 1 jogou uma batalha rápida e uma Ranked (perdeu para Rob na colocação: 1008 → 976). As rodadas simuladas de setembro de 2025 foram apagadas, mas os BITS que pagaram às duas contas ficaram (1050 e 650, pelo histórico). Para voltar a uma cópia limpa da produção: Neon → branch `dev` → Backup & Restore (ou "Reset from parent") e depois `npx prisma migrate deploy`.
 
 | O quê | Como está |
 |---|---|
@@ -52,7 +52,7 @@
 | `node --env-file=.env --env-file=.env.local --import tsx scripts/league-sample.ts [porRaridade] [AAAA-MM-DD] [semanasDeForma]` | Só leitura: sorteia devs que são cartas, lê uma semana de atividade no GitHub e aplica a pontuação candidata da Liga Dev (com a forma das semanas anteriores) |
 | `node --import tsx scripts/stat-examples.ts` | Status de devs conhecidos nas duas fórmulas |
 | `node --env-file=.env.prod --import tsx scripts/recalculate-cards.ts [--apply] [--only=a,b]` | Recalcula cartas; contas apagadas recebem a mediana da raridade |
-| `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP. Ignora os resets de temporada: depois que uma temporada fecha, o `--apply` recusa sem `--force` |
+| `node --env-file=.env.prod --import tsx scripts/recompute-ratings.ts [--apply]` | Refaz ratings pelo histórico PvP com as regras de hoje: colocação e a volta pela metade em cada temporada fechada. Batalhas antigas também são refeitas com a colocação (não existia antes da PR #77), então ler o dry run antes do `--apply` |
 | `node --env-file=.env.prod --import tsx scripts/dedupe-user-cards.ts [--apply]` | Junta cartas duplicadas, que viram fragmentos |
 | `node --env-file=.env.prod --import tsx scripts/backfill-card-profiles.ts [--apply]` | Preenche o retrato do perfil no GitHub das cartas (só as colunas de perfil; status não mudam). 2–4 chamadas REST por carta |
 | `node --env-file=.env.prod scripts/seed-changelog.js` | Seed do changelog (cria entradas novas) |
@@ -89,7 +89,11 @@ Depois: **onda 9** (grandes apostas e monetização).
 
 ## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
 
-**Nenhuma no momento.** O dono respondeu todas em 02/11/2026 (PR #75): manteve todos os padrões, menos o da carta viva (agora os status só sobem). Novas decisões entram aqui, numa tabela igual à de baixo, com o padrão que foi para o ar.
+O dono respondeu as anteriores em 02/11/2026 (PR #75). As novas ficam aqui, com o padrão que já foi para o ar.
+
+| PR | Decisão | Padrão no ar | Onde mudar |
+|---|---|---|---|
+| #77 | Partidas de colocação: quantas e quanto valem | As **5** primeiras batalhas valendo rating de cada temporada (Ranked e desafios) mexem **2×** no rating de quem está na colocação (K 64 em vez de 32); o rating do adversário anda pelo K dele. Vale também para jogador novo | `PLACEMENT_BATTLES`, `PLACEMENT_K_MULTIPLIER` (`seasons.ts`) |
 
 ### Decisões tomadas (referência)
 
@@ -178,7 +182,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
-| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) · fica no backlog: partidas de colocação e melhor de 3 | feito |
+| **5** | ⚔️ Competitivo | ✅ Elos e Ranked "fantasma" (PR #44), temporadas (PR #45), desafios com link, aposta e revanche (PR #46) ; partidas de colocação (PR #77) · fica no backlog: melhor de 3 | feito |
 | **6** | 🗼 Modos e cartas | ✅ Torre (PR #47), Sprints 🅶 (PR #49), eventos semanais (PR #50), treino de cartas (PR #51), coleções e cosméticos (PR #52) | feito |
 | **7** | 📱 Celular, acessibilidade e idioma | ✅ barra de abas, PWA e páginas sem vazamento lateral (PR #53); teclado, modais, contraste AA, volume e sons de Epic/Legendary (PR #54); PT-BR completo: telas (PR #55, #56), dados do jogo e wiki (PR #57) | feito |
 | **8** | 🔧 Engenharia de fundo | Índices, `select` nas consultas quentes, zod nas rotas, Sentry, CSP, lint, `proxy.ts`, testes de concorrência, upgrade Prisma/Auth.js, JSON → tabelas (2.8). **Pode ser intercalada** com as outras ondas | contínua |
@@ -338,7 +342,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Fim da temporada** (`closeDueSeasons` em `seasonService.ts`): quem jogou PvP na temporada ganha pelo **pico** (Bronze +100 · Silver +200 · Gold +400 · Platinum +700 · Diamond +1200), o resultado fica em `SeasonResult` (no perfil: "S1 Gold"), e todo rating volta **metade** do caminho até 1000. Abre a próxima temporada.
   - Sem cron novo: fecha quando alguém abre o ranking, joga Ranked/desafio, ou no cron diário que já existe. Idempotente (linha da temporada travada e conferida).
 - **Interface:** faixa da temporada no ranking (tempo restante, seu pico, tabela de recompensas), temporadas passadas no perfil e na página pública, regra na wiki.
-- **Partidas de colocação** ficaram para depois: mudam o K por jogador e quebrariam o `recompute-ratings`.
+- **Partidas de colocação** ficaram para depois: mudam o K por jogador e quebrariam o `recompute-ratings` (feitas na PR #77).
 
 ### Onda 5 — desafios melhores (PR #46)
 - **Só entre amigos:** a API passou a exigir amizade aceita no desafio direto (antes só a interface filtrava).
@@ -401,6 +405,15 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
+### Partidas de colocação (PR #77)
+- **Por quê:** a cada temporada o rating volta pela metade, e quem é novo começa em 1000; com K 32 fixo, levava muitas batalhas para cada um chegar ao seu nível.
+- **Regra** (`seasons.ts`): as primeiras `PLACEMENT_BATTLES` (5) batalhas valendo rating de cada temporada usam `RATING_K_FACTOR × PLACEMENT_K_MULTIPLIER` (32 × 2 = 64) para o rating de quem está na colocação. Cada lado tem o seu K (`calculateNewRatings` ganhou o K do perdedor), então um veterano que enfrenta um novato anda o normal. A contagem é a `seasonBattles` que já existia (zera no fechamento da temporada).
+- **`recompute-ratings`** agora refaz a colocação e a volta pela metade em cada temporada fechada (no `closedAt`), também quando a temporada fecha depois da última batalha. A trava `--force` saiu. O dry run no dev (11 batalhas, 2 temporadas fechadas) funciona; não apliquei nada.
+- **Na tela:** a faixa da temporada no ranking mostra "Colocação 1/5: seu rating anda 2× mais" enquanto a colocação dura; a wiki (Ligas) explica a regra.
+- **Testes:** K por número de batalhas, colocação dos dois lados e de um lado só, viradas de temporada no replay (no meio e depois da última batalha); 279 testes.
+- **Testado no dev:** uma Ranked da conta 1 na colocação perdeu 32 pontos (1008 → 976; com a regra antiga seriam 16), e a faixa passou de 0/5 para 1/5.
+- **Decisão:** os valores (5 batalhas, 2×) estão em "Decisões pendentes".
 
 ### PT-BR das batalhas e da origem dos fragmentos (PR #76)
 - **Por quê:** depois da PR #74, os últimos textos gravados no banco em inglês eram as frases do log de batalha (mostradas no replay) e a origem de cada linha do histórico de fragmentos da Forja.
@@ -652,7 +665,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 |---|---|
 | ~~Notificações: limitar e limpar a lista, que cresce sem fim~~ | ✅ PR #74 (até 50; lidas somem em 7 dias) |
 | ~~**Português (PT-BR)** com next-intl~~ | ✅ PR #55, #56, #57 |
-| PT-BR: o que ainda sai em inglês. ~~Notificações, detalhes do histórico de BITS e o "Anonymous" do ranking~~ ✅ PR #74 (chave + valores, `storedText.ts`). Falta: o **log das batalhas** (frases dos passivos no replay, geradas em `battleResolver.ts`) e a **origem dos fragmentos** (`fragmentLogs`). O "Rewards claimed" de `/api/rewards/claim` não aparece na tela. ~~Mensagens de erro das APIs~~ ✅ PR #59 | M |
+| ~~PT-BR do que ainda saía em inglês~~ | ✅ notificações, histórico de BITS e "Anonymous" (PR #74); log das batalhas e origem dos fragmentos (PR #76); erros das APIs (PR #59). Só o "Rewards claimed" de `/api/rewards/claim` segue em inglês, e não aparece na tela |
 
 ### 2.6 Áudio (restante)
 | Item | Esforço |
@@ -690,7 +703,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### 3.1 Competitivo
 | Feature | Descrição | Esforço |
 |---|---|---|
-| **Partidas de colocação** | As temporadas existem (PR #45). Falta: K maior nas primeiras partidas da temporada; exige o `recompute-ratings` entender temporadas | P |
+| ~~**Partidas de colocação**~~ | ✅ PR #77 (5 batalhas com K dobrado por temporada; `recompute-ratings` entende temporadas) | — |
 | **Melhor de 3** | Os desafios já têm link, aposta e revanche (PR #46). Falta a série melhor de 3 | M |
 | **Escolhas táticas na batalha** | Antes de cada confronto, trocar a carta ou escolher uma postura (Agressivo / Defensivo / Habilidade) | G |
 
@@ -755,10 +768,10 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Treinar as cartas | ✅ treino com BITS + fragmentos (PR #51) |
 | Melhorar os desafios | ✅ bugs, só amigos, link, aposta, revanche, cancelar (PR #46); melhor de 3 no backlog |
 | Arrumar o ranking | ✅ |
-| Efeitos sonoros | ✅ booster/batalha; sons próprios pendentes (2.6) |
+| Efeitos sonoros | ✅ booster, batalha e sons próprios de Epic/Legendary (PR #54); falta só a música curta de batalha (2.6) |
 | Modo torre (Mortal Kombat) | ✅ Torre semanal (PR #47) |
 | Melhorar as missões | ✅ diárias, semanais, de dev pelo GitHub e troca diária |
-| Ligas pessoais tipo Cartola | pendente (3.2) |
+| Ligas pessoais tipo Cartola | ✅ Liga Dev (PR #69–#72); acabamentos no backlog (3.2) |
 | Áudio da batalha só inicia após clicar no som | ✅ |
 | Melhorar os achievements | ✅ |
 | "Tap to reveal" em cima dos status | ✅ |

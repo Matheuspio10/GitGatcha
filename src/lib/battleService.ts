@@ -22,6 +22,7 @@ import {
   withUpsetBonus,
 } from './battleConfig';
 import { calculateNewRatings } from './ratings';
+import { ratingKFor } from './seasons';
 import { pickOpponentTeam, OpponentCandidate } from './opponentPicker';
 import { gameName, playerName, storedText, winLoss } from './storedText';
 
@@ -112,11 +113,13 @@ async function applyPvpRating(winnerId: string, loserId: string): Promise<Rating
   return prisma.$transaction(async (tx) => {
     // Always lock in the same order so two simultaneous results can't deadlock
     for (const id of [winnerId, loserId].sort()) await lockUser(tx, id);
-    const players = await tx.user.findMany({ where: { id: { in: [winnerId, loserId] } }, select: { id: true, rating: true } });
+    const players = await tx.user.findMany({ where: { id: { in: [winnerId, loserId] } }, select: { id: true, rating: true, seasonBattles: true } });
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
     if (!winner || !loser) return null;
-    const { newWinnerRating, newLoserRating } = calculateNewRatings(winner.rating, loser.rating);
+    // Placement: the first battles of a season move that player's rating more
+    const { newWinnerRating, newLoserRating } = calculateNewRatings(
+      winner.rating, loser.rating, ratingKFor(winner.seasonBattles), ratingKFor(loser.seasonBattles));
     await tx.user.update({ select: { id: true }, where: { id: winnerId }, data: { rating: newWinnerRating } });
     await tx.user.update({ select: { id: true }, where: { id: loserId }, data: { rating: newLoserRating } });
     // Season: battles played, peak rating and first-time rank promotions

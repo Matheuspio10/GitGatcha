@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import { RANK_TIERS } from '@/lib/ranks';
-import { PROMOTION_BITS, SEASON_REWARD_BITS, formatSeasonLeft } from '@/lib/seasons';
+import { PLACEMENT_BATTLES, PLACEMENT_K_MULTIPLIER, PROMOTION_BITS, SEASON_REWARD_BITS, formatSeasonLeft } from '@/lib/seasons';
 import { RankBadge } from '@/components/RankBadge';
 import { useGameText } from '@/i18n/gameText';
 
@@ -29,6 +29,11 @@ export function SeasonBanner({ season, now, viewer }: {
             <div className="mb-1">{t('yourPeak')}</div>
             <RankBadge rating={viewer.seasonPeakRating} />
             <div className="mt-1">{t('battles', { count: viewer.seasonBattles })}</div>
+            {viewer.seasonBattles < PLACEMENT_BATTLES && (
+              <div className="mt-1 font-bold text-orange-300">
+                {t('placement', { done: viewer.seasonBattles, total: PLACEMENT_BATTLES, mult: PLACEMENT_K_MULTIPLIER })}
+              </div>
+            )}
           </div>
         )}
       </div>
