@@ -5,7 +5,7 @@
  * best rank they reached (their peak), and every rating is softly reset
  * halfway towards STARTING_RATING.
  */
-import { STARTING_RATING } from './battleConfig';
+import { RATING_K_FACTOR, STARTING_RATING } from './battleConfig';
 import { RANK_TIERS, rankForRating, type RankTier } from './ranks';
 
 type TierId = RankTier['id'];
@@ -27,6 +27,20 @@ export const SEASON_REWARD_BITS: Record<TierId, number> = {
   platinum: 700,
   diamond: 1200,
 };
+
+/**
+ * Placement: a player's first PLACEMENT_BATTLES rated battles of each season
+ * move their own rating PLACEMENT_K_MULTIPLIER times as much, so a soft-reset
+ * (or brand new) rating quickly finds its level. The opponent's rating moves
+ * by their own K.
+ */
+export const PLACEMENT_BATTLES = 5;
+export const PLACEMENT_K_MULTIPLIER = 2;
+
+/** K for a player who has already played `seasonBattles` rated battles this season. */
+export function ratingKFor(seasonBattles: number, K: number = RATING_K_FACTOR, placementBattles: number = PLACEMENT_BATTLES): number {
+  return seasonBattles < placementBattles ? K * PLACEMENT_K_MULTIPLIER : K;
+}
 
 /** Rating at the start of the next season: halfway back to STARTING_RATING. */
 export function softResetRating(rating: number): number {

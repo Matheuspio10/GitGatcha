@@ -96,7 +96,7 @@
     "crits": "Only C# cards land critical hits; otherwise damage varies through types, passives and Momentum."
   },
   "leagues": {
-    "intro": "League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don't need to be online), and both ratings move. A saved team that holds earns its owner {defenseBits} BITS. Ranks: {ranks}. Seasons last a calendar month (UTC): the first time you reach a rank in a season pays {promotions} BITS, and at the end everyone who played PvP gets BITS for their peak rank ({seasonRewards}) before every rating moves halfway back to {startingRating}.",
+    "intro": "League battles are against a computer team that follows the same restrictions as yours and never change your rating. Ranked is the exception: your opponent is the saved team of a player near your rating (they don't need to be online), and both ratings move. A saved team that holds earns its owner {defenseBits} BITS. Ranks: {ranks}. Seasons last a calendar month (UTC): the first time you reach a rank in a season pays {promotions} BITS, and at the end everyone who played PvP gets BITS for their peak rank ({seasonRewards}) before every rating moves halfway back to {startingRating}. Your first {placementBattles} rated battles of each season are placement battles: they move your rating {placementMult}× as much, so you quickly land where you belong.",
     "rewards": "Win: {winBits} BITS + {winXp} XP | Loss: {lossBits} BITS + {lossXp} XP",
     "entryFee": "| Entry fee: {fee} BITS (net {net} on a win, -{loss} on a loss)",
     "friendTitle": "Friend Challenges (PvP)",

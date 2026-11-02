@@ -30,6 +30,7 @@
     "endsIn": "Termina em <time>{left}</time>. Depois, os ratings voltam metade do caminho até o valor inicial.",
     "yourPeak": "Seu pico na temporada",
     "battles": "{count, plural, one {# batalha PvP} other {# batalhas PvP}} nesta temporada",
+    "placement": "Colocação {done}/{total}: seu rating anda {mult}× mais",
     "rank": "Elo",
     "firstTime": "Primeira vez na temporada",
     "endOfSeason": "Fim da temporada (pico)",

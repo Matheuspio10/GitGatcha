@@ -9,7 +9,7 @@ import { RANK_TIERS, type RankTier } from '@/lib/ranks';
 import { TOWER_FLOORS } from '@/lib/tower';
 import { DAILY_SPRINT_LANGUAGES, SPRINT_REWARDS, SPRINT_TEAM_SIZE, WEEKLY_SPRINT_FAMILIES, sprintKindLabel, sprintRewardsLegend, type SprintKind } from '@/lib/sprints';
 import { EVENT_PACK_CARD_COUNT, EVENT_PACK_COST, EVENT_PACK_MIN_RARITY, FEATURED_DEV_DISCOUNT, FEATURED_DEV_MIN_RARITY } from '@/lib/weeklyEvents';
-import { PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
+import { PLACEMENT_BATTLES, PLACEMENT_K_MULTIPLIER, PROMOTION_BITS, SEASON_REWARD_BITS } from '@/lib/seasons';
 import { averagePullRates, RARITY_FOLLOWER_BANDS, RARITY_ORDER, STAR_BONUS_THRESHOLD } from '@/lib/rarity';
 import {
   BALANCED_POWER_CAP_MULTIPLIER,
@@ -629,6 +629,8 @@ export default function WikiPage() {
                   promotions: RANK_TIERS.filter(tier => PROMOTION_BITS[tier.id] > 0).map(tier => `${rankName(tier)} +${PROMOTION_BITS[tier.id]}`).join(' · '),
                   seasonRewards: RANK_TIERS.map(tier => `${rankName(tier)} +${SEASON_REWARD_BITS[tier.id]}`).join(' · '),
                   startingRating: STARTING_RATING,
+                  placementBattles: PLACEMENT_BATTLES,
+                  placementMult: PLACEMENT_K_MULTIPLIER,
                 })}
               </p>
               <div className="space-y-4">
