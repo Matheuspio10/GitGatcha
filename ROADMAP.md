@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 01/11/2026, ao fim da quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 02/11/2026: o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -15,6 +15,7 @@
 - **Ondas 1 a 5 completas e em produção** (`main`, deploy na Vercel em git-gacha.vercel.app), e a onda 6 inteira (Torre, Sprints, eventos semanais, treino de cartas, coleções e cosméticos). Resumo de cada PR na seção "✅ Concluído".
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 25 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - Histórico de BITS conferido em produção em 01/11/2026 (20 jogadores, 188 linhas, 0 diferenças).
+- **Backup diário funcionando desde 02/11/2026** (workflow "Database backup", 06:30 UTC): `pg_dump` da produção criptografado com a chave `age` do dono, guardado 30 dias nas Actions. A primeira execução (à mão) gerou 504 KB e o dono conseguiu abri-la. A chave privada fica só com o dono; sem ela os backups não abrem. Como restaurar: [`docs/backup.md`](docs/backup.md).
 - 265 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
@@ -71,8 +72,6 @@
 Depois: **onda 9** (grandes apostas e monetização).
 
 **Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
-- O workflow "Database backup" continua agendado e falha todo dia até a chave existir. Pausar: `gh workflow disable "Database backup"` (ou Actions → Database backup → ⋯ → Disable workflow); reativar com `gh workflow enable` depois de configurar.
-- Configurar o backup diário: chave `age` + `BACKUP_AGE_RECIPIENT` + `BACKUP_DATABASE_URL` no GitHub ([`docs/backup.md`](docs/backup.md)). Sem isso o workflow "Database backup" falha.
 - Olhar os logs da Vercel (Logs → buscar `[CSP]`) alguns dias depois do deploy da #60 e me passar o que aparecer, para decidir se a CSP pode passar a bloquear.
 - Responder a tabela "Decisões pendentes" abaixo.
 
@@ -171,7 +170,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 
 | Onda | Tema | O que entra | Tamanho |
 |---|---|---|---|
-| **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. **Falta só o dono configurar a chave do backup** (`docs/backup.md`) | feito |
+| **1** | 🧹 Casa arrumada | ✅ Pontas soltas (PR #34), CI e backup (PR #35), bônus por zebra (PR #36). Common × Uncommon (82%) fica como está, por decisão do dono. Chave do backup configurada em 02/11/2026 | feito |
 | **2** | 👋 Primeira impressão | ✅ Onboarding, pack inicial e boas-vindas (PR #37); pack de visitante, compra com odds, estados vazios e skeleton (PR #38) | feito |
 | **3** | 📣 Crescimento | ✅ Compartilhar (PR #39); indicação de amigos, comparar coleção e Ranking Colecionador (PR #40) | feito |
 | **4** | 🃏 Coleção e economia | ✅ Repetidas, Shiny em repetidas, coringa (PR #41); missões semanais, de dev e troca diária (PR #42); histórico de BITS (PR #43) | feito |
@@ -600,7 +599,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 ### CI e backup (PR #35)
 - **CI** (`.github/workflows/ci.yml`): em todo PR e push na `main`, roda `tsc`, lint, `npm test` e `next build`, sem banco.
 - **Orçamento de lint** (`scripts/lint-budget.mjs`): reprova só se o número de erros passar do orçamento. Baixar o número sempre que cair. *(Aposentado na PR #64: com o lint zerado, o CI roda `npm run lint` puro.)*
-- **Backup diário** 🅶 (`.github/workflows/backup.yml`): `pg_dump` da produção, gzip e criptografia com age antes de tocar o disco; artifact por 30 dias. Configuração e restauração em [`docs/backup.md`](docs/backup.md).
+- **Backup diário** 🅶 (`.github/workflows/backup.yml`): `pg_dump` da produção, gzip e criptografia com age antes de tocar o disco; artifact por 30 dias. Configuração e restauração em [`docs/backup.md`](docs/backup.md). *(Chave configurada em 02/11/2026; até lá o workflow falhava todo dia por falta dela.)*
 
 ---
 

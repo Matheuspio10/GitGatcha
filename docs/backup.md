@@ -38,10 +38,11 @@ O repositório é público e qualquer pessoa logada no GitHub pode baixar os art
 Restaure sempre numa **branch nova do Neon**, nunca direto em cima da produção. Depois confira os dados e só então decida o que fazer.
 
 1. Baixe o artifact em Actions → execução do dia → Artifacts e descompacte o `.zip` do GitHub.
-2. Descriptografe:
+2. Descriptografe (use `-o`, não `>`: no PowerShell do Windows o `>` corrompe arquivos binários):
    ```
-   age --decrypt -i gitgacha-backup.key gitgacha-<data>.sql.gz.age > dump.sql.gz
+   age --decrypt -i gitgacha-backup.key -o dump.sql.gz gitgacha-<data>.sql.gz.age
    ```
+   Para baixar sem abrir o navegador: `gh run download <id da execução> --repo Matheuspio10/GitGatcha -D backup-teste` (o `.zip` já vem descompactado).
 3. Carregue numa branch vazia (precisa do `psql`, versão 18 ou mais nova):
    ```
    gzip -dc dump.sql.gz | psql "<URL da branch nova>"
