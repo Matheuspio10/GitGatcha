@@ -3,7 +3,7 @@ import { addBits } from '@/lib/bitsLedger';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { randomInt } from 'node:crypto';
-import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
+import { withUserLock, UserFacingError, asRecord, asArray, asJson } from '@/lib/userLock';
 import { fetchGitHubUserStats, isValidGitHubLogin, toCardData } from '@/lib/githubService';
 import { forgeCostFor, isFeaturedDev } from '@/lib/weeklyEvents';
 import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
@@ -12,6 +12,7 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
 import { storedText } from '@/lib/storedText';
+import { fragmentLogEntry, type FragmentLogEntry } from '@/lib/fragmentLog';
 
 const bodySchema = z.object({ username: z.string().trim().max(100).optional() }).optional();
 
@@ -58,11 +59,11 @@ export async function POST(req: Request) {
       }
       if (!card) card = await tx.card.create({ data: toCardData(stats) });
 
-      const logs = asArray(user.fragmentLogs);
+      const logs = asArray<FragmentLogEntry>(user.fragmentLogs);
       const spend = (language: string, amount: number) => {
         if (amount <= 0) return;
         userFragments[language] = (userFragments[language] || 0) - amount;
-        logs.unshift({ date: new Date().toISOString(), source: `Invocation - ${stats.name || username}${featured ? ' (Dev of the Week)' : ''}`, language, amount: -amount });
+        logs.unshift(fragmentLogEntry(storedText('fragmentInvocation', { name: stats.name || username, featured: featured ? 'yes' : 'no' }), language, -amount));
       };
       spend(lang, payment.fromLanguage);
       spend(WILDCARD, payment.fromWildcard);
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
         where: { id: userId },
         data: {
           fragments: userFragments,
-          fragmentLogs: logs
+          fragmentLogs: asJson(logs)
         }
       });
       await addBits(userId, -bits, 'forge', { tx, detail: storedText('forgeDetail', { name: stats.name || username, featured: featured ? 'yes' : 'no' }) });

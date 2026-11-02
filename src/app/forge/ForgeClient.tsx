@@ -14,6 +14,8 @@ import { formatSeasonLeft } from '@/lib/seasons';
 import { RarityGem } from '@/components/RarityGem';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePackText } from '@/i18n/packText';
+import { useStoredText } from '@/i18n/storedText';
+import type { StoredText } from '@/lib/storedText';
 
 type FragmentWallet = Record<string, number>;
 type WishlistItem = {
@@ -26,7 +28,9 @@ type WishlistItem = {
 };
 type FragmentLog = {
   date: string;
+  /** English sentence; `text` (newer lines) is translated here */
   source: string;
+  text?: StoredText;
   language: string;
   amount: number;
 };
@@ -70,6 +74,7 @@ interface ForgeSearchResult {
 export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: string; featuredDev?: FeaturedDevInfo | null }) {
   const t = useTranslations('forge');
   const packText = usePackText();
+  const storedText = useStoredText();
   const locale = useLocale();
   const [activeTab, setActiveTab] = useState<'INVOKE' | 'WISHLIST' | 'HISTORY'>('INVOKE');
   
@@ -567,7 +572,7 @@ export default function ForgeClient({ initialDev, featuredDev }: { initialDev?: 
                   {logs.map((log, i) => (
                     <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
                       <td className="p-4 text-sm text-slate-400">{new Date(log.date).toLocaleString(locale)}</td>
-                      <td className="p-4 text-sm font-medium">{log.source}</td>
+                      <td className="p-4 text-sm font-medium">{storedText(log.text, log.source)}</td>
                       <td className="p-4">
                         <span className={`px-2 py-0.5 rounded text-xs border ${LANG_COLORS[log.language] || LANG_COLORS.Unknown}`}>
                           {log.language === WILDCARD ? t('wildcard') : log.language}

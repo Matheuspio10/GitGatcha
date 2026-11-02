@@ -13,6 +13,7 @@ import {
   TYPE_DISADVANTAGE_MULTIPLIER,
 } from './battleConfig';
 import { trainingMultiplier } from './training';
+import type { Messages } from '@/i18n/messages';
 
 /** A combat language (see COMBAT_LANGUAGES), 'Neutral', or the special 'Legendary' pack type. */
 export type CardType = (typeof COMBAT_LANGUAGES)[number] | 'Neutral' | 'Legendary';
@@ -49,7 +50,18 @@ export interface BattleLogEvent {
   cardId?: string;
   targetId?: string;
   value?: number;
+  /** English sentence (the only text of logs saved before `key` existed). */
   message: string;
+  /** The sentence as `gameBattle.log.<key>` + values, translated where the log is shown. */
+  key?: BattleLogKey;
+  values?: Record<string, string | number>;
+}
+
+export type BattleLogKey = keyof Messages['gameBattle']['log'];
+
+/** A log sentence: English text plus its message key, so the replay can show it in the player's language. */
+function say(key: BattleLogKey, message: string, values?: Record<string, string | number>): Pick<BattleLogEvent, 'message' | 'key' | 'values'> {
+  return values ? { message, key, values } : { message, key };
 }
 
 export interface TurnLog {
@@ -222,7 +234,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     // Check mixed team (all 3 unique)
     if (Object.keys(typeCounts).length === 3) {
       team.forEach(c => c.atk = Math.floor(c.atk * (1 + SYNERGY.mixedTeamAtk)));
-      events.push({ type: 'synergy', message: `${side} Mixed Team synergy! +${Math.round(SYNERGY.mixedTeamAtk * 100)}% ATK to all.` });
+      events.push({ type: 'synergy', ...say('mixedSynergy', `${side} Mixed Team synergy! +${Math.round(SYNERGY.mixedTeamAtk * 100)}% ATK to all.`, { side, pct: Math.round(SYNERGY.mixedTeamAtk * 100) }) });
     }
 
     // Jupyter Notebook runs a Python kernel: it counts as Python for the Python Synergy
@@ -234,7 +246,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       const count = synergyCounts[type];
       if (count < 2) return;
       const mult = count === 3 ? 2 : 1;
-      events.push({ type: 'synergy', message: `${side} ${type} Synergy (x${count}) activated!` });
+      events.push({ type: 'synergy', ...say('typeSynergy', `${side} ${type} Synergy (x${count}) activated!`, { side, type, count }) });
       if (type === 'Python') team.forEach(c => st(c).pySynergy = SYNERGY.pythonRegenAtkPct * mult);
       if (type === 'Rust') team.forEach(c => st(c).rustSynergy = SYNERGY.rustDamageReduction * mult);
       if (type === 'JavaScript') team.forEach(c => st(c).jsSynergy = SYNERGY.jsCallbackChance * mult);
@@ -248,7 +260,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   };
 
   const startEvents = [
-    { type: 'battle_start' as const, message: 'Battle Started!' },
+    { type: 'battle_start' as const, ...say('battleStart', 'Battle Started!') },
     ...applySynergies(cTeam, true),
     ...applySynergies(dTeam, false)
   ];
@@ -267,17 +279,17 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     st(card).phpSuppressUsed = true;
     card.hp = PASSIVE.php.survivesAt;
     card.statsPassivesTriggered = (card.statsPassivesTriggered || 0) + 1;
-    logEvents.push({ type: 'passive', cardId: card.id, message: `[PHP] ${card.name} @-suppressed a fatal error and survives with ${card.hp} HP!` });
+    logEvents.push({ type: 'passive', cardId: card.id, ...say('phpSuppress', `[PHP] ${card.name} @-suppressed a fatal error and survives with ${card.hp} HP!`, { name: card.name, hp: card.hp }) });
   };
 
   /** On-entry states (Iron Shield). Runs for every entering card before any First Strike. */
   const enterField = (card: BattleCard, logEvents: BattleLogEvent[]) => {
-      logEvents.push({ type: 'enter_field', cardId: card.id, message: `${card.name} enters the field!` });
+      logEvents.push({ type: 'enter_field', cardId: card.id, ...say('enterField', `${card.name} enters the field!`, { name: card.name }) });
 
       // Rust Iron Shield: blocks all damage until the end of this turn
       if (card.type === 'Rust') {
           st(card).ironShield = true;
-          logEvents.push({ type: 'passive', cardId: card.id, message: `[Rust] ${card.name} gained Iron Shield (blocks first turn damage).` });
+          logEvents.push({ type: 'passive', cardId: card.id, ...say('rustShield', `[Rust] ${card.name} gained Iron Shield (blocks first turn damage).`, { name: card.name }) });
       }
   };
 
@@ -293,14 +305,14 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         .map(([card, opponent]) => ({ card, opponent, dmg: mitigatedDamage(card.atk * momentum(card), opponent.def * momentum(opponent)) }));
 
       for (const { card, opponent, dmg } of strikes) {
-          logEvents.push({ type: 'passive', cardId: card.id, message: `${card.name} strikes first on entry!` });
+          logEvents.push({ type: 'passive', cardId: card.id, ...say('firstStrike', `${card.name} strikes first on entry!`, { name: card.name }) });
           if (st(opponent).ironShield) {
-            logEvents.push({ type: 'passive', cardId: opponent.id, message: `Iron Shield blocked First Strike!` });
+            logEvents.push({ type: 'passive', cardId: opponent.id, ...say('shieldBlockedFirstStrike', 'Iron Shield blocked First Strike!') });
           } else {
              opponent.hp -= dmg;
              card.statsDealtDamage = (card.statsDealtDamage || 0) + dmg;
              opponent.statsTakenDamage = (opponent.statsTakenDamage || 0) + dmg;
-             logEvents.push({ type: 'damage', cardId: card.id, targetId: opponent.id, value: dmg, message: `${card.name} dealt ${dmg} first strike damage.` });
+             logEvents.push({ type: 'damage', cardId: card.id, targetId: opponent.id, value: dmg, ...say('firstStrikeDamage', `${card.name} dealt ${dmg} first strike damage.`, { name: card.name, dmg }) });
           }
       }
       for (const { opponent } of strikes) trySuppress(opponent, logEvents);
@@ -317,7 +329,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
    */
   const attack = (att: BattleCard, def: BattleCard, matchupTurn: number, events: BattleLogEvent[]) => {
     const typeMult = getTypeMultiplier(att.type, def.type);
-    if (typeMult > 1) events.push({ type: 'type_advantage', cardId: att.id, message: `${att.name} has Type Advantage!` });
+    if (typeMult > 1) events.push({ type: 'type_advantage', cardId: att.id, ...say('typeAdvantage', `${att.name} has Type Advantage!`, { name: att.name }) });
 
     const rarityMult = getRarityMultiplier(att.rarity);
     let atkBonus = 1;
@@ -329,17 +341,17 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     if (att.type === 'CSS') {
       if (rng() < PASSIVE.css.doubleChance * rarityMult) {
         atkBonus = 2; passive = true;
-        events.push({ type: 'passive', cardId: att.id, message: `[CSS] ${att.name} double damage!` });
+        events.push({ type: 'passive', cardId: att.id, ...say('cssDouble', `[CSS] ${att.name} double damage!`, { name: att.name }) });
       } else if (rng() < PASSIVE.css.zeroChance / rarityMult) {
         zeroDmg = true;
-        events.push({ type: 'passive', cardId: att.id, message: `[CSS] ${att.name} undefined behavior (0 damage)!` });
+        events.push({ type: 'passive', cardId: att.id, ...say('cssUndefined', `[CSS] ${att.name} undefined behavior (0 damage)!`, { name: att.name }) });
       }
     }
 
     // Ruby Last Stand
     if (att.type === 'Ruby' && att.hp < att.maxHp * PASSIVE.ruby.hpThreshold) {
       atkBonus *= PASSIVE.ruby.atkMult; passive = true;
-      events.push({ type: 'passive', cardId: att.id, message: `[Ruby] Last stand active!` });
+      events.push({ type: 'passive', cardId: att.id, ...say('rubyLastStand', '[Ruby] Last stand active!') });
     }
 
     // Java JIT Warm-up: slow first turn, then ramps up during the matchup
@@ -348,17 +360,17 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         ? PASSIVE.java.firstTurnMult
         : 1 + Math.min(PASSIVE.java.maxBonus, PASSIVE.java.perTurn * matchupTurn);
       atkBonus *= ramp;
-      if (matchupTurn === 1) events.push({ type: 'passive', cardId: att.id, message: `[Java] ${att.name}'s JIT is warming up...` });
+      if (matchupTurn === 1) events.push({ type: 'passive', cardId: att.id, ...say('javaWarming', `[Java] ${att.name}'s JIT is warming up...`, { name: att.name }) });
       if (PASSIVE.java.perTurn * matchupTurn === PASSIVE.java.maxBonus) {
         passive = true;
-        events.push({ type: 'passive', cardId: att.id, message: `[Java] ${att.name} is fully JIT-compiled! (+${Math.round(PASSIVE.java.maxBonus * 100)}% damage)` });
+        events.push({ type: 'passive', cardId: att.id, ...say('javaCompiled', `[Java] ${att.name} is fully JIT-compiled! (+${Math.round(PASSIVE.java.maxBonus * 100)}% damage)`, { name: att.name, pct: Math.round(PASSIVE.java.maxBonus * 100) }) });
       }
     }
 
     // Shell Cron Job: every Nth turn of the matchup the attack runs twice
     if (att.type === 'Shell' && (matchupTurn + 1) % PASSIVE.shell.every === 0) {
       atkBonus *= PASSIVE.shell.mult; passive = true;
-      events.push({ type: 'passive', cardId: att.id, message: `[Shell] ${att.name}'s cron job fired — the attack runs twice!` });
+      events.push({ type: 'passive', cardId: att.id, ...say('shellCron', `[Shell] ${att.name}'s cron job fired — the attack runs twice!`, { name: att.name }) });
     }
 
     // C# Critical Hit
@@ -378,7 +390,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       const chance = att.type === 'JavaScript' ? PASSIVE.javascript.chance * rarityMult : st(att).jsSynergy;
       if (rng() < chance) {
         passive = true;
-        events.push({ type: 'passive', cardId: att.id, message: `[JS] Double Callback!` });
+        events.push({ type: 'passive', cardId: att.id, ...say('jsCallback', '[JS] Double Callback!') });
         dmg += Math.floor(dmg * PASSIVE.javascript.bonus);
       }
     }
@@ -401,13 +413,13 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     // Swift Dodge
     if (dmg > 0 && def.type === 'Swift' && rng() < PASSIVE.swift.dodgeChance * getRarityMultiplier(def.rarity)) {
       def.statsPassivesTriggered = (def.statsPassivesTriggered || 0) + 1;
-      events.push({ type: 'passive', cardId: def.id, message: `[Swift] ${def.name} dodged ${att.name}'s attack!` });
+      events.push({ type: 'passive', cardId: def.id, ...say('swiftDodge', `[Swift] ${def.name} dodged ${att.name}'s attack!`, { name: def.name, attacker: att.name }) });
       return 0;
     }
 
     // Rust Iron Shield: nothing gets through on its first turn (a 0-damage hit doesn't touch it)
     if (st(def).ironShield) {
-      if (dmg > 0) events.push({ type: 'passive', cardId: def.id, message: `Iron Shield blocked all damage!` });
+      if (dmg > 0) events.push({ type: 'passive', cardId: def.id, ...say('shieldBlockedAll', 'Iron Shield blocked all damage!') });
       return 0;
     }
 
@@ -415,7 +427,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     const cap = Math.max(1, Math.floor(def.maxHp * PASSIVE.kotlin.maxHpPctPerTurn));
     if (def.type === 'Kotlin' && dmg > cap) {
       def.statsPassivesTriggered = (def.statsPassivesTriggered || 0) + 1;
-      events.push({ type: 'passive', cardId: def.id, message: `[Kotlin] Null Safety! ${def.name} only takes ${cap} damage.` });
+      events.push({ type: 'passive', cardId: def.id, ...say('kotlinNullSafety', `[Kotlin] Null Safety! ${def.name} only takes ${cap} damage.`, { name: def.name, cap }) });
       dmg = cap;
     }
     return dmg;
@@ -431,7 +443,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       const heal = Math.floor(card.maxHp * PASSIVE.dart.healMaxHpPct);
       card.hp = Math.min(card.maxHp, card.hp + heal);
       card.statsPassivesTriggered = (card.statsPassivesTriggered || 0) + 1;
-      events.push({ type: 'passive', cardId: card.id, message: `[Dart] Hot Reload! ${card.name} restored ${heal} HP.` });
+      events.push({ type: 'passive', cardId: card.id, ...say('dartHotReload', `[Dart] Hot Reload! ${card.name} restored ${heal} HP.`, { name: card.name, heal }) });
     }
 
     // Regen: Python, Jupyter Notebook, Python Synergy
@@ -443,7 +455,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       const heal = Math.floor(card.atk * healPct);
       card.hp = Math.min(card.maxHp, card.hp + heal);
       const tag = card.type === 'Jupyter Notebook' ? 'Jupyter' : 'Python';
-      events.push({ type: 'passive', cardId: card.id, message: `[${tag}] Regenerated ${heal} HP.` });
+      events.push({ type: 'passive', cardId: card.id, ...say('regen', `[${tag}] Regenerated ${heal} HP.`, { tag, heal }) });
     }
   };
 
@@ -455,7 +467,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       if ((winner.momentumStacks || 0) < newStacks) {
         winner.momentumStacks = newStacks;
         winner.statsMomentumAchieved = true;
-        events.push({ type: 'passive', cardId: winner.id, message: `${winner.name} is On Fire! (+${Math.round(newStacks * MOMENTUM_BONUS_PER_STACK * 100)}% Stats)` });
+        events.push({ type: 'passive', cardId: winner.id, ...say('onFire', `${winner.name} is On Fire! (+${Math.round(newStacks * MOMENTUM_BONUS_PER_STACK * 100)}% Stats)`, { name: winner.name, pct: Math.round(newStacks * MOMENTUM_BONUS_PER_STACK * 100) }) });
       }
     }
   };
@@ -484,12 +496,12 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
     if (cCard.hp <= 0 || dCard.hp <= 0) {
         // Someone died from first strike
         if (cCard.hp <= 0) {
-            turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
+            turnEvents.push({ type: 'defeat', cardId: cCard.id, ...say('defeated', `${cCard.name} was defeated!`, { name: cCard.name }) });
             cIdx++; cJustEntered = true; turnsInMatchup = 0;
             recordKnockout(dCard, turnEvents);
         }
         if (dCard.hp <= 0) {
-            turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
+            turnEvents.push({ type: 'defeat', cardId: dCard.id, ...say('defeated', `${dCard.name} was defeated!`, { name: dCard.name }) });
             dIdx++; dJustEntered = true; turnsInMatchup = 0;
             if (cCard.hp > 0) recordKnockout(cCard, turnEvents);
         }
@@ -525,7 +537,9 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       if (crit) att.statsCritsLanded = (att.statsCritsLanded || 0) + 1;
       turnEvents.push({
         type: 'damage', cardId: att.id, targetId: target.id, value: dmg,
-        message: crit ? `[C#] ${att.name} landed a Critical Hit for ${dmg} damage!` : `${att.name} dealt ${dmg} damage.`,
+        ...(crit
+          ? say('critical', `[C#] ${att.name} landed a Critical Hit for ${dmg} damage!`, { name: att.name, dmg })
+          : say('damage', `${att.name} dealt ${dmg} damage.`, { name: att.name, dmg })),
       });
     };
     damageEvent(cCard, dCard, cDmgToD, cHit.crit);
@@ -540,16 +554,16 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // Defeats
     if (cCard.hp <= 0 && dCard.hp <= 0) {
-        turnEvents.push({ type: 'draw', message: `Both ${cCard.name} and ${dCard.name} go down!` });
+        turnEvents.push({ type: 'draw', ...say('bothDown', `Both ${cCard.name} and ${dCard.name} go down!`, { a: cCard.name, b: dCard.name }) });
         cIdx++; cJustEntered = true;
         dIdx++; dJustEntered = true;
         turnsInMatchup = 0;
     } else if (cCard.hp <= 0) {
-        turnEvents.push({ type: 'defeat', cardId: cCard.id, message: `${cCard.name} was defeated!` });
+        turnEvents.push({ type: 'defeat', cardId: cCard.id, ...say('defeated', `${cCard.name} was defeated!`, { name: cCard.name }) });
         cIdx++; cJustEntered = true; turnsInMatchup = 0;
         recordKnockout(dCard, turnEvents);
     } else if (dCard.hp <= 0) {
-        turnEvents.push({ type: 'defeat', cardId: dCard.id, message: `${dCard.name} was defeated!` });
+        turnEvents.push({ type: 'defeat', cardId: dCard.id, ...say('defeated', `${dCard.name} was defeated!`, { name: dCard.name }) });
         dIdx++; dJustEntered = true; turnsInMatchup = 0;
         recordKnockout(cCard, turnEvents);
     } else {
@@ -575,22 +589,22 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
         const dPct = dCard.hp / dCard.maxHp;
 
         const tiebreakerEvents: BattleLogEvent[] = [
-            { type: 'passive', message: `Turn cap reached! Resolving matchup by HP%...` }
+            { type: 'passive', ...say('turnCap', 'Turn cap reached! Resolving matchup by HP%...') }
         ];
 
         if (cPct > dPct) {
             dCard.hp = 0;
-            tiebreakerEvents.push({ type: 'defeat', cardId: dCard.id, message: `${cCard.name} wins by HP advantage (${Math.floor(cPct*100)}% to ${Math.floor(dPct*100)}%)!` });
+            tiebreakerEvents.push({ type: 'defeat', cardId: dCard.id, ...say('hpAdvantage', `${cCard.name} wins by HP advantage (${Math.floor(cPct*100)}% to ${Math.floor(dPct*100)}%)!`, { name: cCard.name, mine: Math.floor(cPct*100), theirs: Math.floor(dPct*100) }) });
             dIdx++; dJustEntered = true; turnsInMatchup = 0;
         } else if (dPct > cPct) {
             cCard.hp = 0;
-            tiebreakerEvents.push({ type: 'defeat', cardId: cCard.id, message: `${dCard.name} wins by HP advantage (${Math.floor(dPct*100)}% to ${Math.floor(cPct*100)}%)!` });
+            tiebreakerEvents.push({ type: 'defeat', cardId: cCard.id, ...say('hpAdvantage', `${dCard.name} wins by HP advantage (${Math.floor(dPct*100)}% to ${Math.floor(cPct*100)}%)!`, { name: dCard.name, mine: Math.floor(dPct*100), theirs: Math.floor(cPct*100) }) });
             cIdx++; cJustEntered = true; turnsInMatchup = 0;
         } else {
             // true tie
             cCard.hp = 0;
             dCard.hp = 0;
-            tiebreakerEvents.push({ type: 'draw', message: `Exact HP% draw! Both go down!` });
+            tiebreakerEvents.push({ type: 'draw', ...say('hpDraw', 'Exact HP% draw! Both go down!') });
             cIdx++; cJustEntered = true;
             dIdx++; dJustEntered = true;
             turnsInMatchup = 0;
@@ -611,7 +625,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
 
     // Failsafe wrapper to prevent infinite loops from 1 DMG minimums if HP gets incredibly high somehow (shouldn't realistically happen)
     if (turnNumber > 200) {
-        log.push({ turnNumber, cCardId: cCard.id, dCardId: dCard.id, cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp), events: [{type: 'battle_end', message:'Turn Limit Reached!'}] });
+        log.push({ turnNumber, cCardId: cCard.id, dCardId: dCard.id, cHpStart: cCard.hp, dHpStart: dCard.hp, cHpEnd: Math.max(0, cCard.hp), dHpEnd: Math.max(0, dCard.hp), events: [{ type: 'battle_end', ...say('turnLimit', 'Turn Limit Reached!') }] });
         turnNumber++;
         break;
     }
@@ -628,9 +642,9 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
       cCardId: '', dCardId: '', cHpStart: 0, dHpStart: 0, cHpEnd: 0, dHpEnd: 0,
       events: [{
         type: 'draw',
-        message: bothOut
-          ? 'Double KO! Exact tie goes to the defender.'
-          : `Turn limit reached! Decided by remaining team HP (${cPct}% vs ${dPct}%, exact tie goes to the defender).`,
+        ...(bothOut
+          ? say('doubleKo', 'Double KO! Exact tie goes to the defender.')
+          : say('teamHpDecision', `Turn limit reached! Decided by remaining team HP (${cPct}% vs ${dPct}%, exact tie goes to the defender).`, { c: cPct, d: dPct })),
       }],
     });
     turnNumber++;
@@ -639,7 +653,7 @@ export function resolve3v3Battle(cTeamInitial: BattleCard[], dTeamInitial: Battl
   log.push({
       turnNumber: turnNumber,
       cCardId: '', dCardId: '', cHpStart: 0, dHpStart: 0, cHpEnd: 0, dHpEnd: 0,
-      events: [{ type: 'battle_end', message: `${winner} WINS THE BATTLE!`}]
+      events: [{ type: 'battle_end', ...say('battleWon', `${winner} WINS THE BATTLE!`, { winner }) }]
   });
 
   return {

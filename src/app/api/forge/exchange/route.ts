@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { withUserLock, UserFacingError, asRecord, asArray } from '@/lib/userLock';
+import { withUserLock, UserFacingError, asRecord, asArray, asJson } from '@/lib/userLock';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { WILDCARD, WILDCARD_EXCHANGE_RATE, maxWildcardsFrom } from '@/lib/fragments';
 import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
+import { fragmentLogEntry, type FragmentLogEntry } from '@/lib/fragmentLog';
+import { storedText } from '@/lib/storedText';
 
 const bodySchema = z.object({
   language: z.string({ error: 'forge.exchangeInvalid' }).min(1, { error: 'forge.exchangeInvalid' }).max(100, { error: 'forge.exchangeInvalid' }),
@@ -34,11 +36,11 @@ export async function POST(req: Request) {
       const spent = wildcards * WILDCARD_EXCHANGE_RATE;
       wallet[language] -= spent;
       wallet[WILDCARD] = (wallet[WILDCARD] || 0) + wildcards;
-      const logs = asArray(user.fragmentLogs);
+      const logs = asArray<FragmentLogEntry>(user.fragmentLogs);
       const date = new Date().toISOString();
-      logs.unshift({ date, source: `Exchange for ${wildcards} wildcard`, language, amount: -spent });
-      logs.unshift({ date, source: `Exchange from ${language}`, language: WILDCARD, amount: wildcards });
-      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: logs } });
+      logs.unshift(fragmentLogEntry(storedText('fragmentExchangeFor', { count: wildcards }), language, -spent, date));
+      logs.unshift(fragmentLogEntry(storedText('fragmentExchangeFrom', { language }), WILDCARD, wildcards, date));
+      await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments: wallet, fragmentLogs: asJson(logs) } });
       return wallet;
     });
     return NextResponse.json({ success: true, fragments });

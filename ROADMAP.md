@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 02/11/2026, depois que o dono respondeu todas as decisões pendentes (PR #75: tudo mantido, menos a carta viva, que agora só sobe). Antes, a rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes" (vazia desde 02/11; as respondidas ficam logo abaixo, como referência).
+> Atualizado em 02/11/2026, depois da rodada do PT-BR das batalhas (PR #76: o log do replay e a origem dos fragmentos na Forja saem no idioma de quem joga). Antes, o dono respondeu todas as decisões pendentes (PR #75: tudo mantido, menos a carta viva, que agora só sobe). Antes, a rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes" (vazia desde 02/11; as respondidas ficam logo abaixo, como referência).
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -16,7 +16,7 @@
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 26 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - Histórico de BITS conferido em produção em 01/11/2026 (20 jogadores, 188 linhas, 0 diferenças).
 - **Backup diário funcionando desde 02/11/2026** (workflow "Database backup", 06:30 UTC): `pg_dump` da produção criptografado com a chave `age` do dono, guardado 30 dias nas Actions. A primeira execução (à mão) gerou 504 KB e o dono conseguiu abri-la. A chave privada fica só com o dono; sem ela os backups não abrem. Como restaurar: [`docs/backup.md`](docs/backup.md).
-- 272 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- 275 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`; desde a PR #72 o navegador do app ficou logado na conta 1, para ver o convite da Liga na Loja). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -67,7 +67,7 @@
 
 **Onda 8 (engenharia de fundo)**, intercalada, uma PR por rodada (ver 2.8). Feito: índices, `select` e `proxy.ts` (PR #58); zod em todas as rotas e erros da API traduzidos (PR #59); headers de segurança, CSP em report-only e avatares no tamanho certo (PR #60); testes de concorrência (PR #61); lint zerado (PR #64). Próximas, em ordem sugerida:
 1. **Ligar a CSP de verdade:** depois de alguns dias sem linhas `[CSP]` nos logs da Vercel, trocar `CSP_ENFORCED` para `true` (`src/lib/securityHeaders.ts`). Se aparecer algo legítimo, liberar a origem antes.
-2. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, PT-BR dos textos gravados no banco, CSP com nonce (sem `'unsafe-inline'`).
+2. Maiores, pedem planejamento: Sentry (precisa de conta do dono), upgrade Prisma/Auth.js, JSON → tabelas, CSP com nonce (sem `'unsafe-inline'`).
 
 Depois: **onda 9** (grandes apostas e monetização).
 
@@ -402,6 +402,14 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
 
+### PT-BR das batalhas e da origem dos fragmentos (PR #76)
+- **Por quê:** depois da PR #74, os últimos textos gravados no banco em inglês eram as frases do log de batalha (mostradas no replay) e a origem de cada linha do histórico de fragmentos da Forja.
+- **Log de batalha:** cada evento do motor (`battleResolver.ts`) grava também a chave da frase e os valores (`say(...)`), além da frase em inglês de sempre. As 38 frases estão em `gameBattle.log` (en/pt-BR); o replay (`BattleReplay`) traduz o log e o aviso de passiva. Ex.: "Desafiante: sinergia de time misto! +8% de ATK para todos.", "O DEFENSOR VENCE A BATALHA!".
+- **Fragmentos:** as linhas novas do histórico usam o mesmo padrão da PR #74 (`fragmentLogEntry` em `src/lib/fragmentLog.ts`, chaves no bloco `storedText`): drop de pack (com o nome do pack traduzido), repetida, treino, troca por coringa e invocação (com "Dev da Semana").
+- **Batalhas e linhas antigas** não têm chave e continuam mostrando a frase em inglês, como antes. Sem migração.
+- **Teste novo** (`battleLog.test.ts`): 600 batalhas sorteadas mais 3 travadas no limite de turnos; todo evento tem chave, o inglês traduzido é igual à frase gravada e todas as 38 frases aparecem e saem em português.
+- **Testado no dev:** uma batalha rápida nova e o replay dela em português; o histórico da Forja com uma linha de cada tipo (gravadas à mão na conta 1 e apagadas depois) e uma linha antiga em inglês; 275 testes.
+
 ### Decisões pendentes respondidas (PR #75)
 - O dono respondeu as 68 decisões em aberto, agrupadas em quatro blocos: economia; competitivo e cartas; social; ligas privadas e idioma. A da Liga Dev (#68) já tinha sido aceita em 16/10 e saiu da tabela.
 - **Tudo mantido**, inclusive: sem rate-up no evento semanal, raridades em inglês também no PT-BR, replay mostrando o vencedor, valores de economia como estão.
@@ -418,7 +426,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
   - migração aditiva: `BitsTransaction.detailText` (JSON).
 - **Na tela:** o sino e os toasts (`useStoredText`) e a página `/bits` (`getStoredText`) traduzem. Linhas antigas de compra de pack também saem traduzidas (o nome em inglês é convertido de volta para o id). Pedidos de amizade e desafios do sino também. O "Anonymous" do ranking virou "Anônimo".
 - **Testado no dev:** sino em português ("Você subiu para Ouro!", "Sprint semanal · Semana Web: você terminou em 2º"), `/bits` em português e em inglês, uma compra de pack de verdade ("Pack da Semana de Sistemas"), 271 testes e os 11 cenários de concorrência (trocas, presentes, Liga).
-- **Fica para depois:** o log das batalhas (as frases dos passivos são geradas pelo motor de batalha e aparecem no replay) e a origem dos fragmentos (`fragmentLogs`, ex.: "Training - …").
+- O log das batalhas e a origem dos fragmentos ficaram para a PR #76.
 
 ### Onda 9 — Liga Dev, rodada 4: a Liga na Loja e o convite que sobrevive ao login (PR #72)
 - **Por quê:** a conferência de produção em 01/11 mostrou 0 escalações em três rodadas; a Liga só aparecia no menu.
@@ -539,7 +547,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **Código:** o replay saiu do `BattleClient` (de ~1.500 para ~600 linhas) para `src/components/BattleReplay.tsx`; tipos, validação do log, troca de lado e placar em `src/lib/battleReplay.ts` (testados), leitura do banco em `battleReplayService.ts`.
 - **Achado de passagem:** o placar das batalhas recentes do perfil saía sempre 0–0 (procurava um formato de log antigo); agora conta os nocautes. O perfil também parou de mandar o log inteiro de 10 batalhas na resposta.
 - Testado no dev: replay de batalha entre jogadores (lado e nomes certos, Derrota para quem perdeu), de batalha de outro jogador (modo espectador), sem login, 404 em batalha antiga, prévia do link, compartilhar no resultado de uma batalha nova, histórico, perfil e celular.
-- Continua em inglês: as frases do log de batalha ("X dealt 44 damage."), que são gravadas no banco (ver "PT-BR dos textos gravados no banco" na onda 8).
+- As frases do log de batalha ficaram em inglês até a PR #76, que as traduziu.
 
 ### Onda 8 — lint zerado (PR #64)
 - **De 98 erros e 56 avisos para 0 e 0.** Os 93 `any` viraram tipos de verdade: a rota do perfil e o `battleService` usam os tipos do Prisma; a Arena, o perfil, a coleção, a forja e a página de amigos ganharam tipos para o que a API devolve (resultado e resumo da batalha, histórico, cartas do perfil, busca da forja, amigos). Colunas JSON usam `asJson` / `asArray` (`userLock.ts`) e tipos exportados (`StoredNotification`, `SavedMilestone`, `LifetimeStats`, `SerializablePack`).

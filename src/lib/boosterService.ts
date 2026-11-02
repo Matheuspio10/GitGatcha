@@ -6,11 +6,13 @@ import type { PoolFilter } from './devSampler';
 import { getPlayerGithubToken, getRecentPulls, recordPulls, samplerForToken } from './samplerStore';
 import { refillReserve, reserveDeficit, takeFromReserve } from './boosterReserve';
 import { isRarity, Rarity, rarityForSlot } from './rarity';
-import { asArray, asRecord, withUserLock } from './userLock';
+import { asArray, asJson, asRecord, withUserLock } from './userLock';
 import { DUPLICATE_FRAGMENTS, PACK_DROP_CHANCE, PACK_DROP_FRAGMENTS, SHINY_CHANCE } from './fragments';
 export { SHINY_CHANCE };
 import { applyPity, packsUntilPity, pityCounterUpdate, PITY_THRESHOLD } from './pity';
 import { isEventPackId, upcomingEventPackIds } from './weeklyEvents';
+import { fragmentLogEntry, type FragmentLogEntry } from './fragmentLog';
+import { gameName, ownText, storedText, type StoredText } from './storedText';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
@@ -167,7 +169,8 @@ async function drawBoosterPack(userId: string, packId: string | undefined, pityT
         amount: dropAmount
       };
       try {
-        await addFragments(userId, dropLang, dropAmount, `Pack drop - ${pack?.name || 'Generic Booster'}`);
+        const packName = pack ? gameName.pack(pack.id, pack.name) : ownText('genericBooster', 'Generic Booster');
+        await addFragments(userId, dropLang, dropAmount, storedText('fragmentPackDrop', { pack: packName }));
       } catch (err) {
         packDropFragments = null;
         console.error('[Booster] Could not add pack-drop fragments:', (err as Error).message);
@@ -344,15 +347,15 @@ export async function refillBoosterReserve(userId: string | null, packId: string
   }
 }
 
-async function addFragments(userId: string, language: string, amount: number, source: string) {
+async function addFragments(userId: string, language: string, amount: number, source: StoredText) {
   await withUserLock(userId, async (tx) => {
     const user = await tx.user.findUnique({ where: { id: userId }, select: { fragments: true, fragmentLogs: true } });
     if (!user) return;
     const fragments = asRecord(user.fragments);
     fragments[language] = (fragments[language] || 0) + amount;
-    const logs = asArray(user.fragmentLogs);
-    logs.unshift({ date: new Date().toISOString(), source, language, amount });
-    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments, fragmentLogs: logs } });
+    const logs = asArray<FragmentLogEntry>(user.fragmentLogs);
+    logs.unshift(fragmentLogEntry(source, language, amount));
+    await tx.user.update({ select: { id: true }, where: { id: userId }, data: { fragments, fragmentLogs: asJson(logs) } });
   });
 }
 
@@ -394,7 +397,7 @@ export async function addCardToUser(userId: string, card: { id: string; rarity: 
   const lang = card.primaryLanguage || 'Unknown';
   if (result.isDuplicate && lang !== 'Unknown') {
     const amount = DUPLICATE_FRAGMENTS[card.rarity] || DUPLICATE_FRAGMENTS.Common;
-    await addFragments(userId, lang, amount, `Duplicate - ${card.rarity} ${lang} card`);
+    await addFragments(userId, lang, amount, storedText('fragmentDuplicate', { rarity: card.rarity, language: lang }));
     return { ...result, fragmentsEarned: amount };
   }
   return result;
