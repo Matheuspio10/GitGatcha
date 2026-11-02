@@ -1,7 +1,7 @@
 # GitGacha — Roadmap
 
 > Começou com uma auditoria em 12/10/2026 (gameplay, economia, visual/UX e engenharia), juntando a lista `Ideias de melhorias GitGatcha.txt`.
-> Atualizado em 02/11/2026, ao fim da rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes".
+> Atualizado em 02/11/2026, depois que o dono respondeu todas as decisões pendentes (PR #75: tudo mantido, menos a carta viva, que agora só sobe). Antes, a rodada de notificações e textos do banco em PT-BR (PR #74: a lista de notificações tem teto, e notificações e histórico de BITS saem no idioma de quem joga). No mesmo dia, o backup diário do banco foi configurado e testado (o dono abriu o primeiro arquivo com a chave dele). Antes disso, a quarta rodada da Liga Dev (PR #72: o convite da Liga na Loja e o link de convite que sobrevive ao login). A Liga está jogável. **Ondas 1 a 7 completas**; a onda 8 (engenharia) segue intercalada e a onda 9 começou. O backlog está organizado em **ondas** (ver "Ondas de melhorias"); decisões em aberto na tabela "Decisões pendentes" (vazia desde 02/11; as respondidas ficam logo abaixo, como referência).
 > Inclui as ideias tiradas do **GitPacks**, jogo parecido (MIT), marcadas com 🅶. Análise completa e links para o código dele em [`docs/analise-gitpacks.md`](docs/analise-gitpacks.md).
 
 **Legenda:** 🔴 P0 urgente · 🟠 P1 quebrado · 🟡 P2 melhoria importante · 🟢 P3 feature nova
@@ -16,7 +16,7 @@
 - 20 jogadores, ~740 cartas únicas, ~880 cartas em coleções. 26 migrações, todas aditivas (a do histórico de BITS também grava o saldo de abertura de cada jogador).
 - Histórico de BITS conferido em produção em 01/11/2026 (20 jogadores, 188 linhas, 0 diferenças).
 - **Backup diário funcionando desde 02/11/2026** (workflow "Database backup", 06:30 UTC): `pg_dump` da produção criptografado com a chave `age` do dono, guardado 30 dias nas Actions. A primeira execução (à mão) gerou 504 KB e o dono conseguiu abri-la. A chave privada fica só com o dono; sem ela os backups não abrem. Como restaurar: [`docs/backup.md`](docs/backup.md).
-- 271 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
+- 272 testes (`npm test`) e 11 cenários de concorrência (`npm run test:concurrency`, contra o dev), `tsc` sem erros e lint zerado (0 erros e 0 avisos; qualquer erro novo reprova o CI). O CI (GitHub Actions) roda tudo em cada PR.
 
 ### Ambiente
 > **Contas de teste locais (branch dev):** credenciais em `.env.local` (ignorado pelo git): `TEST_ACCOUNT_EMAIL`/`_PASSWORD` (usuário `qaguestdc3a88`) e `TEST_ACCOUNT_2_EMAIL`/`_PASSWORD` (usuário `qaref71c99f`; desde a PR #72 o navegador do app ficou logado na conta 1, para ver o convite da Liga na Loja). As duas são amigas entre si; a 2 foi convidada pela 1. O login local redireciona para `NEXTAUTH_URL` (porta 3000); com o servidor na 3005 (`.claude/launch.json`, nome `gitgacha-dev`), volte para a 3005 depois de entrar.
@@ -73,7 +73,6 @@ Depois: **onda 9** (grandes apostas e monetização).
 
 **Pendências do dono (fora do código), deixadas para o fim, junto com as decisões:**
 - Olhar os logs da Vercel (Logs → buscar `[CSP]`) alguns dias depois do deploy da #60 e me passar o que aparecer, para decidir se a CSP pode passar a bloquear.
-- Responder a tabela "Decisões pendentes" abaixo.
 
 **Como trabalhamos (para o próximo chat):**
 - Conversa em português; código e interface em inglês. Uma rodada = uma branch + uma PR com descrição em português; **merge só com OK do dono e com o CI verde** (esperar o "Types, lint, tests and build" passar).
@@ -90,9 +89,13 @@ Depois: **onda 9** (grandes apostas e monetização).
 
 ## 🗳️ Decisões pendentes (o dono responde tudo de uma vez)
 
-Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a constante indicada.
+**Nenhuma no momento.** O dono respondeu todas em 02/11/2026 (PR #75): manteve todos os padrões, menos o da carta viva (agora os status só sobem). Novas decisões entram aqui, numa tabela igual à de baixo, com o padrão que foi para o ar.
 
-| PR | Decisão | Padrão no ar | Onde mudar |
+### Decisões tomadas (referência)
+
+Valores e regras no ar, confirmados pelo dono. Mudar qualquer um continua sendo só trocar a constante indicada.
+
+| PR | Decisão | No ar | Onde mudar |
 |---|---|---|---|
 | #39 | Bônus do primeiro compartilhamento | 100 BITS | `SHARE_BONUS` (`shareBonus.ts`) |
 | #40 | Indicação de amigos | 200 BITS cada, teto de 10 indicações pagas | `REFERRAL_BONUS`, `REFERRAL_CAP` (`referral.ts`) |
@@ -120,7 +123,7 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #50 | Pack do evento semanal | 5 cartas, 350 BITS, ≥1 Rare; só à venda na semana do tema | `EVENT_PACK_COST`, `EVENT_PACK_MIN_RARITY` (`weeklyEvents.ts`) |
 | #50 | Desconto do Dev da Semana na forja | 50% em fragmentos e BITS | `FEATURED_DEV_DISCOUNT` (`weeklyEvents.ts`) |
 | #50 | Quem pode ser Dev da Semana | Sorteio uniforme entre as cartas do tema já existentes no jogo, Rare ou melhor (qualquer raridade se não houver) | `FEATURED_DEV_MIN_RARITY` (`weeklyEvents.ts`), `drawFeaturedDev` (`weeklyEventService.ts`) |
-| #50 | Rate-up anunciado | **Não feito**: dar mais chance a certos devs fere a regra de ouro 1. Se quiser, decidir as regras (quem, quanto, aviso na loja) | — |
+| #50 | Rate-up anunciado | **Não feito**: dar mais chance a certos devs fere a regra de ouro 1. O dono confirmou em 02/11: fica sem rate-up | — |
 | #51 | Teto de treino por raridade | Common 8 · Uncommon 4 · Rare 4 · Epic 3 · Legendary 3 (+2% por nível). Medido no simulador: treino completo ≈ empata com a raridade de cima | `TRAINING_MAX_LEVEL`, `TRAINING_BONUS_PER_LEVEL` (`training.ts`) |
 | #51 | Custo do treino | Nível n = n × passo; passo Common 50 · Uncommon 100 · Rare 200 · Epic 400 · Legendary 800 BITS + n × fragmentos de uma repetida (5/10/20/40/80) | `TRAINING_BITS_PER_STEP`, `TRAINING_FRAGMENTS_PER_STEP` (`training.ts`) |
 | #51 | Teto da Liga Balanced com cartas treinadas | Conta o poder **base** (como a fidelidade já fazia) | rota `api/battle` e `TeamBuilderUI` |
@@ -133,9 +136,8 @@ Valores e regras já no ar com um padrão; mudar qualquer um é só trocar a con
 | #55 | Nomes das raridades | Em inglês por enquanto (Common… Legendary), também em PT-BR. Traduzir (Comum/Incomum/Raro/Épico/Lendário) entra na parte 3 se o dono quiser | — |
 | #57 | Nomes de packs, passivas e títulos em PT-BR | Traduzidos ("O Covil do JavaScript", "A Caixa Misteriosa", "Força Bruta", "Escudo de Ferro"); jargão de dev fica em inglês (Hot Reload, Double Callback, Null Safety, Cron Job, Type Safety; Pythonistas, Rust or Bust, Indie Hackers, Core Team). Mudar é só editar `messages/pt-BR/game*.json` | `messages/pt-BR/gamePacks.json`, `gameBattle.json`, `gameAchievements.json` |
 | #63 | Carta viva muda a raridade? | **Não**: raridade e linguagem ficam; só os status (e só enquanto o dev continua na mesma faixa). Um novo sorteio do mesmo dev num pack continua atualizando a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
-| #63 | Status podem cair? | Sim: a carta segue o dev nos dois sentidos (menos estrelas ou repositórios, carta mais fraca). Outra opção: só subir | `livingCardUpdate` (`livingCards.ts`) |
+| #63 | Status podem cair? | **Não, só sobem** (decidido em 02/11, PR #75): cada status fica no maior entre o atual e o recalculado. Um novo sorteio do mesmo dev num pack ainda reescreve a carta inteira | `livingCardUpdate` (`livingCards.ts`) |
 | #63 | Frequência | Cada carta a cada 7 dias no máximo; 3 cartas a cada 5 min com tráfego + 30 no cron diário | `LIVING_CARD_*` (`livingCards.ts`) |
-| #68 | **Liga Dev (L1–L12)** | ✅ O dono aceitou todos os padrões em 16/10/2026; em implementação (PR #69 em diante). Plano e decisões: as 12 decisões (de onde vêm os devs, preço, bônus de ter a carta, pontuação, capitão, prêmios, nome, escopo) estão no fim de [`docs/liga-cartola.md`](docs/liga-cartola.md), cada uma com o padrão proposto | — |
 | #74 | Teto da lista de notificações | Até 50 por jogador; as já lidas somem depois de 7 dias. Passando de 50, saem primeiro as lidas e depois as não lidas mais antigas | `NOTIFICATIONS_KEPT`, `READ_NOTIFICATION_DAYS` (`notifications.ts`) |
 | #74 | Textos antigos do banco | Notificações e linhas do histórico gravadas antes da PR #74 continuam em inglês (só têm a frase pronta). Reescrever as antigas da produção seria um script de escrita; não vale a pena, porque as notificações somem com o teto e o histórico antigo é curto | — |
 | #72 | Convite da Liga | Cartão no topo da **Loja** (onde todos caem depois de entrar), só para quem não tem escalação na rodada atual nem na próxima e só quando o mercado da próxima já abriu. Fechar esconde até a rodada seguinte (no navegador). Sem notificação no sino: quem não entra no jogo não veria, e quem entra já cai na Loja | `leagueInvite` (`leagueService.ts`), `LeagueInvite.tsx` |
@@ -399,6 +401,12 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 - **`select` nas consultas quentes:** 23 `update` do usuário cujo resultado era descartado devolviam a linha inteira (banner em base64, inventário, notificações, fragmentos…) a cada notificação, batalha, XP e compra; agora devolvem só o `id`. 8 leituras que carregavam a linha toda (amigos, pedido de amizade, lista de desejos, cadastro) pedem só o que usam.
 - **Índices** (migração `20261031000000_hot_path_indexes`): `Battle` por desafiante/defensor + status, vencedor e expiração; `Friendship (friendId, status)`; `Card (rarity, primaryLanguage)` e `(primaryLanguage)`. Conferido com `prisma migrate diff` contra o dev (sem shadow DB): schema e banco iguais.
 - **`middleware.ts` → `proxy.ts`** (convenção do Next 16), mesmo comportamento.
+
+### Decisões pendentes respondidas (PR #75)
+- O dono respondeu as 68 decisões em aberto, agrupadas em quatro blocos: economia; competitivo e cartas; social; ligas privadas e idioma. A da Liga Dev (#68) já tinha sido aceita em 16/10 e saiu da tabela.
+- **Tudo mantido**, inclusive: sem rate-up no evento semanal, raridades em inglês também no PT-BR, replay mostrando o vencedor, valores de economia como estão.
+- **Uma mudança:** a carta viva não enfraquece mais. `livingCardUpdate` (`livingCards.ts`) fica com o maior valor de cada status, entre o atual e o recalculado pelo GitHub. Teste novo e o texto da wiki (en/pt-BR) atualizados. Um novo sorteio do mesmo dev num pack continua reescrevendo a carta inteira (precisa bater com a raridade sorteada).
+- A tabela virou "Decisões tomadas (referência)"; a de pendentes está vazia.
 
 ### Backlog — notificações com teto e textos do banco em PT-BR (PR #74)
 - **Por quê:** a lista de notificações (coluna JSON do jogador) crescia sem fim, e notificações e histórico de BITS eram gravados como frase pronta em inglês, então quem joga em português via inglês.
@@ -682,7 +690,7 @@ Cada onda junta itens do backlog abaixo que fazem sentido juntos e cabem em 1–
 | Feature | Descrição | Esforço |
 |---|---|---|
 | ~~**Liga pessoal estilo Cartola**~~ | ✅ PR #69, #70, #71, #72 (Liga Dev com mercado, escalação, rankings, ligas privadas e o convite na Loja). Falta: histórico de pontos por dev e a escalação a partir da Coleção | — |
-| ~~**Eventos semanais**~~ | ✅ PR #50 (pack do evento e Dev da Semana). Rate-up ficou nas decisões pendentes | — |
+| ~~**Eventos semanais**~~ | ✅ PR #50 (pack do evento e Dev da Semana). Rate-up: não, por decisão do dono (02/11) | — |
 | ~~**Sprints 🅶**~~ | ✅ PR #49 (diário por linguagem, semanal por família). Tema de org (Big Tech) só quando houver mais cartas de membros de orgs | — |
 
 ### 3.3 Cartas e coleção

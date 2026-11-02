@@ -1,6 +1,8 @@
 /**
  * Living cards: every card is refreshed from its developer's GitHub profile now
  * and then, so stats follow the real developer (more stars, more repos → stronger card).
+ * Stats only go up (owner's decision): a developer who lost stars or repos keeps
+ * the card's current numbers, so a card never gets weaker on its own.
  *
  * The refresh keeps the card's identity: RARITY and PRIMARY LANGUAGE never change
  * here (collections, sets, the collector score and the battle type rely on them).
@@ -49,8 +51,8 @@ export interface LivingCard {
 }
 
 /**
- * The columns a refresh writes: stats for the card's own rarity (unless the
- * developer drifted to another rarity, `drifted`), plus name, avatar, bio and
+ * The columns a refresh writes: stats for the card's own rarity, never below the
+ * current ones (unless the developer drifted to another rarity, `drifted`), plus name, avatar, bio and
  * the profile snapshot behind the card title. Null when the fetched data is
  * incomplete (nothing to recompute from).
  */
@@ -58,9 +60,10 @@ export function livingCardUpdate(card: LivingCard, dev: DevStats, now = new Date
   const inputs = devStatInputs(dev, now);
   if (!inputs || !isRarity(card.rarity)) return null;
   const drifted = dev.rarity !== card.rarity;
-  const stats: BaseStats = drifted
-    ? { atk: card.atk, def: card.def, hp: card.hp }
-    : computeCardStats(inputs, card.rarity as Rarity);
+  const fresh = drifted ? null : computeCardStats(inputs, card.rarity as Rarity);
+  const stats: BaseStats = fresh
+    ? { atk: Math.max(card.atk, fresh.atk), def: Math.max(card.def, fresh.def), hp: Math.max(card.hp, fresh.hp) }
+    : { atk: card.atk, def: card.def, hp: card.hp };
   return {
     drifted,
     atk: stats.atk,

@@ -36,6 +36,15 @@ test('the card keeps its rarity; a developer who drifted to another rarity keeps
   for (const u of [same, drifted]) assert.ok(!('rarity' in u) && !('primaryLanguage' in u));
 });
 
+test('stats only go up: a developer who lost stars keeps the card as strong as it was', () => {
+  const rng = mulberry32(11);
+  const { user, repos } = syntheticDeveloper(rng, 'Rare', 3);
+  const dev = buildDevStats(user, repos);
+  const stronger = { rarity: dev.rarity, atk: dev.atk + 50, def: dev.def - 1, hp: dev.hp + 10 };
+  const update = livingCardUpdate(stronger, dev)!;
+  assert.deepStrictEqual({ atk: update.atk, def: update.def, hp: update.hp }, { atk: dev.atk + 50, def: dev.def, hp: dev.hp + 10 });
+});
+
 test('incomplete data or an unknown rarity refreshes nothing', () => {
   const rng = mulberry32(3);
   const { user, repos } = syntheticDeveloper(rng, 'Common', 0);
