@@ -20,7 +20,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const cards = await prisma.card.findMany({
-    where: only ? { githubUsername: { in: only } } : undefined,
+    where: { removedAt: null, ...(only ? { githubUsername: { in: only } } : {}) },
     orderBy: { createdAt: 'asc' },
   });
   console.log(`${cards.length} cards — ${apply ? 'APPLYING' : 'dry run'}`);

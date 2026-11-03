@@ -59,7 +59,8 @@ type Round = Awaited<ReturnType<typeof ensureRound>>;
 export async function priceRound(round: Round, deadline: number) {
   const unpriced = await prisma.$queryRaw<{ id: string; githubUsername: string }[]>`
     SELECT c."id", c."githubUsername" FROM "Card" c
-    WHERE NOT EXISTS (SELECT 1 FROM "LeaguePrice" p WHERE p."roundId" = ${round.id} AND p."cardId" = c."id")
+    WHERE c."removedAt" IS NULL
+      AND NOT EXISTS (SELECT 1 FROM "LeaguePrice" p WHERE p."roundId" = ${round.id} AND p."cardId" = c."id")
     ORDER BY c."id"`;
   if (unpriced.length === 0) return { priced: 0, remaining: 0 };
 

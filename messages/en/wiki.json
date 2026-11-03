@@ -30,6 +30,7 @@
   "cards": {
     "intro": "Cards are ranked in {count} rarity tiers. A card's rarity comes from the developer's real GitHub <b>followers</b>; a developer whose repositories collect lots of <b>stars</b> is promoted one tier as a bonus. Rarity applies a multiplier to the card's base stats.",
     "random": "Boosters are truly random: within a booster's theme, <em>every</em> GitHub developer of the drawn rarity with at least one public repository has exactly the same chance to drop — famous or brand new, including you.",
+    "removeCard": "Are you a developer with a card and would rather not be in the game? <link>Remove my card</link>: sign in with that GitHub account and the card turns anonymous for everyone.",
     "pullRate": "Standard pull rate: ~{pct}% of cards",
     "followersOpen": "{min}+ followers",
     "followersRange": "{min}–{max} followers",

@@ -25,7 +25,7 @@ export type ShareCard = NonNullable<Awaited<ReturnType<typeof getShareCard>>>;
 
 /** A card by its developer's login, with the player who holds its Signature edition (if any). */
 export async function getShareCard(login: string) {
-  const card = await prisma.card.findFirst({ where: { githubUsername: { equals: login, mode: 'insensitive' } } });
+  const card = await prisma.card.findFirst({ where: { githubUsername: { equals: login, mode: 'insensitive' }, removedAt: null } });
   if (!card) return null;
   const signature = await prisma.userCard.findFirst({
     where: { cardId: card.id, edition: SIGNATURE_EDITION },

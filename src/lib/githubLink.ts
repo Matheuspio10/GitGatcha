@@ -10,6 +10,7 @@ import { prisma } from './prisma';
 import { addBits } from './bitsLedger';
 import { fetchGitHubUserStats, getTokenOwnerLogin, toCardData } from './githubService';
 import { withUserLock } from './userLock';
+import { isDevRemoved } from './devRemovalService';
 
 export const GITHUB_LINK_BONUS = 300;
 export const SIGNATURE_EDITION = 'signature';
@@ -30,6 +31,8 @@ export async function grantSignatureCard(userId: string, token: string) {
   if (!login) return null;
   const stats = await fetchGitHubUserStats(login, token);
   if (!stats) return null;
+  // A developer who left the game gets no card of themself, not even the Signature one
+  if (await isDevRemoved(stats.githubUsername, stats.avatarUrl)) return null;
 
   const data = toCardData(stats);
   const card = await prisma.card.upsert({

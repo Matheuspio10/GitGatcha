@@ -33,6 +33,7 @@
     "cardNotOwned": "Carta não encontrada ou não é sua"
   },
   "forge": {
+    "devRemoved": "Este dev pediu para sair do GitGacha",
     "usernameRequired": "Informe o nome de usuário",
     "invalidUsername": "Nome de usuário do GitHub inválido",
     "devNotFound": "Dev não encontrado",
@@ -260,5 +261,9 @@
     "actionRequired": "Escolha o que fazer",
     "loadFailed": "Não deu para carregar as suas ligas privadas",
     "failed": "Não deu para fazer isso. Tente de novo."
+  },
+  "devRemoval": {
+    "githubRequired": "Entre primeiro com a conta do GitHub da carta",
+    "notConfirmed": "Marque a caixa para confirmar"
   }
 }

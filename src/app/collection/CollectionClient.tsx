@@ -17,6 +17,7 @@ import { pressable, useDialog } from '@/lib/useDialog';
 import clsx from 'clsx';
 import type { LifetimeStats, SavedMilestone } from '@/lib/loyaltyService';
 import { useLocale, useTranslations } from 'next-intl';
+import { isAnonymousLogin } from '@/lib/devRemoval';
 
 type ExtendedCard = CardProps & {
   shards?: number;
@@ -492,7 +493,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                           <div className="flex items-center gap-3">
                             <Star weight="fill" className="opacity-20 group-hover:opacity-100 transition-opacity flex-shrink-0" style={{ color: rarityColor }} size={16} />
                             <span className="font-medium text-slate-200">{card.name}</span>
-                            <span className="text-xs text-slate-500 font-mono">@{card.githubUsername}</span>
+                            {!isAnonymousLogin(card.githubUsername) && <span className="text-xs text-slate-500 font-mono">@{card.githubUsername}</span>}
                             <LoyaltyBadge tier={loyaltyTier} size="sm" />
                             {(card.trainingLevel ?? 0) > 0 && (
                               <span className="inline-flex items-center rounded-full border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300" title={t('table.trainingLevel', { level: card.trainingLevel ?? 0 })}>
@@ -604,6 +605,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                
                {/* Buttons below the card */}
                <div className="flex flex-row gap-3 items-center justify-center w-full max-w-[280px] relative z-20">
+                 {!isAnonymousLogin(selectedCard.githubUsername) && <>
                  <a 
                    href={`https://github.com/${selectedCard.githubUsername}`}
                    target="_blank"
@@ -633,6 +635,7 @@ export default function CollectionClient({ initialCards, profileHref }: { initia
                    label="PNG"
                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold rounded-xl transition-all text-sm"
                  />
+                 </>}
 
                  {selectedCard.stamina !== undefined && calculateCurrentStamina(selectedCard.stamina, selectedCard.lastUsedAt ? new Date(selectedCard.lastUsedAt) : new Date(), selectedCard.inActiveTeam || false) < 100 && (
                    <button

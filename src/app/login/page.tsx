@@ -8,10 +8,12 @@ import toast from 'react-hot-toast';
 import { Logo } from '@/components/Logo';
 import { safeCallbackPath } from '@/lib/callbackPath';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const t = useTranslations('public.login');
+  const tRemoval = useTranslations('public.devRemoval');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isRegistering, setIsRegistering] = useState(searchParams?.get('register') === 'true');
@@ -136,6 +138,10 @@ function LoginContent() {
           >
             {isRegistering ? t('signIn') : t('createAccount')}
           </button>
+        </p>
+
+        <p className="mt-4 text-center text-xs text-slate-500">
+          {tRemoval.rich('linkText', { link: chunks => <Link href="/remove-my-card" className="underline hover:text-slate-300">{chunks}</Link> })}
         </p>
 
       </div>

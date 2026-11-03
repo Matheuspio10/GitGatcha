@@ -10,6 +10,7 @@ import { cardPassive, cardPassiveMessage } from '@/lib/battleConfig';
 import { cardTitle, languageStyle, rarityLevel, serialHash, RARITY_ORDER, type DevProfile } from '@/lib/cardVisuals';
 import { useTranslations } from 'next-intl';
 import { useGameText } from '@/i18n/gameText';
+import { isAnonymousLogin } from '@/lib/devRemoval';
 
 export type CardProps = {
   id?: string;
@@ -92,6 +93,8 @@ export function Card({
   const battleText = useGameText('gameBattle');
   const achText = useGameText('gameAchievements');
   const isSignature = edition === 'signature';
+  // A developer who left the game: no @login and no GitHub link
+  const anonymous = isAnonymousLogin(githubUsername);
   const tier = loyaltyTier || 'none';
   const loyalty = LOYALTY_VISUALS[tier] || {};
   const isEternal = tier === 'eternal';
@@ -184,7 +187,7 @@ export function Card({
                   <h3 className="gg-name">{name}</h3>
                 </div>
                 <div className="gg-sub" title={title.reason ? `${title.title}: ${title.reason}` : undefined}>
-                  @{githubUsername} · <em>{title.title}</em>
+                  {!anonymous && <>@{githubUsername} · </>}<em>{title.title}</em>
                 </div>
               </div>
               <div className="gg-serial" title={t('serial')}>{isSignature ? '1/1' : `#${hash}`}</div>
@@ -204,7 +207,7 @@ export function Card({
                   <>
                     <span className="gg-stamp">{t('signatureStamp')}</span>
                     <span className="absolute z-[4] right-2.5 bottom-3 -rotate-[8deg] font-script text-3xl text-white pointer-events-none" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.9)' }}>
-                      {githubUsername}
+                      {anonymous ? name : githubUsername}
                     </span>
                   </>
                 )}
@@ -301,7 +304,7 @@ export function Card({
 
   const pointer = { onPointerMove: trackCardPointer, onPointerLeave: resetCardPointer };
 
-  return disableLink ? (
+  return disableLink || anonymous ? (
     <motion.div whileHover={{ scale: 1.04, translateY: -2 }} className={cardClasses} style={cardStyle} {...pointer}>
       {cardContent}
     </motion.div>

@@ -140,5 +140,31 @@
     "og": {
       "won": "{name} vence"
     }
+  },
+  "devRemoval": {
+    "metaTitle": "Remover minha carta · GitGacha",
+    "metaDescription": "Você é um dev com carta no GitGacha? Remova em um minuto entrando com o GitHub.",
+    "title": "Remover minha carta",
+    "intro": "As cartas do GitGacha são devs de verdade, montadas com dados públicos do GitHub (nome, foto, login, seguidores, estrelas e linguagens). Se você é um deles e prefere não estar no jogo, pode sair por aqui.",
+    "whatHappensTitle": "O que acontece",
+    "whatHappens1": "Seu nome, foto, login do GitHub e números do perfil saem da carta e dos replays de batalha.",
+    "whatHappens2": "Quem já tem a sua carta fica com uma versão anônima (\"Anonymous Dev\") com os mesmos status, para ninguém perder o que ganhou.",
+    "whatHappens3": "Você nunca mais sai em packs, não pode ser forjado nem entrar em listas de desejos, e sai da Liga Dev, da Torre e do Dev da Semana.",
+    "whatHappens4": "Não dá para desfazer pelo jogo.",
+    "proveTitle": "Prove que é você",
+    "proveText": "Entre com a conta do GitHub da carta. Só lemos o seu login e o id da conta para confirmar; isso cria uma conta no GitGacha, que você pode simplesmente nunca usar.",
+    "signIn": "Entrar com o GitHub",
+    "loggedInNoGithub": "Você entrou, mas não com o GitHub. Saia e entre com a conta do GitHub da carta.",
+    "signOut": "Sair",
+    "youAre": "Conectado no GitHub como <b>@{login}</b>.",
+    "yourCard": "Sua carta hoje",
+    "owners": "{count, plural, =0 {Ninguém tem ainda.} one {# jogador tem.} other {# jogadores têm.}}",
+    "noCard": "Você ainda não tem carta. Removendo agora, garante que nunca vai ter.",
+    "confirm": "Sou @{login} e quero sair do GitGacha.",
+    "remove": "Me remover do jogo",
+    "removing": "Removendo…",
+    "done": "Pronto: <b>@{login}</b> saiu do GitGacha em {date}. Obrigado pela visita.",
+    "error": "Algo deu errado. Tente de novo.",
+    "linkText": "Sua carta está no jogo? <link>Remover minha carta</link>"
   }
 }

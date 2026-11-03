@@ -21,7 +21,8 @@ async function claimOldestCard(): Promise<ClaimedCard | null> {
   const rows = await prisma.$queryRaw<ClaimedCard[]>`
     WITH due AS (
       SELECT "id", "profileUpdatedAt" AS "previous" FROM "Card"
-      WHERE "profileUpdatedAt" IS NULL OR "profileUpdatedAt" < NOW() - make_interval(days => ${LIVING_CARD_REFRESH_DAYS}::int)
+      WHERE "removedAt" IS NULL
+        AND ("profileUpdatedAt" IS NULL OR "profileUpdatedAt" < NOW() - make_interval(days => ${LIVING_CARD_REFRESH_DAYS}::int))
       ORDER BY "profileUpdatedAt" ASC NULLS FIRST, "createdAt" ASC
       LIMIT 1
       FOR UPDATE SKIP LOCKED

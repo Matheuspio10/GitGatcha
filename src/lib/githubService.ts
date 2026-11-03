@@ -321,9 +321,14 @@ export function buildDevStats(user: RestUser, repos: RestRepo[]): DevStats {
 
 /** Login of the account that owns `token`, or `null` if GitHub rejects it. */
 export async function getTokenOwnerLogin(token: string): Promise<string | null> {
+  return (await getTokenOwner(token))?.login ?? null;
+}
+
+/** Login and numeric id of the token's owner; null when the token is no longer valid. */
+export async function getTokenOwner(token: string): Promise<{ login: string; id: number } | null> {
   try {
     const { data } = await coreGet<RestUser>('/user', token);
-    return data.login;
+    return { login: data.login, id: data.id };
   } catch (err) {
     if (err instanceof GitHubAuthError) return null;
     throw err;

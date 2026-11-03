@@ -138,6 +138,8 @@ model Card {
   languageCount   Int?
   githubCreatedAt DateTime?
   profileUpdatedAt DateTime?
+  // Set when the developer asked to leave the game (devRemovalService): the card is anonymized
+  removedAt       DateTime?
 
   owners         UserCard[]
   gifts          CardGift[]
@@ -332,6 +334,16 @@ model OrgMember {
 
   @@id([org, login])
   @@index([org, followers])
+}
+
+// Developers who asked to leave the game on /remove-my-card, confirmed by signing in with
+// that GitHub account: never drawn, forged or listed again (devRemovalService.ts)
+model DevRemoval {
+  id          String   @id @default(uuid())
+  githubLogin String   @unique // lower-case
+  githubId    Int?     @unique
+  userId      String?  // the player account that confirmed it
+  createdAt   DateTime @default(now())
 }
 
 // Developers a player pulled recently from each booster type (avoids back-to-back repeats)

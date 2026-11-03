@@ -13,6 +13,7 @@ import type { DevStats } from './githubService';
 import type { DevSampler, PoolFilter } from './devSampler';
 import type { Rarity } from './rarity';
 import { STAT_VERSION } from './cardStats';
+import { isRemovedDev, type RemovedDevs } from './devRemoval';
 
 /** Reserve rows older than this are discarded (stats would be stale). */
 const RESERVE_MAX_AGE_DAYS = 7;
@@ -55,11 +56,15 @@ export async function reserveDeficit(packId: string, rarity: Rarity): Promise<nu
 /** Draws up to `count` developers into the reserve; stops early at `deadline` or when GitHub can't answer. */
 export async function refillReserve(
   sampler: DevSampler, packId: string, pool: PoolFilter, rarity: Rarity, count: number, deadline: number,
+  removed: RemovedDevs = { logins: new Set(), ids: new Set() },
 ): Promise<number> {
   let added = 0;
   for (let i = 0; i < count && Date.now() < deadline; i++) {
-    const dev = await sampler.drawDev(pool, rarity); // no exclusion: every row must be an independent draw
+    // Only developers who left the game are excluded: the same set for every row, so each row
+    // is still an independent uniform draw among everyone else
+    const dev = await sampler.drawDev(pool, rarity, new Set(removed.logins));
     if (!dev) break;
+    if (isRemovedDev(dev, removed)) continue; // left after a rename (same GitHub id)
     await prisma.boosterReserve.create({
       data: { packId, rarity, githubUsername: dev.githubUsername, stats: { ...dev, statVersion: STAT_VERSION } as unknown as Prisma.InputJsonValue },
     });

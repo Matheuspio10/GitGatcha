@@ -12,7 +12,7 @@ const FEATURED_CARD_SELECT = { githubUsername: true, name: true, avatarUrl: true
  * with at least FEATURED_DEV_MIN_RARITY (any rarity of the theme when none).
  */
 async function drawFeaturedDev(theme: SprintTheme): Promise<string | null> {
-  const ofTheme = { primaryLanguage: { in: theme.languages } };
+  const ofTheme = { primaryLanguage: { in: theme.languages }, removedAt: null };
   let pool = await prisma.card.findMany({
     where: { ...ofTheme, rarity: { in: featuredDevRarities() } },
     select: { githubUsername: true },

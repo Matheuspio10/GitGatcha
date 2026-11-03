@@ -13,6 +13,8 @@ import { applyPity, packsUntilPity, pityCounterUpdate, PITY_THRESHOLD } from './
 import { isEventPackId, upcomingEventPackIds } from './weeklyEvents';
 import { fragmentLogEntry, type FragmentLogEntry } from './fragmentLog';
 import { gameName, ownText, storedText, type StoredText } from './storedText';
+import { loadRemovedDevs } from './devRemovalService';
+import { isRemovedDev } from './devRemoval';
 
 const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
 
@@ -233,6 +235,7 @@ async function drawFromExistingCards(pool: PoolFilter, rarity: Rarity, exclude: 
   const languages = pool.languages ?? [];
   const cards = await prisma.card.findMany({
     where: {
+      removedAt: null,
       rarity,
       ...(languages.length ? { OR: languages.map(l => ({ primaryLanguage: { equals: l, mode: 'insensitive' as const } })) } : {}),
     },
@@ -274,6 +277,9 @@ export async function drawPackDevs(
   sampler: ReturnType<typeof samplerForToken>,
 ): Promise<{ drawn: DevStats[]; sources: CardSource[] }> {
   let githubDown = false;
+  // Developers who left the game: skipped by every source, and rejected below if one slips through
+  const removed = await loadRemovedDevs();
+  for (const login of removed.logins) exclude.add(login);
   const drawSlot = async (slotRarity: string): Promise<{ dev: DevStats | null; source: CardSource }> => {
     const rarity: Rarity = isRarity(slotRarity) ? slotRarity : 'Common';
     try {
@@ -301,8 +307,8 @@ export async function drawPackDevs(
   const sources: CardSource[] = [];
   for (const [i, slot] of slots.entries()) {
     let { dev, source } = slot;
-    // Parallel draws can't see each other: redraw the rare same-dev collision
-    const isTaken = (d: DevStats | null) => !!d && drawn.some(x => x.githubUsername === d.githubUsername);
+    // Parallel draws can't see each other: redraw the rare same-dev collision (or a developer who left)
+    const isTaken = (d: DevStats | null) => !!d && (isRemovedDev(d, removed) || drawn.some(x => x.githubUsername === d.githubUsername));
     for (let retry = 0; isTaken(dev) && retry < 2; retry++) {
       ({ dev, source } = await drawSlot(pickedRarities[i]));
     }
@@ -336,10 +342,11 @@ export async function refillBoosterReserve(userId: string | null, packId: string
   const deadline = Date.now() + budgetMs;
   const sampler = samplerForToken(userId ? await getPlayerGithubToken(userId) : null);
   const rarities: Rarity[] = pack.allCommon ? ['Common'] : ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+  const removed = await loadRemovedDevs();
   try {
     for (const rarity of rarities) {
       const deficit = Math.min(REFILL_PER_RARITY, await reserveDeficit(pack.id, rarity));
-      if (deficit > 0) await refillReserve(sampler, pack.id, pack.pool, rarity, deficit, deadline);
+      if (deficit > 0) await refillReserve(sampler, pack.id, pack.pool, rarity, deficit, deadline, removed);
       if (Date.now() > deadline) break;
     }
   } catch (err) {

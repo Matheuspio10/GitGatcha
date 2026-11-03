@@ -75,6 +75,7 @@ async function sampleOpponentCandidates(
   if (leagueMode === 'BALANCED' && powerCap !== undefined) {
     conditions.push(Prisma.sql`(c."atk" + c."def" + c."hp") <= ${powerCap}`);
   }
+  conditions.push(Prisma.sql`c."removedAt" IS NULL`);
   if (excludeOwnedBy) {
     conditions.push(Prisma.sql`NOT EXISTS (SELECT 1 FROM "UserCard" uc WHERE uc."cardId" = c."id" AND uc."userId" = ${excludeOwnedBy})`);
   }
