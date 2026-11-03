@@ -7,6 +7,7 @@ import { forgeCostFor, isFeaturedDev } from '@/lib/weeklyEvents';
 import { getFeaturedDevLogin } from '@/lib/weeklyEventService';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { apiError } from '@/lib/apiResponse';
+import { isDevRemoved } from '@/lib/devRemovalService';
 
 export async function GET(req: Request) {
   // Each lookup spends the server's GitHub quota: logged-in players only
@@ -25,6 +26,7 @@ export async function GET(req: Request) {
   try {
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return apiError('forge.devNotFound', 404);
+    if (await isDevRemoved(stats.githubUsername, stats.avatarUrl)) return apiError('forge.devRemoved', 404);
 
     // The Dev of the Week costs less this week
     const featured = isFeaturedDev(stats.githubUsername, await getFeaturedDevLogin());

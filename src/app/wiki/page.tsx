@@ -403,6 +403,9 @@ export default function WikiPage() {
               <p className="mb-6 leading-relaxed text-slate-400 text-sm">
                 {t.rich('cards.random', { em: chunks => <em>{chunks}</em> })}
               </p>
+              <p className="mb-6 leading-relaxed text-slate-400 text-sm">
+                {t.rich('cards.removeCard', { link: chunks => <Link href="/remove-my-card" className="text-indigo-300 hover:underline">{chunks}</Link> })}
+              </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {RARITY_ORDER.map((r) => {

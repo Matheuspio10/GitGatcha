@@ -33,6 +33,7 @@
     "cardNotOwned": "Card not found or unowned"
   },
   "forge": {
+    "devRemoved": "This developer asked to leave GitGacha",
     "usernameRequired": "Username required",
     "invalidUsername": "Invalid GitHub username",
     "devNotFound": "Developer not found",
@@ -260,5 +261,9 @@
     "actionRequired": "Choose what to do",
     "loadFailed": "Couldn't load your private leagues",
     "failed": "Couldn't do that. Try again."
+  },
+  "devRemoval": {
+    "githubRequired": "Sign in with the GitHub account of the card first",
+    "notConfirmed": "Tick the box to confirm"
   }
 }

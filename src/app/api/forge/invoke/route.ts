@@ -13,6 +13,7 @@ import { apiError, readBody, routeError } from '@/lib/apiResponse';
 import { z } from 'zod';
 import { storedText } from '@/lib/storedText';
 import { fragmentLogEntry, type FragmentLogEntry } from '@/lib/fragmentLog';
+import { isDevRemoved } from '@/lib/devRemovalService';
 
 const bodySchema = z.object({ username: z.string().trim().max(100).optional() }).optional();
 
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
 
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return apiError('forge.devNotFound', 404);
+    if (await isDevRemoved(stats.githubUsername, stats.avatarUrl)) return apiError('forge.devRemoved', 404);
     // The Dev of the Week costs less this week
     const featured = isFeaturedDev(stats.githubUsername, await getFeaturedDevLogin());
     const { fragments, bits } = forgeCostFor(stats.rarity, featured);

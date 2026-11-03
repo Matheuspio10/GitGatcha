@@ -6,6 +6,7 @@ import { fetchGitHubUserStats } from '@/lib/githubService';
 import { getInvocationCost } from '@/lib/forgeService';
 import { apiError, readBody } from '@/lib/apiResponse';
 import { z } from 'zod';
+import { isDevRemoved } from '@/lib/devRemovalService';
 
 const MAX_WISHLIST = 5;
 
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
 
     const stats = await fetchGitHubUserStats(username);
     if (!stats) return apiError('forge.devNotFound', 404);
+    if (await isDevRemoved(stats.githubUsername, stats.avatarUrl)) return apiError('forge.devRemoved', 404);
     if (!stats.primaryLanguage || stats.primaryLanguage === 'Unknown') {
       return apiError('forge.noPrimaryLanguage');
     }

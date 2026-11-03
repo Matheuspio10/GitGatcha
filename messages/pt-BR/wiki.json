@@ -30,6 +30,7 @@
   "cards": {
     "intro": "As cartas são divididas em {count} níveis de raridade. A raridade de uma carta vem dos <b>seguidores</b> reais do dev no GitHub; um dev cujos repositórios juntam muitas <b>estrelas</b> sobe uma raridade de bônus. A raridade aplica um multiplicador aos atributos base da carta.",
     "random": "Os boosters são aleatórios de verdade: dentro do tema de um booster, <em>todo</em> dev do GitHub da raridade sorteada com pelo menos um repositório público tem exatamente a mesma chance de cair — famoso ou recém-chegado, inclusive você.",
+    "removeCard": "Você é um dev com carta e prefere não estar no jogo? <link>Remover minha carta</link>: entre com a conta do GitHub e a carta vira anônima para todo mundo.",
     "pullRate": "Taxa padrão: ~{pct}% das cartas",
     "followersOpen": "{min}+ seguidores",
     "followersRange": "{min}–{max} seguidores",

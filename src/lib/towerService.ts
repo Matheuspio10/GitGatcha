@@ -35,8 +35,8 @@ async function floorTeam(weekStart: Date, floor: TowerFloor, theme: string) {
     cardIds = [];
     const seed = `${weekStart.toISOString()}|${floor.floor}`;
     for (const [slot, rarity] of floor.rarities.entries()) {
-      const themed = await prisma.card.findMany({ where: { rarity, primaryLanguage: theme }, select: { id: true }, orderBy: { id: 'asc' } });
-      const pool = (themed.length >= 3 ? themed : await prisma.card.findMany({ where: { rarity }, select: { id: true }, orderBy: { id: 'asc' } }))
+      const themed = await prisma.card.findMany({ where: { rarity, primaryLanguage: theme, removedAt: null }, select: { id: true }, orderBy: { id: 'asc' } });
+      const pool = (themed.length >= 3 ? themed : await prisma.card.findMany({ where: { rarity, removedAt: null }, select: { id: true }, orderBy: { id: 'asc' } }))
         .map(c => c.id)
         .filter(id => !cardIds!.includes(id));
       // The final boss: the strongest cards of the pool, not random ones

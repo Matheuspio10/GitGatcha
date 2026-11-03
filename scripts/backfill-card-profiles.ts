@@ -25,6 +25,7 @@ const prisma = new PrismaClient();
 async function main() {
   const cards = await prisma.card.findMany({
     where: {
+      removedAt: null,
       ...(only ? { githubUsername: { in: only } } : {}),
       ...(all || only ? {} : { profileUpdatedAt: null }),
     },

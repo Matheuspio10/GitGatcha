@@ -140,5 +140,31 @@
     "og": {
       "won": "{name} wins"
     }
+  },
+  "devRemoval": {
+    "metaTitle": "Remove my card · GitGacha",
+    "metaDescription": "Are you a developer with a card in GitGacha? Remove it in a minute by signing in with GitHub.",
+    "title": "Remove my card",
+    "intro": "GitGacha cards are real developers, built from public GitHub data (name, photo, login, followers, stars and languages). If you are one of them and would rather not be in the game, you can leave it here.",
+    "whatHappensTitle": "What happens",
+    "whatHappens1": "Your name, photo, GitHub login and profile numbers are removed from the card and from battle replays.",
+    "whatHappens2": "Players who already own your card keep an anonymous version (\"Anonymous Dev\") with the same stats, so nobody loses what they earned.",
+    "whatHappens3": "You are never drawn in packs again, can't be forged or wishlisted, and leave the Dev League, the Tower and the Dev of the Week.",
+    "whatHappens4": "It can't be undone from the game.",
+    "proveTitle": "Prove it's you",
+    "proveText": "Sign in with the GitHub account of the card. We only read your login and account id to confirm it; it creates a GitGacha account, which you can simply never use.",
+    "signIn": "Sign in with GitHub",
+    "loggedInNoGithub": "You're signed in, but not with GitHub. Sign out and sign in with the GitHub account of the card.",
+    "signOut": "Sign out",
+    "youAre": "Signed in on GitHub as <b>@{login}</b>.",
+    "yourCard": "Your card today",
+    "owners": "{count, plural, =0 {Nobody owns it yet.} one {# player owns it.} other {# players own it.}}",
+    "noCard": "You don't have a card yet. Removing now makes sure you never get one.",
+    "confirm": "I am @{login} and I want to leave GitGacha.",
+    "remove": "Remove me from the game",
+    "removing": "Removing…",
+    "done": "Done: <b>@{login}</b> left GitGacha on {date}. Thank you for passing by.",
+    "error": "Something went wrong. Please try again.",
+    "linkText": "Is your card in the game? <link>Remove my card</link>"
   }
 }
